@@ -1,14 +1,21 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.api;
 
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Libraries;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import java.lang.module.ModuleDescriptor.Version;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/** A builder of project instances. */
-public interface ProjectComputer {
+/** Methods related to building projects. */
+public interface ProjectAPI {
 
   Bach bach();
 
@@ -57,4 +64,24 @@ public interface ProjectComputer {
       case MAVEN -> Libraries.lookup(module).viaMaven(external.mavenRepository(), target);
     };
   }
+
+  default void makeProject() throws Exception {
+    var bach = bach();
+    var project = bach.project();
+    bach.print("Build %s %s", project.name(), project.version());
+    if (bach.is(Options.Flag.VERBOSE)) bach.info();
+    var start = Instant.now();
+    try {
+      bach.loadMissingExternalModules();
+      makeProjectMainSpace();
+    } catch (Exception exception) {
+      throw new RuntimeException("Build failed: " + exception);
+    } finally {
+      bach.print("Build took %s", Duration.between(start, Instant.now()));
+      var logbook = bach.writeLogbook();
+      bach.print("Logbook written to %s", logbook.toUri());
+    }
+  }
+
+  default void makeProjectMainSpace() throws Exception {}
 }

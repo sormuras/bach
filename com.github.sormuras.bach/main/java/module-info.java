@@ -18,6 +18,7 @@ import com.github.sormuras.bach.Bach;
 @com.github.sormuras.bach.ProjectInfo
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
+  exports com.github.sormuras.bach.api;
   exports com.github.sormuras.bach.lookup;
   exports com.github.sormuras.bach.tool;
 

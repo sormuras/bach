@@ -2,9 +2,8 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.api.BachAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
-import com.github.sormuras.bach.internal.Modules;
-import com.github.sormuras.bach.lookup.LookupException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
@@ -17,17 +16,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Java Shell Builder. */
-public class Bach implements ProjectComputer {
+public class Bach implements BachAPI {
 
   public static final Path BIN = Path.of(".bach/bin");
 
@@ -138,48 +132,11 @@ public class Bach implements ProjectComputer {
   }
 
   public void build() throws Exception {
-    print("Build %s %s", project.name(), project.version());
-    if (is(Flag.VERBOSE)) info();
-    var start = Instant.now();
-    try {
-      loadMissingExternalModules();
-      buildMainSpace();
-    } catch (Exception exception) {
-      throw new RuntimeException("Build failed: " + exception);
-    } finally {
-      print("Build took %s", Logbook.toString(Duration.between(start, Instant.now())));
-      var logbook = writeLogbook();
-      print("Logbook written to %s", logbook.toUri());
-    }
-  }
-
-  public void buildMainSpace() throws Exception {}
-
-  public String computeExternalModuleUri(String module) {
-    var found = project.libraries().find(module).orElseThrow(() -> new LookupException(module));
-    debug("%s <- %s", module, found);
-    return found.uri();
-  }
-
-  public Path computeExternalModuleFile(String module) {
-    return base.externals().resolve(module + ".jar");
+    makeProject();
   }
 
   public String computeMainJarFileName(String module) {
     return module + '@' + project().versionNumberAndPreRelease() + ".jar";
-  }
-
-  /** @return the names of all modules that are required but not locatable by this instance */
-  public Set<String> computeMissingExternalModules() {
-    var finder = ModuleFinder.of(EXTERNALS);
-    var missing = Modules.required(finder);
-    missing.addAll(project.libraries().requires());
-    if (missing.isEmpty()) return Set.of();
-    missing.removeAll(Modules.declared(finder));
-    missing.removeAll(Modules.declared(ModuleFinder.of(BIN)));
-    missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
-    if (missing.isEmpty()) return Set.of();
-    return missing;
   }
 
   public Stream<ToolProvider> computeToolProviders() {
@@ -206,31 +163,6 @@ public class Bach implements ProjectComputer {
 
   public void debug(String format, Object... args) {
     if (is(Flag.VERBOSE)) print("// " + format, args);
-  }
-
-  public void loadExternalModules(String... modules) {
-    debug("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
-    if (modules.length == 0) return;
-    UnaryOperator<String> uri = this::computeExternalModuleUri;
-    Function<String, Path> jar = this::computeExternalModuleFile;
-    if (modules.length == 1) browser().load(uri.apply(modules[0]), jar.apply(modules[0]));
-    else browser().load(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
-  }
-
-  public void loadMissingExternalModules() {
-    debug("Load missing external modules");
-    var loaded = new TreeSet<String>();
-    var difference = new TreeSet<String>();
-    while (true) {
-      var missing = computeMissingExternalModules();
-      if (missing.isEmpty()) break;
-      difference.retainAll(missing);
-      if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
-      difference.addAll(missing);
-      loadExternalModules(missing.toArray(String[]::new));
-      loaded.addAll(missing);
-    }
-    debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
   }
 
   public void print(String format, Object... args) {

@@ -23,7 +23,7 @@ public @interface ProjectInfo {
    * {@return the name of the project, defaults to {@code "*"}}
    *
    * @see Project#name()
-   * @see ProjectComputer#computeProjectName(ProjectInfo)
+   * @see Bach#computeProjectName(ProjectInfo)
    */
   String name() default "*";
 
@@ -31,7 +31,7 @@ public @interface ProjectInfo {
    * {@return the version of the project, defaults to {@code "0"}}
    *
    * @see Project#version()
-   * @see ProjectComputer#computeProjectVersion(ProjectInfo)
+   * @see Bach#computeProjectVersion(ProjectInfo)
    * @see java.lang.module.ModuleDescriptor.Version
    */
   String version() default "0";
@@ -40,7 +40,7 @@ public @interface ProjectInfo {
    * {@return an array of external modules on which the project has a dependence}
    *
    * @see Libraries#requires()
-   * @see ProjectComputer#computeProjectLibraries(ProjectInfo)
+   * @see Bach#computeProjectLibraries(ProjectInfo)
    * @see java.lang.module.ModuleDescriptor.Requires
    */
   String[] requires() default {};
@@ -49,7 +49,7 @@ public @interface ProjectInfo {
    * {@return an array of external module lookup annotations}
    *
    * @see Libraries#lookup(String)
-   * @see ProjectComputer#computeProjectLibraries(ProjectInfo)
+   * @see Bach#computeProjectLibraries(ProjectInfo)
    */
   External[] lookup() default {};
 
@@ -57,7 +57,7 @@ public @interface ProjectInfo {
    * An external module name to URI pair annotation.
    *
    * @see com.github.sormuras.bach.lookup.ExternalModuleLookup
-   * @see ProjectComputer#computeProjectModuleLookup(External)
+   * @see Bach#computeProjectModuleLookup(External)
    */
   @Target({})
   @interface External {

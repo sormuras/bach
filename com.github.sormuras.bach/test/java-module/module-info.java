@@ -4,6 +4,7 @@ open /*test*/ module com.github.sormuras.bach {
   requires test.base;
 
   exports com.github.sormuras.bach;
+  exports com.github.sormuras.bach.api;
   exports com.github.sormuras.bach.lookup;
   exports com.github.sormuras.bach.tool;
 
