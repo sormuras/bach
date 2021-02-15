@@ -1,9 +1,11 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.internal.Modules;
 import com.github.sormuras.bach.lookup.LookupException;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.TreeSet;
@@ -32,12 +34,12 @@ public interface ExternalModuleAPI {
   default Set<String> computeMissingExternalModules() {
     var bach = bach();
     var finder = ModuleFinder.of(bach.base().externals());
-    var missing = Modules.required(finder);
+    var missing = required(finder);
     missing.addAll(bach.project().libraries().requires());
     if (missing.isEmpty()) return Set.of();
-    missing.removeAll(Modules.declared(finder));
-    missing.removeAll(Modules.declared(ModuleFinder.of(Bach.BIN)));
-    missing.removeAll(Modules.declared(ModuleFinder.ofSystem()));
+    missing.removeAll(declared(finder));
+    missing.removeAll(declared(ModuleFinder.of(Bach.BIN)));
+    missing.removeAll(declared(ModuleFinder.ofSystem()));
     if (missing.isEmpty()) return Set.of();
     return missing;
   }
@@ -68,5 +70,28 @@ public interface ExternalModuleAPI {
       loaded.addAll(missing);
     }
     bach.debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
+  }
+
+  static TreeSet<String> declared(ModuleFinder finder) {
+    return declared(finder.findAll().stream().map(ModuleReference::descriptor));
+  }
+
+  static TreeSet<String> declared(Stream<ModuleDescriptor> descriptors) {
+    return descriptors.map(ModuleDescriptor::name).collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  static TreeSet<String> required(ModuleFinder finder) {
+    return required(finder.findAll().stream().map(ModuleReference::descriptor));
+  }
+
+  static TreeSet<String> required(Stream<ModuleDescriptor> descriptors) {
+    return descriptors
+        .map(ModuleDescriptor::requires)
+        .flatMap(Set::stream)
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+        .map(Requires::name)
+        .collect(Collectors.toCollection(TreeSet::new));
   }
 }
