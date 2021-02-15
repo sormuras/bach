@@ -32,32 +32,40 @@ class init {
     loadScript("init.java");
     loadModule("com.github.sormuras.bach", version);
 
-    checkPath();
-
-    System.out.printf(
+    var appendPathMessage =
         """
-        %sd Bach %s.
-        
-        bach boot
-          Launch JShell with Bach booted into it.
-        bach build
-          Build the current modular Java project.
-        """, action, version);
-  }
 
-  static void checkPath() {
-    var path = System.getenv("PATH");
-    if (path == null) return;
-    var target = BIN.toString();
-    var elements = List.of(path.split(File.pathSeparator));
-    for (var element : elements) if (element.strip().equals(target)) return;
-
-    System.out.printf(
-        """
         Append `%s` to the PATH environment variable in order to call
         Bach's launch script without using that path prefix every time.
+        """
+            .formatted(BIN);
+    var prefix = computePathPrefixToBachBinDirectory(() -> System.out.print(appendPathMessage));
+
+    System.out.printf(
+        """
+
+        %sbach boot
+          Launch a JShell session with Bach booted into it.
+        %sbach --help
+          Print Bach's help message.
+
+        %sd Bach %s. Have fun!
+
+        Code, documentation, discussions, issues, and sponsoring: https://github.com/sormuras/bach
+
         """,
-        BIN);
+        action, version, prefix, prefix);
+  }
+
+  static String computePathPrefixToBachBinDirectory(Runnable runnable) {
+    var prefix = BIN.toString() + File.pathSeparator;
+    var path = System.getenv("PATH");
+    if (path == null) return prefix;
+    var target = BIN.toString();
+    var elements = List.of(path.split(File.pathSeparator));
+    for (var element : elements) if (element.strip().equals(target)) return "";
+    runnable.run();
+    return prefix;
   }
 
   static Path loadScript(String name) throws Exception {
