@@ -13,11 +13,6 @@ class init {
 
   public static void main(String... args) throws Exception {
     var update = Files.isDirectory(BIN);
-    var action = update ? "Update" : "Initialize";
-    var version = args.length == 0 ? "17-ea" : args[0];
-
-    System.out.printf("%s Bach %s in %s%n", action, version, Path.of("").toAbsolutePath());
-
     if (update) {
       var module = ModuleFinder.of(BIN).find("com.github.sormuras.bach");
       if (module.isPresent()) Files.delete(Path.of(module.get().location().orElseThrow()));
@@ -25,6 +20,7 @@ class init {
       Files.createDirectories(BIN);
     }
 
+    var version = args.length == 0 ? "17-ea" : args[0];
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
     loadScript("boot.java");
@@ -41,20 +37,22 @@ class init {
             .formatted(BIN);
     var prefix = computePathPrefixToBachBinDirectory(() -> System.out.print(appendPathMessage));
 
-    System.out.printf(
+    System.out.printf( // Next steps...
         """
 
         %sbach boot
           Launch a JShell session with Bach booted into it.
         %sbach --help
           Print Bach's help message.
-
-        %sd Bach %s. Have fun!
-
-        Code, documentation, discussions, issues, and sponsoring: https://github.com/sormuras/bach
-
         """,
-        action, version, prefix, prefix);
+        prefix, prefix);
+
+    System.out.printf( // Updated/Initialized Bach ${VERSION} in ${DIRECTORY}.
+        """
+
+        %sd Bach %s in %s.
+        """,
+        update ? "Update" : "Initialize", version, Path.of("").toAbsolutePath());
   }
 
   static String computePathPrefixToBachBinDirectory(Runnable runnable) {

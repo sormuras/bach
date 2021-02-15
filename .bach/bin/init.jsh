@@ -1,6 +1,6 @@
 // Bach's Init Script
 
-System.out.println(
+System.out.printf(
 """
     ___      ___      ___      ___
    /\\  \\    /\\  \\    /\\  \\    /\\__\\
@@ -13,15 +13,27 @@ System.out.println(
         Java Runtime %s
     Operating System %s
    Working Directory %s
-"""
-.formatted(
+""",
   Runtime.version(),
   System.getProperty("os.name"),
-  Path.of("").toAbsolutePath()
-))
+  Path.of("").toAbsolutePath())
 
 /open https://github.com/sormuras/bach/raw/main/.bach/bin/init.java
 
-init.main()
+var status = 0
+try {
+  init.main();
+  System.out.print(
+      """
 
-/exit
+      Browse https://github.com/sormuras/bach for Bach's code, documentation,
+      discussions, issues, sponsoring, and more. Have fun!
+
+      """);
+}
+catch(Exception exception) {
+  System.err.println(exception.getMessage());
+  status = 1;
+}
+
+/exit status
