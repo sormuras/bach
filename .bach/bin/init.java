@@ -20,6 +20,7 @@ class init {
       Files.createDirectories(BIN);
     }
 
+    System.out.println(""); // Load scripts and modules...
     var version = args.length == 0 ? "17-ea" : args[0];
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
@@ -37,15 +38,16 @@ class init {
             .formatted(BIN);
     var prefix = computePathPrefixToBachBinDirectory(() -> System.out.print(appendPathMessage));
 
-    System.out.printf( // Next steps...
-        """
+    if (!update)
+      System.out.printf( // On initialize, print possible next steps.
+          """
 
-        %sbach boot
-          Launch a JShell session with Bach booted into it.
-        %sbach --help
-          Print Bach's help message.
-        """,
-        prefix, prefix);
+          %sbach boot
+            Launch a JShell session with Bach booted into it.
+          %sbach --help
+            Print Bach's help message.
+          """,
+          prefix, prefix);
 
     System.out.printf( // Updated/Initialized Bach ${VERSION} in ${DIRECTORY}.
         """
