@@ -4,19 +4,14 @@ import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.api.BachAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.spi.ToolProvider;
 
 /** Java Shell Builder. */
 public class Bach implements BachAPI {
@@ -157,34 +152,7 @@ public class Bach implements BachAPI {
     print("project: %s", project);
   }
 
-  @Override
-  public final Recording run(ToolProvider provider, List<String> arguments) {
-    var name = provider.name();
-    var currentThread = Thread.currentThread();
-    var currentLoader = currentThread.getContextClassLoader();
-    currentThread.setContextClassLoader(provider.getClass().getClassLoader());
-
-    var out = new StringWriter();
-    var err = new StringWriter();
-    var args = arguments.toArray(String[]::new);
-    var start = Instant.now();
-    int code;
-    try {
-      var skips = options.values(Property.SKIP_TOOL);
-      var skip = skips.contains(name);
-      if (skip) debug("Skip run of '%s' due to --skip-tool=%s", name, skips);
-      code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
-    } finally {
-      currentThread.setContextClassLoader(currentLoader);
-    }
-
-    var duration = Duration.between(start, Instant.now());
-    var tid = currentThread.getId();
-    var output = out.toString().trim();
-    var errors = err.toString().trim();
-    var recording = new Recording(name, arguments, tid, duration, code, output, errors);
-
+  public final void record(Recording recording) {
     recordings.add(recording);
-    return recording;
   }
 }

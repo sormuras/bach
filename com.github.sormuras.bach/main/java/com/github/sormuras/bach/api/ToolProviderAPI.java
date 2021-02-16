@@ -5,7 +5,11 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
@@ -28,8 +32,6 @@ public interface ToolProviderAPI {
     throw new RuntimeException("No tool provider found for name: " + name);
   }
 
-  Recording run(ToolProvider provider, List<String> arguments);
-
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
     var provider = computeToolProvider(command.name());
@@ -49,5 +51,35 @@ public interface ToolProviderAPI {
     var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
     var stream = sequential ? commands.stream() : commands.stream().parallel();
     return stream.map(this::run).toList();
+  }
+
+  default Recording run(ToolProvider provider, List<String> arguments) {
+    var name = provider.name();
+    var currentThread = Thread.currentThread();
+    var currentLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(provider.getClass().getClassLoader());
+
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = arguments.toArray(String[]::new);
+    var start = Instant.now();
+    int code;
+    try {
+      var skips = bach().options().values(Options.Property.SKIP_TOOL);
+      var skip = skips.contains(name);
+      if (skip) bach().debug("Skip run of '%s' due to --skip-tool=%s", name, skips);
+      code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
+    } finally {
+      currentThread.setContextClassLoader(currentLoader);
+    }
+
+    var duration = Duration.between(start, Instant.now());
+    var tid = currentThread.getId();
+    var output = out.toString().trim();
+    var errors = err.toString().trim();
+    var recording = new Recording(name, arguments, tid, duration, code, output, errors);
+
+    bach().record(recording);
+    return recording;
   }
 }
