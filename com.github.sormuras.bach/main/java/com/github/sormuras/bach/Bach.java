@@ -60,17 +60,29 @@ public class Bach implements BachAPI {
 
   public Bach(Options options) {
     this.options = options;
-    this.base = newBase();
+    this.base = Base.of(Path.of(options.get(Property.BASE_DIRECTORY, "")));
     this.recordings = new ConcurrentLinkedQueue<>();
     this.browser = null; // defered creation in its accessor
     this.project = newProject();
   }
 
+  /** {@return an instance of {@code HttpClient} that is memoized by this Bach object} */
+  protected HttpClient newHttpClient() {
+    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+  }
+
+  /** {@return an instance of {@code Project} that is used as a component of this Bach object} */
+  protected Project newProject() {
+    return computeProject();
+  }
+
+  /** {@return this} */
   @Override
   public final Bach bach() {
     return this;
   }
 
+  /** {@return the options instance passed to the constructor of this Bach object} */
   public final Options options() {
     return options;
   }
@@ -84,7 +96,7 @@ public class Bach implements BachAPI {
   }
 
   public final synchronized Browser browser() {
-    if (browser == null) browser = newBrowser();
+    if (browser == null) browser = new Browser(this);
     return browser;
   }
 
@@ -102,22 +114,6 @@ public class Bach implements BachAPI {
 
   public final Optional<String> get(Property property) {
     return Optional.ofNullable(get(property, null));
-  }
-
-  protected Base newBase() {
-    return Base.of(Path.of(options.get(Property.BASE_DIRECTORY, "")));
-  }
-
-  protected Browser newBrowser() {
-    return new Browser(this);
-  }
-
-  protected HttpClient newHttpClient() {
-    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-  }
-
-  protected Project newProject() {
-    return computeProject();
   }
 
   public final void build() throws Exception {
