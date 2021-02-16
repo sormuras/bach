@@ -67,7 +67,7 @@ public interface ProjectBuilderAPI {
   }
 
   default String computeMainJarFileName(String module) {
-    return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
+    return module + '@' + bach().project().toVersionNumberAndPreRelease() + ".jar";
   }
 
   default void buildProject() throws Exception {

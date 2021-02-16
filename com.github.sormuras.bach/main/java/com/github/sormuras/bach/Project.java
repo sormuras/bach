@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.Strings;
 import java.lang.module.ModuleDescriptor.Version;
 
 public record Project(String name, Version version, Libraries libraries) {
@@ -20,25 +21,11 @@ public record Project(String name, Version version, Libraries libraries) {
     return new Project(name, version, libraries);
   }
 
-  public String versionNumberAndPreRelease() {
-    return toNumberAndPreRelease(version);
-  }
-
   public Project libraries(Libraries libraries) {
     return new Project(name, version, libraries);
   }
 
-  /**
-   * Returns a string containing the version number and, if present, the pre-release version.
-   *
-   * @param version the module's version
-   * @return a string containing the version number and, if present, the pre-release version.
-   */
-  public static String toNumberAndPreRelease(Version version) {
-    var string = version.toString();
-    var firstPlus = string.indexOf('+');
-    if (firstPlus == -1) return string;
-    var secondPlus = string.indexOf('+', firstPlus + 1);
-    return string.substring(0, secondPlus == -1 ? firstPlus : secondPlus);
+  public String toVersionNumberAndPreRelease() {
+    return Strings.toNumberAndPreRelease(version);
   }
 }
