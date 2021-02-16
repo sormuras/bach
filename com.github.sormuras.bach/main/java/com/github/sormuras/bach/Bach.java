@@ -76,19 +76,36 @@ public class Bach implements BachAPI {
     return this;
   }
 
-  public Options options() {
+  public final Options options() {
     return options;
   }
 
-  public boolean is(Flag flag) {
+  public final Base base() {
+    return base;
+  }
+
+  public final List<Recording> recordings() {
+    return recordings.stream().toList();
+  }
+
+  public final synchronized Browser browser() {
+    if (browser == null) browser = newBrowser();
+    return browser;
+  }
+
+  public final Project project() {
+    return project;
+  }
+
+  public final boolean is(Flag flag) {
     return options.is(flag);
   }
 
-  public String get(Property property, String defaultValue) {
+  public final String get(Property property, String defaultValue) {
     return options.get(property, defaultValue);
   }
 
-  public Optional<String> get(Property property) {
+  public final Optional<String> get(Property property) {
     return Optional.ofNullable(get(property, null));
   }
 
@@ -108,28 +125,11 @@ public class Bach implements BachAPI {
     return computeProject();
   }
 
-  public final Base base() {
-    return base;
-  }
-
-  public final synchronized Browser browser() {
-    if (browser == null) browser = newBrowser();
-    return browser;
-  }
-
-  public final List<Recording> recordings() {
-    return recordings.stream().toList();
-  }
-
-  public final Project project() {
-    return project;
-  }
-
-  public void build() throws Exception {
+  public final void build() throws Exception {
     buildProject();
   }
 
-  public void clean() throws Exception {
+  public final void clean() throws Exception {
     debug("Clean...");
 
     if (Files.notExists(base.workspace())) return;
@@ -140,16 +140,16 @@ public class Bach implements BachAPI {
     }
   }
 
-  public void debug(String format, Object... args) {
+  public final void debug(String format, Object... args) {
     if (is(Flag.VERBOSE)) print("// " + format, args);
   }
 
-  public void print(String format, Object... args) {
+  public final void print(String format, Object... args) {
     var message = args == null || args.length == 0 ? format : String.format(format, args);
     options.out().println(message);
   }
 
-  public void info() {
+  public final void info() {
     print("module: %s", getClass().getModule().getName());
     print("class: %s", getClass().getName());
     print("base: %s", base);
@@ -158,7 +158,7 @@ public class Bach implements BachAPI {
   }
 
   @Override
-  public Recording run(ToolProvider provider, List<String> arguments) {
+  public final Recording run(ToolProvider provider, List<String> arguments) {
     var name = provider.name();
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
