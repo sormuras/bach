@@ -1,36 +1,41 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.api;
 
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Recording;
+import com.github.sormuras.bach.internal.Strings;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class Logbook {
+/**
+ * Methods for writing logbooks in markdown format.
+ */
+public interface LogbookWriterAPI {
 
-  private final Bach bach;
-  private final List<Recording> recordings;
-  private final LocalDateTime now;
+  Bach bach();
 
-  public Logbook(Bach bach) {
-    this.bach = bach;
-    this.recordings = bach.recordings();
-    this.now = LocalDateTime.now(ZoneOffset.UTC);
+  default Path writeLogbook() throws Exception {
+    var now = LocalDateTime.now(ZoneOffset.UTC);
+    var lines = writeLogbookLines(now);
+
+    var base = bach().base();
+    Files.createDirectories(base.workspace());
+    var file = Files.write(base.workspace("logbook.md"), lines);
+    var logbooks = Files.createDirectories(base.workspace("logbooks"));
+    var timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(now);
+    Files.copy(file, logbooks.resolve("logbook-" + timestamp + ".md"));
+    return file;
   }
 
-  public String timestamp() {
-    return DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(now);
-  }
-
-  public List<String> build() {
+  default List<String> writeLogbookLines(LocalDateTime now) {
     var md = new ArrayList<String>();
     md.add("# Logbook");
     md.add("");
@@ -38,13 +43,13 @@ public class Logbook {
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     md.add(String.format("- %s", formatter.format(now)));
 
-    md.add(String.format("- directory = `%s`", bach.base().directory().toAbsolutePath()));
-    md.add(String.format("- externals = `%s`", bach.base().externals()));
-    md.add(String.format("- workspace = `%s`", bach.base().workspace()));
+    md.add(String.format("- directory = `%s`", bach().base().directory().toAbsolutePath()));
+    md.add(String.format("- externals = `%s`", bach().base().externals()));
+    md.add(String.format("- workspace = `%s`", bach().base().workspace()));
 
-    md.addAll(modules());
-    md.addAll(recordingsOverview());
-    md.addAll(recordingsDetails());
+    md.addAll(writeLogbookModulesOverviewLines());
+    md.addAll(writeLogbookRecordingsOverviewLines());
+    md.addAll(writeLogbookRecordingsDetailLines());
 
     md.add("");
     md.add("## Thanks for using Bach");
@@ -53,13 +58,13 @@ public class Logbook {
     return md;
   }
 
-  public List<String> modules() {
+  default List<String> writeLogbookModulesOverviewLines() {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Modules");
     md.add("");
 
-    var directory = bach.base().workspace("modules");
+    var directory = bach().base().workspace("modules");
 
     record ModularJar(Path path, long size, ModuleDescriptor descriptor) {}
     var jars = new ArrayList<ModularJar>();
@@ -105,7 +110,8 @@ public class Logbook {
     return md;
   }
 
-  public List<String> recordingsOverview() {
+  default List<String> writeLogbookRecordingsOverviewLines() {
+    var recordings = bach().recordings();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Run Overview");
@@ -117,7 +123,7 @@ public class Logbook {
     md.add("|-----:|---------:|----|---------");
     for (var recording : recordings) {
       var thread = recording.thread();
-      var duration = toString(recording.duration());
+      var duration = Strings.toString(recording.duration());
       var tool = "[" + recording.name() + "](#" + markdownAnchor(recording) + ")";
       var arguments = "`" + String.join("` `", recording.args()) + "`";
       var row = String.format("|%6X|%10s|%s|%s", thread, duration, tool, arguments);
@@ -126,7 +132,8 @@ public class Logbook {
     return md;
   }
 
-  public List<String> recordingsDetails() {
+  default List<String> writeLogbookRecordingsDetailLines() {
+    var recordings = bach().recordings();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Recordings");
@@ -141,7 +148,7 @@ public class Logbook {
       md.add("- tool = `" + recording.name() + '`');
       md.add("- args = `" + String.join("` `", recording.args()) + '`');
       md.add("- thread = " + recording.thread());
-      md.add("- duration = " + toString(recording.duration()));
+      md.add("- duration = " + Strings.toString(recording.duration()));
       md.add("- code = " + recording.code());
       if (!recording.output().isEmpty()) {
         md.add("");
@@ -159,20 +166,11 @@ public class Logbook {
     return md;
   }
 
-  static String toString(Duration duration) {
-    return duration
-        .truncatedTo(TimeUnit.MILLISECONDS.toChronoUnit())
-        .toString()
-        .substring(2)
-        .replaceAll("(\\d[HMS])(?!$)", "$1 ")
-        .toLowerCase();
-  }
-
-  static String markdown(Object object) {
+  private static String markdown(Object object) {
     return object.toString().replace('\t', ' ').replaceAll("\\e\\[[\\d;]*[^\\d;]", "");
   }
 
-  static String markdownJoin(Collection<?> collection) {
+  private static String markdownJoin(Collection<?> collection) {
     if (collection.isEmpty()) return "`-`";
     return collection.stream()
         .map(Object::toString)
@@ -180,7 +178,7 @@ public class Logbook {
         .collect(Collectors.joining("`, `", "`", "`"));
   }
 
-  static String markdownAnchor(Recording recording) {
+  private static String markdownAnchor(Recording recording) {
     return recording.name() + '-' + Integer.toHexString(System.identityHashCode(recording));
   }
 }

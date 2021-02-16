@@ -104,10 +104,6 @@ public class Bach implements BachAPI {
     return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
   }
 
-  protected Logbook newLogbook() {
-    return new Logbook(this);
-  }
-
   protected Project newProject() {
     return computeProject();
   }
@@ -190,16 +186,5 @@ public class Bach implements BachAPI {
 
     recordings.add(recording);
     return recording;
-  }
-
-  public Path writeLogbook() throws Exception {
-    var logbook = newLogbook();
-    var lines = logbook.build();
-
-    Files.createDirectories(base.workspace());
-    var file = Files.write(base.workspace("logbook.md"), lines);
-    var logbooks = Files.createDirectories(base.workspace("logbooks"));
-    Files.copy(file, logbooks.resolve("logbook-" + logbook.timestamp() + ".md"));
-    return file;
   }
 }
