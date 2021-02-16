@@ -6,6 +6,7 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import java.lang.module.ModuleDescriptor.Version;
 import java.time.Duration;
@@ -81,7 +82,7 @@ public interface ProjectBuilderAPI {
     } catch (Exception exception) {
       throw new RuntimeException("Build failed: " + exception);
     } finally {
-      bach.print("Build took %s", Duration.between(start, Instant.now()));
+      bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
       var logbook = bach.writeLogbook();
       bach.print("Logbook written to %s", logbook.toUri());
     }
