@@ -34,7 +34,7 @@ public interface ToolProviderAPI {
 
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
-    var provider = computeToolProvider(command.name());
+    var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
     var arguments = command.toStrings();
     return run(provider, arguments);
   }
