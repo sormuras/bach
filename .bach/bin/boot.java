@@ -552,6 +552,8 @@ public class boot {
               .orElse(module.toString());
       var info =
           switch (name) {
+            case "bach" -> "Build modular Java projects";
+            case "google-java-format" -> "Reformat Java sources to comply with Google Java Style";
             case "jar" -> "Create an archive for classes and resources, and update or restore them";
             case "javac" -> "Read Java compilation units (*.java) and compile them into classes";
             case "javadoc" -> "Generate HTML pages of API documentation from Java source files";
