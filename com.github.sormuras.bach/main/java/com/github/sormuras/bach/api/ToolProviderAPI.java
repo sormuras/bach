@@ -5,6 +5,7 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.tool.ToolInstaller;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;
@@ -35,6 +36,11 @@ public interface ToolProviderAPI {
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
     var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
+    if (provider instanceof ToolInstaller installer) try {
+      installer.install(bach());
+    } catch (Exception exception) {
+      throw new RuntimeException("Install failed: " + exception, exception);
+    }
     var arguments = command.toStrings();
     return run(provider, arguments);
   }
