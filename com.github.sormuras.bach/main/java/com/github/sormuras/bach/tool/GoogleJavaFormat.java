@@ -14,7 +14,7 @@ public record GoogleJavaFormat(String version, List<Argument> arguments)
     implements Command<GoogleJavaFormat>, ToolInstaller, ToolProvider {
 
   public GoogleJavaFormat() {
-    this("1.9", List.of());
+    this("1.10-SNAPSHOT", List.of());
   }
 
   public GoogleJavaFormat version(String version) {
@@ -28,8 +28,12 @@ public record GoogleJavaFormat(String version, List<Argument> arguments)
 
   @Override
   public void install(Bach bach) throws Exception {
-    var uri = Maven.central("com.google.googlejavaformat", "google-java-format", version, "all-deps");
-    var dir = bach.base().directory(".bach","external-tools", "google-java-format", version);
+    var uri =
+        version.equals("1.10-SNAPSHOT")
+            ? "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.10-SNAPSHOT/google-java-format-1.10-20210217.055657-9-all-deps.jar"
+            : Maven.central(
+                "com.google.googlejavaformat", "google-java-format", version, "all-deps");
+    var dir = bach.base().directory(".bach", "external-tools", "google-java-format", version);
     var jar = dir.resolve("google-java-format@" + version + ".jar");
     if (Files.exists(jar)) return;
     Files.createDirectories(dir);
