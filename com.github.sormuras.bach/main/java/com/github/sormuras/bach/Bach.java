@@ -159,6 +159,12 @@ public class Bach implements AutoCloseable, BachAPI {
     print("project: %s", project);
   }
 
+  @Override
+  public final void format() {
+    debug("Format...");
+    formatJavaSourceFiles();
+  }
+
   public final void record(Recording recording) {
     recordings.add(recording);
   }

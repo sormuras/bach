@@ -51,6 +51,8 @@ class MainTests {
             Build the current project.
           clean
             Delete workspace directory.
+          format
+            Format source code files.
           info
             Print information about Bach and the current project.
           tool

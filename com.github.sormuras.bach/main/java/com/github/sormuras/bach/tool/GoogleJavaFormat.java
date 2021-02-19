@@ -49,7 +49,14 @@ public record GoogleJavaFormat(String version, List<Argument> arguments)
       err.println("File not found: " + jar);
       return -2;
     }
-    var builder = new ProcessBuilder("java", "-jar", jar.toString());
+    var java = Command.of("java")
+        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
+        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
+        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
+        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
+        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
+        .add("-jar", jar.toString());
+    var builder = new ProcessBuilder(java.toStrings());
     builder.command().addAll(List.of(args));
     try {
       var process = builder.start();

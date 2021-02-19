@@ -44,6 +44,8 @@ public class Main implements ToolProvider {
             Build the current project.
           clean
             Delete workspace directory.
+          format
+            Format source code files.
           info
             Print information about Bach and the current project.
           tool
@@ -76,22 +78,28 @@ public class Main implements ToolProvider {
   }
 
   public int run(Bach bach) {
+    try (bach) {
+      return runAndReturnStatus(bach).ordinal();
+    }
+  }
+
+  private Status runAndReturnStatus(Bach bach) {
     if (bach.is(Flag.VERSION) || bach.is(Flag.SHOW_VERSION)) {
       bach.print("%s", Bach.version());
-      if (bach.is(Flag.VERSION /* and exit */)) return 0;
+      if (bach.is(Flag.VERSION /* and exit */)) return Status.OK;
     }
     if (bach.is(Flag.HELP /* and exit */)) {
       bach.print("%s", computeHelpMessage());
-      return 0;
+      return Status.OK;
     }
     if (bach.options().tool().isPresent()) {
       var command = bach.options().tool().get();
       var recording = bach.run(command);
       if (!recording.errors().isEmpty()) bach.print(recording.errors());
       if (!recording.output().isEmpty()) bach.print(recording.output());
-      if (recording.isError())
-        bach.print("Tool %s returned exit code %d", command.name(), recording.code());
-      return recording.code();
+      if (recording.isSuccessful()) return Status.OK;
+      bach.print("Tool %s returned exit code %d", command.name(), recording.code());
+      return Status.TOOL_FAILED;
     }
     for (var action : bach.options().actions()) {
       bach.debug("Perform main action: `%s`", action);
@@ -99,18 +107,26 @@ public class Main implements ToolProvider {
         switch (action) {
           case "build" -> bach.build();
           case "clean" -> bach.clean();
+          case "format" -> bach.format();
           case "info" -> bach.info();
           default -> {
             bach.print("Unsupported action: %s", action);
-            return -1;
+            return Status.ACTION_UNSUPPORTED;
           }
         }
       } catch (Exception exception) {
         bach.print("Action %s failed: %s", action, exception);
         exception.printStackTrace(bach.options().err());
-        return 1;
+        return Status.ACTION_FAILED;
       }
     }
-    return 0;
+    return Status.OK;
+  }
+
+  private enum Status {
+    OK,
+    ACTION_FAILED,
+    ACTION_UNSUPPORTED,
+    TOOL_FAILED
   }
 }
