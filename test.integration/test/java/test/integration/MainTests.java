@@ -29,6 +29,8 @@ class MainTests {
             Print Bach's version and continue.
           --help
             Print usage information and exit.
+          --strict
+            Activate all verification measures available.
           --run-commands-sequentially
             Prevent parallel execution of commands.
 

@@ -174,6 +174,9 @@ public record Options(
     /** Print usage information and exit. */
     HELP("Print usage information and exit."),
 
+    /** Activate all verification measures available. */
+    STRICT("Activate all verification measures available."),
+
     /**
      * Prevent parallel execution of commands.
      *
