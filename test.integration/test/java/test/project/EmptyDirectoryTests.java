@@ -26,8 +26,9 @@ class EmptyDirectoryTests {
             temp.toString(),
             "--project-name",
             "empty");
-    var bach = new Bach(options);
-    bach.build();
+    try (var bach = new Bach(options)) {
+      bach.build();
+    }
     assertLinesMatch(
         """
         Build empty 0

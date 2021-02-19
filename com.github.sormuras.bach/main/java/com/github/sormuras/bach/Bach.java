@@ -14,7 +14,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** Java Shell Builder. */
-public class Bach implements BachAPI {
+public class Bach implements AutoCloseable, BachAPI {
 
   public static final Path BIN = Path.of(".bach/bin");
 
@@ -116,6 +116,7 @@ public class Bach implements BachAPI {
     return Optional.ofNullable(get(property, null));
   }
 
+  @Override
   public final void build() throws Exception {
     buildProject();
   }
@@ -128,6 +129,16 @@ public class Bach implements BachAPI {
       var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
       debug("Delete %s paths", paths.length);
       for (var path : paths) Files.deleteIfExists(path);
+    }
+  }
+
+  @Override
+  public void close() {
+    try {
+      var logbook = writeLogbook();
+      print("Logbook written to %s", logbook.toUri());
+    } catch (Exception exception) {
+      print("Write logbook failed: %s", exception.getMessage());
     }
   }
 

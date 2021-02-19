@@ -76,16 +76,9 @@ public interface ProjectBuilderAPI {
     bach.print("Build %s %s", project.name(), project.version());
     if (bach.is(Options.Flag.VERBOSE)) bach.info();
     var start = Instant.now();
-    try {
-      bach.loadMissingExternalModules();
-      buildProjectMainSpace();
-    } catch (Exception exception) {
-      throw new RuntimeException("Build failed: " + exception);
-    } finally {
-      bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
-      var logbook = bach.writeLogbook();
-      bach.print("Logbook written to %s", logbook.toUri());
-    }
+    bach.loadMissingExternalModules();
+    buildProjectMainSpace();
+    bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
 
   default void buildProjectMainSpace() throws Exception {}
