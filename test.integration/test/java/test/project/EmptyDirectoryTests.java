@@ -33,9 +33,7 @@ class EmptyDirectoryTests {
         """
         Build empty 0
         >> INFO + BUILD >>
-        Logbook written to {{LOGBOOK}}
         """
-            .replace("{{LOGBOOK}}", temp.resolve(".bach/workspace/logbook.md").toUri().toString())
             .lines(),
         out.toString().lines());
 

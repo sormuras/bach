@@ -134,6 +134,7 @@ public class Bach implements AutoCloseable, BachAPI {
 
   @Override
   public void close() {
+    if (recordings.isEmpty()) return;
     try {
       var logbook = writeLogbook();
       print("Logbook written to %s", logbook.toUri());
