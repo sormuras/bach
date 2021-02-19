@@ -17,8 +17,20 @@ public interface CodeFormatterAPI {
     var files = find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
     if (files.isEmpty()) return;
     bach().debug("Format %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
-    var gjf = new GoogleJavaFormat().add("--replace").add("", files.toArray());
-    bach().run(gjf).requireSuccessful();
+    var format = new GoogleJavaFormat().add("--replace").add("", files.toArray());
+    bach().run(format).requireSuccessful();
+  }
+
+  default void verifyFormatOfJavaSourceFiles() {
+    var files = find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
+    if (files.isEmpty()) return;
+    bach().debug("Verify format of %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
+    var verify =
+        new GoogleJavaFormat()
+            .add("--dry-run")
+            .add("--set-exit-if-changed")
+            .add("", files.toArray());
+    bach().run(verify).requireSuccessful();
   }
 
   private static boolean isJavaSourceFile(Path path) {

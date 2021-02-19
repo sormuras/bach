@@ -76,6 +76,7 @@ public interface ProjectBuilderAPI {
     bach.print("Build %s %s", project.name(), project.version());
     if (bach.is(Options.Flag.VERBOSE)) bach.info();
     var start = Instant.now();
+    if (bach.is(Options.Flag.STRICT)) bach.verifyFormatOfJavaSourceFiles();
     bach.loadMissingExternalModules();
     buildProjectMainSpace();
     bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
