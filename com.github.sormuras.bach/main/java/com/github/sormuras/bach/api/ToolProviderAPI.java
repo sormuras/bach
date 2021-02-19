@@ -38,7 +38,7 @@ public interface ToolProviderAPI {
     var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
     if (provider instanceof ToolInstaller installer)
       try {
-        installer.install(bach());
+        installer.install();
       } catch (Exception exception) {
         throw new RuntimeException("Install failed: " + exception, exception);
       }

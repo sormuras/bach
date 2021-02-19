@@ -17,7 +17,7 @@ public interface CodeFormatterAPI {
     var files = find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
     if (files.isEmpty()) return;
     bach().debug("Format %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
-    var format = new GoogleJavaFormat().add("--replace").add("", files.toArray());
+    var format = new GoogleJavaFormat(bach()).add("--replace").add("", files.toArray());
     bach().run(format).requireSuccessful();
   }
 
@@ -26,7 +26,7 @@ public interface CodeFormatterAPI {
     if (files.isEmpty()) return;
     bach().debug("Verify format of %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
     var verify =
-        new GoogleJavaFormat()
+        new GoogleJavaFormat(bach())
             .add("--dry-run")
             .add("--set-exit-if-changed")
             .add("", files.toArray());

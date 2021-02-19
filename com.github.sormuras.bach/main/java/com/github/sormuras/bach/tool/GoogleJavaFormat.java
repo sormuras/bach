@@ -2,32 +2,36 @@ package com.github.sormuras.bach.tool;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.internal.StreamGobbler;
 import com.github.sormuras.bach.lookup.Maven;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-public record GoogleJavaFormat(String version, List<Argument> arguments)
+public record GoogleJavaFormat(Bach bach, String version, List<Argument> arguments)
     implements Command<GoogleJavaFormat>, ToolInstaller, ToolProvider {
 
   public GoogleJavaFormat() {
-    this("1.10-SNAPSHOT", List.of());
+    this(new Bach(Options.of()));
+  }
+
+  public GoogleJavaFormat(Bach bach) {
+    this(bach, "1.10-SNAPSHOT", List.of());
   }
 
   public GoogleJavaFormat version(String version) {
-    return new GoogleJavaFormat(version, arguments);
+    return new GoogleJavaFormat(bach, version, arguments);
   }
 
   @Override
   public GoogleJavaFormat arguments(List<Argument> arguments) {
-    return new GoogleJavaFormat(version, arguments);
+    return new GoogleJavaFormat(bach, version, arguments);
   }
 
   @Override
-  public void install(Bach bach) throws Exception {
+  public void install() throws Exception {
     var uri =
         version.equals("1.10-SNAPSHOT")
             ? "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.10-SNAPSHOT/google-java-format-1.10-20210217.055657-9-all-deps.jar"
@@ -47,7 +51,7 @@ public record GoogleJavaFormat(String version, List<Argument> arguments)
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var dir = Path.of(".bach", "external-tools", "google-java-format", version);
+    var dir = bach.base().directory(".bach", "external-tools", "google-java-format", version);
     var jar = dir.resolve("google-java-format@" + version + ".jar");
     if (!Files.exists(jar)) {
       err.println("File not found: " + jar);
