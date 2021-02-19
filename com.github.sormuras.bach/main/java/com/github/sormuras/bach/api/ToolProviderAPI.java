@@ -36,11 +36,12 @@ public interface ToolProviderAPI {
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
     var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
-    if (provider instanceof ToolInstaller installer) try {
-      installer.install(bach());
-    } catch (Exception exception) {
-      throw new RuntimeException("Install failed: " + exception, exception);
-    }
+    if (provider instanceof ToolInstaller installer)
+      try {
+        installer.install(bach());
+      } catch (Exception exception) {
+        throw new RuntimeException("Install failed: " + exception, exception);
+      }
     var arguments = command.toStrings();
     return run(provider, arguments);
   }

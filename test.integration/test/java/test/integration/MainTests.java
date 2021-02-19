@@ -33,7 +33,7 @@ class MainTests {
             Prevent parallel execution of commands.
 
         Options include the following key-value pairs:
-        
+
           --base-directory VALUE
             Specify the base directory of the project, defaults to user's current directory
           --bach-info VALUE

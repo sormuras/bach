@@ -82,8 +82,7 @@ public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
                   .viaMavenCentral("org.junit.vintage:junit-vintage-engine:" + jupiter),
               lookup("org.apiguardian.api")
                   .viaMavenCentral("org.apiguardian:apiguardian-api:" + apiguardian),
-              lookup("org.opentest4j")
-                  .viaMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
+              lookup("org.opentest4j").viaMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
     }
 
     @Override

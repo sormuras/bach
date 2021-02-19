@@ -60,10 +60,10 @@ class Context {
     var output = Files.readString(redirect);
     var summary =
         process
-        + "\nCommand\n"
-        + String.join("\n", command).indent(2)
-        + "Output\n"
-        + output.indent(2);
+            + "\nCommand\n"
+            + String.join("\n", command).indent(2)
+            + "Output\n"
+            + output.indent(2);
     assertEquals(code, status, summary);
     return output;
   }

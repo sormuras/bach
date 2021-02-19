@@ -43,20 +43,22 @@ public record GoogleJavaFormat(String version, List<Argument> arguments)
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var dir = Path.of(".bach","external-tools", "google-java-format", version);
+    var dir = Path.of(".bach", "external-tools", "google-java-format", version);
     var jar = dir.resolve("google-java-format@" + version + ".jar");
     if (!Files.exists(jar)) {
       err.println("File not found: " + jar);
       return -2;
     }
-    var java = Command.of("java")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
-        .add("-jar", jar.toString());
-    var builder = new ProcessBuilder(java.toStrings());
+    var java =
+        Command.of("java")
+            .add("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
+            .add("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
+            .add("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
+            .add("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
+            .add("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
+            .add("-jar", jar.toString());
+    var builder = new ProcessBuilder("java");
+    builder.command().addAll(java.toStrings());
     builder.command().addAll(List.of(args));
     try {
       var process = builder.start();

@@ -3,5 +3,6 @@ open /*test*/ module test.integration {
   requires org.junit.jupiter;
   requires test.base;
 
-  provides java.util.spi.ToolProvider with test.integration.PrintToolProvider;
+  provides java.util.spi.ToolProvider with
+      test.integration.PrintToolProvider;
 }

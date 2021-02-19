@@ -53,9 +53,10 @@ public class ExternalModuleLookupBuilder {
   public ExternalModuleLookup viaMaven(String repository, String coordinates) {
     var split = coordinates.split(":");
     if (split.length < 3) throw new IllegalArgumentException();
-    var joiner = Maven.Joiner.of(split[0], split[1], split[2])
-        .repository(repository)
-        .classifier(split.length < 4 ? "" : split[3]);
+    var joiner =
+        Maven.Joiner.of(split[0], split[1], split[2])
+            .repository(repository)
+            .classifier(split.length < 4 ? "" : split[3]);
     return viaUri(joiner.toString());
   }
 

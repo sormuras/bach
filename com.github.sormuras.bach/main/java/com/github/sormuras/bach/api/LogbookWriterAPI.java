@@ -15,9 +15,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Methods for writing logbooks in markdown format.
- */
+/** Methods for writing logbooks in markdown format. */
 public interface LogbookWriterAPI {
 
   Bach bach();
@@ -81,7 +79,10 @@ public interface LogbookWriterAPI {
       return md;
     }
 
-    md.add(String.format("Directory `%s` contains %d modular JAR file%s.", directory.toAbsolutePath(), jars.size(), jars.size() == 1 ? "" : "s"));
+    md.add(
+        String.format(
+            "Directory `%s` contains %d modular JAR file%s.",
+            directory.toAbsolutePath(), jars.size(), jars.size() == 1 ? "" : "s"));
     if (jars.isEmpty()) return md;
 
     md.add("");
@@ -117,7 +118,7 @@ public interface LogbookWriterAPI {
     md.add("## Tool Run Overview");
     md.add("");
     var size = recordings.size();
-    md.add(String.format("Recorded %d tool run%s.", size, size == 1 ? "":"s"));
+    md.add(String.format("Recorded %d tool run%s.", size, size == 1 ? "" : "s"));
     md.add("");
     md.add("|Thread| Duration |Tool|Arguments");
     md.add("|-----:|---------:|----|---------");
@@ -139,7 +140,7 @@ public interface LogbookWriterAPI {
     md.add("## Recordings");
     md.add("");
     var size = recordings.size();
-    md.add(String.format("%d recording%s", size, size == 1 ? "":"s"));
+    md.add(String.format("%d recording%s", size, size == 1 ? "" : "s"));
 
     for (var recording : recordings) {
       md.add("");

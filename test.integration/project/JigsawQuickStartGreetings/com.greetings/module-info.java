@@ -1,1 +1,1 @@
-module com.greetings{}
+module com.greetings {}

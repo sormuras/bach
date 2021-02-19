@@ -74,7 +74,6 @@ class LibrariesTests {
     assertTrue(opentest.uri().endsWith("opentest4j-1.2.0.jar"));
   }
 
-
   @Test
   void checkLWJGL() {
     var libraries = Libraries.of(Libraries.lookupLWJGL("99"));
