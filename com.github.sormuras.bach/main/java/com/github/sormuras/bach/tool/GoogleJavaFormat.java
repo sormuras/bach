@@ -7,41 +7,42 @@ import com.github.sormuras.bach.internal.StreamGobbler;
 import com.github.sormuras.bach.lookup.Maven;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-public record GoogleJavaFormat(Bach bach, String version, List<Argument> arguments)
-    implements Command<GoogleJavaFormat>, ToolInstaller, ToolProvider {
+public record GoogleJavaFormat(Path jar, List<Argument> arguments)
+    implements Command<GoogleJavaFormat>, ToolProvider {
 
-  public GoogleJavaFormat() {
-    this(new Bach(Options.of()));
+  public static ToolProvider provider() {
+    return install(new Bach(Options.of()));
   }
 
-  public GoogleJavaFormat(Bach bach) {
-    this(bach, "1.10-SNAPSHOT", List.of());
+  public static GoogleJavaFormat install(Bach bach) {
+    return install(bach, "1.10-SNAPSHOT");
   }
 
-  public GoogleJavaFormat version(String version) {
-    return new GoogleJavaFormat(bach, version, arguments);
-  }
-
-  @Override
-  public GoogleJavaFormat arguments(List<Argument> arguments) {
-    return new GoogleJavaFormat(bach, version, arguments);
-  }
-
-  @Override
-  public void install() throws Exception {
+  public static GoogleJavaFormat install(Bach bach, String version) {
     var uri =
         version.equals("1.10-SNAPSHOT")
             ? "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.10-SNAPSHOT/google-java-format-1.10-20210217.055657-9-all-deps.jar"
             : Maven.central(
                 "com.google.googlejavaformat", "google-java-format", version, "all-deps");
-    var dir = bach.base().directory(".bach", "external-tools", "google-java-format", version);
-    var jar = dir.resolve("google-java-format@" + version + ".jar");
-    if (Files.exists(jar)) return;
-    Files.createDirectories(dir);
-    bach.browser().load(uri, jar);
+    var home = bach.base().directory(".bach", "external-tools", "google-java-format", version);
+    var jar = home.resolve("google-java-format@" + version + ".jar");
+    if (!Files.exists(jar))
+      try {
+        Files.createDirectories(home);
+        bach.browser().load(uri, jar);
+      } catch (Exception exception) {
+        throw new RuntimeException("Install failed: " + exception.getMessage());
+      }
+    return new GoogleJavaFormat(jar, List.of());
+  }
+
+  @Override
+  public GoogleJavaFormat arguments(List<Argument> arguments) {
+    return new GoogleJavaFormat(jar, arguments);
   }
 
   @Override
@@ -51,8 +52,6 @@ public record GoogleJavaFormat(Bach bach, String version, List<Argument> argumen
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var dir = bach.base().directory(".bach", "external-tools", "google-java-format", version);
-    var jar = dir.resolve("google-java-format@" + version + ".jar");
     if (!Files.exists(jar)) {
       err.println("File not found: " + jar);
       return -2;
