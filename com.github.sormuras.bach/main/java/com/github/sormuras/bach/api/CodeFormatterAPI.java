@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.tool.GoogleJavaFormat;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,26 +12,36 @@ import java.util.function.Predicate;
 /** Methods related to formatting code files. */
 public interface CodeFormatterAPI {
 
-  Bach bach();
-
-  default void formatJavaSourceFiles() {
-    var files = find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
-    if (files.isEmpty()) return;
-    bach().debug("Format %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
-    var format = GoogleJavaFormat.install(bach()).add("--replace").add("", files.toArray());
-    bach().run(format).requireSuccessful();
+  enum Mode {
+    APPLY,
+    VERIFY
   }
 
-  default void verifyFormatOfJavaSourceFiles() {
-    var files = find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
+  Bach bach();
+
+  default List<Path> computeJavaSourceFilesToFormat() {
+    return find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
+  }
+
+  default Command<?> computeJavaSourceFilesFormatCommand(List<Path> files, Mode mode) {
+    var format = GoogleJavaFormat.install(bach());
+    switch (mode) {
+      case APPLY -> format = format.add("--replace");
+      case VERIFY -> format = format.add("--dry-run").add("--set-exit-if-changed");
+    }
+    return format.add("", files.toArray());
+  }
+
+  default void formatJavaSourceFiles() {
+    formatJavaSourceFiles(Mode.APPLY);
+  }
+
+  default void formatJavaSourceFiles(Mode mode) {
+    var files = computeJavaSourceFilesToFormat();
     if (files.isEmpty()) return;
-    bach().debug("Verify format of %s .java file%s", files.size(), files.size() == 1 ? "" : "s");
-    var verify =
-        GoogleJavaFormat.install(bach())
-            .add("--dry-run")
-            .add("--set-exit-if-changed")
-            .add("", files.toArray());
-    bach().run(verify).requireSuccessful();
+    bach().debug("Format %s .java file%s: %s", files.size(), files.size() == 1 ? "" : "s", mode);
+    var format = computeJavaSourceFilesFormatCommand(files, mode);
+    bach().run(format).requireSuccessful();
   }
 
   private static boolean isJavaSourceFile(Path path) {
