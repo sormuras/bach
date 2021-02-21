@@ -33,8 +33,7 @@ class EmptyDirectoryTests {
         """
         Build empty 0
         >> INFO + BUILD >>
-        """
-            .lines(),
+        """.lines(),
         out.toString().lines());
 
     assertTrue(err.getBuffer().isEmpty());

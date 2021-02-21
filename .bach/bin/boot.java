@@ -60,10 +60,11 @@ public class boot {
         return;
       }
 
+      var name = bach().project().name().name();
       Files.createDirectories(idea);
       ideaMisc(idea);
-      ideaRootModule(idea, bach().project().name());
-      ideaModules(idea, List.of(bach().project().name(), "bach.info"));
+      ideaRootModule(idea, name);
+      ideaModules(idea, List.of(name, "bach.info"));
       if (Files.exists(bach().base().directory(".bach/bach.info"))) ideaBachInfoModule(idea);
       ideaLibraries(idea);
     }
@@ -206,8 +207,8 @@ public class boot {
             provides com.github.sormuras.bach.Bach.Provider with bach.info.Builder;
           }
           """
-              .replace("{{PROJECT-NAME}}", bach().project().name())
-              .replace("{{PROJECT-VERSION}}", bach().project().version().toString());
+              .replace("{{PROJECT-NAME}}", bach().project().name().name())
+              .replace("{{PROJECT-VERSION}}", bach().project().version().version().toString());
       Files.createDirectories(file.getParent());
       Files.writeString(file, text);
     }

@@ -2,6 +2,7 @@ package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.tool.GoogleJavaFormat;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,8 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-/** Methods related to formatting code files. */
-public interface CodeFormatterAPI {
+/** Methods related to formatting Java source-code files. */
+public interface JavaFormatterAPI {
 
   enum Mode {
     APPLY,
@@ -20,16 +21,21 @@ public interface CodeFormatterAPI {
   Bach bach();
 
   default List<Path> computeJavaSourceFilesToFormat() {
-    return find(bach().base().directory(), CodeFormatterAPI::isJavaSourceFile);
+    return find(bach().base().directory(), JavaFormatterAPI::isJavaSourceFile);
   }
 
-  default Command<?> computeJavaSourceFilesFormatCommand(List<Path> files, Mode mode) {
-    var format = GoogleJavaFormat.install(bach());
-    switch (mode) {
-      case APPLY -> format = format.add("--replace");
-      case VERIFY -> format = format.add("--dry-run").add("--set-exit-if-changed");
+  default Command<?> computeJavaSourceFilesFormatCommand(
+      List<Path> files, Mode mode, JavaStyle style) {
+    if (style == JavaStyle.ANDROID || style == JavaStyle.GOOGLE) {
+      var format = GoogleJavaFormat.install(bach());
+      if (style == JavaStyle.ANDROID) format.add("--aosp");
+      switch (mode) {
+        case APPLY -> format = format.add("--replace");
+        case VERIFY -> format = format.add("--dry-run").add("--set-exit-if-changed");
+      }
+      return format.add("", files.toArray());
     }
-    return format.add("", files.toArray());
+    throw new UnsupportedOperationException("Unknown style: " + style);
   }
 
   default void formatJavaSourceFiles() {
@@ -37,10 +43,12 @@ public interface CodeFormatterAPI {
   }
 
   default void formatJavaSourceFiles(Mode mode) {
+    var style = bach().project().spaces().style();
+    if (style == JavaStyle.FREE) return;
     var files = computeJavaSourceFilesToFormat();
     if (files.isEmpty()) return;
     bach().debug("Format %s .java file%s: %s", files.size(), files.size() == 1 ? "" : "s", mode);
-    var format = computeJavaSourceFilesFormatCommand(files, mode);
+    var format = computeJavaSourceFilesFormatCommand(files, mode, style);
     bach().run(format).requireSuccessful();
   }
 

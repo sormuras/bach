@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.Libraries;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.Maven;
+import com.github.sormuras.bach.project.Libraries;
 import org.junit.jupiter.api.Test;
 
 class LibrariesTests {

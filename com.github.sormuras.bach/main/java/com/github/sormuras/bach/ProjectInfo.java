@@ -1,5 +1,7 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.Libraries;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -35,6 +37,14 @@ public @interface ProjectInfo {
    * @see java.lang.module.ModuleDescriptor.Version
    */
   String version() default "0";
+
+  /**
+   * {@return the style to format Java source-code files with, defaults to {@link JavaStyle#FREE}}
+   *
+   * @see Project#spaces()
+   * @see Bach#computeProjectSpaces(ProjectInfo)
+   */
+  JavaStyle format() default JavaStyle.FREE;
 
   /**
    * {@return an array of external modules on which the project has a dependence}

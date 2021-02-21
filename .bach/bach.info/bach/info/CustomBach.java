@@ -2,15 +2,15 @@ package bach.info;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Libraries;
-import com.github.sormuras.bach.Libraries.JUnit;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
-import java.lang.module.ModuleDescriptor.Version;
+import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Libraries.JUnit;
+import com.github.sormuras.bach.project.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -39,7 +39,7 @@ public class CustomBach extends Bach {
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
     try {
-      return Version.parse(Files.readString(Path.of("VERSION")) + "-custom+" + timestamp);
+      return Version.of(Files.readString(Path.of("VERSION")) + "-custom+" + timestamp);
     } catch (Exception exception) {
       throw new RuntimeException("Read version failed: " + exception);
     }
@@ -56,8 +56,8 @@ public class CustomBach extends Bach {
   @Override
   public void buildProjectMainSpace() throws Exception {
     var module = "com.github.sormuras.bach";
-    var moduleVersion = project().version();
-    var version = project().toVersionNumberAndPreRelease();
+    var moduleVersion = project().version().version();
+    var version = project().version().toNumberAndPreRelease();
     var javaRelease = 16;
     var destination = base().workspace("classes", "main", "" + javaRelease);
     var modules = base().workspace("modules");

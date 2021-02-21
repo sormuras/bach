@@ -1,31 +1,29 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.Strings;
-import java.lang.module.ModuleDescriptor.Version;
+import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Name;
+import com.github.sormuras.bach.project.Spaces;
+import com.github.sormuras.bach.project.Version;
 
-public record Project(String name, Version version, Libraries libraries) {
+public record Project(Name name, Version version, Libraries libraries, Spaces spaces) {
 
   public Project() {
-    this("noname", Version.parse("0"), Libraries.of());
+    this(Name.of("noname"), Version.of("0"), Libraries.of(), Spaces.of());
   }
 
   public Project name(String name) {
-    return new Project(name, version, libraries);
+    return new Project(Name.of(name), version, libraries, spaces);
   }
 
   public Project version(String version) {
-    return version(Version.parse(version));
+    return version(Version.of(version));
   }
 
   public Project version(Version version) {
-    return new Project(name, version, libraries);
+    return new Project(name, version, libraries, spaces);
   }
 
   public Project libraries(Libraries libraries) {
-    return new Project(name, version, libraries);
-  }
-
-  public String toVersionNumberAndPreRelease() {
-    return Strings.toNumberAndPreRelease(version);
+    return new Project(name, version, libraries, spaces);
   }
 }

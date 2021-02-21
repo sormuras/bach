@@ -1,4 +1,4 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.lookup.ExternalModuleLookupBuilder;
 import com.github.sormuras.bach.lookup.JUnitJupiterModuleLookup;
