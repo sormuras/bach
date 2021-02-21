@@ -81,7 +81,7 @@ public interface ProjectBuilderAPI {
   default void buildProject() throws Exception {
     var bach = bach();
     var project = bach.project();
-    bach.print("Build %s %s", project.name().name(), project.version().version());
+    bach.print("Build %s %s", project.name().value(), project.version().value());
     if (bach.is(Options.Flag.VERBOSE)) bach.info();
     var start = Instant.now();
     if (bach.is(Options.Flag.STRICT)) bach.formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);

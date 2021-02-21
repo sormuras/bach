@@ -56,7 +56,7 @@ public class CustomBach extends Bach {
   @Override
   public void buildProjectMainSpace() throws Exception {
     var module = "com.github.sormuras.bach";
-    var moduleVersion = project().version().version();
+    var moduleVersion = project().version().value();
     var version = project().version().toNumberAndPreRelease();
     var javaRelease = 16;
     var destination = base().workspace("classes", "main", "" + javaRelease);

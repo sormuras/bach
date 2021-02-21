@@ -60,7 +60,7 @@ public class boot {
         return;
       }
 
-      var name = bach().project().name().name();
+      var name = bach().project().name().value();
       Files.createDirectories(idea);
       ideaMisc(idea);
       ideaRootModule(idea, name);
@@ -207,8 +207,8 @@ public class boot {
             provides com.github.sormuras.bach.Bach.Provider with bach.info.Builder;
           }
           """
-              .replace("{{PROJECT-NAME}}", bach().project().name().name())
-              .replace("{{PROJECT-VERSION}}", bach().project().version().version().toString());
+              .replace("{{PROJECT-NAME}}", bach().project().name().value())
+              .replace("{{PROJECT-VERSION}}", bach().project().version().value().toString());
       Files.createDirectories(file.getParent());
       Files.writeString(file, text);
     }

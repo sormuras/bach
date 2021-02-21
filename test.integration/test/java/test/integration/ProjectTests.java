@@ -13,8 +13,8 @@ class ProjectTests {
   @Test
   void defaults() {
     var project = new Project();
-    assertEquals("noname", project.name().name());
-    assertEquals(ModuleDescriptor.Version.parse("0"), project.version().version());
+    assertEquals("noname", project.name().value());
+    assertEquals(ModuleDescriptor.Version.parse("0"), project.version().value());
     assertEquals(Libraries.of(), project.libraries());
     assertEquals(JavaStyle.FREE, project.spaces().style());
   }
