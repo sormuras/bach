@@ -37,7 +37,7 @@ class MainTests {
         Options include the following key-value pairs:
 
           --base-directory VALUE
-            Specify the base directory of the project, defaults to user's current directory
+            Specify the directory of the project, defaults to user's current directory
           --bach-info VALUE
             Specify the module to load on startup, defaults to "bach.info"
           --project-name VALUE

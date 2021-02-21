@@ -199,10 +199,9 @@ public record Options(
   /** Key-value pair option. */
   public enum Property {
     /** Base directory of the project, defaults to user's current directory. */
-    BASE_DIRECTORY(
-        "Specify the base directory of the project, defaults to user's current directory"),
+    BASE_DIRECTORY("Specify the directory of the project, defaults to user's current directory"),
 
-    /** Name of the module to load on startup passed via {@code --bach-info MODULE} */
+    /** Name of the module to load on startup passed via {@code --bach-info MODULE}. */
     BACH_INFO("Specify the module to load on startup, defaults to \"" + Bach.INFO_MODULE + "\""),
 
     /** Project's name passed via {@code --project-name NAME}. */
