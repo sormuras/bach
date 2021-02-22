@@ -1,2 +1,0 @@
-@ProjectInfo
-module build {}
