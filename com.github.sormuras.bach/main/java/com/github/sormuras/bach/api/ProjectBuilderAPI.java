@@ -88,8 +88,11 @@ public interface ProjectBuilderAPI {
     if (bach.is(Options.Flag.STRICT)) bach.formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
     bach.loadMissingExternalModules();
     buildProjectMainSpace();
+    buildProjectTestSpace();
     bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
 
   default void buildProjectMainSpace() throws Exception {}
+
+  default void buildProjectTestSpace() throws Exception {}
 }
