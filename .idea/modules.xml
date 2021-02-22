@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/com.github.sormuras.bach.iml" filepath="$PROJECT_DIR$/.idea/com.github.sormuras.bach.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/test.base.iml" filepath="$PROJECT_DIR$/.idea/test.base.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/test.integration.iml" filepath="$PROJECT_DIR$/.idea/test.integration.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.iml" filepath="$PROJECT_DIR$/.idea/test.projects.iml" />
     </modules>
   </component>
 </project>
