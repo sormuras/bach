@@ -32,13 +32,13 @@ public interface ExternalModuleAPI {
   }
 
   default Set<String> computeMissingExternalModules() {
-    var bach = bach();
-    var finder = ModuleFinder.of(bach.folders().externalModules());
+    var folders = bach().folders();
+    var finder = ModuleFinder.of(folders.externalModules());
     var missing = required(finder);
-    missing.addAll(bach.project().libraries().requires());
+    missing.addAll(bach().project().libraries().requires());
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(declared(finder));
-    missing.removeAll(declared(ModuleFinder.of(Bach.BIN)));
+    missing.removeAll(declared(ModuleFinder.of(folders.bin())));
     missing.removeAll(declared(ModuleFinder.ofSystem()));
     if (missing.isEmpty()) return Set.of();
     return missing;

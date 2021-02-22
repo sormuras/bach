@@ -2,14 +2,15 @@ package com.github.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.ProjectInfo;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class ModuleLayerBuilderTests {
   @Test
   void ofNotExistingPath() {
-    var layer = ModuleLayerBuilder.build(Path.of("does-not-exist"), "module");
+    var path = Path.of("does-not-exist");
+    var layer = ModuleLayerBuilder.build(path, "module", path, path);
     assertTrue(layer.modules().isEmpty());
   }
 
@@ -21,8 +22,8 @@ class ModuleLayerBuilderTests {
 
   @Test
   void ofDefaultInfoModule() {
-    var layer = ModuleLayerBuilder.build(Bach.INFO_MODULE);
-    assertTrue(layer.findModule(Bach.INFO_MODULE).isPresent());
+    var layer = ModuleLayerBuilder.build(ProjectInfo.MODULE);
+    assertTrue(layer.findModule(ProjectInfo.MODULE).isPresent());
     assertTrue(layer.findModule("com.github.sormuras.bach").isPresent());
   }
 }

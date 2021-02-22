@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.ProjectInfo;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
@@ -42,7 +43,7 @@ public class boot {
   }
 
   public static void refresh() {
-    utils.refresh(Bach.INFO_MODULE);
+    utils.refresh(ProjectInfo.MODULE);
   }
 
   public static void scaffold() throws Exception {

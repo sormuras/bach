@@ -1,14 +1,14 @@
 package test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 class ProjectTests {
 

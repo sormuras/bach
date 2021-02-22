@@ -7,8 +7,8 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
-import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -24,10 +24,10 @@ public interface ProjectBuilderAPI {
 
   default Project computeProject() {
     var info = computeProjectInfo();
-    var basics = computeProjectSettings(info);
-    var libraries = computeProjectLibraries(info);
-    var spaces = computeProjectSpaces(info);
-    return new Project(basics, libraries, spaces);
+    var settings = computeProjectSettings(info);
+    var libraries = computeProjectLibraries(info, settings);
+    var spaces = computeProjectSpaces(info, settings, libraries);
+    return new Project(settings, libraries, spaces);
   }
 
   default ProjectInfo computeProjectInfo() {
@@ -37,7 +37,7 @@ public interface ProjectBuilderAPI {
   }
 
   default Settings computeProjectSettings(ProjectInfo info) {
-    var root = bach().get(Property.PROJECT_ROOT,"");
+    var root = bach().get(Property.PROJECT_ROOT, "");
     var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info, root));
     var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
     return Settings.of(root, name, version);
@@ -53,7 +53,7 @@ public interface ProjectBuilderAPI {
     return info.version();
   }
 
-  default Libraries computeProjectLibraries(ProjectInfo info) {
+  default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
     var requires = Set.of(info.requires());
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookup()) lookups.add(computeProjectModuleLookup(external));
@@ -71,7 +71,7 @@ public interface ProjectBuilderAPI {
     };
   }
 
-  default Spaces computeProjectSpaces(ProjectInfo info) {
+  default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
     return new Spaces(info.format());
   }
 

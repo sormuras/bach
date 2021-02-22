@@ -10,6 +10,7 @@ import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Libraries.JUnit;
+import com.github.sormuras.bach.project.Settings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -45,11 +46,13 @@ public class CustomBach extends Bach {
   }
 
   @Override
-  public Libraries computeProjectLibraries(ProjectInfo info) {
-    return super.computeProjectLibraries(info)
+  public Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
+    var github = new GitHubReleasesModuleLookup(this);
+    var providers = new ToolProvidersModuleLookup(this, settings.folders().externalModules());
+    return super.computeProjectLibraries(info, settings)
         .withModuleLookup(JUnit.V_5_8_0_M1)
-        .withModuleLookup(new GitHubReleasesModuleLookup(CustomBach.this))
-        .withModuleLookup(new ToolProvidersModuleLookup(CustomBach.this, Bach.EXTERNALS));
+        .withModuleLookup(github)
+        .withModuleLookup(providers);
   }
 
   @Override
@@ -67,7 +70,7 @@ public class CustomBach extends Bach {
             .add("--module", module)
             .add("--module-version", moduleVersion)
             .add("--module-source-path", "./*/main/java")
-            .add("--module-path", Bach.EXTERNALS)
+            .add("--module-path", folders().externalModules())
             .add("-encoding", "UTF-8")
             .add("-g")
             .add("-parameters")
@@ -90,7 +93,7 @@ public class CustomBach extends Bach {
         Command.javadoc()
             .add("--module", module)
             .add("--module-source-path", "./*/main/java")
-            .add("--module-path", Bach.EXTERNALS)
+            .add("--module-path", folders().externalModules())
             .add("-encoding", "UTF-8")
             .add("-windowtitle", "🎼 Bach " + version)
             .add("-doctitle", "🎼 Bach " + version)

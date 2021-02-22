@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.internal;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import java.lang.ModuleLayer.Controller;
 import java.lang.module.Configuration;
@@ -17,20 +16,21 @@ import java.util.spi.ToolProvider;
 public class ModuleLayerBuilder {
 
   public static ModuleLayer build(String module) {
-    return build(Path.of(".bach"), module);
+    var bach = Path.of(".bach");
+    return build(bach, module, bach.resolve("bin"), bach.resolve("workspace"));
   }
 
-  public static ModuleLayer build(Path moduleSourceDirectory, String module) {
-    var modulePath = moduleSourceDirectory.resolve(module);
+  public static ModuleLayer build(Path bach, String module, Path bin, Path workspace) {
+    var modulePath = bach.resolve(module);
     var moduleInfo = modulePath.resolve("module-info.java");
     if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
 
-    var destination = Bach.WORKSPACE.resolve(moduleSourceDirectory);
+    var destination = workspace.resolve(bach);
     var args =
         Command.of("javac")
             .add("--module", module)
-            .add("--module-source-path", moduleSourceDirectory)
-            .add("--module-path", Bach.BIN)
+            .add("--module-source-path", bach)
+            .add("--module-path", bin)
             .add("-encoding", "UTF-8")
             .add("-d", destination)
             .toStrings()
@@ -44,7 +44,7 @@ public class ModuleLayerBuilder {
         .oneLoader(true)
         .parentConfigurations(List.of(boot.configuration()))
         .before(ModuleFinder.of())
-        .after(ModuleFinder.of(destination.resolve(module), Bach.BIN))
+        .after(ModuleFinder.of(destination.resolve(module), bin))
         .roots(Set.of(module))
         .parentLayers(List.of(boot))
         .parentLoader(ClassLoader.getPlatformClassLoader())

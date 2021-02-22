@@ -17,14 +17,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /** Java Shell Builder. */
 public class Bach implements AutoCloseable, BachAPI {
 
-  public static final Path BIN = Path.of(".bach/bin");
-
-  public static final Path EXTERNALS = Path.of(".bach/external-modules");
-
-  public static final Path WORKSPACE = Path.of(".bach/workspace");
-
-  public static final String INFO_MODULE = "bach.info";
-
   /** A {@code Bach}-creating service. */
   public interface Provider<B extends Bach> {
     /**
@@ -40,7 +32,7 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.get(Property.BACH_INFO, INFO_MODULE));
+    var layer = ModuleLayerBuilder.build(options.get(Property.BACH_INFO, ProjectInfo.MODULE));
     return ServiceLoader.load(layer, Provider.class)
         .findFirst()
         .map(factory -> factory.newBach(options))

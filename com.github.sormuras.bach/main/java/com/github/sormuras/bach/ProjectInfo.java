@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.api.ProjectBuilderAPI;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
 import java.lang.annotation.ElementType;
@@ -20,6 +21,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
+
+  /** Default name of the module that is usually annotated with {@code @ProjectInfo}. */
+  String MODULE = "bach.info";
 
   /**
    * {@return the name of the project, defaults to {@code "*"}}
@@ -42,7 +46,8 @@ public @interface ProjectInfo {
    * {@return the style to format Java source-code files with, defaults to {@link JavaStyle#FREE}}
    *
    * @see Project#spaces()
-   * @see Bach#computeProjectSpaces(ProjectInfo)
+   * @see ProjectBuilderAPI#computeProjectSpaces(ProjectInfo,
+   *     com.github.sormuras.bach.project.Settings, Libraries)
    */
   JavaStyle format() default JavaStyle.FREE;
 
@@ -50,7 +55,8 @@ public @interface ProjectInfo {
    * {@return an array of external modules on which the project has a dependence}
    *
    * @see Libraries#requires()
-   * @see Bach#computeProjectLibraries(ProjectInfo)
+   * @see ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
+   *     com.github.sormuras.bach.project.Settings)
    * @see java.lang.module.ModuleDescriptor.Requires
    */
   String[] requires() default {};
@@ -59,7 +65,8 @@ public @interface ProjectInfo {
    * {@return an array of external module lookup annotations}
    *
    * @see Libraries#lookup(String)
-   * @see Bach#computeProjectLibraries(ProjectInfo)
+   * @see ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
+   *     com.github.sormuras.bach.project.Settings)
    */
   External[] lookup() default {};
 

@@ -11,9 +11,9 @@ class StringsTests {
   @Test
   void durations() {
     assertEquals("0s", Strings.toString(Duration.ZERO));
-    assertEquals("1ms", Strings.toString(Duration.ofMillis(1)));
-    assertEquals("999ms", Strings.toString(Duration.ofMillis(999)));
-    assertEquals("1s 1ms", Strings.toString(Duration.ofMillis(1001)));
+    assertEquals("0.001s", Strings.toString(Duration.ofMillis(1)));
+    assertEquals("0.999s", Strings.toString(Duration.ofMillis(999)));
+    assertEquals("1.001s", Strings.toString(Duration.ofMillis(1001)));
     assertEquals("1s", Strings.toString(Duration.ofSeconds(1)));
     assertEquals("59s", Strings.toString(Duration.ofSeconds(59)));
     assertEquals("1m", Strings.toString(Duration.ofSeconds(60)));
