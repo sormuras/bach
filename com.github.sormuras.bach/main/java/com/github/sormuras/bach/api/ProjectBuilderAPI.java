@@ -7,10 +7,9 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
+import com.github.sormuras.bach.project.Basics;
 import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Name;
 import com.github.sormuras.bach.project.Spaces;
-import com.github.sormuras.bach.project.Version;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,16 +23,10 @@ public interface ProjectBuilderAPI {
 
   default Project computeProject() {
     var info = computeProjectInfo();
-    var name =
-        bach().get(Property.PROJECT_NAME).map(Name::of).orElseGet(() -> computeProjectName(info));
-    var version =
-        bach()
-            .get(Property.PROJECT_VERSION)
-            .map(Version::of)
-            .orElseGet(() -> computeProjectVersion(info));
+    var basics = computeProjectBasics(info);
     var libraries = computeProjectLibraries(info);
     var spaces = computeProjectSpaces(info);
-    return new Project(name, version, libraries, spaces);
+    return new Project(basics, libraries, spaces);
   }
 
   default ProjectInfo computeProjectInfo() {
@@ -42,14 +35,20 @@ public interface ProjectBuilderAPI {
     return Bach.class.getModule().getAnnotation(ProjectInfo.class);
   }
 
-  default Name computeProjectName(ProjectInfo info) {
-    var name = info.name();
-    if (!name.equals("*")) return Name.of(name);
-    return Name.of("" + bach().base().directory().toAbsolutePath().getFileName());
+  default Basics computeProjectBasics(ProjectInfo info) {
+    var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info));
+    var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
+    return Basics.of(name, version);
   }
 
-  default Version computeProjectVersion(ProjectInfo info) {
-    return Version.of(info.version());
+  default String computeProjectName(ProjectInfo info) {
+    var name = info.name();
+    if (!name.equals("*")) return name;
+    return "" + bach().base().directory().toAbsolutePath().getFileName();
+  }
+
+  default String computeProjectVersion(ProjectInfo info) {
+    return info.version();
   }
 
   default Libraries computeProjectLibraries(ProjectInfo info) {
@@ -75,13 +74,13 @@ public interface ProjectBuilderAPI {
   }
 
   default String computeMainJarFileName(String module) {
-    return module + '@' + bach().project().version().toNumberAndPreRelease() + ".jar";
+    return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 
   default void buildProject() throws Exception {
     var bach = bach();
     var project = bach.project();
-    bach.print("Build %s %s", project.name().value(), project.version().value());
+    bach.print("Build %s %s", project.name(), project.version());
     if (bach.is(Options.Flag.VERBOSE)) bach.info();
     var start = Instant.now();
     if (bach.is(Options.Flag.STRICT)) bach.formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);

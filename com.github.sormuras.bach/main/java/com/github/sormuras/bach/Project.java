@@ -1,29 +1,40 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.Basics;
 import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Name;
 import com.github.sormuras.bach.project.Spaces;
-import com.github.sormuras.bach.project.Version;
 
-public record Project(Name name, Version version, Libraries libraries, Spaces spaces) {
+public record Project(Basics info, Libraries libraries, Spaces spaces) {
 
   public Project() {
-    this(Name.of("noname"), Version.of("0"), Libraries.of(), Spaces.of());
+    this(Basics.of("noname", "0"), Libraries.of(), Spaces.of());
   }
 
   public Project name(String name) {
-    return new Project(Name.of(name), version, libraries, spaces);
+    return new Project(info.name(name), libraries, spaces);
   }
 
   public Project version(String version) {
-    return version(Version.of(version));
-  }
-
-  public Project version(Version version) {
-    return new Project(name, version, libraries, spaces);
+    return new Project(info.version(version), libraries, spaces);
   }
 
   public Project libraries(Libraries libraries) {
-    return new Project(name, version, libraries, spaces);
+    return new Project(info, libraries, spaces);
+  }
+
+  public String name() {
+    return info.name();
+  }
+
+  public String version() {
+    return info.version().toString();
+  }
+
+  public String versionNumberAndPreRelease() {
+    var string = version();
+    var firstPlus = string.indexOf('+');
+    if (firstPlus == -1) return string;
+    var secondPlus = string.indexOf('+', firstPlus + 1);
+    return string.substring(0, secondPlus == -1 ? firstPlus : secondPlus);
   }
 }
