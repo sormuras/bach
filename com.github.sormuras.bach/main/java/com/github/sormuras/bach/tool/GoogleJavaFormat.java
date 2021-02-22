@@ -28,11 +28,11 @@ public record GoogleJavaFormat(Path jar, List<Argument> arguments)
             ? "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.10-SNAPSHOT/google-java-format-1.10-20210217.055657-9-all-deps.jar"
             : Maven.central(
                 "com.google.googlejavaformat", "google-java-format", version, "all-deps");
-    var home = bach.base().directory(".bach", "external-tools", "google-java-format", version);
-    var jar = home.resolve("google-java-format@" + version + ".jar");
+    var dir = bach.folders().externalTools("google-java-format", version);
+    var jar = dir.resolve("google-java-format@" + version + ".jar");
     if (!Files.exists(jar))
       try {
-        Files.createDirectories(home);
+        Files.createDirectories(dir);
         bach.browser().load(uri, jar);
       } catch (Exception exception) {
         throw new RuntimeException("Install failed: " + exception.getMessage());

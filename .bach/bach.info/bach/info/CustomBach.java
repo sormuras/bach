@@ -58,8 +58,8 @@ public class CustomBach extends Bach {
     var moduleVersion = project().version();
     var version = project().versionNumberAndPreRelease();
     var javaRelease = 16;
-    var destination = base().workspace("classes", "main", "" + javaRelease);
-    var modules = base().workspace("modules");
+    var destination = folders().workspace("classes", "main", "" + javaRelease);
+    var modules = folders().workspace("modules");
 
     run(
         Command.javac()
@@ -84,7 +84,7 @@ public class CustomBach extends Bach {
             .add("--file", file)
             .add("--main-class", module + ".Main")
             .add("-C", destination.resolve(module), ".")
-            .add("-C", base().directory(module, "main/java"), "."));
+            .add("-C", folders().root(module, "main/java"), "."));
 
     run(
         Command.javadoc()
@@ -98,13 +98,13 @@ public class CustomBach extends Bach {
             .add("-notimestamp")
             .add("-Xdoclint:-missing")
             .add("-Werror")
-            .add("-d", base().workspace("documentation", "api")));
+            .add("-d", folders().workspace("documentation", "api")));
 
     generateMavenConsumerPom(module, version, file);
   }
 
   private void generateMavenConsumerPom(String module, String version, Path file) throws Exception {
-    var maven = Files.createDirectories(base().workspace("deploy", "maven"));
+    var maven = Files.createDirectories(folders().workspace("deploy", "maven"));
 
     var pom =
         """

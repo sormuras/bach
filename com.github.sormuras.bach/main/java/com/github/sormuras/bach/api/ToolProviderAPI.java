@@ -21,7 +21,7 @@ public interface ToolProviderAPI {
   Bach bach();
 
   default Stream<ToolProvider> computeToolProviders() {
-    var externals = bach().base().externals();
+    var externals = bach().folders().externalModules();
     var layer = new ModuleLayerBuilder().before(ModuleFinder.of(externals)).build();
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }

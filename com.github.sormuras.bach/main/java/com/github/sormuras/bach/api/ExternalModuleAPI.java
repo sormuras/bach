@@ -28,12 +28,12 @@ public interface ExternalModuleAPI {
   }
 
   default Path computeExternalModuleFile(String module) {
-    return bach().base().externals().resolve(module + ".jar");
+    return bach().folders().externalModules(module + ".jar");
   }
 
   default Set<String> computeMissingExternalModules() {
     var bach = bach();
-    var finder = ModuleFinder.of(bach.base().externals());
+    var finder = ModuleFinder.of(bach.folders().externalModules());
     var missing = required(finder);
     missing.addAll(bach.project().libraries().requires());
     if (missing.isEmpty()) return Set.of();

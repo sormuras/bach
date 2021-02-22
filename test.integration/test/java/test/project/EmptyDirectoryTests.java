@@ -22,7 +22,7 @@ class EmptyDirectoryTests {
             new PrintWriter(out),
             new PrintWriter(err),
             "--verbose",
-            "--base-directory",
+            "--project-root",
             temp.toString(),
             "--project-name",
             "empty");

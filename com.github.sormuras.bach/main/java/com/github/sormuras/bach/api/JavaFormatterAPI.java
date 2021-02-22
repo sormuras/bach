@@ -21,7 +21,7 @@ public interface JavaFormatterAPI {
   Bach bach();
 
   default List<Path> computeJavaSourceFilesToFormat() {
-    return find(bach().base().directory(), JavaFormatterAPI::isJavaSourceFile);
+    return find(bach().folders().root(), JavaFormatterAPI::isJavaSourceFile);
   }
 
   default Command<?> computeJavaSourceFilesFormatCommand(

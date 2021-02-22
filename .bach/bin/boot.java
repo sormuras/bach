@@ -54,7 +54,8 @@ public class boot {
   public interface exports {
 
     static void idea() throws Exception {
-      var idea = bach().base().directory(".idea");
+      var folder = bach().folders();
+      var idea = folder.root(".idea");
       if (Files.exists(idea)) {
         out("IntelliJ's IDEA directory already exits: %s", idea);
         return;
@@ -65,7 +66,7 @@ public class boot {
       ideaMisc(idea);
       ideaRootModule(idea, name);
       ideaModules(idea, List.of(name, "bach.info"));
-      if (Files.exists(bach().base().directory(".bach/bach.info"))) ideaBachInfoModule(idea);
+      if (Files.exists(folder.root(".bach/bach.info"))) ideaBachInfoModule(idea);
       ideaLibraries(idea);
     }
 
@@ -190,7 +191,7 @@ public class boot {
   public interface files {
 
     static void createBachInfoModuleDescriptor() throws Exception {
-      var file = bach().base().directory(".bach/bach.info/module-info.java");
+      var file = bach().folders().root(".bach/bach.info/module-info.java");
       if (Files.exists(file)) {
         out("File already exists: %s", file);
         return;
@@ -214,7 +215,7 @@ public class boot {
     }
 
     static void createBachInfoBuilderClass() throws Exception {
-      var file = bach().base().directory(".bach/bach.info/bach/info/Builder.java");
+      var file = bach().folders().root(".bach/bach.info/bach/info/Builder.java");
       out("Create builder class: %s", file);
       var text =
           """
@@ -342,8 +343,8 @@ public class boot {
      */
     static void describe(String module) {
       ModuleFinder.compose(
-              ModuleFinder.of(bach().base().workspace("modules")),
-              ModuleFinder.of(bach().base().externals()),
+              ModuleFinder.of(bach().folders().workspace("modules")),
+              ModuleFinder.of(bach().folders().externalModules()),
               ModuleFinder.ofSystem())
           .find(module)
           .ifPresentOrElse(
@@ -467,7 +468,7 @@ public class boot {
       }
 
       static void purge() throws Exception {
-        var externals = bach().base().externals();
+        var externals = bach().folders().externalModules();
         if (!Files.isDirectory(externals)) return;
         try (var jars = Files.newDirectoryStream(externals, "*.jar")) {
           for (var jar : jars)
@@ -482,7 +483,7 @@ public class boot {
 
       /** Prints a list of all external modules. */
       static void list() {
-        describe(ModuleFinder.of(bach().base().externals()));
+        describe(ModuleFinder.of(bach().folders().externalModules()));
       }
 
       static void load(String module) {
@@ -494,7 +495,7 @@ public class boot {
       }
 
       static void findRequires(String regex) {
-        var finder = ModuleFinder.of(bach().base().externals());
+        var finder = ModuleFinder.of(bach().folders().externalModules());
         findRequiresDirectivesMatching(finder, regex);
       }
 

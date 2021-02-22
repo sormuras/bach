@@ -24,10 +24,10 @@ public interface LogbookWriterAPI {
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var lines = writeLogbookLines(now);
 
-    var base = bach().base();
-    Files.createDirectories(base.workspace());
-    var file = Files.write(base.workspace("logbook.md"), lines);
-    var logbooks = Files.createDirectories(base.workspace("logbooks"));
+    var folder = bach().folders();
+    Files.createDirectories(folder.workspace());
+    var file = Files.write(folder.workspace("logbook.md"), lines);
+    var logbooks = Files.createDirectories(folder.workspace("logbooks"));
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(now);
     Files.copy(file, logbooks.resolve("logbook-" + timestamp + ".md"));
     return file;
@@ -41,9 +41,11 @@ public interface LogbookWriterAPI {
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     md.add(String.format("- %s", formatter.format(now)));
 
-    md.add(String.format("- directory = `%s`", bach().base().directory().toAbsolutePath()));
-    md.add(String.format("- externals = `%s`", bach().base().externals()));
-    md.add(String.format("- workspace = `%s`", bach().base().workspace()));
+    var folder = bach().folders();
+    md.add(String.format("- root = `%s`", folder.root().toAbsolutePath()));
+    md.add(String.format("- external-modules = `%s`", folder.externalModules()));
+    md.add(String.format("- external-tools = `%s`", folder.externalTools()));
+    md.add(String.format("- workspace = `%s`", folder.workspace()));
 
     md.addAll(writeLogbookModulesOverviewLines());
     md.addAll(writeLogbookRecordingsOverviewLines());
@@ -62,7 +64,7 @@ public interface LogbookWriterAPI {
     md.add("## Modules");
     md.add("");
 
-    var directory = bach().base().workspace("modules");
+    var directory = bach().folders().workspace("modules");
 
     record ModularJar(Path path, long size, ModuleDescriptor descriptor) {}
     var jars = new ArrayList<ModularJar>();

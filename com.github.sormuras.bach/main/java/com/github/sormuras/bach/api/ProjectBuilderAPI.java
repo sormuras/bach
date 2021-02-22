@@ -7,9 +7,10 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
-import com.github.sormuras.bach.project.Basics;
+import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Spaces;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,16 +36,17 @@ public interface ProjectBuilderAPI {
     return Bach.class.getModule().getAnnotation(ProjectInfo.class);
   }
 
-  default Basics computeProjectBasics(ProjectInfo info) {
-    var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info));
+  default Settings computeProjectBasics(ProjectInfo info) {
+    var root = bach().get(Property.PROJECT_ROOT,"");
+    var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info, root));
     var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
-    return Basics.of(name, version);
+    return Settings.of(root, name, version);
   }
 
-  default String computeProjectName(ProjectInfo info) {
+  default String computeProjectName(ProjectInfo info, String base) {
     var name = info.name();
     if (!name.equals("*")) return name;
-    return "" + bach().base().directory().toAbsolutePath().getFileName();
+    return Path.of(base).toAbsolutePath().getFileName().toString();
   }
 
   default String computeProjectVersion(ProjectInfo info) {

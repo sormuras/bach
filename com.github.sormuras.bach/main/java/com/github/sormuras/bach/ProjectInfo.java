@@ -25,7 +25,7 @@ public @interface ProjectInfo {
    * {@return the name of the project, defaults to {@code "*"}}
    *
    * @see Project#name()
-   * @see Bach#computeProjectName(ProjectInfo)
+   * @see Bach#computeProjectName(ProjectInfo, String)
    */
   String name() default "*";
 

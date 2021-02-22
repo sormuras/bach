@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.api.BachAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.project.Folders;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,14 +54,12 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   private final Options options;
-  private final Base base;
   private final Queue<Recording> recordings;
   private /*-*/ Browser browser;
   private final Project project;
 
   public Bach(Options options) {
     this.options = options;
-    this.base = Base.of(Path.of(options.get(Property.BASE_DIRECTORY, "")));
     this.recordings = new ConcurrentLinkedQueue<>();
     this.browser = null; // defered creation in its accessor
     this.project = newProject();
@@ -87,8 +86,8 @@ public class Bach implements AutoCloseable, BachAPI {
     return options;
   }
 
-  public final Base base() {
-    return base;
+  public final Folders folders() {
+    return project.settings().folders();
   }
 
   public final List<Recording> recordings() {
@@ -124,8 +123,9 @@ public class Bach implements AutoCloseable, BachAPI {
   public final void clean() throws Exception {
     debug("Clean...");
 
-    if (Files.notExists(base.workspace())) return;
-    try (var walk = Files.walk(base.workspace())) {
+    var workspace = folders().workspace();
+    if (Files.notExists(workspace)) return;
+    try (var walk = Files.walk(workspace)) {
       var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
       debug("Delete %s paths", paths.length);
       for (var path : paths) Files.deleteIfExists(path);
@@ -155,7 +155,7 @@ public class Bach implements AutoCloseable, BachAPI {
   public final void info() {
     print("module: %s", getClass().getModule().getName());
     print("class: %s", getClass().getName());
-    print("base: %s", base);
+    print("folder: %s", folders());
     print("flags: %s", options.flags());
     print("project: %s", project);
   }
