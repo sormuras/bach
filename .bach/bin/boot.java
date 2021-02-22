@@ -54,8 +54,7 @@ public class boot {
   public interface exports {
 
     static void idea() throws Exception {
-      var folder = bach().folders();
-      var idea = folder.root(".idea");
+      var idea = bach().folders().root(".idea");
       if (Files.exists(idea)) {
         out("IntelliJ's IDEA directory already exits: %s", idea);
         return;
@@ -66,7 +65,7 @@ public class boot {
       ideaMisc(idea);
       ideaRootModule(idea, name);
       ideaModules(idea, List.of(name, "bach.info"));
-      if (Files.exists(folder.root(".bach/bach.info"))) ideaBachInfoModule(idea);
+      if (Files.exists(bach().folders().root(".bach/bach.info"))) ideaBachInfoModule(idea);
       ideaLibraries(idea);
     }
 
