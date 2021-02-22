@@ -76,7 +76,8 @@ public class CustomBach extends Bach {
             .add("-parameters")
             .add("-Xlint")
             .add("-Werror")
-            .add("-d", destination));
+            .add("-d", destination))
+        .requireSuccessful();
 
     Files.createDirectories(modules);
     var file = modules.resolve(computeMainJarFileName(module));
@@ -87,7 +88,8 @@ public class CustomBach extends Bach {
             .add("--file", file)
             .add("--main-class", module + ".Main")
             .add("-C", destination.resolve(module), ".")
-            .add("-C", folders().root(module, "main/java"), "."));
+            .add("-C", folders().root(module, "main/java"), "."))
+        .requireSuccessful();
 
     run(
         Command.javadoc()
@@ -101,9 +103,26 @@ public class CustomBach extends Bach {
             .add("-notimestamp")
             .add("-Xdoclint:-missing")
             .add("-Werror")
-            .add("-d", folders().workspace("documentation", "api")));
+            .add("-d", folders().workspace("documentation", "api")))
+        .requireSuccessful();
 
     generateMavenConsumerPom(module, version, file);
+  }
+
+  @Override
+  public void buildProjectTestSpace() throws Exception {
+    var mainModules = folders().workspace("modules");
+    var destination = folders().workspace("classes", "test");
+    run(Command.javac()
+            .add("--module", "test.base,test.integration,test.projects")
+            .add("--module-source-path", "./*/test/java")
+            .add("--module-path", mainModules, folders().externalModules())
+            .add("-encoding", "UTF-8")
+            .add("-g")
+            .add("-parameters")
+            .add("-Xlint")
+            .add("-d", destination))
+        .requireSuccessful();
   }
 
   private void generateMavenConsumerPom(String module, String version, Path file) throws Exception {
