@@ -6,6 +6,8 @@ import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.tool.Javadoc;
 import com.github.sormuras.bach.tool.Tool;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +60,16 @@ public interface Command<C> {
 
   default C add(String option, Object... values) {
     return add(Argument.of(option, values));
+  }
+
+  default C add(String option, Path... paths) {
+    return add(option, List.of(paths));
+  }
+
+  default C add(String option, List<Path> paths) {
+    var strings = paths.stream().map(Path::toString).toList();
+    var joined = String.join(File.pathSeparator, strings);
+    return add(option, joined);
   }
 
   default C clear(String option) {
