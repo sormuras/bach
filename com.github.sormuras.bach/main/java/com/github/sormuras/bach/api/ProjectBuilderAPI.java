@@ -24,7 +24,7 @@ public interface ProjectBuilderAPI {
 
   default Project computeProject() {
     var info = computeProjectInfo();
-    var basics = computeProjectBasics(info);
+    var basics = computeProjectSettings(info);
     var libraries = computeProjectLibraries(info);
     var spaces = computeProjectSpaces(info);
     return new Project(basics, libraries, spaces);
@@ -36,7 +36,7 @@ public interface ProjectBuilderAPI {
     return Bach.class.getModule().getAnnotation(ProjectInfo.class);
   }
 
-  default Settings computeProjectBasics(ProjectInfo info) {
+  default Settings computeProjectSettings(ProjectInfo info) {
     var root = bach().get(Property.PROJECT_ROOT,"");
     var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info, root));
     var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
