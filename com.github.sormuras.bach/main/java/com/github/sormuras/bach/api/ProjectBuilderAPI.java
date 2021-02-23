@@ -64,10 +64,10 @@ public interface ProjectBuilderAPI {
     var module = external.module();
     var target = external.via();
     return switch (external.type()) {
-      case AUTO -> Libraries.lookup(module).via(target);
-      case URI -> Libraries.lookup(module).viaUri(target);
-      case PATH -> Libraries.lookup(module).viaPath(external.pathBase(), target);
-      case MAVEN -> Libraries.lookup(module).viaMaven(external.mavenRepository(), target);
+      case AUTO -> ModuleLookup.external(module).via(target);
+      case URI -> ModuleLookup.external(module).viaUri(target);
+      case PATH -> ModuleLookup.external(module).viaPath(external.pathBase(), target);
+      case MAVEN -> ModuleLookup.external(module).viaMaven(external.mavenRepository(), target);
     };
   }
 

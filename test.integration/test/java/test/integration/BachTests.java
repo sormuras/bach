@@ -43,8 +43,7 @@ class BachTests {
         """
         10 PRINT 'HELLO WORLD'
         20 GOTO 10
-        """
-            .lines(),
+        """.lines(),
         bach.recordings().stream().map(Recording::output));
   }
 }

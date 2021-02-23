@@ -1,10 +1,5 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.lookup.ExternalModuleLookupBuilder;
-import com.github.sormuras.bach.lookup.JUnitJupiterModuleLookup;
-import com.github.sormuras.bach.lookup.JUnitPlatformModuleLookup;
-import com.github.sormuras.bach.lookup.JavaFXModuleLookup;
-import com.github.sormuras.bach.lookup.LWJGLModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,18 +17,6 @@ public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
 
   public static Libraries of(ModuleLookup... lookups) {
     return new Libraries(Set.of(), List.of(lookups));
-  }
-
-  public static ExternalModuleLookupBuilder lookup(String module) {
-    return new ExternalModuleLookupBuilder(module);
-  }
-
-  public static ModuleLookup lookupJavaFX(String version) {
-    return new JavaFXModuleLookup(version);
-  }
-
-  public static ModuleLookup lookupLWJGL(String version) {
-    return new LWJGLModuleLookup(version);
   }
 
   public record Found(String uri, ModuleLookup by) {}
@@ -56,43 +39,5 @@ public record Libraries(Set<String> requires, List<ModuleLookup> lookups) {
     var lookups = new ArrayList<>(this.lookups);
     lookups.add(lookup);
     return new Libraries(requires, List.copyOf(lookups));
-  }
-
-  /** Find well-known JUnit modules published at Maven Central. */
-  public enum JUnit implements ModuleLookup {
-
-    /** Link modules of JUnit 5.7.0 to their Maven Central artifacts. */
-    V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0"),
-    /** Link modules of JUnit 5.7.1 to their Maven Central artifacts. */
-    V_5_7_1("5.7.1", "1.7.1", "1.1.1", "1.2.0"),
-    /** Link modules of JUnit 5.8.0-M1 to their Maven Central artifacts. */
-    V_5_8_0_M1("5.8.0-M1", "1.8.0-M1", "1.1.1", "1.2.0"),
-    ;
-
-    private final String version;
-    private final Libraries libraries;
-
-    JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
-      this.version = jupiter;
-      this.libraries =
-          Libraries.of(
-              new JUnitJupiterModuleLookup(jupiter),
-              new JUnitPlatformModuleLookup(platform),
-              lookup("org.junit.vintage.engine")
-                  .viaMavenCentral("org.junit.vintage:junit-vintage-engine:" + jupiter),
-              lookup("org.apiguardian.api")
-                  .viaMavenCentral("org.apiguardian:apiguardian-api:" + apiguardian),
-              lookup("org.opentest4j").viaMavenCentral("org.opentest4j:opentest4j:" + opentest4j));
-    }
-
-    @Override
-    public Optional<String> lookupUri(String module) {
-      return libraries.find(module).map(Libraries.Found::uri);
-    }
-
-    @Override
-    public String toString() {
-      return "JUnit " + version;
-    }
   }
 }

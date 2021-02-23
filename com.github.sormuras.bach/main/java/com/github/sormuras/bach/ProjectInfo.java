@@ -1,8 +1,6 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.ProjectBuilderAPI;
 import com.github.sormuras.bach.project.JavaStyle;
-import com.github.sormuras.bach.project.Libraries;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -46,16 +44,16 @@ public @interface ProjectInfo {
    * {@return the style to format Java source-code files with, defaults to {@link JavaStyle#FREE}}
    *
    * @see Project#spaces()
-   * @see ProjectBuilderAPI#computeProjectSpaces(ProjectInfo,
-   *     com.github.sormuras.bach.project.Settings, Libraries)
+   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectSpaces(ProjectInfo,
+   *     com.github.sormuras.bach.project.Settings, com.github.sormuras.bach.project.Libraries)
    */
   JavaStyle format() default JavaStyle.FREE;
 
   /**
    * {@return an array of external modules on which the project has a dependence}
    *
-   * @see Libraries#requires()
-   * @see ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
+   * @see com.github.sormuras.bach.project.Libraries#requires()
+   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
    *     com.github.sormuras.bach.project.Settings)
    * @see java.lang.module.ModuleDescriptor.Requires
    */
@@ -64,8 +62,9 @@ public @interface ProjectInfo {
   /**
    * {@return an array of external module lookup annotations}
    *
-   * @see Libraries#lookup(String)
-   * @see ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
+   * @see com.github.sormuras.bach.project.Libraries#find(String)
+   * @see com.github.sormuras.bach.lookup.ModuleLookup#lookupUri(String)
+   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
    *     com.github.sormuras.bach.project.Settings)
    */
   External[] lookup() default {};
