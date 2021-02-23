@@ -21,8 +21,11 @@ public interface ToolProviderAPI {
   Bach bach();
 
   default Stream<ToolProvider> computeToolProviders() {
-    var externals = bach().folders().externalModules();
-    var layer = new ModuleLayerBuilder().before(ModuleFinder.of(externals)).build();
+    return computeToolProviders(ModuleFinder.of(bach().folders().externalModules()));
+  }
+
+  default Stream<ToolProvider> computeToolProviders(ModuleFinder finder) {
+    var layer = new ModuleLayerBuilder().before(finder).build();
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
@@ -51,6 +54,13 @@ public interface ToolProviderAPI {
     var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
     var stream = sequential ? commands.stream() : commands.stream().parallel();
     return stream.map(this::run).toList();
+  }
+
+  default Recording run(ModuleFinder finder, Command<?> command) {
+    bach().debug("Run %s", command.toLine());
+    var provider = computeToolProviders(finder).filter(it -> it.name().equals(command.name())).findFirst().orElseThrow();
+    var arguments = command.toStrings();
+    return run(provider, arguments);
   }
 
   default Recording run(ToolProvider provider, List<String> arguments) {
