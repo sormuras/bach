@@ -12,12 +12,14 @@ import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Libraries.JUnit;
 import com.github.sormuras.bach.project.Settings;
+import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.StringJoiner;
 
 public class CustomBach extends Bach {
@@ -110,12 +112,16 @@ public class CustomBach extends Bach {
 
   @Override
   public void buildProjectTestSpace() throws Exception {
+    var module = "com.github.sormuras.bach";
+    var names = List.of(module, "test.base", "test.integration", "test.projects");
     var mainModules = folders().workspace("modules");
     var destination = folders().workspace("classes", "test");
+    var moduleSourcePath = String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module");
     run(Command.javac()
-            .add("--module", "test.base,test.integration,test.projects")
-            .add("--module-source-path", "./*/test/java")
+            .add("--module", String.join(",", names))
+            .add("--module-source-path", moduleSourcePath)
             .add("--module-path", mainModules, folders().externalModules())
+            .add("--patch-module", module + "=" + module + "/main/java")
             .add("-encoding", "UTF-8")
             .add("-g")
             .add("-parameters")
@@ -125,13 +131,8 @@ public class CustomBach extends Bach {
 
     var testModules = folders().workspace("modules-test");
     Files.createDirectories(testModules);
-    jarTestModule(destination, "test.base", testModules);
-    jarTestModule(destination, "test.integration", testModules);
-    jarTestModule(destination, "test.projects", testModules);
-
-    runTestModule(testModules, "test.base");
-    runTestModule(testModules, "test.integration");
-    runTestModule(testModules, "test.projects");
+    for (var name : names) jarTestModule(destination, name, testModules);
+    for (var name : names) runTestModule(testModules, name);
     var errors = recordings().stream().filter(Recording::isError).toList();
     if (errors.isEmpty()) return;
     for (var recording : errors) options().err().print(recording);
