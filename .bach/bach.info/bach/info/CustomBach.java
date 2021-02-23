@@ -6,11 +6,13 @@ import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Libraries.JUnit;
 import com.github.sormuras.bach.project.Settings;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -64,8 +66,7 @@ public class CustomBach extends Bach {
     var destination = folders().workspace("classes", "main", "" + javaRelease);
     var modules = folders().workspace("modules");
 
-    run(
-        Command.javac()
+    run(Command.javac()
             .add("--release", javaRelease)
             .add("--module", module)
             .add("--module-version", moduleVersion)
@@ -81,8 +82,7 @@ public class CustomBach extends Bach {
 
     Files.createDirectories(modules);
     var file = modules.resolve(computeMainJarFileName(module));
-    run(
-        Command.jar()
+    run(Command.jar()
             .add("--verbose")
             .add("--create")
             .add("--file", file)
@@ -91,8 +91,7 @@ public class CustomBach extends Bach {
             .add("-C", folders().root(module, "main/java"), "."))
         .requireSuccessful();
 
-    run(
-        Command.javadoc()
+    run(Command.javadoc()
             .add("--module", module)
             .add("--module-source-path", "./*/main/java")
             .add("--module-path", folders().externalModules())
@@ -123,6 +122,48 @@ public class CustomBach extends Bach {
             .add("-Xlint")
             .add("-d", destination))
         .requireSuccessful();
+
+    var testModules = folders().workspace("modules-test");
+    Files.createDirectories(testModules);
+    jarTestModule(destination, "test.base", testModules);
+    jarTestModule(destination, "test.integration", testModules);
+    jarTestModule(destination, "test.projects", testModules);
+
+    runTestModule(testModules, "test.base");
+    runTestModule(testModules, "test.integration");
+    runTestModule(testModules, "test.projects");
+    var errors = recordings().stream().filter(Recording::isError).toList();
+    if (errors.isEmpty()) return;
+    for (var recording : errors) options().err().print(recording);
+    throw new RuntimeException(errors.size() + " test run(s) failed");
+  }
+
+  private void jarTestModule(Path classes, String module, Path modules) {
+    var file = modules.resolve(module + "+test.jar");
+    run(Command.jar()
+            .add("--verbose")
+            .add("--create")
+            .add("--file", file)
+            .add("-C", classes.resolve(module), ".")
+            .add("-C", folders().root(module, "test/java"), "."))
+        .requireSuccessful();
+  }
+
+  private void runTestModule(Path testModules, String module) {
+    var finder =
+        ModuleFinder.of(
+            testModules.resolve(module + "+test.jar"), // module under test
+            folders().workspace("modules"), // main modules
+            testModules, // (more) test modules
+            folders().externalModules());
+
+    var junit =
+        Command.of("junit")
+            .add("--select-module", module)
+            .add("--fail-if-no-tests")
+            .add("--reports-dir", folders().workspace("reports", "junit", module));
+
+    run(junit, finder, module);
   }
 
   private void generateMavenConsumerPom(String module, String version, Path file) throws Exception {

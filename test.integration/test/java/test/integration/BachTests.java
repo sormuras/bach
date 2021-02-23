@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.lookup.LookupException;
@@ -37,18 +36,14 @@ class BachTests {
   void print() {
     var bach = new Bach(Options.of("--silent"));
 
-    bach.run(Command.of("print").add("10", "PRINT 'HELLO WORLD'"));
-    bach.run(ToolProvider.findFirst("print").orElseThrow(), List.of("20", "PRINT 20"));
-    bach.run(new PrintToolProvider("30 GOTO 10"));
-    bach.run(new PrintToolProvider(true, "END.", 0));
+    bach.run(new PrintToolProvider("10 PRINT 'HELLO WORLD'"));
+    bach.run(new PrintToolProvider(true, "20 GOTO 10", 0));
 
     assertLinesMatch(
         """
-            10 PRINT 'HELLO WORLD'
-            20 PRINT 20
-            30 GOTO 10
-            END.
-            """
+        10 PRINT 'HELLO WORLD'
+        20 GOTO 10
+        """
             .lines(),
         bach.recordings().stream().map(Recording::output));
   }
