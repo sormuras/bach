@@ -1,5 +1,3 @@
-import com.github.sormuras.bach.Bach;
-
 /**
  * Defines the API of 🎼 Bach, the Java Shell Builder.
  *
@@ -12,7 +10,7 @@ import com.github.sormuras.bach.Bach;
  *       href="https://docs.oracle.com/en/java/javase/15/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
- * @uses Bach.Provider
+ * @uses com.github.sormuras.bach.Bach.Provider
  * @uses java.util.spi.ToolProvider
  */
 @com.github.sormuras.bach.ProjectInfo
@@ -31,7 +29,7 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses Bach.Provider;
+  uses com.github.sormuras.bach.Bach.Provider;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with

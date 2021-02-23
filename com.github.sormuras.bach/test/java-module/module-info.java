@@ -1,4 +1,4 @@
-@com.github.sormuras.bach.project.ProjectInfo
+@com.github.sormuras.bach.ProjectInfo
 open /*test*/ module com.github.sormuras.bach {
   requires org.junit.jupiter;
   requires test.base;
@@ -17,9 +17,10 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Bach.Factory;
+  uses com.github.sormuras.bach.Bach.Provider;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.Main;
+      com.github.sormuras.bach.Main,
+      com.github.sormuras.bach.tool.GoogleJavaFormat;
 }
