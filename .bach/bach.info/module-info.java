@@ -8,11 +8,11 @@ import com.github.sormuras.bach.project.JavaStyle;
     version = "17-ea",
     format = JavaStyle.GOOGLE,
     requires = {"org.junit.platform.console", "org.junit.jupiter"},
-    lookupJUnit = JUnit.V_5_8_0_M1,
     lookup = {
       @External(module = "junit", via = "junit:junit:4.13.1"),
       @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
-    })
+    },
+    lookupJUnit = JUnit.V_5_8_0_M1)
 module bach.info {
   requires com.github.sormuras.bach;
 

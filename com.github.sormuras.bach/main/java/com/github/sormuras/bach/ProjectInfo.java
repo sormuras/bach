@@ -106,6 +106,32 @@ public @interface ProjectInfo {
     }
   }
 
-  /** {@return the version of JUnit modules to lookup} */
+  /**
+   * {@return the version constant of the {@link JUnit} enumeration used to lookup external
+   * JUnit-related modules}
+   *
+   * <p>The default version constant is set to a stable version of JUnit, usually the "Latest
+   * Release" as displayed on the <a href="https://junit.org/junit5/">JUnit 5 website</a>. Both
+   * versions may change without further announcements. Hence it is advisable to return a specific
+   * {@link JUnit} version constant in a project descriptors as follows:
+   *
+   * <pre>{@code
+   * @ProjectInfo(lookupJUnit = JUnit.V_5_7_0)
+   * module bach.info {
+   *   requires com.github.sormuras.bach;
+   * }
+   * }</pre>
+   *
+   * <p>Returning a version constant like {@code JUnit.V_5_7_0} here is similar to
+   *
+   * <pre>{@code
+   * @Override
+   * public Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
+   *   return super.computeProjectLibraries(info, settings).withModuleLookup(JUnit.V_5_7_0);
+   * }
+   * }</pre>
+   *
+   * @see com.github.sormuras.bach.lookup.ModuleLookup
+   */
   JUnit lookupJUnit() default JUnit.V_5_7_1;
 }
