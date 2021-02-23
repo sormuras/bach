@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
@@ -24,8 +25,8 @@ public interface ToolProviderAPI {
     return computeToolProviders(ModuleFinder.of(bach().folders().externalModules()));
   }
 
-  default Stream<ToolProvider> computeToolProviders(ModuleFinder finder) {
-    var layer = new ModuleLayerBuilder().before(finder).build();
+  default Stream<ToolProvider> computeToolProviders(ModuleFinder finder, String... roots) {
+    var layer = new ModuleLayerBuilder().before(finder).roots(Set.of(roots)).build();
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
@@ -56,11 +57,12 @@ public interface ToolProviderAPI {
     return stream.map(this::run).toList();
   }
 
-  default Recording run(ModuleFinder finder, Command<?> command) {
+  default Recording run(Command<?> command, ModuleFinder finder, String... roots) {
     bach().debug("Run %s", command.toLine());
-    var provider = computeToolProviders(finder).filter(it -> it.name().equals(command.name())).findFirst().orElseThrow();
+    var providers = computeToolProviders(finder, roots);
+    var provider = providers.filter(it -> it.name().equals(command.name())).findFirst();
     var arguments = command.toStrings();
-    return run(provider, arguments);
+    return run(provider.orElseThrow(), arguments);
   }
 
   default Recording run(ToolProvider provider, List<String> arguments) {
