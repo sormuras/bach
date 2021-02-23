@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.lookup.JUnit;
 import com.github.sormuras.bach.project.JavaStyle;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -104,4 +105,7 @@ public @interface ProjectInfo {
       MAVEN
     }
   }
+
+  /** {@return the version of JUnit modules to lookup} */
+  JUnit lookupJUnit() default JUnit.V_5_7_1;
 }

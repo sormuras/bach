@@ -57,6 +57,7 @@ public interface ProjectBuilderAPI {
     var requires = Set.of(info.requires());
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookup()) lookups.add(computeProjectModuleLookup(external));
+    lookups.add(info.lookupJUnit());
     return new Libraries(requires, List.copyOf(lookups));
   }
 

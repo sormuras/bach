@@ -1,5 +1,6 @@
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.ProjectInfo.External;
+import com.github.sormuras.bach.lookup.JUnit;
 import com.github.sormuras.bach.project.JavaStyle;
 
 @ProjectInfo(
@@ -7,6 +8,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     version = "17-ea",
     format = JavaStyle.GOOGLE,
     requires = {"org.junit.platform.console", "org.junit.jupiter"},
+    lookupJUnit = JUnit.V_5_8_0_M1,
     lookup = {
       @External(module = "junit", via = "junit:junit:4.13.1"),
       @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
