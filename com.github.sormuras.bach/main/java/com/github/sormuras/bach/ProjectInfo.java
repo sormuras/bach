@@ -134,7 +134,13 @@ public @interface ProjectInfo {
       /** JUnit 5 and related modules, requires a version like {@code "5.7.1"}. */
       JUNIT,
       /** Lightweight Java Gaming Library, requires a version like {@code "3.2.3"}. */
-      LWJGL
+      LWJGL,
+      /**
+       * Look up unique modules published at Maven Central.
+       *
+       * @see <a href="https://github.com/sormuras/modules">sormuras/modules</a>
+       */
+      SORMURAS_MODULES
     }
   }
 }

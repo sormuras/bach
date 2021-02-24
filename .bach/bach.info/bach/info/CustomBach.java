@@ -7,9 +7,6 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.Recording;
-import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
-import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Settings;
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -45,12 +42,6 @@ public class CustomBach extends Bach {
     } catch (Exception exception) {
       throw new RuntimeException("Read version failed: " + exception);
     }
-  }
-
-  @Override
-  public Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
-    var providers = new ToolProvidersModuleLookup(this, settings.folders().externalModules());
-    return super.computeProjectLibraries(info, settings).withModuleLookup(providers);
   }
 
   @Override
