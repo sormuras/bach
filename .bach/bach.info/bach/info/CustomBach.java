@@ -92,7 +92,8 @@ public class CustomBach extends Bach {
             .add("-d", folders().workspace("documentation", "api")))
         .requireSuccessful();
 
-    generateMavenConsumerPom(module, version, file);
+    var pom = generateMavenConsumerPom(module, version, file);
+    run(PomChecker.install(this).add("check-maven-central").add("--file", pom)).requireSuccessful();
   }
 
   @Override
@@ -152,7 +153,7 @@ public class CustomBach extends Bach {
     run(junit, finder, module);
   }
 
-  private void generateMavenConsumerPom(String module, String version, Path file) throws Exception {
+  private Path generateMavenConsumerPom(String module, String version, Path file) throws Exception {
     var maven = Files.createDirectories(folders().workspace("deploy", "maven"));
 
     var pom =
@@ -222,5 +223,6 @@ public class CustomBach extends Bach {
             .add("-Dsources=" + emptyZip)
             .add("-Djavadoc=" + emptyZip);
     Files.writeString(maven.resolve(module + ".files"), files.toString());
+    return pomFile;
   }
 }
