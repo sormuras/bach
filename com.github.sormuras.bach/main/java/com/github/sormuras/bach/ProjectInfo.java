@@ -1,11 +1,16 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.JUnit;
+import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Settings;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.module.ModuleDescriptor;
 
 /**
  * Indicates that the annotated module is a project declaration.
@@ -27,54 +32,51 @@ public @interface ProjectInfo {
   /**
    * {@return the name of the project, defaults to {@code "*"}}
    *
-   * @see Project#name()
    * @see Bach#computeProjectName(ProjectInfo, String)
+   * @see Project#name()
    */
   String name() default "*";
 
   /**
    * {@return the version of the project, defaults to {@code "0"}}
    *
-   * @see Project#version()
    * @see Bach#computeProjectVersion(ProjectInfo)
-   * @see java.lang.module.ModuleDescriptor.Version
+   * @see Project#version()
+   * @see ModuleDescriptor.Version
    */
   String version() default "0";
 
   /**
    * {@return the style to format Java source-code files with, defaults to {@link JavaStyle#FREE}}
    *
+   * @see Bach#computeProjectSpaces(ProjectInfo, Settings, Libraries)
    * @see Project#spaces()
-   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectSpaces(ProjectInfo,
-   *     com.github.sormuras.bach.project.Settings, com.github.sormuras.bach.project.Libraries)
    */
   JavaStyle format() default JavaStyle.FREE;
 
   /**
    * {@return an array of external modules on which the project has a dependence}
    *
-   * @see com.github.sormuras.bach.project.Libraries#requires()
-   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
-   *     com.github.sormuras.bach.project.Settings)
-   * @see java.lang.module.ModuleDescriptor.Requires
+   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
+   * @see Libraries#requires()
+   * @see ModuleDescriptor.Requires
    */
   String[] requires() default {};
 
   /**
    * {@return an array of external module lookup annotations}
    *
-   * @see com.github.sormuras.bach.project.Libraries#find(String)
-   * @see com.github.sormuras.bach.lookup.ModuleLookup#lookupUri(String)
-   * @see com.github.sormuras.bach.api.ProjectBuilderAPI#computeProjectLibraries(ProjectInfo,
-   *     com.github.sormuras.bach.project.Settings)
+   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
+   * @see Libraries#find(String)
+   * @see ModuleLookup#lookupUri(String)
    */
   External[] lookup() default {};
 
   /**
    * An external module name to URI pair annotation.
    *
-   * @see com.github.sormuras.bach.lookup.ExternalModuleLookup
    * @see Bach#computeProjectModuleLookup(External)
+   * @see ExternalModuleLookup
    */
   @Target({})
   @interface External {
@@ -131,7 +133,8 @@ public @interface ProjectInfo {
    * }
    * }</pre>
    *
-   * @see com.github.sormuras.bach.lookup.ModuleLookup
+   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
+   * @see ModuleLookup
    */
   JUnit lookupJUnit() default JUnit.V_5_7_1;
 }
