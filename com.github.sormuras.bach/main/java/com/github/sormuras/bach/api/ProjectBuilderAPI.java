@@ -6,6 +6,7 @@ import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Settings;
@@ -56,8 +57,8 @@ public interface ProjectBuilderAPI {
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
     var requires = Set.of(info.requires());
     var lookups = new ArrayList<ModuleLookup>();
-    for (var external : info.lookup()) lookups.add(computeProjectModuleLookup(external));
-    lookups.add(info.lookupJUnit());
+    for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
+    for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
     return new Libraries(requires, List.copyOf(lookups));
   }
 
@@ -69,6 +70,15 @@ public interface ProjectBuilderAPI {
       case URI -> ModuleLookup.external(module).viaUri(target);
       case PATH -> ModuleLookup.external(module).viaPath(external.pathBase(), target);
       case MAVEN -> ModuleLookup.external(module).viaMaven(external.mavenRepository(), target);
+    };
+  }
+
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Externals externals) {
+    return switch (externals.name()) {
+      case GITHUB_RELEASES -> new GitHubReleasesModuleLookup(bach());
+      case JAVAFX -> ModuleLookup.ofJavaFX(externals.version());
+      case JUNIT -> ModuleLookup.ofJUnit(externals.version());
+      case LWJGL -> ModuleLookup.ofLWJGL(externals.version());
     };
   }
 

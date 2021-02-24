@@ -7,7 +7,6 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.Recording;
-import com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup;
 import com.github.sormuras.bach.lookup.ToolProvidersModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Settings;
@@ -50,11 +49,8 @@ public class CustomBach extends Bach {
 
   @Override
   public Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
-    var github = new GitHubReleasesModuleLookup(this);
     var providers = new ToolProvidersModuleLookup(this, settings.folders().externalModules());
-    return super.computeProjectLibraries(info, settings)
-        .withModuleLookup(github)
-        .withModuleLookup(providers);
+    return super.computeProjectLibraries(info, settings).withModuleLookup(providers);
   }
 
   @Override

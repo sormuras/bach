@@ -24,7 +24,20 @@ public interface ModuleLookup {
   }
 
   static ModuleLookup ofJUnit(String version) {
-    if (!version.startsWith("5.")) throw new IllegalArgumentException("");
+    try {
+      return JUnit.valueOf(version);
+    } catch (IllegalArgumentException ignore) {
+      // fall-through
+    }
+    try {
+      var name = "V_" + version.replace('.', '_').replace('-', '_');
+      return JUnit.valueOf(name);
+    } catch (IllegalArgumentException ignore) {
+      // fall-through
+    }
+    if (!version.startsWith("5.")) {
+      throw new IllegalArgumentException("JUnit version must start with `5.`, but got: " + version);
+    }
     return ofJUnit(version, "1" + version.substring(1), "1.1.1", "1.2.0");
   }
 

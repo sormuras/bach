@@ -1,5 +1,6 @@
 package test.integration.lookup;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.lookup.JUnit;
@@ -7,6 +8,7 @@ import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.Libraries;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class JUnitTests {
@@ -25,6 +27,13 @@ class JUnitTests {
     assertEndsWith(junit, "org.junit.platform.console", platform + ".jar");
     assertEndsWith(junit, "org.apiguardian.api", "1.1.1.jar");
     assertEndsWith(junit, "org.opentest4j", "1.2.0.jar");
+  }
+
+  @ParameterizedTest
+  @EnumSource(JUnit.class)
+  void factoryMethodReturnsEnumContantForMatchingName(JUnit constant) {
+    assertSame(constant, ModuleLookup.ofJUnit(constant.name()));
+    assertSame(constant, ModuleLookup.ofJUnit(constant.name().substring(2).replace('_', '.')));
   }
 
   @Test

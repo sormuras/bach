@@ -1,7 +1,6 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
-import com.github.sormuras.bach.lookup.JUnit;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
@@ -70,7 +69,7 @@ public @interface ProjectInfo {
    * @see Libraries#find(String)
    * @see ModuleLookup#lookupUri(String)
    */
-  External[] lookup() default {};
+  External[] lookupExternal() default {};
 
   /**
    * An external module name to URI pair annotation.
@@ -109,32 +108,33 @@ public @interface ProjectInfo {
   }
 
   /**
-   * {@return the version constant of the {@link JUnit} enumeration used to lookup external
-   * JUnit-related modules}
-   *
-   * <p>The default version constant is set to a stable version of JUnit, usually the "Latest
-   * Release" as displayed on the <a href="https://junit.org/junit5/">JUnit 5 website</a>. Both
-   * versions may change without further announcements. Hence it is advisable to return a specific
-   * {@link JUnit} version constant in a project descriptors as follows:
-   *
-   * <pre>{@code
-   * @ProjectInfo(lookupJUnit = JUnit.V_5_7_0)
-   * module bach.info {
-   *   requires com.github.sormuras.bach;
-   * }
-   * }</pre>
-   *
-   * <p>Returning a version constant like {@code JUnit.V_5_7_0} here is similar to
-   *
-   * <pre>{@code
-   * @Override
-   * public Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
-   *   return super.computeProjectLibraries(info, settings).withModuleLookup(JUnit.V_5_7_0);
-   * }
-   * }</pre>
+   * {@return the version constant of the }
    *
    * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
    * @see ModuleLookup
    */
-  JUnit lookupJUnit() default JUnit.V_5_7_1;
+  Externals[] lookupExternals() default {};
+
+  /** An external source of modules that lookup by a built-in module lookup implementation. */
+  @Target({})
+  @interface Externals {
+
+    /** The name of the module lookup, usually a name of a modular library or a framework. */
+    Name name();
+
+    /** The version of the library or framework to lookup. */
+    String version();
+
+    /** The name of the module lookup, usually a name of a modular library or a framework. */
+    enum Name {
+      /** Look up module URIs for modules uploaded to their GitHub Releases environment. */
+      GITHUB_RELEASES,
+      /** Open JavaFX, requires a version argument like {@code "15.0.1"}. */
+      JAVAFX,
+      /** JUnit 5 and related modules, requires a version like {@code "5.7.1"}. */
+      JUNIT,
+      /** Lightweight Java Gaming Library, requires a version like {@code "3.2.3"}. */
+      LWJGL
+    }
+  }
 }
