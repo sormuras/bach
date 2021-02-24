@@ -24,16 +24,25 @@ public class ToolProvidersModuleLookup implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.DYNAMIC;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     if (!Files.isDirectory(directory)) return Optional.empty();
 
     var layer = new ModuleLayerBuilder().before(ModuleFinder.of(directory)).build();
-    var tools =
-        ServiceLoader.load(layer, ToolProvider.class).stream()
-            .filter(provider -> provider.type().getName().contains("ModuleLookup"))
-            .map(Provider::get)
-            .toList();
+    var loader = ServiceLoader.load(layer, ToolProvider.class);
+    try {
+      return lookupUri(module, loader);
+    } finally {
+      loader.reload();
+    }
+  }
 
+  private Optional<String> lookupUri(String module, ServiceLoader<ToolProvider> loader) {
+    var tools = loader.stream().filter(this::isModuleLookupProvider).map(Provider::get).toList();
     for (var tool : tools) {
       bach.debug("Lookup module %s via %s", module, tool.getClass().getName());
       var string = new StringWriter();
@@ -41,8 +50,11 @@ public class ToolProvidersModuleLookup implements ModuleLookup {
       var result = tool.run(writer, writer, module);
       if (result == 0) return Optional.of(string.toString().trim());
     }
-
     return Optional.empty();
+  }
+
+  private boolean isModuleLookupProvider(ServiceLoader.Provider<ToolProvider> provider) {
+    return provider.type().getName().contains("ModuleLookup");
   }
 
   @Override

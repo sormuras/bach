@@ -21,6 +21,11 @@ public enum JUnit implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     return junit.lookupUri(module);
   }

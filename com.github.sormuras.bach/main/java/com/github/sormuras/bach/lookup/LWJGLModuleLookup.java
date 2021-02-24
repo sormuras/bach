@@ -51,6 +51,11 @@ public class LWJGLModuleLookup implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     if (!module.startsWith("org.lwjgl")) return Optional.empty();
     var natives = module.endsWith(".natives");

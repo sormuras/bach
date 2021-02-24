@@ -5,7 +5,7 @@ import java.net.URI;
 import java.util.Optional;
 
 /**
- * A module lookup for an external module.
+ * A stable module lookup for an external module.
  *
  * @param module the name of the external module
  * @param uri the uri of the external module
@@ -19,6 +19,11 @@ public record ExternalModuleLookup(String module, String uri) implements ModuleL
   public ExternalModuleLookup {
     ModuleDescriptor.newModule(module);
     URI.create(uri);
+  }
+
+  @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
   }
 
   @Override

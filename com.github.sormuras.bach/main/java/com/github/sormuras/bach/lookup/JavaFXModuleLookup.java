@@ -39,6 +39,11 @@ public class JavaFXModuleLookup implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     if (!module.startsWith("javafx.")) return Optional.empty();
     var artifact = "javafx-" + module.substring(7).replace('.', '-');

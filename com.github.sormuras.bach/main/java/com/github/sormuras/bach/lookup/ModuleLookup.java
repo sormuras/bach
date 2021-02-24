@@ -2,6 +2,16 @@ package com.github.sormuras.bach.lookup;
 
 import java.util.Optional;
 
+/**
+ * A function that returns an optional string representation of a URI for a given module name.
+ *
+ * <p>See {@link ExternalModuleLookup} for an implementation that maps a single module name to a URI
+ * in a stable manner. See {@link JUnitModuleLookup} for an implementation that maps a set of module
+ * names to URIs that are related to a specific JUnit version.
+ *
+ * @see ExternalModuleLookup
+ * @see JUnitModuleLookup
+ */
 @FunctionalInterface
 public interface ModuleLookup {
 
@@ -26,5 +36,19 @@ public interface ModuleLookup {
     return new LWJGLModuleLookup(version);
   }
 
+  /**
+   * {@return a classification of the stability for this module lookup implementation}
+   *
+   * <p>Defaults to {@link LookupStability#UNKNOWN}.
+   */
+  default LookupStability lookupStability() {
+    return LookupStability.UNKNOWN;
+  }
+
+  /**
+   * {@return an optional string-representation of the given module name}
+   *
+   * @param module the name of the module to lookup
+   */
   Optional<String> lookupUri(String module);
 }

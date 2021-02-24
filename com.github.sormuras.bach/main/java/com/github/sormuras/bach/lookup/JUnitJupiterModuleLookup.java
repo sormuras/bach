@@ -22,6 +22,11 @@ public class JUnitJupiterModuleLookup implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     return switch (module) {
       case "org.junit.jupiter" -> uri("");

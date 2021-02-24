@@ -21,6 +21,11 @@ record JUnitModuleLookup(String version, List<ModuleLookup> lookups) implements 
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.STABLE;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     for (var lookup : lookups) {
       var found = lookup.lookupUri(module);

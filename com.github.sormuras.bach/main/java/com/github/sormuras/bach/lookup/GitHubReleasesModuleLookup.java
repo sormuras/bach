@@ -17,6 +17,11 @@ public class GitHubReleasesModuleLookup implements ModuleLookup {
   }
 
   @Override
+  public LookupStability lookupStability() {
+    return LookupStability.DYNAMIC;
+  }
+
+  @Override
   public Optional<String> lookupUri(String module) {
     if (!module.startsWith("com.github.")) return Optional.empty();
     var split = module.split("\\.");
