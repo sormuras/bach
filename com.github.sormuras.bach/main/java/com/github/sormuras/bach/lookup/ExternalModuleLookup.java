@@ -1,7 +1,5 @@
 package com.github.sormuras.bach.lookup;
 
-import java.lang.module.ModuleDescriptor;
-import java.net.URI;
 import java.util.Optional;
 
 /**
@@ -17,8 +15,8 @@ public record ExternalModuleLookup(String module, String uri) implements ModuleL
    * @throws IllegalArgumentException if the given uri string violates RFC&nbsp;2396
    */
   public ExternalModuleLookup {
-    ModuleDescriptor.newModule(module);
-    URI.create(uri);
+    ModuleLookup.requireValidModuleName(module);
+    ModuleLookup.requireValidUri(uri);
   }
 
   @Override

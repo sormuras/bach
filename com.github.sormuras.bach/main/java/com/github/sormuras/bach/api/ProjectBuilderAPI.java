@@ -57,7 +57,7 @@ public interface ProjectBuilderAPI {
     var requires = Set.of(info.requires());
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
-    for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals, settings));
+    for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
     return new Libraries(requires, List.copyOf(lookups));
   }
 
@@ -72,14 +72,14 @@ public interface ProjectBuilderAPI {
     };
   }
 
-  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Externals externals, Settings settings) {
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Externals externals) {
     var version = externals.version();
     return switch (externals.name()) {
       case GITHUB_RELEASES -> ModuleLookup.ofGitHubReleases(bach());
       case JAVAFX -> ModuleLookup.ofJavaFX(version);
       case JUNIT -> ModuleLookup.ofJUnit(version);
       case LWJGL -> ModuleLookup.ofLWJGL(version);
-      case SORMURAS_MODULES -> ModuleLookup.ofSormurasModules(bach(), settings, version);
+      case SORMURAS_MODULES -> ModuleLookup.ofSormurasModules(bach(), version);
     };
   }
 

@@ -1,12 +1,9 @@
 package com.github.sormuras.bach.lookup;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.project.Settings;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.util.Map;
+import java.lang.module.ModuleDescriptor;
+import java.net.URI;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /**
  * A function that returns an optional string representation of a URI for a given module name.
@@ -59,32 +56,18 @@ public interface ModuleLookup {
     return new LWJGLModuleLookup(version);
   }
 
-  static ModuleLookup ofSormurasModules(Bach bach, Settings settings, String version) {
-    var dir = settings.folders().externalTools("sormuras-modules", version);
-    var name = "com.github.sormuras.modules@" + version + ".jar";
-    var file = dir.resolve(name);
-    if (!Files.exists(file))
-      try {
-        var uri = "https://github.com/sormuras/modules/releases/download/" + version + "/" + name;
-        Files.createDirectories(dir);
-        bach.browser().load(uri, file);
-      } catch (Exception exception) {
-        throw new RuntimeException("Failed 1: " + exception.getMessage());
-      }
-    try {
-      var jar = FileSystems.newFileSystem(file);
-      var lines = Files.readAllLines(jar.getPath("com/github/sormuras/modules/modules.properties"));
-      var tree = new TreeMap<String, String>();
-      for (var line : lines) {
-        var split = line.indexOf('=');
-        var module = line.substring(0, split);
-        var uri = line.substring(split + 1);
-        tree.put(module, uri);
-      }
-      return new MappedModuleLookup(Map.copyOf(tree));
-    } catch (Exception exception) {
-      throw new RuntimeException("Failed 2: " + exception.getMessage());
-    }
+  static ModuleLookup ofSormurasModules(Bach bach, String version) {
+    return new SormurasModulesModuleLookup(bach, version);
+  }
+
+  static String requireValidModuleName(String name) {
+    ModuleDescriptor.newModule(name);
+    return name;
+  }
+
+  static String requireValidUri(String uri) {
+    URI.create(uri);
+    return uri;
   }
 
   /**
