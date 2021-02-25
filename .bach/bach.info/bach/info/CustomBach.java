@@ -8,6 +8,7 @@ import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.Recording;
 import java.io.File;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +43,33 @@ public class CustomBach extends Bach {
     } catch (Exception exception) {
       throw new RuntimeException("Read version failed: " + exception);
     }
+  }
+
+  @Override
+  public void verifyExternalModule(ModuleDescriptor module, Path jar) throws Exception {
+    var expectedSize =
+        switch (module.name()) {
+          case "net.bytebuddy" -> 3502105;
+          case "org.apiguardian.api" -> 6452;
+          case "org.junit.jupiter" -> 6366;
+          case "org.junit.jupiter.api" -> 187629;
+          case "org.junit.jupiter.engine" -> 222297;
+          case "org.junit.jupiter.params" -> 569947;
+          case "org.junit.platform.commons" -> 100503;
+          case "org.junit.platform.console" -> 488059;
+          case "org.junit.platform.engine" -> 185133;
+          case "org.junit.platform.launcher" -> 153701;
+          case "org.junit.platform.reporting" -> 26149;
+          case "org.opentest4j" -> 7653;
+          default -> {
+            if (is(Flag.STRICT)) throw new IllegalArgumentException(module.name());
+            yield -1;
+          }
+        };
+    var actualSize = Files.size(jar);
+    if (expectedSize != actualSize)
+      throw new Exception(
+          "Size mismatch detected! Expected " + expectedSize + " bot got: " + actualSize);
   }
 
   @Override

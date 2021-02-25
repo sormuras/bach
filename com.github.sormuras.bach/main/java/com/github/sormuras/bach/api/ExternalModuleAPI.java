@@ -1,11 +1,13 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.lookup.LookupException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.TreeSet;
@@ -70,6 +72,31 @@ public interface ExternalModuleAPI {
       loaded.addAll(missing);
     }
     bach.debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
+  }
+
+  default void verifyExternalModules() throws Exception {
+    var directory = bach().folders().externalModules();
+    if (Files.notExists(directory)) return;
+    bach().debug("Verify external modules located in %s", directory.toUri());
+    try (var jars = Files.newDirectoryStream(directory, "*.jar")) {
+      for (var jar : jars) {
+        var module = ModuleFinder.of(jar).findAll().iterator().next().descriptor();
+        bach().debug("Verify module %s (%s)", module.toNameAndVersion(), jar.getFileName());
+        verifyExternalModule(module, jar);
+      }
+    }
+  }
+
+  default void verifyExternalModule(ModuleDescriptor module, Path jar) throws Exception {
+    var expectedJarFileName = module.name() + ".jar";
+    var actualJarFileName = jar.getFileName().toString();
+    if (!actualJarFileName.equals(expectedJarFileName))
+      throw new Exception("JAR file name verification failed: " + actualJarFileName);
+
+    if (bach().is(Options.Flag.STRICT))
+      throw new Exception(
+          "Override method verifyExternalModule(ModuleDescriptor, Path) in order to actually"
+              + " verify external modules and also to prevent this exception to be thrown.");
   }
 
   static TreeSet<String> declared(ModuleFinder finder) {

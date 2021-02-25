@@ -99,6 +99,7 @@ public interface ProjectBuilderAPI {
     var start = Instant.now();
     if (bach.is(Options.Flag.STRICT)) bach.formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
     bach.loadMissingExternalModules();
+    bach.verifyExternalModules();
     buildProjectMainSpace();
     buildProjectTestSpace();
     bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
