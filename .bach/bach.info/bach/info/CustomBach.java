@@ -93,7 +93,7 @@ public class CustomBach extends Bach {
         .requireSuccessful();
 
     var pom = generateMavenConsumerPom(module, version, file);
-    run(PomChecker.install(this).add("check-maven-central").add("--file", pom)).requireSuccessful();
+    run(PomChecker.install(this).checkMavenCentral(pom)).requireSuccessful();
   }
 
   @Override
