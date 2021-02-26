@@ -3,12 +3,18 @@ package com.github.sormuras.bach.api;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.lookup.LookupException;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -93,10 +99,39 @@ public interface ExternalModuleAPI {
     if (!actualJarFileName.equals(expectedJarFileName))
       throw new Exception("JAR file name verification failed: " + actualJarFileName);
 
-    if (bach().is(Options.Flag.STRICT))
+    var name = module.name();
+    var metadata = bach().project().libraries().metamap().get(name);
+    if (metadata == null) {
+      bach().debug("No verification metadata available for module: %s", name);
+      if (bach().is(Options.Flag.STRICT))
+        throw new IllegalArgumentException("No metadata for: " + name);
+      return;
+    }
+
+    var expectedSize = metadata.size();
+    var actualSize = Files.size(jar);
+    if (expectedSize != actualSize)
       throw new Exception(
-          "Override method verifyExternalModule(ModuleDescriptor, Path) in order to actually"
-              + " verify external modules and also to prevent this exception to be thrown.");
+          "Size mismatch of module %s detected! Expected %d but got: %d"
+              .formatted(name, expectedSize, actualSize));
+
+    for (var checksum : metadata.checksums()) {
+      var expectedHash = checksum.value();
+      var actualHash = hashFile(checksum.algorithm(), jar);
+      if (!expectedHash.equals(actualHash))
+        throw new Exception(
+            "Hash mismatch of module %s! Expected %s of %s but got: %s"
+                .formatted(name, checksum.algorithm(), expectedHash, actualHash));
+    }
+  }
+
+  private static String hashFile(String algorithm, Path file) throws Exception {
+    var md = MessageDigest.getInstance(algorithm);
+    try (var in = new BufferedInputStream((new FileInputStream(file.toFile())));
+        var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+      in.transferTo(out);
+    }
+    return String.format("%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
   }
 
   static TreeSet<String> declared(ModuleFinder finder) {

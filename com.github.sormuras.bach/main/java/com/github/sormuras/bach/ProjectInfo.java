@@ -143,4 +143,23 @@ public @interface ProjectInfo {
       SORMURAS_MODULES
     }
   }
+
+  Metadata[] metadata() default {};
+
+  /** An external module metadata configuration annotation. */
+  @Target({})
+  @interface Metadata {
+    String module();
+
+    long size();
+
+    Checksum[] checksums() default {};
+
+    @Target({})
+    @interface Checksum {
+      String algorithm() default "MD5";
+
+      String value();
+    }
+  }
 }

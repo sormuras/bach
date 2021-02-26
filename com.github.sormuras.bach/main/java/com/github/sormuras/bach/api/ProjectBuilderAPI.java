@@ -7,6 +7,7 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
+import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
@@ -14,8 +15,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Methods related to building projects. */
 public interface ProjectBuilderAPI {
@@ -58,7 +63,11 @@ public interface ProjectBuilderAPI {
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
     for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
-    return new Libraries(requires, List.copyOf(lookups));
+    var metamap =
+        Arrays.stream(info.metadata())
+            .map(this::computeProjectModuleMetadata)
+            .collect(Collectors.toMap(ModuleMetadata::name, Function.identity()));
+    return new Libraries(requires, List.copyOf(lookups), Map.copyOf(metamap));
   }
 
   default ModuleLookup computeProjectModuleLookup(ProjectInfo.External external) {
@@ -81,6 +90,14 @@ public interface ProjectBuilderAPI {
       case LWJGL -> ModuleLookup.ofLWJGL(version);
       case SORMURAS_MODULES -> ModuleLookup.ofSormurasModules(bach(), version);
     };
+  }
+
+  default ModuleMetadata computeProjectModuleMetadata(ProjectInfo.Metadata metadata) {
+    var checksums =
+        Arrays.stream(metadata.checksums())
+            .map(md -> new ModuleMetadata.Checksum(md.algorithm(), md.value()))
+            .toList();
+    return new ModuleMetadata(metadata.module(), metadata.size(), checksums);
   }
 
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
