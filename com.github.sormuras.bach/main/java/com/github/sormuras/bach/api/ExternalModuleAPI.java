@@ -40,16 +40,28 @@ public interface ExternalModuleAPI {
   }
 
   default Set<String> computeMissingExternalModules() {
-    var folders = bach().folders();
-    var finder = ModuleFinder.of(folders.externalModules());
-    var missing = required(finder);
-    missing.addAll(bach().project().libraries().requires());
-    if (missing.isEmpty()) return Set.of();
-    missing.removeAll(declared(finder));
-    missing.removeAll(declared(ModuleFinder.of(folders.bin())));
+    return computeMissingExternalModules(!bach().is(Options.Flag.STRICT));
+  }
+
+  default Set<String> computeMissingExternalModules(boolean includeRequiresOfExternalModules) {
+    var requires = new TreeSet<>(bach().project().libraries().requires()); // project-info
+    // TODO requires.addAll(requires(bach().project().declaredModules())); // module-info(s)
+    if (includeRequiresOfExternalModules)
+      requires.addAll(
+          required(ModuleFinder.of(bach().folders().externalModules()))); // external-modules
+    return computeMissingExternalModules(requires);
+  }
+
+  default Set<String> computeMissingExternalModules(Set<String> requires) {
+    if (requires.isEmpty()) return Set.of();
+    var missing = new TreeSet<>(requires);
     missing.removeAll(declared(ModuleFinder.ofSystem()));
     if (missing.isEmpty()) return Set.of();
-    return missing;
+    missing.removeAll(declared(ModuleFinder.of(bach().folders().externalModules())));
+    if (missing.isEmpty()) return Set.of();
+    missing.removeAll(declared(ModuleFinder.of(bach().folders().bin())));
+    if (missing.isEmpty()) return Set.of();
+    return Set.copyOf(missing);
   }
 
   default void loadExternalModules(String... modules) {
