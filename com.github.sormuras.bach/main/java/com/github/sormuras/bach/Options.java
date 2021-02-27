@@ -174,7 +174,21 @@ public record Options(
     /** Print usage information and exit. */
     HELP("Print usage information and exit."),
 
-    /** Activate all verification measures available. */
+    /**
+     * Activate all verification measures available.
+     *
+     * <p>When Bach runs in strict mode the following default implementations change their behaviour
+     * into a more defensive way of doing things:
+     *
+     * <ul>
+     *   <li>Source code style is checked via running a formatter in `VERIFY` mode.
+     *   <li>Only explicitly declared requires are considered when downloading external modules.
+     *   <li>All external modular JAR files are verified to conform with expected metadata.
+     * </ul>
+     *
+     * @see ProjectInfo#format()
+     * @see ProjectInfo#metadata()
+     */
     STRICT("Activate all verification measures available."),
 
     /**
