@@ -4,14 +4,23 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.tool.ExecutableJar;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.StringJoiner;
 
 public record PomChecker(Path jar, List<Argument> arguments) implements ExecutableJar<PomChecker> {
 
   public static PomChecker install(Bach bach) {
-    var version = "1.1.0-SNAPSHOT";
-    var file = "pomchecker-toolprovider-" + version + ".jar";
-    var uri = "https://github.com/kordamp/pomchecker/releases/download/early-access/" + file;
-    var jar = ExecutableJar.load(bach, "kordamp-pomchecker", version, uri);
+    return install(bach, "1.1.0");
+  }
+
+  public static PomChecker install(Bach bach, String version) {
+    var uri =
+        new StringJoiner("/")
+            .add("https://repo.maven.apache.org/maven2")
+            .add("org.kordamp.maven".replace('.', '/'))
+            .add("pomchecker-toolprovider")
+            .add(version)
+            .add("pomchecker-toolprovider-" + version + ".jar");
+    var jar = ExecutableJar.load(bach, "kordamp-pomchecker", version, uri.toString());
     return new PomChecker(jar, List.of());
   }
 
