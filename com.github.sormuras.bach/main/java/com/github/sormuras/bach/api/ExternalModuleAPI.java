@@ -117,7 +117,7 @@ public interface ExternalModuleAPI {
 
     for (var checksum : metadata.checksums()) {
       var expectedHash = checksum.value();
-      var actualHash = hashFile(checksum.algorithm(), jar);
+      var actualHash = hash(checksum.algorithm(), jar);
       if (!expectedHash.equals(actualHash))
         throw new Exception(
             "Hash mismatch of module %s! Expected %s of %s but got: %s"
@@ -125,9 +125,9 @@ public interface ExternalModuleAPI {
     }
   }
 
-  private static String hashFile(String algorithm, Path file) throws Exception {
+  private static String hash(String algorithm, Path file) throws Exception {
     var md = MessageDigest.getInstance(algorithm);
-    try (var in = new BufferedInputStream((new FileInputStream(file.toFile())));
+    try (var in = new BufferedInputStream(new FileInputStream(file.toFile()));
         var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
       in.transferTo(out);
     }
