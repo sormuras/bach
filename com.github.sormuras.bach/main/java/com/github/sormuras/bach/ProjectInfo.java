@@ -162,4 +162,35 @@ public @interface ProjectInfo {
       String value();
     }
   }
+
+  /** {@return the additional arguments to be passed on a per-tool basis} */
+  Tweak[] tweaks() default {
+    @Tweak(
+        tool = "javac",
+        with = {"-encoding", "UTF-8"}),
+    @Tweak(
+        tool = "jlink",
+        with = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"}),
+  };
+
+  /** Tool name-args pair annotation. */
+  @Target({})
+  @interface Tweak {
+    /** {@return the trigger describing the tool call to be tweaked} */
+    String tool();
+
+    /** {@return the additional arguments to be passed to the tool call} */
+    String[] with();
+
+    /** {@return the code spaces in which this tweak is registered} */
+    Space[] in() default {Space.MAIN, Space.TEST};
+
+    /** An enumeration of code spaces. */
+    enum Space {
+      /** Main code space. */
+      MAIN,
+      /** Test code space. */
+      TEST
+    }
+  }
 }
