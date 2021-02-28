@@ -9,14 +9,14 @@ import com.github.sormuras.bach.tool.Tool;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
 
 public interface Command<C> {
 
   static Tool of(String name, String... args) {
-    return new Tool(name, args.length == 0 ? List.of() : List.of(Argument.of("", (Object[]) args)));
+    return new Tool(name, List.of(args));
   }
 
   static Jar jar() {
@@ -41,69 +41,56 @@ public interface Command<C> {
 
   String name();
 
-  List<Argument> arguments();
+  List<String> arguments();
 
-  C arguments(List<Argument> arguments);
+  C arguments(List<String> arguments);
 
-  default C add(Argument argument, Argument... arguments) {
-    var list = new ArrayList<>(arguments());
-    list.add(argument);
-    if (arguments.length > 0) list.addAll(List.of(arguments));
-    return arguments(list);
+  default C add(String argument) {
+    var copy = new ArrayList<>(arguments());
+    copy.add(argument);
+    return arguments(List.copyOf(copy));
   }
 
-  default C add(String option) {
-    return add(Argument.of(option));
+  default C add(String option, Object value) {
+    var copy = new ArrayList<>(arguments());
+    copy.add(option);
+    copy.add(value.toString());
+    return arguments(List.copyOf(copy));
   }
 
-  default C add(String option, Object... values) {
-    return add(Argument.of(option, values));
+  default C add(String option, Object value, Object... more) {
+    var copy = new ArrayList<>(arguments());
+    copy.add(option);
+    copy.add(value.toString());
+    for (var next : more) copy.add(next.toString());
+    return arguments(List.copyOf(copy));
   }
 
-  default C add(String option, Path... paths) {
-    return add(option, List.of(paths));
-  }
-
-  default C add(String option, List<Path> paths) {
+  default C add(String option, Collection<Path> paths) {
     var strings = paths.stream().map(Path::toString).toList();
-    var joined = String.join(File.pathSeparator, strings);
-    return add(option, joined);
+    return add(option, String.join(File.pathSeparator, strings));
   }
 
-  default List<String> toStrings() {
-    var arguments = arguments();
-    if (arguments.isEmpty()) return List.of();
-    var strings = new ArrayList<String>();
-    arguments.forEach(argument -> argument.accept(strings::add));
-    return List.copyOf(strings);
+  default C addAll(String... arguments) {
+    var copy = new ArrayList<>(arguments());
+    copy.addAll(List.of(arguments));
+    return arguments(List.copyOf(copy));
+  }
+
+  default C addAll(Object... arguments) {
+    return addAll(List.of(arguments));
+  }
+
+  default C addAll(Collection<?> collection) {
+    var copy = new ArrayList<>(arguments());
+    collection.stream().map(Object::toString).forEach(copy::add);
+    return arguments(List.copyOf(copy));
   }
 
   default String toLine() {
     var joiner = new StringJoiner(" ");
     joiner.add(name());
-    toStrings().forEach(joiner::add);
+    arguments().forEach(joiner::add);
     return joiner.toString();
-  }
-
-  record Argument(String option, List<?> values) {
-
-    public Argument {
-      if (option.isEmpty() && values.isEmpty())
-        throw new IllegalArgumentException("Option and values must not be empty at the same time");
-    }
-
-    public static Argument of(String option) {
-      return new Argument(option, List.of());
-    }
-
-    public static Argument of(String option, Object... values) {
-      return new Argument(option, List.of(values));
-    }
-
-    public void accept(Consumer<String> consumer) {
-      if (!option.isEmpty()) consumer.accept(option);
-      if (values.isEmpty()) return;
-      values.stream().map(Object::toString).forEach(consumer);
-    }
   }
 }
