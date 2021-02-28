@@ -3,7 +3,7 @@ package com.github.sormuras.bach.tool;
 import com.github.sormuras.bach.Command;
 import java.util.List;
 
-public record Jar(List<Argument> arguments) implements Command<Jar> {
+public record Jar(List<String> arguments) implements Command<Jar> {
 
   public Jar() {
     this(List.of());
@@ -15,7 +15,7 @@ public record Jar(List<Argument> arguments) implements Command<Jar> {
   }
 
   @Override
-  public Jar arguments(List<Argument> arguments) {
+  public Jar arguments(List<String> arguments) {
     return new Jar(arguments);
   }
 }

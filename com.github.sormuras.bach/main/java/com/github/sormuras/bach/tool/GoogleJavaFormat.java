@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-public record GoogleJavaFormat(Path jar, List<Argument> arguments)
+public record GoogleJavaFormat(Path jar, List<String> arguments)
     implements ExecutableJar<GoogleJavaFormat> {
 
   public static ToolProvider provider() {
@@ -29,7 +29,7 @@ public record GoogleJavaFormat(Path jar, List<Argument> arguments)
   }
 
   @Override
-  public GoogleJavaFormat arguments(List<Argument> arguments) {
+  public GoogleJavaFormat arguments(List<String> arguments) {
     return new GoogleJavaFormat(jar, arguments);
   }
 

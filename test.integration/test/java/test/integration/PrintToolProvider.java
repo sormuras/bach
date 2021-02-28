@@ -26,12 +26,12 @@ public record PrintToolProvider(boolean configured, boolean normal, String messa
   }
 
   @Override
-  public List<Argument> arguments() {
-    return configured ? List.of(Argument.of(message)) : List.of();
+  public List<String> arguments() {
+    return configured ? List.of(message) : List.of();
   }
 
   @Override
-  public PrintToolProvider arguments(List<Argument> arguments) {
+  public PrintToolProvider arguments(List<String> arguments) {
     return this;
   }
 

@@ -3,7 +3,7 @@ package com.github.sormuras.bach.tool;
 import com.github.sormuras.bach.Command;
 import java.util.List;
 
-public record Javac(List<Argument> arguments) implements Command<Javac> {
+public record Javac(List<String> arguments) implements Command<Javac> {
 
   public Javac() {
     this(List.of());
@@ -15,7 +15,7 @@ public record Javac(List<Argument> arguments) implements Command<Javac> {
   }
 
   @Override
-  public Javac arguments(List<Argument> arguments) {
+  public Javac arguments(List<String> arguments) {
     return new Javac(arguments);
   }
 }

@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.StringJoiner;
 
-public record PomChecker(Path jar, List<Argument> arguments) implements ExecutableJar<PomChecker> {
+public record PomChecker(Path jar, List<String> arguments) implements ExecutableJar<PomChecker> {
 
   public static PomChecker install(Bach bach) {
     return install(bach, "1.1.0");
@@ -25,7 +25,7 @@ public record PomChecker(Path jar, List<Argument> arguments) implements Executab
   }
 
   @Override
-  public PomChecker arguments(List<Argument> arguments) {
+  public PomChecker arguments(List<String> arguments) {
     return new PomChecker(jar, arguments);
   }
 

@@ -46,7 +46,7 @@ public interface ExecutableJar<T> extends Command<T>, ToolProvider {
       return -2;
     }
     var builder = newProcessBuilder();
-    builder.command().addAll(java().executeJar(jar, args).toStrings());
+    builder.command().addAll(java().executeJar(jar, args).arguments());
     try {
       var process = builder.start();
       new Thread(new StreamGobbler(process.getInputStream(), out::println)).start();

@@ -3,7 +3,7 @@ package com.github.sormuras.bach.tool;
 import com.github.sormuras.bach.Command;
 import java.util.List;
 
-public record JDeps(List<Argument> arguments) implements Command<JDeps> {
+public record JDeps(List<String> arguments) implements Command<JDeps> {
 
   public JDeps() {
     this(List.of());
@@ -15,7 +15,7 @@ public record JDeps(List<Argument> arguments) implements Command<JDeps> {
   }
 
   @Override
-  public JDeps arguments(List<Argument> arguments) {
+  public JDeps arguments(List<String> arguments) {
     return new JDeps(arguments);
   }
 }

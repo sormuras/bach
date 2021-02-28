@@ -4,7 +4,7 @@ import com.github.sormuras.bach.Command;
 import java.nio.file.Path;
 import java.util.List;
 
-public record Java(List<Argument> arguments) implements Command<Java> {
+public record Java(List<String> arguments) implements Command<Java> {
 
   public Java() {
     this(List.of());
@@ -16,11 +16,11 @@ public record Java(List<Argument> arguments) implements Command<Java> {
   }
 
   @Override
-  public Java arguments(List<Argument> arguments) {
+  public Java arguments(List<String> arguments) {
     return new Java(arguments);
   }
 
   public Java executeJar(Path jar, String... args) {
-    return add("-jar", jar).add(new Argument("", List.of(args)));
+    return add("-jar", jar).addAll(args);
   }
 }

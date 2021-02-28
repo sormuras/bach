@@ -3,9 +3,7 @@ package com.github.sormuras.bach.tool;
 import com.github.sormuras.bach.Command;
 import java.util.List;
 
-public record Javadoc(List<Argument> arguments) implements Command<Javadoc> {
-
-  public Javadoc {}
+public record Javadoc(List<String> arguments) implements Command<Javadoc> {
 
   public Javadoc() {
     this(List.of());
@@ -17,7 +15,7 @@ public record Javadoc(List<Argument> arguments) implements Command<Javadoc> {
   }
 
   @Override
-  public Javadoc arguments(List<Argument> arguments) {
+  public Javadoc arguments(List<String> arguments) {
     return new Javadoc(arguments);
   }
 }
