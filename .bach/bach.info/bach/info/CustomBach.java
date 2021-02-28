@@ -106,7 +106,7 @@ public class CustomBach extends Bach {
     run(Command.javac()
             .add("--module", String.join(",", names))
             .add("--module-source-path", moduleSourcePath)
-            .add("--module-path", mainModules, folders().externalModules())
+            .add("--module-path", List.of(mainModules, folders().externalModules()))
             .add("--patch-module", module + "=" + module + "/main/java")
             .add("-encoding", "UTF-8")
             .add("-g")

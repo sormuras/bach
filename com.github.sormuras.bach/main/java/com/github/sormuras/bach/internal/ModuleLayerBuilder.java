@@ -33,7 +33,7 @@ public class ModuleLayerBuilder {
             .add("--module-path", bin)
             .add("-encoding", "UTF-8")
             .add("-d", destination)
-            .toStrings()
+            .arguments()
             .toArray(String[]::new);
     var result = ToolProvider.findFirst("javac").orElseThrow().run(System.out, System.err, args);
     if (result != 0) throw new RuntimeException("Non-zero exit code: " + result);

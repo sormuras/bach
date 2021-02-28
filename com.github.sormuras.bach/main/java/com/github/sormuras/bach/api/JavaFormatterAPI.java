@@ -33,7 +33,7 @@ public interface JavaFormatterAPI {
         case APPLY -> format = format.add("--replace");
         case VERIFY -> format = format.add("--dry-run").add("--set-exit-if-changed");
       }
-      return format.add("", files.toArray());
+      return format.addAll(files);
     }
     throw new UnsupportedOperationException("Unknown style: " + style);
   }

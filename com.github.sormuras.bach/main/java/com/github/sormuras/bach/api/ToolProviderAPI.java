@@ -39,8 +39,7 @@ public interface ToolProviderAPI {
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
     var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
-    var arguments = command.toStrings();
-    return run(provider, arguments);
+    return run(provider, command.arguments());
   }
 
   default List<Recording> run(Command<?> command, Command<?>... commands) {
@@ -61,8 +60,7 @@ public interface ToolProviderAPI {
     bach().debug("Run %s", command.toLine());
     var providers = computeToolProviders(finder, roots);
     var provider = providers.filter(it -> it.name().equals(command.name())).findFirst();
-    var arguments = command.toStrings();
-    return run(provider.orElseThrow(), arguments);
+    return run(provider.orElseThrow(), command.arguments());
   }
 
   default Recording run(ToolProvider provider, List<String> arguments) {
