@@ -10,10 +10,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 public interface Command<C> {
 
@@ -70,25 +68,6 @@ public interface Command<C> {
     var strings = paths.stream().map(Path::toString).toList();
     var joined = String.join(File.pathSeparator, strings);
     return add(option, joined);
-  }
-
-  default C clear(String option) {
-    return clear(argument -> argument.option().equals(option));
-  }
-
-  default C clear(Predicate<Argument> filter) {
-    var arguments = arguments();
-    if (arguments.isEmpty()) return arguments(arguments);
-    if (arguments.size() == 1) {
-      var singleton = arguments.get(0);
-      return filter.test(singleton) ? arguments(List.of()) : arguments(arguments);
-    }
-    var list = new ArrayList<>(arguments);
-    return list.removeIf(filter) ? arguments(list) : arguments(arguments);
-  }
-
-  default Optional<Argument> findFirstArgument(String option) {
-    return arguments().stream().filter(it -> it.option().equals(option)).findFirst();
   }
 
   default List<String> toStrings() {

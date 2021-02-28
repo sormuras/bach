@@ -2,7 +2,6 @@ package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Command;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,6 @@ class CommandTests {
   void withoutArguments() {
     var command = Command.of("name");
     assertEquals("name", command.name());
-    assertTrue(command.findFirstArgument("").isEmpty());
     var commandLine = command.toLine();
     assertEquals("name", commandLine);
     assertEquals(Command.of("name").toLine(), commandLine);
@@ -23,13 +21,7 @@ class CommandTests {
   void withArguments() {
     var command = Command.of("name").add("1").add("2", 3, 4);
     assertEquals("name", command.name());
-    assertTrue(command.findFirstArgument("").isEmpty());
-    assertTrue(command.findFirstArgument("1").isPresent());
-    assertTrue(command.findFirstArgument("2").isPresent());
-    assertTrue(command.findFirstArgument("3").isEmpty());
-    assertTrue(command.findFirstArgument("4").isEmpty());
     assertEquals("name 1 2 3 4", command.toLine());
-    assertTrue(command.clear("1").clear("2").arguments().isEmpty());
   }
 
   @Test
