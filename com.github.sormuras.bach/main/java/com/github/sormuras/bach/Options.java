@@ -195,7 +195,7 @@ public record Options(
      * Prevent parallel execution of commands.
      *
      * @see Bach#run(Command, Command[])
-     * @see Bach#run(List)
+     * @see Bach#run(Stream)
      */
     RUN_COMMANDS_SEQUENTIALLY("Prevent parallel execution of commands.");
 
