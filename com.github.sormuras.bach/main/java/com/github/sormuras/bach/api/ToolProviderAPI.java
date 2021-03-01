@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
+import com.github.sormuras.bach.Recordings;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -42,17 +43,17 @@ public interface ToolProviderAPI {
     return run(provider, command.arguments());
   }
 
-  default List<Recording> run(Command<?> command, Command<?>... commands) {
+  default Recordings run(Command<?> command, Command<?>... commands) {
     return run(Stream.concat(Stream.of(command), Stream.of(commands)));
   }
 
-  default List<Recording> run(Stream<Command<?>> commands) {
+  default Recordings run(Stream<Command<?>> commands) {
     var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
     bach().debug("Run stream of commands %s", sequential ? "sequentially" : "in parallel");
     var stream = sequential ? commands.sequential() : commands.parallel();
     var recordings = stream.map(this::run).toList();
     bach().debug("Return %d recording%s", recordings.size(), recordings.size() == 1 ? "" : "s");
-    return recordings;
+    return new Recordings(recordings);
   }
 
   default Recording run(Command<?> command, ModuleFinder finder, String... roots) {
