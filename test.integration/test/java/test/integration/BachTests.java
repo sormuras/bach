@@ -10,19 +10,49 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.lookup.LookupException;
+import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Tweak;
 import java.util.List;
 import java.util.spi.ToolProvider;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
+
+  private static Tweak newTweak(String trigger, String... arguments) {
+    return new Tweak(trigger, List.of(arguments));
+  }
+
   @Test
   void defaults() {
     var bach = new Bach(Options.of());
-    // components
+    // top-level "components"
     assertNotNull(bach.project());
     assertNotNull(bach.browser());
     assertTrue(bach.recordings().isEmpty());
-    // compute
+    // default properties
+    var project = bach.project();
+    assertEquals("bach", project.name());
+    assertEquals("0", project.version());
+    assertEquals(Libraries.of(), project.libraries());
+    assertEquals(JavaStyle.FREE, project.spaces().style());
+    assertEquals("main", project.spaces().main().name());
+    assertEquals(
+        List.of(
+            newTweak("javac", "-encoding", "UTF-8"),
+            newTweak(
+                "jlink",
+                "--compress",
+                "2",
+                "--no-header-files",
+                "--no-man-pages",
+                "--strip-debug")),
+        project.spaces().main().tweaks().values());
+    assertEquals("test", project.spaces().test().name());
+    assertEquals(
+        List.of(newTweak("javac", "-encoding", "UTF-8")),
+        project.spaces().test().tweaks().values());
+    // computations
     assertThrows(LookupException.class, () -> bach.computeExternalModuleUri("java.base"));
     assertEquals("foo@0.jar", bach.computeMainJarFileName("foo"));
     assertEquals("jar", bach.computeToolProvider("jar").name());

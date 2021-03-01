@@ -13,32 +13,6 @@ import com.github.sormuras.bach.project.Spaces;
  * @param spaces code spaces
  */
 public record Project(Settings settings, Libraries libraries, Spaces spaces) {
-
-  /** {@return a copy of this instance with the given component replaced} */
-  public Project name(String name) {
-    return settings(settings.name(name));
-  }
-
-  /** {@return a copy of this instance with the given component replaced} */
-  public Project version(String version) {
-    return settings(settings.version(version));
-  }
-
-  /** {@return a copy of this instance with the given component replaced} */
-  public Project settings(Settings settings) {
-    return new Project(settings, libraries, spaces);
-  }
-
-  /** {@return a copy of this instance with the given component replaced} */
-  public Project libraries(Libraries libraries) {
-    return new Project(settings, libraries, spaces);
-  }
-
-  /** {@return a copy of this instance with the given component replaced} */
-  public Project spaces(Spaces spaces) {
-    return new Project(settings, libraries, spaces);
-  }
-
   /**
    * {@return the name of this project}
    *

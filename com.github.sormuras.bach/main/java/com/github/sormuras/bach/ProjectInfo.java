@@ -170,7 +170,8 @@ public @interface ProjectInfo {
         with = {"-encoding", "UTF-8"}),
     @Tweak(
         tool = "jlink",
-        with = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"}),
+        with = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"},
+        in = Space.MAIN),
   };
 
   /** Tool name-args pair annotation. */
@@ -184,13 +185,13 @@ public @interface ProjectInfo {
 
     /** {@return the code spaces in which this tweak is registered} */
     Space[] in() default {Space.MAIN, Space.TEST};
+  }
 
-    /** An enumeration of code spaces. */
-    enum Space {
-      /** Main code space. */
-      MAIN,
-      /** Test code space. */
-      TEST
-    }
+  /** An enumeration of code spaces. */
+  enum Space {
+    /** Main code space. */
+    MAIN,
+    /** Test code space. */
+    TEST
   }
 }

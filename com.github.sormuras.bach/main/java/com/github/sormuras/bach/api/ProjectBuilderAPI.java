@@ -9,8 +9,12 @@ import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
+import com.github.sormuras.bach.project.TestSpace;
+import com.github.sormuras.bach.project.Tweak;
+import com.github.sormuras.bach.project.Tweaks;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -101,7 +105,18 @@ public interface ProjectBuilderAPI {
   }
 
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
-    return new Spaces(info.format());
+    var main = new MainSpace(computeProjectTweaks(info, ProjectInfo.Space.MAIN));
+    var test = new TestSpace(computeProjectTweaks(info, ProjectInfo.Space.TEST));
+    return new Spaces(info.format(), main, test);
+  }
+
+  default Tweaks computeProjectTweaks(ProjectInfo info, ProjectInfo.Space space) {
+    var tweaks = new ArrayList<Tweak>();
+    for (var tweak : info.tweaks()) {
+      if (!Set.of(tweak.in()).contains(space)) continue;
+      tweaks.add(new Tweak(tweak.tool(), List.of(tweak.with())));
+    }
+    return new Tweaks(List.copyOf(tweaks));
   }
 
   default String computeMainJarFileName(String module) {
