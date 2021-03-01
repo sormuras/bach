@@ -17,47 +17,50 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
     var destination = bach().folders().workspace("classes", "main", "" + javaRelease);
     var modules = bach().folders().workspace("modules");
 
-    bach().run(Command.javac()
-        .add("--release", javaRelease)
-        .add("--module", module)
-        .add("--module-version", moduleVersion)
-        .add("--module-source-path", "./*/main/java")
-        .add("--module-path", bach().folders().externalModules())
-        .add("-encoding", "UTF-8")
-        .add("-g")
-        .add("-parameters")
-        .add("-Xlint")
-        .add("-Werror")
-        .add("-d", destination))
-        .requireSuccessful();
+    var javac =
+        Command.javac()
+            .add("--release", javaRelease)
+            .add("--module", module)
+            .add("--module-version", moduleVersion)
+            .add("--module-source-path", "./*/main/java")
+            .add("--module-path", bach().folders().externalModules())
+            .add("-encoding", "UTF-8")
+            .add("-g")
+            .add("-parameters")
+            .add("-Xlint")
+            .add("-Werror")
+            .add("-d", destination);
+    bach().run(javac).requireSuccessful();
 
     Files.createDirectories(modules);
     var file = modules.resolve(computeMainJarFileName(module));
-    bach().run(Command.jar()
-        .add("--verbose")
-        .add("--create")
-        .add("--file", file)
-        .add("--main-class", module + ".Main")
-        .add("-C", destination.resolve(module), ".")
-        .add("-C", bach().folders().root(module, "main/java"), "."))
-        .requireSuccessful();
-
-    bach().run(Command.javadoc()
-        .add("--module", module)
-        .add("--module-source-path", "./*/main/java")
-        .add("--module-path", bach().folders().externalModules())
-        .add("-encoding", "UTF-8")
-        .add("-windowtitle", "🎼 Bach " + version)
-        .add("-doctitle", "🎼 Bach " + version)
-        .add("-header", "🎼 Bach " + version)
-        .add("-notimestamp")
-        .add("-Xdoclint:-missing")
-        .add("-Werror")
-        .add("-d", bach().folders().workspace("documentation", "api")))
-        .requireSuccessful();
+    var jar =
+        Command.jar()
+            .add("--verbose")
+            .add("--create")
+            .add("--file", file)
+            .add("--main-class", module + ".Main")
+            .add("-C", destination.resolve(module), ".")
+            .add("-C", bach().folders().root(module, "main/java"), ".");
+    bach().run(jar).requireSuccessful();
 
     var pom = generateMavenConsumerPom(module, version, file);
-    bach().run(PomChecker.install(bach()).checkMavenCentral(pom)).requireSuccessful();
+    var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);
+    var jdeps = Command.jdeps().add("--module-path", modules).add("--check", module);
+    var javadoc =
+        Command.javadoc()
+            .add("--module", module)
+            .add("--module-source-path", "./*/main/java")
+            .add("--module-path", bach().folders().externalModules())
+            .add("-encoding", "UTF-8")
+            .add("-windowtitle", "🎼 Bach " + version)
+            .add("-doctitle", "🎼 Bach " + version)
+            .add("-header", "🎼 Bach " + version)
+            .add("-notimestamp")
+            .add("-Xdoclint:-missing")
+            .add("-Werror")
+            .add("-d", bach().folders().workspace("documentation", "api"));
+    bach().run(pomcheck, jdeps, javadoc).requireSuccessful();
   }
 
   private Path generateMavenConsumerPom(String module, String version, Path file) throws Exception {
@@ -132,5 +135,4 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
     Files.writeString(maven.resolve(module + ".files"), files.toString());
     return pomFile;
   }
-
 }
