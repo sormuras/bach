@@ -29,14 +29,14 @@ import com.github.sormuras.bach.project.JavaStyle;
     },
     requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
     lookupExternal = {
-      @External(module = "junit", via = "junit:junit:4.13.1"),
+      @External(module = "junit", via = "junit:junit:4.13.2"),
       @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
     },
     lookupExternals = {
       @Externals(name = JAVAFX, version = "15.0.1"),
       @Externals(name = JUNIT, version = "5.8.0-M1"),
       @Externals(name = LWJGL, version = "3.2.3"),
-      @Externals(name = SORMURAS_MODULES, version = "2021.02.24"),
+      @Externals(name = SORMURAS_MODULES, version = "2021.03"),
       @Externals(name = GITHUB_RELEASES, version = "*"),
     },
     metadata = {
