@@ -14,14 +14,18 @@ import com.github.sormuras.bach.project.JavaStyle;
     format = JavaStyle.GOOGLE,
     tweaks = {
       @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "javadoc", option = "-notimestamp"),
-      @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
-      @Tweak(tool = "javadoc", option = "-Werror"),
       @Tweak(tool = "javac", option = "-g"),
       @Tweak(tool = "javac", option = "-parameters"),
       @Tweak(tool = "javac", option = "-Xlint"),
       @Tweak(tool = "javac", option = "-Werror"),
+      @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "javadoc", option = "-notimestamp"),
+      @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
+      @Tweak(tool = "javadoc", option = "-Werror"),
+    },
+    testTweaks = {
+      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "junit", option = "--fail-if-no-tests")
     },
     requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
     lookupExternal = {

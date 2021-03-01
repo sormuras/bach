@@ -26,7 +26,7 @@ public interface TestSpaceBuilder extends ProjectBuilderAPI {
                 .add("--module-source-path", moduleSourcePath)
                 .add("--module-path", List.of(mainModules, bach().folders().externalModules()))
                 .add("--patch-module", module + "=" + module + "/main/java")
-                .add("-encoding", "UTF-8")
+                .addAll(bach().project().spaces().test().tweaks().arguments("javac"))
                 .add("-g")
                 .add("-parameters")
                 .add("-Xlint")
@@ -60,7 +60,8 @@ public interface TestSpaceBuilder extends ProjectBuilderAPI {
     var junit =
         Command.of("junit")
             .add("--select-module", module)
-            .add("--fail-if-no-tests")
+            .addAll(bach().project().spaces().test().tweaks().arguments("junit"))
+            .addAll(bach().project().spaces().test().tweaks().arguments("junit(" + module + ")"))
             .add("--reports-dir", bach().folders().workspace("reports", "junit", module));
 
     return bach().run(junit, finder, module);
