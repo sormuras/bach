@@ -105,16 +105,18 @@ public interface ProjectBuilderAPI {
   }
 
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
-    var main = new MainSpace(computeProjectTweaks(info, ProjectInfo.Space.MAIN));
-    var test = new TestSpace(computeProjectTweaks(info, ProjectInfo.Space.TEST));
+    var main = new MainSpace(computeProjectTweaks(info.tweaks()));
+    var test = new TestSpace(computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
   }
 
-  default Tweaks computeProjectTweaks(ProjectInfo info, ProjectInfo.Space space) {
+  default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {
     var tweaks = new ArrayList<Tweak>();
-    for (var tweak : info.tweaks()) {
-      if (!Set.of(tweak.in()).contains(space)) continue;
-      tweaks.add(new Tweak(tweak.tool(), List.of(tweak.with())));
+    for (var tweak : infos) {
+      var arguments = new ArrayList<String>();
+      arguments.add(tweak.option());
+      arguments.addAll(List.of(tweak.value()));
+      tweaks.add(new Tweak(tweak.tool(), List.copyOf(arguments)));
     }
     return new Tweaks(List.copyOf(tweaks));
   }

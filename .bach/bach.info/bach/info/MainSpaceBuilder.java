@@ -24,11 +24,7 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
             .add("--module-version", moduleVersion)
             .add("--module-source-path", "./*/main/java")
             .add("--module-path", bach().folders().externalModules())
-            .add("-encoding", "UTF-8")
-            .add("-g")
-            .add("-parameters")
-            .add("-Xlint")
-            .add("-Werror")
+            .addAll(bach().project().spaces().main().tweaks().arguments("javac"))
             .add("-d", destination);
     bach().run(javac).requireSuccessful();
 
@@ -52,13 +48,10 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
             .add("--module", module)
             .add("--module-source-path", "./*/main/java")
             .add("--module-path", bach().folders().externalModules())
-            .add("-encoding", "UTF-8")
             .add("-windowtitle", "🎼 Bach " + version)
             .add("-doctitle", "🎼 Bach " + version)
             .add("-header", "🎼 Bach " + version)
-            .add("-notimestamp")
-            .add("-Xdoclint:-missing")
-            .add("-Werror")
+            .addAll(bach().project().spaces().main().tweaks().arguments("javadoc"))
             .add("-d", bach().folders().workspace("documentation", "api"));
     bach().run(pomcheck, jdeps, javadoc).requireSuccessful();
   }

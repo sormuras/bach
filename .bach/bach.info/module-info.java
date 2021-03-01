@@ -5,12 +5,24 @@ import com.github.sormuras.bach.ProjectInfo.External;
 import com.github.sormuras.bach.ProjectInfo.Externals;
 import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Metadata.Checksum;
+import com.github.sormuras.bach.ProjectInfo.Tweak;
 import com.github.sormuras.bach.project.JavaStyle;
 
 @ProjectInfo(
     name = "bach",
     version = "17-ea",
     format = JavaStyle.GOOGLE,
+    tweaks = {
+      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "javadoc", option = "-notimestamp"),
+      @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
+      @Tweak(tool = "javadoc", option = "-Werror"),
+      @Tweak(tool = "javac", option = "-g"),
+      @Tweak(tool = "javac", option = "-parameters"),
+      @Tweak(tool = "javac", option = "-Xlint"),
+      @Tweak(tool = "javac", option = "-Werror"),
+    },
     requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
     lookupExternal = {
       @External(module = "junit", via = "junit:junit:4.13.1"),

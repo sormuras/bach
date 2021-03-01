@@ -40,13 +40,11 @@ class BachTests {
     assertEquals(
         List.of(
             newTweak("javac", "-encoding", "UTF-8"),
-            newTweak(
-                "jlink",
-                "--compress",
-                "2",
-                "--no-header-files",
-                "--no-man-pages",
-                "--strip-debug")),
+            newTweak("javadoc", "-encoding", "UTF-8"),
+            newTweak("jlink", "--compress", "2"),
+            newTweak("jlink", "--no-header-files"),
+            newTweak("jlink", "--no-man-pages"),
+            newTweak("jlink", "--strip-debug")),
         project.spaces().main().tweaks().values());
     assertEquals("test", project.spaces().test().name());
     assertEquals(

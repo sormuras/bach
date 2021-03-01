@@ -163,15 +163,19 @@ public @interface ProjectInfo {
     }
   }
 
-  /** {@return the additional arguments to be passed on a per-tool basis} */
+  /** {@return the additional main space arguments to be passed on a per-tool basis} */
   Tweak[] tweaks() default {
-    @Tweak(
-        tool = "javac",
-        with = {"-encoding", "UTF-8"}),
-    @Tweak(
-        tool = "jlink",
-        with = {"--compress", "2", "--no-header-files", "--no-man-pages", "--strip-debug"},
-        in = Space.MAIN),
+    @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+    @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
+    @Tweak(tool = "jlink", option = "--compress", value = "2"),
+    @Tweak(tool = "jlink", option = "--no-header-files"),
+    @Tweak(tool = "jlink", option = "--no-man-pages"),
+    @Tweak(tool = "jlink", option = "--strip-debug"),
+  };
+
+  /** {@return the additional test space arguments to be passed on a per-tool basis} */
+  Tweak[] testTweaks() default {
+    @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
   };
 
   /** Tool name-args pair annotation. */
@@ -180,18 +184,10 @@ public @interface ProjectInfo {
     /** {@return the trigger describing the tool call to be tweaked} */
     String tool();
 
+    /** {@return } */
+    String option();
+
     /** {@return the additional arguments to be passed to the tool call} */
-    String[] with();
-
-    /** {@return the code spaces in which this tweak is registered} */
-    Space[] in() default {Space.MAIN, Space.TEST};
-  }
-
-  /** An enumeration of code spaces. */
-  enum Space {
-    /** Main code space. */
-    MAIN,
-    /** Test code space. */
-    TEST
+    String[] value() default {};
   }
 }
