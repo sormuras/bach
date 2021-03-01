@@ -13,7 +13,7 @@ import java.util.spi.ToolProvider;
  *
  * @param <T> the type of the program
  */
-public interface ExecutableJar<T> extends Command<T>, ToolProvider {
+public interface ExecutableJar<T extends Command<T>> extends Command<T>, ToolProvider {
 
   static Path load(Bach bach, String name, String version, String uri) {
     var dir = bach.folders().externalTools(name, version);

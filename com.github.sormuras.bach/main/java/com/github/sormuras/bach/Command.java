@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
 
-public interface Command<C> {
+public interface Command<C extends Command<C>> {
 
   static Tool of(String name, String... args) {
     return new Tool(name, List.of(args));
