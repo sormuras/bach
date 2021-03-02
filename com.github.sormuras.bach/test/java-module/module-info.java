@@ -21,6 +21,5 @@ open /*test*/ module com.github.sormuras.bach {
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.Main,
-      com.github.sormuras.bach.tool.GoogleJavaFormat;
+      com.github.sormuras.bach.Main;
 }

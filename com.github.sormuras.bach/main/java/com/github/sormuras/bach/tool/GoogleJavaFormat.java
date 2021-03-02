@@ -1,18 +1,12 @@
 package com.github.sormuras.bach.tool;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.lookup.Maven;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.spi.ToolProvider;
 
 public record GoogleJavaFormat(Path jar, List<String> arguments)
     implements ExecutableJar<GoogleJavaFormat> {
-
-  public static ToolProvider provider() {
-    return install(new Bach(Options.of()));
-  }
 
   public static GoogleJavaFormat install(Bach bach) {
     return install(bach, "1.10-SNAPSHOT");
