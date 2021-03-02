@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 
 public interface Command<C extends Command<C>> {
 
@@ -85,6 +87,16 @@ public interface Command<C extends Command<C>> {
     var copy = new ArrayList<>(arguments());
     collection.stream().map(Object::toString).forEach(copy::add);
     return arguments(List.copyOf(copy));
+  }
+
+  @SuppressWarnings("unchecked")
+  default C ifTrue(boolean condition, UnaryOperator<C> operator) {
+    return condition ? operator.apply((C) this) : (C) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  default <E extends Collection<?>> C ifPresent(E collection, BiFunction<C, E, C> function) {
+    return collection.isEmpty() ? (C) this : function.apply((C) this, collection);
   }
 
   default String toLine() {
