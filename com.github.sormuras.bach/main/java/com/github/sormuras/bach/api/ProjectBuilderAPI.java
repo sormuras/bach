@@ -40,9 +40,7 @@ public interface ProjectBuilderAPI {
   }
 
   default ProjectInfo computeProjectInfo() {
-    var info = getClass().getModule().getAnnotation(ProjectInfo.class);
-    if (info != null) return info;
-    return Bach.class.getModule().getAnnotation(ProjectInfo.class);
+    return bach().options().info().orElse(Bach.class.getModule().getAnnotation(ProjectInfo.class));
   }
 
   default Settings computeProjectSettings(ProjectInfo info) {

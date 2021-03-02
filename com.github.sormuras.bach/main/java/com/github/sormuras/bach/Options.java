@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 /**
  * An options descriptor.
  *
+ * @param info an optional project declaration instance, may be {@code null}
  * @param out a stream to which "expected" output should be written
  * @param err a stream to which any error messages should be written
  * @param flags a set of feature toggles passed individually like {@code --verbose --help ...}
@@ -26,12 +27,17 @@ import java.util.stream.Stream;
  * @param tool an optional command to execute passed via {@code tool NAME [ARGS...]}
  */
 public record Options(
+    Optional<ProjectInfo> info,
     PrintWriter out,
     PrintWriter err,
     Set<Flag> flags,
     Map<Property, List<String>> properties,
     List<String> actions,
     Optional<Tool> tool) {
+
+  public Options with(ProjectInfo info) {
+    return new Options(Optional.ofNullable(info), out, err, flags, properties, actions, tool);
+  }
 
   /**
    * {@return new {@code Options} instance with the given flags added}
@@ -43,7 +49,7 @@ public record Options(
     var flags = new HashSet<>(this.flags);
     flags.add(flag);
     flags.addAll(Set.of(more));
-    return new Options(out, err, flags, properties, actions, tool);
+    return new Options(info, out, err, flags, properties, actions, tool);
   }
 
   public List<String> values(Property property) {
@@ -125,6 +131,7 @@ public record Options(
     }
 
     return new Options(
+        Optional.empty(),
         flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
         err,
         flags,
