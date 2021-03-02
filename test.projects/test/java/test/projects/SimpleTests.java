@@ -10,7 +10,7 @@ class SimpleTests {
 
   @Test
   void build(@TempDir Path temp) throws Exception {
-    var out = new Context("Simple", temp).build("--verbose");
+    var out = new Context("Simple", temp).build("--strict", "--verbose");
     assertLinesMatch(
         """
         Options.+
@@ -18,6 +18,7 @@ class SimpleTests {
         Build simple 1.0.1
         >> INFO + BUILD >>
         Build took .+
+        Logbook written to .+
         """
             .lines(),
         out.lines());
