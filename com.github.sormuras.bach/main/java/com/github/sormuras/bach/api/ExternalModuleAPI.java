@@ -59,7 +59,7 @@ public interface ExternalModuleAPI {
     if (missing.isEmpty()) return Set.of();
     missing.removeAll(declared(ModuleFinder.of(bach().folders().externalModules())));
     if (missing.isEmpty()) return Set.of();
-    missing.removeAll(declared(ModuleFinder.of(bach().folders().bin())));
+    missing.removeAll(declared(ModuleFinder.of(Bach.bin())));
     if (missing.isEmpty()) return Set.of();
     return Set.copyOf(missing);
   }

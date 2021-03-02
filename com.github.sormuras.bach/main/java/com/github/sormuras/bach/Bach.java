@@ -32,11 +32,25 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public static Bach of(Options options) {
-    var layer = ModuleLayerBuilder.build(options.get(Property.BACH_INFO, ProjectInfo.MODULE));
+    var root = Path.of(options.get(Property.PROJECT_ROOT, ""));
+    var bach = root.resolve(".bach");
+    var name = options.get(Property.BACH_INFO, ProjectInfo.MODULE);
+    var layer = ModuleLayerBuilder.build(bach, name, Bach.bin(), bach.resolve("workspace"));
+    var module = layer.findModule(name);
+    if (module.isEmpty()) return new Bach(options);
+    var info = module.get().getAnnotation(ProjectInfo.class);
     return ServiceLoader.load(layer, Provider.class)
         .findFirst()
-        .map(factory -> factory.newBach(options))
-        .orElse(new Bach(options));
+        .map(factory -> factory.newBach(options.with(info)))
+        .orElse(new Bach(options.with(info)));
+  }
+
+  public static Path bin() {
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    var resolved = module.getLayer().configuration().findModule(module.getName()).orElseThrow();
+    var uri = resolved.reference().location().orElseThrow();
+    return Path.of("").toAbsolutePath().relativize(Path.of(uri).getParent());
   }
 
   public static String version() {
@@ -145,11 +159,15 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public final void info() {
-    print("module: %s", getClass().getModule().getName());
-    print("class: %s", getClass().getName());
+    print("bin: %s", bin());
+    print("bach: %s/%s", getClass().getModule().getName(), getClass().getName());
+    print("info: %s", options.info().orElse(null));
     print("folder: %s", folders());
     print("flags: %s", options.flags());
+    print("project.name: %s", project.name());
+    print("project.version: %s", project.version());
     print("project: %s", project);
+    print("options: %s", options);
   }
 
   @Override
