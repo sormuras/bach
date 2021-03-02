@@ -25,6 +25,15 @@ import java.lang.module.ModuleDescriptor;
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
 
+  /** Path to the directory that collects external modules. */
+  String EXTERNAL_MODULES = ".bach/external-modules";
+
+  /** Path to the directory that collects all generated assets. */
+  String WORKSPACE = ".bach/workspace";
+
+  /** Path to the directory that collects this project's main modules. */
+  String MAIN_MODULES = WORKSPACE + "/modules";
+
   /** Default name of the module that is usually annotated with {@code @ProjectInfo}. */
   String MODULE = "bach.info";
 
@@ -52,6 +61,19 @@ public @interface ProjectInfo {
    * @see Project#spaces()
    */
   JavaStyle format() default JavaStyle.FREE;
+
+  /** {@return the names of the main modules to compile} */
+  String[] modules() default "*";
+
+  /** {@return the module path elements for main modules} */
+  String[] modulePaths() default {EXTERNAL_MODULES};
+
+  /**
+   * {@return the Java version (release feature number) to compile main modules for}
+   *
+   * <p>For a value of {@code 0}, the default value, the {@code --release} option is omitted.
+   */
+  int compileModulesForJavaRelease() default 0;
 
   /**
    * {@return an array of external modules on which the project has a dependence}
@@ -170,6 +192,12 @@ public @interface ProjectInfo {
     @Tweak(tool = "jlink", option = "--no-man-pages"),
     @Tweak(tool = "jlink", option = "--strip-debug"),
   };
+
+  /** {@return the names of the test modules to compile} */
+  String[] testModules() default "*";
+
+  /** {@return the module path elements for compiling and running test modules} */
+  String[] testModulePaths() default {MAIN_MODULES, EXTERNAL_MODULES};
 
   /** {@return the additional test space arguments to be passed on a per-tool basis} */
   Tweak[] testTweaks() default {

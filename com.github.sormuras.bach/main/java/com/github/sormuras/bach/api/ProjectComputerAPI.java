@@ -98,9 +98,24 @@ public interface ProjectComputerAPI {
   }
 
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
-    var main = new MainSpace(computeProjectTweaks(info.tweaks()));
-    var test = new TestSpace(computeProjectTweaks(info.testTweaks()));
+    var root = settings.folders().root();
+    var main =
+        new MainSpace(
+            computeProjectSpaceModules(info.modules()),
+            Arrays.stream(info.modulePaths()).map(root::resolve).toList(),
+            info.compileModulesForJavaRelease(),
+            computeProjectTweaks(info.tweaks()));
+    var test =
+        new TestSpace(
+            computeProjectSpaceModules(info.testModules()),
+            Arrays.stream(info.testModulePaths()).map(root::resolve).toList(),
+            computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
+  }
+
+  default List<String> computeProjectSpaceModules(String... modules) {
+    if (modules.length == 1 && "*".equals(modules[0])) return List.of();
+    return List.of(modules);
   }
 
   default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {
