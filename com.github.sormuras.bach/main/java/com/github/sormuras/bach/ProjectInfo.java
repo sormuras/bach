@@ -100,8 +100,6 @@ public @interface ProjectInfo {
       AUTO,
       /** Uniform Resource Identifier ({@link java.net.URI URI}) reference as-is. */
       URI,
-      /** Path to a local file. */
-      PATH,
       /** Maven-based coordinates. */
       MAVEN
     }

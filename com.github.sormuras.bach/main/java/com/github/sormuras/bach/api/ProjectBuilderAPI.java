@@ -78,7 +78,6 @@ public interface ProjectBuilderAPI {
     return switch (external.type()) {
       case AUTO -> ModuleLookup.external(module).via(target);
       case URI -> ModuleLookup.external(module).viaUri(target);
-      case PATH -> ModuleLookup.external(module).viaPath(external.pathBase(), target);
       case MAVEN -> ModuleLookup.external(module).viaMaven(external.mavenRepository(), target);
     };
   }

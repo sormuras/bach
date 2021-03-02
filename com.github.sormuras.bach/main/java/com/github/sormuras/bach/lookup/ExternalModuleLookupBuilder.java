@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.lookup;
 
 import java.net.URI;
-import java.nio.file.Path;
 
 /** A builder of external module objects. */
 public class ExternalModuleLookupBuilder {
@@ -28,19 +27,6 @@ public class ExternalModuleLookupBuilder {
     var maven = target.indexOf('/') == -1 && target.chars().filter(ch -> ch == ':').count() >= 2;
     if (maven) return viaMavenCentral(target);
     return viaUri(target);
-  }
-
-  /**
-   * Returns a module lookup pointing to local path.
-   *
-   * @param base the base directory
-   * @param more the path to the file
-   * @return an external module lookup
-   */
-  public ExternalModuleLookup viaPath(String base, String more) {
-    var first = base.equals("~") ? System.getProperty("user.home") : base;
-    var path = Path.of(first, more);
-    return viaUri(path.normalize().toUri());
   }
 
   /**
