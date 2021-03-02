@@ -4,6 +4,7 @@ package com.github.sormuras.bach.api;
 public interface BachAPI
     extends JavaFormatterAPI,
         ExternalModuleAPI,
+        ProjectComputerAPI,
         ProjectBuilderAPI,
         ToolProviderAPI,
         LogbookWriterAPI {
