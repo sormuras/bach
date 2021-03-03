@@ -1,10 +1,17 @@
 package com.github.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Path;
 import java.time.Duration;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class StringsTests {
 
@@ -26,5 +33,28 @@ class StringsTests {
     assertEquals("1-ea", Strings.toNumberAndPreRelease(Version.parse("1-ea")));
     assertEquals("1-ea", Strings.toNumberAndPreRelease(Version.parse("1-ea+2")));
     assertEquals("1+ea", Strings.toNumberAndPreRelease(Version.parse("1+ea+3")));
+  }
+
+  @Nested
+  class ModuleSourcePath {
+    @Test
+    void modulePatternFormFromPathWithoutModulesNameFails() {
+      var path = Path.of("a/b/c/module-info.java");
+      var exception =
+          assertThrows(FindException.class, () -> Strings.toModuleSourcePathPatternForm(path, "d"));
+      assertEquals("Name 'd' not found: " + path, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      ".               , foo/module-info.java",
+      "src             , src/foo/module-info.java",
+      "./*/src         , foo/src/module-info.java",
+      "src/*/main/java , src/foo/main/java/module-info.java"
+    })
+    void modulePatternFormForModuleFoo(String expected, Path path) {
+      var actual = Strings.toModuleSourcePathPatternForm(path, "foo");
+      assertEquals(expected.replace('/', File.separatorChar), actual);
+    }
   }
 }

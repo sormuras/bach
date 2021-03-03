@@ -1,9 +1,11 @@
 package com.github.sormuras.bach.internal;
 
 import java.io.File;
+import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +56,22 @@ public class Strings {
   /** {@return a string composed of paths joined via the given delimiter} */
   public static String join(Collection<Path> paths, CharSequence delimiter) {
     return paths.stream().map(Path::toString).collect(Collectors.joining(delimiter));
+  }
+
+  /** {@return a string in module-pattern form usable as a {@code --module-source-path} value} */
+  public static String toModuleSourcePathPatternForm(Path info, String module) {
+    var deque = new ArrayDeque<String>();
+    for (var element : info.normalize()) {
+      var name = element.toString();
+      if (name.equals("module-info.java")) continue;
+      deque.addLast(name.equals(module) ? "*" : name);
+    }
+    var pattern = String.join(File.separator, deque);
+    if (!pattern.contains("*")) throw new FindException("Name '" + module + "' not found: " + info);
+    if (pattern.equals("*")) return ".";
+    if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+    if (pattern.startsWith("*")) return "." + File.separator + pattern;
+    return pattern;
   }
 
   /** Hidden default constructor. */
