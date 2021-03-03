@@ -1,10 +1,13 @@
 package com.github.sormuras.bach.internal;
 
+import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /** String-related helpers. */
 public class Strings {
@@ -41,6 +44,16 @@ public class Strings {
   public static String nameOrElse(Path path, String defautName) {
     var name = path.toAbsolutePath().getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
+  }
+
+  /** {@return a string composed of paths joined via the system-dependent path-separator} */
+  public static String join(Collection<Path> paths) {
+    return join(paths, File.pathSeparator);
+  }
+
+  /** {@return a string composed of paths joined via the given delimiter} */
+  public static String join(Collection<Path> paths, CharSequence delimiter) {
+    return paths.stream().map(Path::toString).collect(Collectors.joining(delimiter));
   }
 
   /** Hidden default constructor. */
