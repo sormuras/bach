@@ -8,6 +8,7 @@ import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
+import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
 import com.github.sormuras.bach.project.TestSpace;
@@ -102,13 +103,13 @@ public interface ProjectComputerAPI {
     var main =
         new MainSpace(
             computeProjectSpaceModules(info.modules()),
-            Arrays.stream(info.modulePaths()).map(root::resolve).toList(),
+            ModulePaths.of(root, info.modulePaths()),
             info.compileModulesForJavaRelease(),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
             computeProjectSpaceModules(info.testModules()),
-            Arrays.stream(info.testModulePaths()).map(root::resolve).toList(),
+            ModulePaths.of(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
   }

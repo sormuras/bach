@@ -63,7 +63,7 @@ public interface ProjectBuilderAPI {
         .ifTrue(release != 0, javac -> javac.add("--release", release))
         .add("--module", String.join(",", main.modules()))
         .add("--module-version", project.version())
-        .ifPresent(main.modulePaths(), (javac, paths) -> javac.add("--module-path", paths))
+        .ifPresent(main.modulePaths().list(), (javac, paths) -> javac.add("--module-path", paths))
         .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
         .addAll(main.tweaks().arguments("javac"))
         .add("-d", classes);
