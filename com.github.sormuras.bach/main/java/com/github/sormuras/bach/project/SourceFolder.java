@@ -23,7 +23,7 @@ public record SourceFolder(Path path, int release) {
 
   public static SourceFolder of(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    return new SourceFolder(path, parseReleaseNumber(Strings.toName(path)));
+    return new SourceFolder(path, parseReleaseNumber(Strings.name(path)));
   }
 
   /** {@return {@code true} if a non-zero release target value is stored, else {@code false}} */
