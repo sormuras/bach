@@ -1,8 +1,6 @@
 package com.github.sormuras.bach.internal;
 
-import java.io.File;
 import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,10 +14,9 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /** Internal {@link Path}-related utilities. */
-public class Paths {
+class PathsScratches {
 
   public static Path createDirectories(Path directory) {
     try {
@@ -57,7 +54,7 @@ public class Paths {
     if (Files.notExists(path)) return false;
     try {
       if (Files.isDirectory(path)) {
-        Paths.deleteDirectories(path, __ -> true);
+        PathsScratches.deleteDirectories(path, __ -> true);
         return true;
       } else return Files.deleteIfExists(path);
     } catch (Exception e) {
@@ -71,24 +68,13 @@ public class Paths {
     return deque;
   }
 
-  /** List content of specified directory in natural order with the given filter applied. */
-  public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
-    var paths = new TreeSet<>(Comparator.comparing(Path::toString));
-    try (var directoryStream = Files.newDirectoryStream(directory, filter)) {
-      directoryStream.forEach(paths::add);
-    } catch (Exception e) {
-      throw new Error("Stream directory '" + directory + "' failed: " + e, e);
-    }
-    return List.copyOf(paths);
-  }
-
   public static void find(Path start, String glob, Consumer<Path> consumer) {
     var pattern = glob;
     while (pattern.startsWith(".") || pattern.startsWith("/")) pattern = pattern.substring(1);
     var matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
     try (var stream =
         Files.find(start, 99, (path, bfa) -> matcher.matches(start.relativize(path)))) {
-      stream.filter(Paths::isVisible).map(Path::normalize).forEach(consumer);
+      stream.filter(PathsScratches::isVisible).map(Path::normalize).forEach(consumer);
     } catch (Exception exception) {
       throw new RuntimeException("find failed: " + start + " -> " + glob, exception);
     }
@@ -109,7 +95,7 @@ public class Paths {
 
   public static List<Path> findModuleInfoJavaFiles(Path directory, int limit) {
     if (isRoot(directory)) throw new IllegalStateException("Root directory: " + directory.toUri());
-    var files = find(List.of(directory), limit, Paths::isModuleInfoJavaFile);
+    var files = find(List.of(directory), limit, PathsScratches::isModuleInfoJavaFile);
     return List.copyOf(files);
   }
 
@@ -157,10 +143,6 @@ public class Paths {
     }
   }
 
-  public static String join(Collection<Path> paths) {
-    return paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
-  }
-
   /** @return the file name of the path as a string */
   public static String name(Path path) {
     return name(path, null);
@@ -185,5 +167,5 @@ public class Paths {
   }
 
   /** Hidden default constructor. */
-  private Paths() {}
+  private PathsScratches() {}
 }

@@ -43,7 +43,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class PathsTests {
+class PathsScratchesTests {
 
   @ParameterizedTest
   @ValueSource(strings = {"", ".", "a/..", "./a/b/../../."})
@@ -60,7 +60,7 @@ class PathsTests {
     void deleteEmptyDirectory() throws Exception {
       var empty = Files.createTempDirectory("deleteEmptyDirectory");
       assertTrue(Files.exists(empty));
-      var deleted = Paths.deleteDirectories(empty);
+      var deleted = PathsScratches.deleteDirectories(empty);
       assertSame(empty, deleted);
       assertTrue(Files.notExists(deleted));
     }
@@ -68,7 +68,7 @@ class PathsTests {
     @Test
     void deleteNonExistingPath() {
       var root = Path.of("does not exist");
-      assertDoesNotThrow(() -> Paths.deleteDirectories(root));
+      assertDoesNotThrow(() -> PathsScratches.deleteDirectories(root));
     }
   }
 
@@ -78,7 +78,7 @@ class PathsTests {
     Stream<DynamicTest> fileSystemRootDirectoriesAreRoots() {
       var roots = FileSystems.getDefault().getRootDirectories();
       return StreamSupport.stream(roots.spliterator(), false)
-          .map(path -> dynamicTest(path.toString(), () -> assertTrue(PathsTests.isRoot(path))));
+          .map(path -> dynamicTest(path.toString(), () -> assertTrue(PathsScratchesTests.isRoot(path))));
     }
   }
 
@@ -87,7 +87,7 @@ class PathsTests {
 
     @Test
     void listingOfBaseDirectory() {
-      var actual = PathsTests.list(Path.of(""), Files::isRegularFile);
+      var actual = PathsScratchesTests.list(Path.of(""), Files::isRegularFile);
       assertLinesMatch(
           List.of(".gitignore", ">> MORE FILES >>", "README.md", ">> more files >>"),
           actual.stream().map(Path::toString).collect(Collectors.toList()));
@@ -95,9 +95,9 @@ class PathsTests {
 
     @Test
     void listEmptyDirectoryYieldsAnEmptyListOfPaths(@TempDir Path temp) {
-      assertEquals(List.of(), PathsTests.list(temp, __ -> true));
-      assertEquals(List.of(), PathsTests.list(temp, Files::isRegularFile));
-      assertEquals(List.of(), PathsTests.list(temp, Files::isDirectory));
+      assertEquals(List.of(), PathsScratchesTests.list(temp, __ -> true));
+      assertEquals(List.of(), PathsScratchesTests.list(temp, Files::isRegularFile));
+      assertEquals(List.of(), PathsScratchesTests.list(temp, Files::isDirectory));
     }
   }
 
@@ -106,12 +106,12 @@ class PathsTests {
 
     @Test
     void emptyPathYieldsAnEmptyDeque() {
-      assertEquals("[]", PathsTests.deque(Path.of("")).toString());
+      assertEquals("[]", PathsScratchesTests.deque(Path.of("")).toString());
     }
 
     @Test
     void reversed() {
-      assertEquals("[c, b, a]", PathsTests.deque(Path.of("a", "b", "c")).toString());
+      assertEquals("[c, b, a]", PathsScratchesTests.deque(Path.of("a", "b", "c")).toString());
     }
   }
 
@@ -128,9 +128,9 @@ class PathsTests {
       assertEquals(1 + 3, Files.walk(root).count());
       assertTreeWalkMatches(root, "file-0", "file-1", "file-2");
 
-      createFiles(Paths.createDirectories(root.resolve("a")), 3);
-      createFiles(Paths.createDirectories(root.resolve("b")), 3);
-      createFiles(Paths.createDirectories(root.resolve("x")), 4);
+      createFiles(PathsScratches.createDirectories(root.resolve("a")), 3);
+      createFiles(PathsScratches.createDirectories(root.resolve("b")), 3);
+      createFiles(PathsScratches.createDirectories(root.resolve("x")), 4);
       assertTrue(Files.exists(root));
       assertTreeWalkMatches(
           root,
@@ -151,7 +151,7 @@ class PathsTests {
           "x/file-2",
           "x/file-3");
 
-      Paths.deleteDirectories(root, path -> path.startsWith(root.resolve("b")));
+      PathsScratches.deleteDirectories(root, path -> path.startsWith(root.resolve("b")));
       assertTreeWalkMatches(
           root,
           "a",
@@ -167,7 +167,7 @@ class PathsTests {
           "x/file-2",
           "x/file-3");
 
-      Paths.deleteDirectories(root, path -> path.endsWith("file-0"));
+      PathsScratches.deleteDirectories(root, path -> path.endsWith("file-0"));
       assertTreeWalkMatches(
           root,
           "a",
@@ -220,7 +220,7 @@ class PathsTests {
           "x/y/file-2",
           "x/y/file-3");
 
-      assertTrue(Paths.deleteIfExists(root));
+      assertTrue(PathsScratches.deleteIfExists(root));
       assertTrue(Files.notExists(root));
     }
   }
@@ -390,7 +390,7 @@ class PathsTests {
 
   public static List<Path> findModuleInfoJavaFiles(Path directory, int limit) {
     if (isRoot(directory)) throw new IllegalStateException("Root directory: " + directory);
-    var units = find(List.of(directory), limit, PathsTests::isModuleInfoJavaFile);
+    var units = find(List.of(directory), limit, PathsScratchesTests::isModuleInfoJavaFile);
     if (units.isEmpty()) throw new IllegalStateException("No module-info.java: " + directory);
     return List.copyOf(units);
   }
