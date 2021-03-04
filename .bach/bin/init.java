@@ -58,7 +58,7 @@ class init {
   }
 
   static String computePathPrefixToBachBinDirectory(Runnable runnable) {
-    var prefix = BIN.toString() + File.pathSeparator;
+    var prefix = BIN.toString() + File.separator;
     var path = System.getenv("PATH");
     if (path == null) return prefix;
     var target = BIN.toString();
