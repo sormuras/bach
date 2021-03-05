@@ -74,7 +74,7 @@ public interface ProjectBuilderAPI {
     var project = bach().project();
     var main = project.spaces().main();
     var name = module.name();
-    var file = bach().folders().workspace("modules", bach().computeMainJarFileName(name));
+    var file = bach().folders().workspace("modules", buildProjectJarFileName(name));
     var jar =
         Command.jar()
             .ifTrue(bach().is(Options.Flag.VERBOSE), command -> command.add("--verbose"))
@@ -85,6 +85,10 @@ public interface ProjectBuilderAPI {
     var baseClasses = classes.resolve(name);
     if (Files.isDirectory(baseClasses)) jar = jar.add("-C", baseClasses, ".");
     return jar;
+  }
+
+  default String buildProjectJarFileName(String module) {
+    return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 
   default void buildProjectTestSpace() throws Exception {

@@ -52,7 +52,7 @@ class BachTests {
         project.spaces().test().tweaks().values());
     // computations
     assertThrows(LookupException.class, () -> bach.computeExternalModuleUri("java.base"));
-    assertEquals("foo@0.jar", bach.computeMainJarFileName("foo"));
+    assertEquals("foo@0.jar", bach.buildProjectJarFileName("foo"));
     assertEquals("jar", bach.computeToolProvider("jar").name());
     assertEquals("javac", bach.computeToolProvider("javac").name());
     assertEquals("javadoc", bach.computeToolProvider("javadoc").name());

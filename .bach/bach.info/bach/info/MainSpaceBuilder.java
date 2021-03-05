@@ -29,7 +29,7 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
     bach().run(javac).requireSuccessful();
 
     Files.createDirectories(modules);
-    var file = modules.resolve(bach().computeMainJarFileName(module));
+    var file = modules.resolve(bach().buildProjectJarFileName(module));
     var jar =
         Command.jar()
             .add("--verbose")

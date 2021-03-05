@@ -69,13 +69,16 @@ public interface ProjectComputerAPI {
 
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
     var requires = Set.of(info.requires());
+    bach().debug("Computed additionally required modules: %d", requires.size());
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
     for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
+    bach().debug("Computed module lookup functions: %s", lookups.size());
     var metamap =
         Arrays.stream(info.metadata())
             .map(this::computeProjectModuleMetadata)
             .collect(Collectors.toMap(ModuleMetadata::name, Function.identity()));
+    bach().debug("External modules directory present: %s", settings.folders().externalModules());
     return new Libraries(requires, List.copyOf(lookups), Map.copyOf(metamap));
   }
 
@@ -159,7 +162,6 @@ public interface ProjectComputerAPI {
     return new SourceFolders(list);
   }
 
-
   default ModuleDeclaration computeProjectModuleDeclaration(Path root, Path path, boolean treatSourcesAsResources) {
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     var reference = ModuleInfoReference.of(info);
@@ -202,9 +204,5 @@ public interface ProjectComputerAPI {
       tweaks.add(new Tweak(tweak.tool(), List.copyOf(arguments)));
     }
     return new Tweaks(List.copyOf(tweaks));
-  }
-
-  default String computeMainJarFileName(String module) {
-    return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 }
