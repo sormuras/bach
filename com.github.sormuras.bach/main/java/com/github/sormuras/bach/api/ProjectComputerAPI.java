@@ -5,14 +5,19 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.internal.Paths;
+import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.ModuleDeclarations;
+import com.github.sormuras.bach.project.ModuleInfoReference;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.Settings;
+import com.github.sormuras.bach.project.SourceFolder;
+import com.github.sormuras.bach.project.SourceFolders;
 import com.github.sormuras.bach.project.Spaces;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.project.Tweak;
@@ -21,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,23 +112,23 @@ public interface ProjectComputerAPI {
     var root = settings.folders().root();
     var main =
         new MainSpace(
-            computeProjectSpaceModules(root, info.modules()),
-            ModulePaths.of(root, info.modulePaths()),
+            computeProjectSpaceModuleDeclarations(root, info.modules()),
+            computeProjectModulePaths(root, info.modulePaths()),
             info.compileModulesForJavaRelease(),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
-            computeProjectSpaceModules(root, info.testModules()),
-            ModulePaths.of(root, info.testModulePaths()),
+            computeProjectSpaceModuleDeclarations(root, info.testModules()),
+            computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
   }
 
-  default ModuleDeclarations computeProjectSpaceModules(Path root, String... modules) {
+  default ModuleDeclarations computeProjectSpaceModuleDeclarations(Path root, String... modules) {
     var treatSourcesAsResources = bach().is(Options.Flag.VERBOSE);
     if (modules.length == 1 && "*".equals(modules[0])) {
       if ( Files.isRegularFile(root.resolve("module-info.java"))) {
-        var declaration = ModuleDeclaration.of(root, root, treatSourcesAsResources);
+        var declaration = computeProjectModuleDeclaration(root, root, treatSourcesAsResources);
         return new ModuleDeclarations(Map.of(declaration.name(), declaration));
       }
       return new ModuleDeclarations(Map.of());
@@ -133,8 +139,58 @@ public interface ProjectComputerAPI {
                 Collectors.toMap(
                     Function.identity(),
                     module ->
-                        ModuleDeclaration.of(
+                        computeProjectModuleDeclaration(
                             root, root.resolve(module), treatSourcesAsResources))));
+  }
+
+  default SourceFolder computeProjectSourceFolder(Path path) {
+    if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
+    var release = SourceFolder.parseReleaseNumber(Strings.name(path));
+    return new SourceFolder(path, release);
+  }
+
+  default SourceFolders computeProjectSourceFolders(Path path, String prefix) {
+    var list =
+        Paths.list(path, Files::isDirectory).stream()
+            .filter(candidate -> Strings.name(candidate).startsWith(prefix))
+            .map(this::computeProjectSourceFolder)
+            .sorted(Comparator.comparingInt(SourceFolder::release))
+            .toList();
+    return new SourceFolders(list);
+  }
+
+
+  default ModuleDeclaration computeProjectModuleDeclaration(Path root, Path path, boolean treatSourcesAsResources) {
+    var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
+    var reference = ModuleInfoReference.of(info);
+
+    // no source folder, module declaration in root directory
+    // "module-info.java"
+    if (root.relativize(info).getNameCount() == 1)
+      return new ModuleDeclaration(
+          reference, new SourceFolders(List.of()), new SourceFolders(List.of()));
+
+    // assume single source folder, directory and module names are equal
+    // "foo.bar/module-info.java" with "module foo.bar {...}"
+    var parent = info.getParent();
+    if (Strings.name(parent).equals(reference.name())) {
+      var folder = computeProjectSourceFolder(parent);
+      return new ModuleDeclaration(
+          reference,
+          new SourceFolders(List.of(folder)),
+          new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of()));
+    }
+    // sources = "java", "java-module", or targeted "java.*?(\d+)$"
+    // resources = "resources", or targeted "resource.*?(\d+)$"
+    var space = parent.getParent(); // usually "main", "test", or equivalent
+    if (space == null) throw new AssertionError("No parents' parent? info -> " + info);
+    var sources = computeProjectSourceFolders(space, "java");
+    var resources = computeProjectSourceFolders(space, treatSourcesAsResources ? "" : "resource");
+    return new ModuleDeclaration(reference, sources, resources);
+  }
+
+  default ModulePaths computeProjectModulePaths(Path root, String... paths) {
+    return new ModulePaths(Arrays.stream(paths).map(root::resolve).toList());
   }
 
   default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {

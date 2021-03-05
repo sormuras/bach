@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.ModuleInfoReference;
 import com.github.sormuras.bach.project.SourceFolders;
@@ -14,6 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class ModuleDeclarationTests {
+
+  private final static Bach BACH = new Bach(Options.of());
+
+  private static ModuleDeclaration newModuleDeclaration(Path root, Path path) {
+    return BACH.computeProjectModuleDeclaration(root, path, false);
+  }
 
   @Test
   void empty(@TempDir Path temp) throws Exception {
@@ -33,7 +41,7 @@ class ModuleDeclarationTests {
   void checkBachMainJava() {
     var module = "com.github.sormuras.bach";
     var info = Path.of(module, "main", "java", "module-info.java");
-    var declaration = ModuleDeclaration.of(info, false);
+    var declaration = newModuleDeclaration(Path.of(""), info);
     assertEquals(module, declaration.name());
     var first = declaration.sources().first();
     assertEquals(info.getParent(), first.path());
@@ -46,7 +54,7 @@ class ModuleDeclarationTests {
     var module = "com.github.sormuras.bach";
     var java = Path.of(module,"test", "java");
     var info = Path.of(module,"test", "java-module", "module-info.java");
-    var declaration = ModuleDeclaration.of(info, false);
+    var declaration = newModuleDeclaration(Path.of(""), info);
     assertEquals(module, declaration.name());
     var first = declaration.sources().first();
     assertEquals(java, first.path());
@@ -61,7 +69,7 @@ class ModuleDeclarationTests {
     var module = "foo";
     var root = Path.of("test.projects", "MultiRelease-11");
     var info = root.resolve(module + "/main/java/module-info.java");
-    var declaration = ModuleDeclaration.of(root, info, false);
+    var declaration = newModuleDeclaration(root, info);
     assertEquals(module, declaration.name());
 
     assertEquals(info.getParent(), declaration.sources().first().path());
@@ -79,7 +87,7 @@ class ModuleDeclarationTests {
     var module = "com.greetings";
     var root = Path.of("test.projects", "JigsawQuickStartGreetings");
     var info = root.resolve(module + "/module-info.java");
-    var declaration = ModuleDeclaration.of(root, info, false);
+    var declaration = newModuleDeclaration(root, info);
     assertEquals(module, declaration.name());
     assertEquals(info.getParent(), declaration.sources().first().path());
     assertTrue(declaration.resources().list().isEmpty());
@@ -90,7 +98,7 @@ class ModuleDeclarationTests {
     var module = "simplicissimus";
     var root = Path.of("test.projects", "Simplicissimus");
     var info = root.resolve("module-info.java");
-    var declaration = ModuleDeclaration.of(root, info, false);
+    var declaration = newModuleDeclaration(root, info);
     assertEquals(module, declaration.name());
     assertTrue(declaration.sources().list().isEmpty());
     assertTrue(declaration.resources().list().isEmpty());

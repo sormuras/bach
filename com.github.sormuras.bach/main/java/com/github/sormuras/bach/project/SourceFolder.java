@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.internal.Strings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -13,17 +12,12 @@ import java.util.regex.Pattern;
  */
 public record SourceFolder(Path path, int release) {
 
-  static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
+  public static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
 
-  static int parseReleaseNumber(String string) {
+  public static int parseReleaseNumber(String string) {
     if (string == null || string.isEmpty()) return 0;
     var matcher = RELEASE_PATTERN.matcher(string);
     return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
-  }
-
-  public static SourceFolder of(Path path) {
-    if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    return new SourceFolder(path, parseReleaseNumber(Strings.name(path)));
   }
 
   /** {@return {@code true} if a non-zero release target value is stored, else {@code false}} */

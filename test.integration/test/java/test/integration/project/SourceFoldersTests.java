@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.project.SourceFolders;
 import java.io.File;
@@ -15,12 +17,22 @@ import org.junit.jupiter.api.Test;
 
 class SourceFoldersTests {
 
+  private final static Bach BACH = new Bach(Options.of());
+
+  private static SourceFolder newSourceFolder(Path path) {
+    return BACH.computeProjectSourceFolder(path);
+  }
+
+  private static SourceFolders newSourceFolders(Path path, String prefix) {
+    return BACH.computeProjectSourceFolders(path, prefix);
+  }
+
   @Test
   void empty() {
     var sourceFolders = new SourceFolders(List.of());
     assertTrue(sourceFolders.list().isEmpty());
     assertThrows(ArrayIndexOutOfBoundsException.class, sourceFolders::first);
-    assertThrows(IllegalStateException.class, sourceFolders::toModuleSpecificSourcePath);
+    assertEquals(".", sourceFolders.toModuleSpecificSourcePath());
   }
 
   @Nested
@@ -40,17 +52,17 @@ class SourceFoldersTests {
     void crafted() {
       var list =
           List.of(
-              SourceFolder.of(main.resolve("java")),
-              SourceFolder.of(main.resolve("resources")),
-              SourceFolder.of(main.resolve("java-11")),
-              SourceFolder.of(main.resolve("resources-13")),
-              SourceFolder.of(main.resolve("java-15")));
+              newSourceFolder(main.resolve("java")),
+              newSourceFolder(main.resolve("resources")),
+              newSourceFolder(main.resolve("java-11")),
+              newSourceFolder(main.resolve("resources-13")),
+              newSourceFolder(main.resolve("java-15")));
       check(new SourceFolders(list));
     }
 
     @Test
     void factory() {
-      check(SourceFolders.of(main, ""));
+      check(newSourceFolders(main, ""));
     }
   }
 
@@ -60,9 +72,9 @@ class SourceFoldersTests {
     var base = main.resolve("java");
     var list =
         List.of(
-            SourceFolder.of(base),
-            SourceFolder.of(main.resolve("java-module")),
-            SourceFolder.of(main.resolve("resources")));
+            newSourceFolder(base),
+            newSourceFolder(main.resolve("java-module")),
+            newSourceFolder(main.resolve("resources")));
     var sourceFolders = new SourceFolders(list);
     assertEquals(3, sourceFolders.list().size());
     assertSame(base, sourceFolders.first().path());

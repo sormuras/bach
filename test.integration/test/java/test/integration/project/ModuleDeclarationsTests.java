@@ -3,6 +3,8 @@ package test.integration.project;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.ModuleDeclarations;
 import java.nio.file.Path;
@@ -13,6 +15,16 @@ import org.junit.jupiter.api.Test;
 
 class ModuleDeclarationsTests {
 
+  private static final Bach BACH = new Bach(Options.of());
+
+  private static ModuleDeclaration newModuleDeclaration(Path path) {
+    return newModuleDeclaration(Path.of(""), path);
+  }
+
+  private static ModuleDeclaration newModuleDeclaration(Path root, Path path) {
+    return BACH.computeProjectModuleDeclaration(root, path, false);
+  }
+
   @Nested
   class BachProject {
     @Test
@@ -20,10 +32,10 @@ class ModuleDeclarationsTests {
       var module = "com.github.sormuras.bach";
       var main =
           new ModuleDeclarations(
-              Map.of(module, ModuleDeclaration.of(Path.of(module, "main", "java"), false)));
+              Map.of(module, newModuleDeclaration(Path.of(module, "main", "java"))));
       var test =
           new ModuleDeclarations(
-              Map.of(module, ModuleDeclaration.of(Path.of(module, "test", "java-module"), false)));
+              Map.of(module, newModuleDeclaration(Path.of(module, "test", "java-module"))));
 
       var expected = Map.of(module, Path.of(module, "main", "java").toString());
       assertEquals(expected, test.toModulePatches(main));
@@ -38,9 +50,9 @@ class ModuleDeclarationsTests {
         new ModuleDeclarations(
             Map.of(
                 "com.greetings",
-                ModuleDeclaration.of(root, root.resolve("com.greetings"), false),
+                newModuleDeclaration(root, root.resolve("com.greetings")),
                 "org.astro",
-                ModuleDeclaration.of(root, root.resolve("org.astro"), false)));
+                newModuleDeclaration(root, root.resolve("org.astro"))));
 
     @Test
     void checkNames() {
