@@ -1,9 +1,15 @@
 package com.github.sormuras.bach.project;
 
-import java.util.List;
-
-/** Main code space. */
-public record MainSpace(List<String> modules, ModulePaths modulePaths, int release, Tweaks tweaks)
+/**
+ * A code space for main modules.
+ *
+ * @param declarations the list of main modules to compile
+ * @param modulePaths the list of module paths
+ * @param release the Java version (release feature number) to compile for
+ * @param tweaks the additional arguments to be passed on a per-tool basis
+ */
+public record MainSpace(
+    ModuleDeclarations declarations, ModulePaths modulePaths, int release, Tweaks tweaks)
     implements Space {
   @Override
   public String name() {

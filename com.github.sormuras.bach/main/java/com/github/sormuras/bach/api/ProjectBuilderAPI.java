@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import java.nio.file.Files;
@@ -32,7 +33,7 @@ public interface ProjectBuilderAPI {
 
   default void buildProjectMainSpace() throws Exception {
     var main = bach().project().spaces().main();
-    var modules = main.modules();
+    var modules = main.declarations();
     if (modules.isEmpty()) {
       bach().debug("Main module list is empty, nothing to build here.");
       return;
@@ -47,7 +48,7 @@ public interface ProjectBuilderAPI {
 
     Files.createDirectories(bach().folders().workspace("modules"));
     bach()
-        .run(modules.stream().map(module -> buildProjectMainJar(module, classes)))
+        .run(modules.map().values().stream().map(module -> buildProjectMainJar(module, classes)))
         .requireSuccessful();
   }
 
@@ -61,7 +62,7 @@ public interface ProjectBuilderAPI {
     var main = project.spaces().main();
     return Command.javac()
         .ifTrue(release != 0, javac -> javac.add("--release", release))
-        .add("--module", String.join(",", main.modules()))
+        .add("--module", main.declarations().toNames(","))
         .add("--module-version", project.version())
         .ifPresent(main.modulePaths().list(), (javac, paths) -> javac.add("--module-path", paths))
         .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
@@ -69,25 +70,26 @@ public interface ProjectBuilderAPI {
         .add("-d", classes);
   }
 
-  default Jar buildProjectMainJar(String module, Path classes) {
+  default Jar buildProjectMainJar(ModuleDeclaration module, Path classes) {
     var project = bach().project();
     var main = project.spaces().main();
-    var file = bach().folders().workspace("modules", bach().computeMainJarFileName(module));
+    var name = module.name();
+    var file = bach().folders().workspace("modules", bach().computeMainJarFileName(name));
     var jar =
         Command.jar()
             .ifTrue(bach().is(Options.Flag.VERBOSE), command -> command.add("--verbose"))
             .add("--create")
             .add("--file", file)
             .addAll(main.tweaks().arguments("jar"))
-            .addAll(main.tweaks().arguments("jar(" + module + ")"));
-    var baseClasses = classes.resolve(module);
+            .addAll(main.tweaks().arguments("jar(" + name + ")"));
+    var baseClasses = classes.resolve(name);
     if (Files.isDirectory(baseClasses)) jar = jar.add("-C", baseClasses, ".");
     return jar;
   }
 
   default void buildProjectTestSpace() throws Exception {
     var test = bach().project().spaces().test();
-    var modules = test.modules();
+    var modules = test.declarations();
     if (modules.isEmpty()) {
       bach().debug("Test module list is empty, nothing to build here.");
       return;

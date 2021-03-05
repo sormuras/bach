@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
@@ -8,12 +9,15 @@ import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
+import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.ModuleDeclarations;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.Spaces;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.project.Tweak;
 import com.github.sormuras.bach.project.Tweaks;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,21 +106,35 @@ public interface ProjectComputerAPI {
     var root = settings.folders().root();
     var main =
         new MainSpace(
-            computeProjectSpaceModules(info.modules()),
+            computeProjectSpaceModules(root, info.modules()),
             ModulePaths.of(root, info.modulePaths()),
             info.compileModulesForJavaRelease(),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
-            computeProjectSpaceModules(info.testModules()),
+            computeProjectSpaceModules(root, info.testModules()),
             ModulePaths.of(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
   }
 
-  default List<String> computeProjectSpaceModules(String... modules) {
-    if (modules.length == 1 && "*".equals(modules[0])) return List.of();
-    return List.of(modules);
+  default ModuleDeclarations computeProjectSpaceModules(Path root, String... modules) {
+    var treatSourcesAsResources = bach().is(Options.Flag.VERBOSE);
+    if (modules.length == 1 && "*".equals(modules[0])) {
+      if ( Files.isRegularFile(root.resolve("module-info.java"))) {
+        var declaration = ModuleDeclaration.of(root, root, treatSourcesAsResources);
+        return new ModuleDeclarations(Map.of(declaration.name(), declaration));
+      }
+      return new ModuleDeclarations(Map.of());
+    }
+    return new ModuleDeclarations(
+        List.of(modules).stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    module ->
+                        ModuleDeclaration.of(
+                            root, root.resolve(module), treatSourcesAsResources))));
   }
 
   default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {
