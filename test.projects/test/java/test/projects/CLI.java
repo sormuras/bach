@@ -8,17 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** A project build context. */
-class Context {
+class CLI {
 
   final Path root;
   final Path temp;
   final int code;
 
-  Context(String name, Path temp) {
+  CLI(String name, Path temp) {
     this(Path.of("test.projects", name), temp, 0);
   }
 
-  Context(Path root, Path temp, int code) {
+  CLI(Path root, Path temp, int code) {
     this.root = root;
     this.temp = temp;
     this.code = code;
