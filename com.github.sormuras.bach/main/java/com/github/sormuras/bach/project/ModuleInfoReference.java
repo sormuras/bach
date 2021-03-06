@@ -60,9 +60,10 @@ public final class ModuleInfoReference extends ModuleReference {
 
   /** Parse module definition from the given source code. */
   public static Builder parse(String text) {
-    var source = text.lines()
-        .filter(line -> !line.trim().startsWith("//"))
-        .collect(Collectors.joining("\n"));
+    var source =
+        text.lines()
+            .filter(line -> !line.trim().startsWith("//"))
+            .collect(Collectors.joining("\n"));
     // `module Identifier {. Identifier}`
     var nameMatcher = NAME.matcher(source);
     if (!nameMatcher.find())

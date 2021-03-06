@@ -78,7 +78,9 @@ class PathsScratchesTests {
     Stream<DynamicTest> fileSystemRootDirectoriesAreRoots() {
       var roots = FileSystems.getDefault().getRootDirectories();
       return StreamSupport.stream(roots.spliterator(), false)
-          .map(path -> dynamicTest(path.toString(), () -> assertTrue(PathsScratchesTests.isRoot(path))));
+          .map(
+              path ->
+                  dynamicTest(path.toString(), () -> assertTrue(PathsScratchesTests.isRoot(path))));
     }
   }
 

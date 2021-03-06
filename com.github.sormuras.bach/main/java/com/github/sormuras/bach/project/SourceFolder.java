@@ -25,9 +25,7 @@ public record SourceFolder(Path path, int release) {
     return release != 0;
   }
 
-  /**
-   * {@return {@code true} if a file named {@code module-info.java} is in {@link #path()}}
-   */
+  /** {@return {@code true} if a file named {@code module-info.java} is in {@link #path()}} */
   public boolean isModuleInfoJavaPresent() {
     return Files.isRegularFile(path.resolve("module-info.java"));
   }

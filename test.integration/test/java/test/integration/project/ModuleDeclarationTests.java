@@ -17,7 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ModuleDeclarationTests {
 
-  private final static Bach BACH = new Bach(Options.of());
+  private static final Bach BACH = new Bach(Options.of());
 
   private static ModuleDeclaration newModuleDeclaration(Path root, Path path) {
     return BACH.computeProjectModuleDeclaration(root, path, false);
@@ -52,8 +52,8 @@ class ModuleDeclarationTests {
   @Test
   void checkBachTestJava() {
     var module = "com.github.sormuras.bach";
-    var java = Path.of(module,"test", "java");
-    var info = Path.of(module,"test", "java-module", "module-info.java");
+    var java = Path.of(module, "test", "java");
+    var info = Path.of(module, "test", "java-module", "module-info.java");
     var declaration = newModuleDeclaration(Path.of(""), info);
     assertEquals(module, declaration.name());
     var first = declaration.sources().first();

@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.project;
 
-
 /**
  * A code space for test modules.
  *

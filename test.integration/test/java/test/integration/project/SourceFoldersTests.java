@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 class SourceFoldersTests {
 
-  private final static Bach BACH = new Bach(Options.of());
+  private static final Bach BACH = new Bach(Options.of());
 
   private static SourceFolder newSourceFolder(Path path) {
     return BACH.computeProjectSourceFolder(path);

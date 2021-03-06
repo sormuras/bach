@@ -20,5 +20,4 @@ public record ModuleDeclaration(
   public String name() {
     return reference.name();
   }
-
 }

@@ -37,7 +37,7 @@ class SourceFolderTests {
     }
   }
 
-  private final static Bach BACH = new Bach(Options.of());
+  private static final Bach BACH = new Bach(Options.of());
 
   private static SourceFolder newSourceFolder(Path path) {
     return BACH.computeProjectSourceFolder(path);
