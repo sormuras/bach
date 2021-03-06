@@ -14,6 +14,7 @@ class SimpleTests {
     assertLinesMatch(
         """
         Options.+
+        >> BACH'S INITIALIZATION >>
         // Perform main action: `build`
         Build simple 1.0.1
         >> INFO + BUILD >>

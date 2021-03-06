@@ -99,6 +99,13 @@ public interface Command<C extends Command<C>> {
     return collection.isEmpty() ? (C) this : function.apply((C) this, collection);
   }
 
+  @SuppressWarnings("unchecked")
+  default <E> C forEach(Collection<E> collection, BiFunction<C, E, C> function) {
+    var command = (C) this;
+    for (var element : collection) command = function.apply((C) this, element);
+    return command;
+  }
+
   default String toLine() {
     var joiner = new StringJoiner(" ");
     joiner.add(name());

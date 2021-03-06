@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.util.Paths;
 import com.github.sormuras.bach.Project;
@@ -29,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -112,37 +112,49 @@ public interface ProjectComputerAPI {
 
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
     var root = settings.folders().root();
+    var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
+
+    var testDeclarations = new TreeMap<String, ModuleDeclaration>();
+    var mainDeclarations = new TreeMap<String, ModuleDeclaration>();
+
+    var iterator = paths.listIterator();
+    while (iterator.hasNext()) {
+      var path = iterator.next();
+      if (path.startsWith(".bach")) continue;
+      var reference = ModuleInfoReference.of(path);
+      if (computeProjectSpaceTestMembership(reference)) {
+        var declaration = computeProjectModuleDeclaration(root, path, false);
+        testDeclarations.put(declaration.name(), declaration);
+        iterator.remove();
+        continue;
+      }
+      if (computeProjectSpaceMainMembership(reference)) {
+        var declaration = computeProjectModuleDeclaration(root, path, false);
+        mainDeclarations.put(declaration.name(), declaration);
+        iterator.remove();
+      }
+    }
+
     var main =
         new MainSpace(
-            computeProjectSpaceModuleDeclarations(root, info.modules()),
+            new ModuleDeclarations(mainDeclarations),
             computeProjectModulePaths(root, info.modulePaths()),
             info.compileModulesForJavaRelease(),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
-            computeProjectSpaceModuleDeclarations(root, info.testModules()),
+            new ModuleDeclarations(testDeclarations),
             computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
   }
 
-  default ModuleDeclarations computeProjectSpaceModuleDeclarations(Path root, String... modules) {
-    var treatSourcesAsResources = bach().is(Options.Flag.VERBOSE);
-    if (modules.length == 1 && "*".equals(modules[0])) {
-      if ( Files.isRegularFile(root.resolve("module-info.java"))) {
-        var declaration = computeProjectModuleDeclaration(root, root, treatSourcesAsResources);
-        return new ModuleDeclarations(Map.of(declaration.name(), declaration));
-      }
-      return new ModuleDeclarations(Map.of());
-    }
-    return new ModuleDeclarations(
-        List.of(modules).stream()
-            .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    module ->
-                        computeProjectModuleDeclaration(
-                            root, root.resolve(module), treatSourcesAsResources))));
+  default boolean computeProjectSpaceTestMembership(ModuleInfoReference reference) {
+    return reference.name().startsWith("test.");
+  }
+
+  default boolean computeProjectSpaceMainMembership(ModuleInfoReference reference) {
+    return true;
   }
 
   default SourceFolder computeProjectSourceFolder(Path path) {
