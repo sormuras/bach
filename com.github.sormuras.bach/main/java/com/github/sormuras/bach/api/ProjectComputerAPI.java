@@ -3,10 +3,9 @@ package com.github.sormuras.bach.api;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.util.Paths;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
-import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
@@ -148,14 +147,14 @@ public interface ProjectComputerAPI {
 
   default SourceFolder computeProjectSourceFolder(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    var release = SourceFolder.parseReleaseNumber(Strings.name(path));
+    var release = SourceFolder.parseReleaseNumber(Paths.name(path));
     return new SourceFolder(path, release);
   }
 
-  default SourceFolders computeProjectSourceFolders(Path path, String prefix) {
+  default SourceFolders computeProjectSourceFolders(Path path, String namePrefix) {
     var list =
         Paths.list(path, Files::isDirectory).stream()
-            .filter(candidate -> Strings.name(candidate).startsWith(prefix))
+            .filter(candidate -> Paths.name(candidate).startsWith(namePrefix))
             .map(this::computeProjectSourceFolder)
             .sorted(Comparator.comparingInt(SourceFolder::release))
             .toList();
@@ -175,7 +174,7 @@ public interface ProjectComputerAPI {
     // assume single source folder, directory and module names are equal
     // "foo.bar/module-info.java" with "module foo.bar {...}"
     var parent = info.getParent();
-    if (Strings.name(parent).equals(reference.name())) {
+    if (Paths.name(parent).equals(reference.name())) {
       var folder = computeProjectSourceFolder(parent);
       return new ModuleDeclaration(
           reference,

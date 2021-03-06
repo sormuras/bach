@@ -20,6 +20,7 @@ module com.github.sormuras.bach {
   exports com.github.sormuras.bach.lookup;
   exports com.github.sormuras.bach.project;
   exports com.github.sormuras.bach.tool;
+  exports com.github.sormuras.bach.util;
 
   requires transitive java.net.http;
   requires jdk.compiler;
