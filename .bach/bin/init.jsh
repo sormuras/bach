@@ -4,8 +4,8 @@ System.out.printf(
 """
   , _
  /|/_)  _,    _   |)
-  |  \ / |   /    |/\
-  |(_/ \/|_/ \__/ |  |/.init
+  |  \\ / |   /    |/\\
+  |(_/ \\/|_/ \\__/ |  |/.init
 
         Java Runtime %s
     Operating System %s
