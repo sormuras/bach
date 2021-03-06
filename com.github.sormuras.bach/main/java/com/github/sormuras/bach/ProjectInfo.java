@@ -72,6 +72,8 @@ public @interface ProjectInfo {
    * {@return the Java version (release feature number) to compile main modules for}
    *
    * <p>For a value of {@code 0}, the default value, the {@code --release} option is omitted.
+   *
+   * @see Options.Property#PROJECT_TARGETS_JAVA
    */
   int compileModulesForJavaRelease() default 0;
 

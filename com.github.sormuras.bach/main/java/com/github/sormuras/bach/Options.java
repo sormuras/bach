@@ -225,11 +225,26 @@ public record Options(
     /** Root directory of the project, defaults to user's current directory. */
     PROJECT_ROOT("Specify the root directory of the project, defaults to user's current directory"),
 
-    /** Project's name passed via {@code --project-name NAME}. */
+    /**
+     * Project's name passed via {@code --project-name NAME}.
+     *
+     * @see ProjectInfo#name()
+     */
     PROJECT_NAME("Specify the name of the project."),
 
-    /** Project's version passed via {@code --project-version VERSION}. */
+    /**
+     * Project's version passed via {@code --project-version VERSION}.
+     *
+     * @see ProjectInfo#version()
+     */
     PROJECT_VERSION("Specify the version of the project."),
+
+    /**
+     * Compile main modules for specified Java release.
+     *
+     * @see ProjectInfo#compileModulesForJavaRelease()
+     */
+    PROJECT_TARGETS_JAVA("Compile main modules for specified Java release."),
 
     /** Skip all executions for the specified tool, this option is repeatable */
     SKIP_TOOL("Skip all executions of the specified tool.", true);

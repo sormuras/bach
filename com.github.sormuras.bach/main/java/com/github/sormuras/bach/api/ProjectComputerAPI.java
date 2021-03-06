@@ -2,7 +2,6 @@ package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options.Property;
-import com.github.sormuras.bach.util.Paths;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.lookup.ModuleLookup;
@@ -20,6 +19,7 @@ import com.github.sormuras.bach.project.Spaces;
 import com.github.sormuras.bach.project.TestSpace;
 import com.github.sormuras.bach.project.Tweak;
 import com.github.sormuras.bach.project.Tweaks;
+import com.github.sormuras.bach.util.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -135,11 +135,16 @@ public interface ProjectComputerAPI {
       }
     }
 
+    var release =
+        bach().get(Property.PROJECT_TARGETS_JAVA).stream()
+            .mapToInt(Integer::parseInt)
+            .findFirst()
+            .orElseGet(info::compileModulesForJavaRelease);
     var main =
         new MainSpace(
             new ModuleDeclarations(mainDeclarations),
             computeProjectModulePaths(root, info.modulePaths()),
-            info.compileModulesForJavaRelease(),
+            release,
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
@@ -173,7 +178,8 @@ public interface ProjectComputerAPI {
     return new SourceFolders(list);
   }
 
-  default ModuleDeclaration computeProjectModuleDeclaration(Path root, Path path, boolean treatSourcesAsResources) {
+  default ModuleDeclaration computeProjectModuleDeclaration(
+      Path root, Path path, boolean treatSourcesAsResources) {
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     var reference = ModuleInfoReference.of(info);
 
