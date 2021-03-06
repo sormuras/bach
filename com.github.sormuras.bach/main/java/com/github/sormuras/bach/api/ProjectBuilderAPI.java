@@ -7,6 +7,7 @@ import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
+import com.github.sormuras.bach.util.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,15 +39,18 @@ public interface ProjectBuilderAPI {
       bach().debug("Main module list is empty, nothing to build here.");
       return;
     }
-    bach().print("Build %d main module%s", modules.size(), modules.size() == 1 ? "" : "s");
+    var s = modules.size() == 1 ? "" : "s";
+    bach().print("Build %d main module%s: %s", modules.size(), s, modules.toNames(", "));
 
     var release = main.release();
     var feature = "" + (release == 0 ? Runtime.version().feature() : release);
     var classes = bach().folders().workspace("classes", main.name(), feature);
 
+    var workspaceModules = bach().folders().workspace("modules");
+    Paths.deleteDirectories(workspaceModules);
     bach().run(buildProjectMainJavac(release, classes)).requireSuccessful();
 
-    Files.createDirectories(bach().folders().workspace("modules"));
+    Files.createDirectories(workspaceModules);
     bach()
         .run(modules.map().values().stream().map(module -> buildProjectMainJar(module, classes)))
         .requireSuccessful();
