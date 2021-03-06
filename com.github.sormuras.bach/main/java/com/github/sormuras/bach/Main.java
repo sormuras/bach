@@ -73,7 +73,17 @@ public class Main implements ToolProvider {
   }
 
   public int run(Options options) {
-    if (options.is(Flag.VERBOSE)) options.out().println(options);
+    var out = options.out();
+    out.printf("Bach %s (%s)%n", Bach.version(), Bach.bin().toUri());
+    if (options.is(Flag.VERBOSE)) {
+      out.printf("  version = %s%n", Bach.version());
+      out.printf("  bin = %s%n", Bach.bin());
+      out.printf("  info = %s%n", options.info());
+      out.printf("  flags = %s%n", options.flags());
+      out.printf("  properties = %s%n", options.properties());
+      out.printf("  actions = %s%n", options.actions());
+      out.printf("  tool = %s%n", options.tool());
+    }
     return run(Bach.of(options));
   }
 
