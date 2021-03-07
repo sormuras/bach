@@ -28,6 +28,9 @@ public @interface ProjectInfo {
   /** Path to the directory that collects external modules. */
   String EXTERNAL_MODULES = ".bach/external-modules";
 
+  /** Path to the directory that collect external tools. */
+  String EXTERNAL_TOOLS = ".bach/external-tools";
+
   /** Path to the directory that collects all generated assets. */
   String WORKSPACE = ".bach/workspace";
 

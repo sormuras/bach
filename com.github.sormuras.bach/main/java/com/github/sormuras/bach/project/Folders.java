@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.ProjectInfo;
 import java.nio.file.Path;
 
 /**
@@ -12,9 +13,9 @@ import java.nio.file.Path;
  */
 public record Folders(Path root, Path externalModules, Path externalTools, Path workspace) {
 
-  private static final Path EXTERNAL_MODULES = Path.of(".bach/external-modules");
-  private static final Path EXTERNAL_TOOLS = Path.of(".bach/external-tools");
-  private static final Path WORKSPACE = Path.of(".bach/workspace");
+  private static final Path EXTERNAL_MODULES = Path.of(ProjectInfo.EXTERNAL_MODULES);
+  private static final Path EXTERNAL_TOOLS = Path.of(ProjectInfo.EXTERNAL_TOOLS);
+  private static final Path WORKSPACE = Path.of(ProjectInfo.WORKSPACE);
 
   /**
    * {@return an instance with default values resolved to the given root directory}
