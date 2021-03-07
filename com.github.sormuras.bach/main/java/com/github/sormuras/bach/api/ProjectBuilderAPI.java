@@ -45,8 +45,8 @@ public interface ProjectBuilderAPI {
     bach().print("Build %d main module%s: %s", modules.size(), s, modules.toNames(", "));
 
     var release = main.release();
-    var feature = "" + (release == 0 ? Runtime.version().feature() : release);
-    var classes = bach().folders().workspace("classes", main.name(), feature);
+    var feature = release != 0 ? release : Runtime.version().feature();
+    var classes = bach().folders().workspace("classes", main.name(), String.valueOf(feature));
 
     var workspaceModules = bach().folders().workspace("modules");
     Paths.deleteDirectories(workspaceModules);
@@ -58,7 +58,7 @@ public interface ProjectBuilderAPI {
     for (var declaration : modules.map().values()) {
       for (var folder : declaration.sources().list()) {
         if (!folder.isTargeted()) continue;
-        javacs.add(computeMainJavacCall(declaration, folder, classes));
+        javacs.add(computeMainJavacCall(declaration, folder));
       }
       jars.add(buildProjectMainJar(declaration, classes));
     }
@@ -69,7 +69,7 @@ public interface ProjectBuilderAPI {
   /**
    * {@return the {@code javac} call to compile all configured modules of the main space}
    *
-   * @param release the release
+   * @param release the Java feature release number to compile modules for
    */
   default Javac buildProjectMainJavac(int release, Path classes) {
     var project = bach().project();
@@ -88,25 +88,22 @@ public interface ProjectBuilderAPI {
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
-  default Javac computeMainJavacCall(
-      ModuleDeclaration declaration, SourceFolder folder, Path baseClasses) {
+  default Javac computeMainJavacCall(ModuleDeclaration declaration, SourceFolder folder) {
+    var name = declaration.name();
     var project = bach().project();
     var main = project.spaces().main();
     var release = folder.release();
-    var classes = buildProjectMultiReleaseClasses(declaration.name(), release);
-    var modulePaths = new ArrayList<>(main.modulePaths().pruned());
-    modulePaths.add(baseClasses);
     var javaSourceFiles = Paths.find(folder.path(), 99, Paths::isJavaFile);
     return Command.javac()
         .add("--release", release)
         .add("--module-version", project.version())
-        .add("--module-path", modulePaths)
+        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
         .add("-implicit:none") // generate classes for explicitly referenced source files
         .addAll(main.tweaks().arguments("javac"))
-        .addAll(main.tweaks().arguments("javac(" + declaration.name() + ")"))
+        .addAll(main.tweaks().arguments("javac(" + name + ")"))
         .addAll(main.tweaks().arguments("javac(" + release + ")"))
-        .addAll(main.tweaks().arguments("javac(" + declaration.name() + "@" + release + ")"))
-        .add("-d", classes)
+        .addAll(main.tweaks().arguments("javac(" + name + "@" + release + ")"))
+        .add("-d", buildProjectMultiReleaseClasses(name, release))
         .addAll(javaSourceFiles);
   }
 
@@ -133,7 +130,8 @@ public interface ProjectBuilderAPI {
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
       var pathN = buildProjectMultiReleaseClasses(name, release);
-      declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
+      if (Files.isDirectory(pathN))
+        declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
       declaration.resources().targets(release).ifPresent(it -> paths.add(it.path()));
       if (paths.isEmpty()) continue;
       jar = jar.add("--release", release);
