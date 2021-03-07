@@ -35,6 +35,17 @@ class MultiRelease9Tests {
         module-info.class
         foo/
         foo/Foo.class
+        foo/Foo.txt
+        META-INF/versions/11/
+        META-INF/versions/11/foo/
+        META-INF/versions/11/foo/Foo.class
+        META-INF/versions/11/foo/Foo.txt
+        META-INF/versions/13/
+        META-INF/versions/13/foo/
+        META-INF/versions/13/foo/Foo.txt
+        META-INF/versions/15/
+        META-INF/versions/15/foo/
+        META-INF/versions/15/foo/Foo.class
         """
             .lines(),
         CLI.run(Command.jar().add("--list").add("--file", foo)).lines());

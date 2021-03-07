@@ -5,6 +5,7 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.util.Paths;
@@ -12,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 
 /** Methods related to building projects. */
 public interface ProjectBuilderAPI {
@@ -51,13 +53,21 @@ public interface ProjectBuilderAPI {
     bach().run(buildProjectMainJavac(release, classes)).requireSuccessful();
 
     Files.createDirectories(workspaceModules);
-    bach()
-        .run(modules.map().values().stream().map(module -> buildProjectMainJar(module, classes)))
-        .requireSuccessful();
+    var jars = new ArrayList<Jar>();
+    var javacs = new ArrayList<Javac>();
+    for (var declaration : modules.map().values()) {
+      for (var folder : declaration.sources().list()) {
+        if (!folder.isTargeted()) continue;
+        javacs.add(computeMainJavacCall(declaration, folder, classes));
+      }
+      jars.add(buildProjectMainJar(declaration, classes));
+    }
+    if (!javacs.isEmpty()) bach().run(javacs.stream()).requireSuccessful();
+    bach().run(jars.stream()).requireSuccessful();
   }
 
   /**
-   * {@return the {@code javac} call to compile all modules of the main space}
+   * {@return the {@code javac} call to compile all configured modules of the main space}
    *
    * @param release the release
    */
@@ -77,10 +87,33 @@ public interface ProjectBuilderAPI {
         .add("-d", classes);
   }
 
-  default Jar buildProjectMainJar(ModuleDeclaration module, Path classes) {
+  /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
+  default Javac computeMainJavacCall(
+      ModuleDeclaration declaration, SourceFolder folder, Path baseClasses) {
     var project = bach().project();
     var main = project.spaces().main();
-    var name = module.name();
+    var release = folder.release();
+    var classes = buildProjectMultiReleaseClasses(declaration.name(), release);
+    var modulePaths = new ArrayList<>(main.modulePaths().pruned());
+    modulePaths.add(baseClasses);
+    var javaSourceFiles = Paths.find(folder.path(), 99, Paths::isJavaFile);
+    return Command.javac()
+        .add("--release", release)
+        .add("--module-version", project.version())
+        .add("--module-path", modulePaths)
+        .add("-implicit:none") // generate classes for explicitly referenced source files
+        .addAll(main.tweaks().arguments("javac"))
+        .addAll(main.tweaks().arguments("javac(" + declaration.name() + ")"))
+        .addAll(main.tweaks().arguments("javac(" + release + ")"))
+        .addAll(main.tweaks().arguments("javac(" + declaration.name() + "@" + release + ")"))
+        .add("-d", classes)
+        .addAll(javaSourceFiles);
+  }
+
+  default Jar buildProjectMainJar(ModuleDeclaration declaration, Path classes) {
+    var project = bach().project();
+    var main = project.spaces().main();
+    var name = declaration.name();
     var file = bach().folders().workspace("modules", buildProjectJarFileName(name));
     var jar =
         Command.jar()
@@ -91,7 +124,26 @@ public interface ProjectBuilderAPI {
             .addAll(main.tweaks().arguments("jar(" + name + ")"));
     var baseClasses = classes.resolve(name);
     if (Files.isDirectory(baseClasses)) jar = jar.add("-C", baseClasses, ".");
+    // include base resources
+    for (var folder : declaration.resources().list()) {
+      if (folder.isTargeted()) continue; // handled later
+      jar = jar.add("-C", folder.path(), ".");
+    }
+    // add targeted classes and targeted resources in ascending order
+    for (int release = 9; release <= Runtime.version().feature(); release++) {
+      var paths = new ArrayList<Path>();
+      var pathN = buildProjectMultiReleaseClasses(name, release);
+      declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
+      declaration.resources().targets(release).ifPresent(it -> paths.add(it.path()));
+      if (paths.isEmpty()) continue;
+      jar = jar.add("--release", release);
+      for (var path : paths) jar = jar.add("-C", path, ".");
+    }
     return jar;
+  }
+
+  private Path buildProjectMultiReleaseClasses(String module, int release) {
+    return bach().folders().workspace("classes-mr", String.valueOf(release), module);
   }
 
   default String buildProjectJarFileName(String module) {
