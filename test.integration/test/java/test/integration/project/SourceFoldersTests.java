@@ -42,7 +42,7 @@ class SourceFoldersTests {
 
     void check(SourceFolders sourceFolders) {
       assertEquals(
-          List.of("java", "resources", "java-11", "resources-13", "java-15"),
+          List.of("java", "resources", "java-11", "resources-11", "resources-13", "java-15"),
           sourceFolders.list().stream().map(f -> f.path().getFileName().toString()).toList());
       assertEquals(main.resolve("java"), sourceFolders.first().path());
       assertEquals(main.resolve("java").toString(), sourceFolders.toModuleSpecificSourcePath());
@@ -55,6 +55,7 @@ class SourceFoldersTests {
               newSourceFolder(main.resolve("java")),
               newSourceFolder(main.resolve("resources")),
               newSourceFolder(main.resolve("java-11")),
+              newSourceFolder(main.resolve("resources-11")),
               newSourceFolder(main.resolve("resources-13")),
               newSourceFolder(main.resolve("java-15")));
       check(new SourceFolders(list));
