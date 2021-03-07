@@ -47,7 +47,7 @@ public interface ToolProviderAPI {
     return run(Stream.concat(Stream.of(command), Stream.of(commands)));
   }
 
-  default Recordings run(Stream<Command<?>> commands) {
+  default Recordings run(Stream<? extends Command<?>> commands) {
     var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
     bach().debug("Run stream of commands %s", sequential ? "sequentially" : "in parallel");
     var stream = sequential ? commands.sequential() : commands.parallel();
