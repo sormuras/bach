@@ -33,12 +33,14 @@ class MultiRelease8Tests {
         META-INF/
         META-INF/MANIFEST.MF
         module-info.class
-        META-INF/versions/9/module-info.class
         foo/
         foo/Foo.class
         META-INF/versions/9/
         META-INF/versions/9/foo/
         META-INF/versions/9/foo/Foo.class
+        META-INF/versions/10/
+        META-INF/versions/10/foo/
+        META-INF/versions/10/foo/Foo.class
         """
             .lines(),
         CLI.run(Command.jar().add("--list").add("--file", foo)).lines());

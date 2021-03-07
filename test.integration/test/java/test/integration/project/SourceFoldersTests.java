@@ -68,16 +68,18 @@ class SourceFoldersTests {
   }
 
   @Test
-  void foldersOfTestProjectSingleRelease8() {
-    var main = Path.of("test.projects", "SingleRelease-8", "foo", "main");
+  void foldersOfTestProjectMultiRelease8() {
+    var main = Path.of("test.projects", "MultiRelease-8", "foo", "main");
     var base = main.resolve("java");
     var list =
         List.of(
             newSourceFolder(base),
-            newSourceFolder(main.resolve("java-module")),
-            newSourceFolder(main.resolve("resources")));
+            newSourceFolder(main.resolve("java-9")),
+            newSourceFolder(main.resolve("java-10")),
+            newSourceFolder(main.resolve("java-module"))
+        );
     var sourceFolders = new SourceFolders(list);
-    assertEquals(3, sourceFolders.list().size());
+    assertEquals(4, sourceFolders.list().size());
     assertSame(base, sourceFolders.first().path());
     assertEquals(
         base + File.pathSeparator + main.resolve("java-module"),

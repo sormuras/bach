@@ -3,6 +3,6 @@ package foo;
 public class Foo {
   @Override
   public String toString() {
-    return "Foo 8";
+    return "Foo 10";
   }
 }
