@@ -78,6 +78,7 @@ public final class Paths {
 
   /** {@return a listing of the directory in natural order with the given filter applied} */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+    if (Files.notExists(directory)) return List.of();
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
     try (var stream = Files.newDirectoryStream(directory, filter)) {
       stream.forEach(paths::add);

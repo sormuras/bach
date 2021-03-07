@@ -46,11 +46,16 @@ public interface ProjectBuilderAPI {
 
     var release = main.release();
     var feature = release != 0 ? release : Runtime.version().feature();
-    var classes = bach().folders().workspace("classes", main.name(), String.valueOf(feature));
+    var classes = bach().folders().workspace("classes-main", String.valueOf(feature));
 
     var workspaceModules = bach().folders().workspace("modules");
     Paths.deleteDirectories(workspaceModules);
-    bach().run(buildProjectMainJavac(release, classes)).requireSuccessful();
+    if (feature == 8) {
+      bach().run(buildProjectMainJavac(9, classes)).requireSuccessful();
+      buildProjectMainSpaceClassesForJava8(classes);
+    } else {
+      bach().run(buildProjectMainJavac(release, classes)).requireSuccessful();
+    }
 
     Files.createDirectories(workspaceModules);
     var jars = new ArrayList<Jar>();
@@ -58,12 +63,35 @@ public interface ProjectBuilderAPI {
     for (var declaration : modules.map().values()) {
       for (var folder : declaration.sources().list()) {
         if (!folder.isTargeted()) continue;
-        javacs.add(computeMainJavacCall(declaration, folder));
+        javacs.add(computeMainJavacCall(declaration, folder, classes));
       }
       jars.add(buildProjectMainJar(declaration, classes));
     }
     if (!javacs.isEmpty()) bach().run(javacs.stream()).requireSuccessful();
     bach().run(jars.stream()).requireSuccessful();
+  }
+
+  default void buildProjectMainSpaceClassesForJava8(Path classes) {
+    var project = bach().project();
+    var main = project.spaces().main();
+    var classPaths = new ArrayList<Path>();
+    main.declarations().toNames().forEach(name -> classPaths.add(classes.resolve(name)));
+    classPaths.addAll(Paths.list(bach().folders().externalModules(), Paths::isJarFile));
+    var javacs = new ArrayList<Javac>();
+    for (var declaration : main.declarations().map().values()) {
+      var name = declaration.name();
+      var javaSourceFiles = Paths.find(declaration.sources().first().path(), 99, Paths::isJavaFile);
+      var compileSources =
+          Command.javac()
+              .add("--release", main.release()) // 8
+              .add("--class-path", classPaths)
+              .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
+              .addAll(main.tweaks().arguments("javac"))
+              .add("-d", classes.resolve(name))
+              .addAll(javaSourceFiles);
+      javacs.add(compileSources);
+    }
+    bach().run(javacs.stream()).requireSuccessful();
   }
 
   /**
@@ -88,7 +116,7 @@ public interface ProjectBuilderAPI {
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
-  default Javac computeMainJavacCall(ModuleDeclaration declaration, SourceFolder folder) {
+  default Javac computeMainJavacCall(ModuleDeclaration declaration, SourceFolder folder, Path classes) {
     var name = declaration.name();
     var project = bach().project();
     var main = project.spaces().main();
@@ -97,6 +125,7 @@ public interface ProjectBuilderAPI {
     return Command.javac()
         .add("--release", release)
         .add("--module-version", project.version())
+        .add("--patch-module", name + '=' + classes.resolve(name))
         .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
         .add("-implicit:none") // generate classes for explicitly referenced source files
         .addAll(main.tweaks().arguments("javac"))
@@ -130,8 +159,7 @@ public interface ProjectBuilderAPI {
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
       var pathN = buildProjectMultiReleaseClasses(name, release);
-      if (Files.isDirectory(pathN))
-        declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
+      declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
       declaration.resources().targets(release).ifPresent(it -> paths.add(it.path()));
       if (paths.isEmpty()) continue;
       jar = jar.add("--release", release);
