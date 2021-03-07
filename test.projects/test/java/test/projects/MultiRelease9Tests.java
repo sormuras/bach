@@ -3,6 +3,7 @@ package test.projects;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.Command;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,8 @@ class MultiRelease9Tests {
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiRelease-9", temp);
     var out = cli.build("--verbose", "--project-targets-java", "9");
-    assertTrue(Files.exists(cli.workspace("modules", "foo@0.jar")));
+    var foo = cli.workspace("modules", "foo@0.jar");
+    assertTrue(Files.exists(foo));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -26,5 +28,15 @@ class MultiRelease9Tests {
         """
             .lines(),
         out.lines());
+    assertLinesMatch(
+        """
+        META-INF/
+        META-INF/MANIFEST.MF
+        module-info.class
+        foo/
+        foo/Foo.class
+        """
+            .lines(),
+        CLI.run(Command.jar().add("--list").add("--file", foo)).lines());
   }
 }

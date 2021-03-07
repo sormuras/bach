@@ -2,13 +2,26 @@ package test.projects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.sormuras.bach.Command;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.spi.ToolProvider;
 
 /** A project build context. */
 class CLI {
+
+  static String run(Command<?> command) {
+    var name = command.name();
+    var args = command.arguments().toArray(String[]::new);
+    var out = new StringWriter();
+    var writer = new PrintWriter(out);
+    ToolProvider.findFirst(name).orElseThrow().run(writer, writer, args);
+    return out.toString();
+  }
 
   final Path root;
   final Path temp;
