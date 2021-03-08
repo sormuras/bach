@@ -70,8 +70,8 @@ public final class Records {
 
     List<String> toLines(int level, String name, Set<?> set) {
       var lines = new ArrayList<String>();
-      var shift = indent.repeat(level);
-      lines.add(format("%s%s%s: Set(size=%d)", shift, indent, name, set.size()));
+      var shift = indent.repeat(level + 1);
+      lines.add(format("%s%s: Set(size=%d)", shift, name, set.size()));
       for (var value : set) {
         if (value instanceof Record nested) {
           lines.add(format("%s%s %s", shift, indent, simpleName(nested)));
@@ -83,8 +83,8 @@ public final class Records {
 
     List<String> toLines(int level, String name, List<?> list) {
       var lines = new ArrayList<String>();
-      var shift = indent.repeat(level);
-      lines.add(format("%s%s%s: List(size=%d)", shift, indent, name, list.size()));
+      var shift = indent.repeat(level + 1);
+      lines.add(format("%s%s: List(size=%d)", shift, name, list.size()));
       var iterator = list.listIterator();
       while (iterator.hasNext()) {
         var key = iterator.nextIndex();
@@ -99,8 +99,8 @@ public final class Records {
 
     List<String> toLines(int level, String name, Map<?, ?> map) {
       var lines = new ArrayList<String>();
-      var shift = indent.repeat(level);
-      lines.add(format("%s%s%s: Map(size=%d)", shift, indent, name, map.size()));
+      var shift = indent.repeat(level + 1);
+      lines.add(format("%s%s: Map(size=%d)", shift, name, map.size()));
       for (var entry : map.entrySet()) {
         var key = entry.getKey();
         var value = entry.getValue();
