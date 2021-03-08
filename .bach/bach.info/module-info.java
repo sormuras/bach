@@ -25,7 +25,15 @@ import com.github.sormuras.bach.project.JavaStyle;
     },
     testTweaks = {
       @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "junit", option = "--fail-if-no-tests")
+      @Tweak(tool = "junit", option = "--fail-if-no-tests"),
+      @Tweak(
+          tool = "junit(test.projects)",
+          option = "--config",
+          value = "junit.jupiter.execution.parallel.enabled=true"),
+      @Tweak(
+          tool = "junit(test.projects)",
+          option = "--config",
+          value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
     },
     requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
     lookupExternal = {
