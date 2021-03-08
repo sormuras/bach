@@ -82,6 +82,13 @@ public final class Paths {
     return name(path).equals("module-info.java") && Files.isRegularFile(path);
   }
 
+  /** {@return the number of name elements in the path that are equal to the given name} */
+  public static int countName(Path path, String name) {
+    var count = 0;
+    for (var element : path) if (element.toString().equals(name)) count++;
+    return count;
+  }
+
   /** {@return a listing of the directory in natural order with the given filter applied} */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
     if (Files.notExists(directory)) return List.of();

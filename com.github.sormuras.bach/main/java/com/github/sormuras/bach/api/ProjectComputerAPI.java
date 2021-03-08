@@ -155,7 +155,7 @@ public interface ProjectComputerAPI {
   }
 
   default boolean computeProjectSpaceTestMembership(ModuleInfoReference reference) {
-    return reference.name().startsWith("test.");
+    return reference.name().startsWith("test.") || Paths.countName(reference.info(), "test") == 1;
   }
 
   default boolean computeProjectSpaceMainMembership(ModuleInfoReference reference) {
