@@ -71,6 +71,12 @@ public final class Paths {
     return name(path).endsWith(".java") && Files.isRegularFile(path);
   }
 
+  /** Test supplied path for pointing to a Java 8 compilation unit. */
+  public static boolean isJava8File(Path path) {
+    var name = name(path);
+    return name.endsWith(".java") && !name.equals("module-info.java") && Files.isRegularFile(path);
+  }
+
   /** Test supplied path for pointing to a Java module declaration compilation unit. */
   public static boolean isModuleInfoJavaFile(Path path) {
     return name(path).equals("module-info.java") && Files.isRegularFile(path);

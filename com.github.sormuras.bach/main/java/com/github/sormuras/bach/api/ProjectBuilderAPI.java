@@ -80,7 +80,8 @@ public interface ProjectBuilderAPI {
     var javacs = new ArrayList<Javac>();
     for (var declaration : main.declarations().map().values()) {
       var name = declaration.name();
-      var javaSourceFiles = Paths.find(declaration.sources().first().path(), 99, Paths::isJavaFile);
+      var java8Files = Paths.find(declaration.sources().first().path(), 99, Paths::isJava8File);
+      if (java8Files.isEmpty()) continue; // skip aggregator module
       var compileSources =
           Command.javac()
               .add("--release", main.release()) // 8
@@ -88,7 +89,7 @@ public interface ProjectBuilderAPI {
               .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
               .addAll(main.tweaks().arguments("javac"))
               .add("-d", classes.resolve(name))
-              .addAll(javaSourceFiles);
+              .addAll(java8Files);
       javacs.add(compileSources);
     }
     bach().run(javacs.stream()).requireSuccessful();
