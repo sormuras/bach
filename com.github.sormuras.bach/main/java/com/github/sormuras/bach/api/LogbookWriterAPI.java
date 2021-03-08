@@ -3,6 +3,7 @@ package com.github.sormuras.bach.api;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.util.Records;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -50,6 +51,7 @@ public interface LogbookWriterAPI {
     md.addAll(writeLogbookModulesOverviewLines());
     md.addAll(writeLogbookRecordingsOverviewLines());
     md.addAll(writeLogbookRecordingsDetailLines());
+    md.addAll(writeLogbookProjectConfiguration());
 
     md.add("");
     md.add("## Thanks for using Bach");
@@ -166,6 +168,17 @@ public interface LogbookWriterAPI {
         md.add("```");
       }
     }
+    return md;
+  }
+
+  default List<String> writeLogbookProjectConfiguration() {
+    var md = new ArrayList<String>();
+    md.add("");
+    md.add("## Project Configuration");
+    md.add("");
+    md.add("```text");
+    md.add(Records.toLines(bach().project()));
+    md.add("```");
     return md;
   }
 

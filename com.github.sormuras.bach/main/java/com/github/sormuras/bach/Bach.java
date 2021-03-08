@@ -5,6 +5,7 @@ import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.api.BachAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import com.github.sormuras.bach.project.Folders;
+import com.github.sormuras.bach.util.Records;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -161,13 +162,9 @@ public class Bach implements AutoCloseable, BachAPI {
   public final void info() {
     print("bin: %s", bin());
     print("bach: %s/%s", getClass().getModule().getName(), getClass().getName());
-    print("info: %s", options.info().orElse(null));
-    print("folder: %s", folders());
-    print("flags: %s", options.flags());
     print("project.name: %s", project.name());
     print("project.version: %s", project.version());
-    print("project: %s", project);
-    print("options: %s", options);
+    print("%s", Records.toLines(project));
   }
 
   @Override
