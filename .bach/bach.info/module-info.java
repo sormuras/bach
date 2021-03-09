@@ -21,6 +21,14 @@ import com.github.sormuras.bach.project.JavaStyle;
       @Tweak(tool = "javac", option = "-parameters"),
       @Tweak(tool = "javac", option = "-Xlint"),
       @Tweak(tool = "javac", option = "-Werror"),
+      @Tweak(
+          tool = "jar(com.github.sormuras.bach)",
+          option = "--main-class",
+          value = "com.github.sormuras.bach.Main"),
+      @Tweak(
+          tool = "jar(com.github.sormuras.bach)",
+          option = "-C",
+          value = {"com.github.sormuras.bach/main/java", "."}),
       @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
       @Tweak(tool = "javadoc", option = "-notimestamp"),
       @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),

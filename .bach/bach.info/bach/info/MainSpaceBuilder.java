@@ -10,35 +10,12 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
 
   @Override
   default void buildProjectMainSpace() throws Exception {
+    ProjectBuilderAPI.super.buildProjectMainSpace();
+
     var module = "com.github.sormuras.bach";
-    var moduleVersion = bach().project().version();
     var version = bach().project().versionNumberAndPreRelease();
-    var javaRelease = 16;
-    var destination = bach().folders().workspace("classes", "main", "" + javaRelease);
     var modules = bach().folders().workspace("modules");
-
-    var javac =
-        Command.javac()
-            .add("--release", javaRelease)
-            .add("--module", module)
-            .add("--module-version", moduleVersion)
-            .add("--module-source-path", "./*/main/java")
-            .add("--module-path", bach().folders().externalModules())
-            .addAll(bach().project().spaces().main().tweaks().arguments("javac"))
-            .add("-d", destination);
-    bach().run(javac).requireSuccessful();
-
-    Files.createDirectories(modules);
-    var file = modules.resolve(bach().buildProjectJarFileName(module));
-    var jar =
-        Command.jar()
-            .add("--verbose")
-            .add("--create")
-            .add("--file", file)
-            .add("--main-class", module + ".Main")
-            .add("-C", destination.resolve(module), ".")
-            .add("-C", bach().folders().root(module, "main/java"), ".");
-    bach().run(jar).requireSuccessful();
+    var file = modules.resolve(bach().buildProjectMainJarFileName(module));
 
     var pom = generateMavenConsumerPom(module, version, file);
     var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
-public class CustomBach extends Bach implements MainSpaceBuilder, TestSpaceBuilder {
+public class CustomBach extends Bach implements MainSpaceBuilder {
 
   public static void main(String... args) {
     var options = Options.of(args.length == 0 ? new String[] {"build"} : args);
