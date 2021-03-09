@@ -21,17 +21,18 @@ class FilesTests {
   record AnyPathMatcher(PathMatcher... matchers) implements Predicate<Path> {
 
     public static AnyPathMatcher of(String... patterns) {
-      return of(Arrays.stream(patterns));
+      return of("glob", "", Arrays.stream(patterns));
     }
 
-    public static AnyPathMatcher ofFiles(String named, String... patterns) {
-      return of(Arrays.stream(patterns).map(string -> string + '/' + named));
+    public static AnyPathMatcher ofFiles(String fileName, String... patterns) {
+      return of("glob", '/' + fileName, Arrays.stream(patterns));
     }
 
-    public static AnyPathMatcher of(Stream<String> patterns) {
+    public static AnyPathMatcher of(String syntax, String suffix, Stream<String> patterns) {
       return new AnyPathMatcher(
           patterns
-              .map(pattern -> pattern.indexOf(':') > 0 ? pattern : "glob:" + pattern)
+              .map(pattern -> pattern.indexOf(':') > 0 ? pattern : syntax + ':' + pattern)
+              .map(pattern -> pattern.endsWith(suffix) ? pattern : pattern + suffix)
               .map(syntaxAndPattern -> FileSystems.getDefault().getPathMatcher(syntaxAndPattern))
               .toArray(PathMatcher[]::new));
     }
@@ -75,15 +76,22 @@ class FilesTests {
 
     @ParameterizedTest
     @MethodSource("paths")
-    void matchesGlobAny(Path path) {
+    void matchesGlobArbitrary(Path path) {
       var matcher = path.getFileSystem().getPathMatcher("glob:**/*");
       assertTrue(matcher.matches(path));
     }
 
     @ParameterizedTest
     @MethodSource("paths")
-    void matchesRegexAny(Path path) {
+    void matchesRegexArbitrary(Path path) {
       var matcher = path.getFileSystem().getPathMatcher("regex:.*");
+      assertTrue(matcher.matches(path));
+    }
+
+    @ParameterizedTest
+    @MethodSource("paths")
+    void matchesGlobExactly(Path path) {
+      var matcher = path.getFileSystem().getPathMatcher("glob:" + slashed(path));
       assertTrue(matcher.matches(path));
     }
 
@@ -108,7 +116,11 @@ class FilesTests {
           test.projects/test/java/module-info.java
           """
               .lines(),
-          paths().stream().filter(predicate).map(Path::toString).map(s -> s.replace('\\', '/')));
+          paths().stream().filter(predicate).map(FilesTests::slashed));
     }
+  }
+
+  static String slashed(Path path) {
+    return path.toString().replace('\\', '/');
   }
 }
