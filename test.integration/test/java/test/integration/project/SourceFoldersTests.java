@@ -76,8 +76,7 @@ class SourceFoldersTests {
             newSourceFolder(base),
             newSourceFolder(main.resolve("java-9")),
             newSourceFolder(main.resolve("java-10")),
-            newSourceFolder(main.resolve("java-module"))
-        );
+            newSourceFolder(main.resolve("java-module")));
     var sourceFolders = new SourceFolders(list);
     assertEquals(4, sourceFolders.list().size());
     assertSame(base, sourceFolders.first().path());

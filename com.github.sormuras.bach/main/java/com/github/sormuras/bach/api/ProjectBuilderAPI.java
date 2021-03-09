@@ -117,7 +117,8 @@ public interface ProjectBuilderAPI {
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
-  default Javac computeMainJavacCall(ModuleDeclaration declaration, SourceFolder folder, Path classes) {
+  default Javac computeMainJavacCall(
+      ModuleDeclaration declaration, SourceFolder folder, Path classes) {
     var name = declaration.name();
     var project = bach().project();
     var main = project.spaces().main();
