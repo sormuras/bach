@@ -65,8 +65,12 @@ public @interface ProjectInfo {
    */
   JavaStyle format() default JavaStyle.FREE;
 
-  /** {@return the names of the main modules to compile} */
-  String[] modules() default "*";
+  /**
+   * {@return an array of path matcher patterns for finding main module declarations}
+   *
+   * @see java.nio.file.FileSystem#getPathMatcher(String)
+   */
+  String[] modules() default "**module-info.java";
 
   /** {@return the module path elements for main modules} */
   String[] modulePaths() default {EXTERNAL_MODULES};
@@ -198,8 +202,12 @@ public @interface ProjectInfo {
     @Tweak(tool = "jlink", option = "--strip-debug"),
   };
 
-  /** {@return the names of the test modules to compile} */
-  String[] testModules() default "*";
+  /**
+   * {@return an array of path matcher patterns for finding test module declarations}
+   *
+   * @see java.nio.file.FileSystem#getPathMatcher(String)
+   */
+  String[] testModules() default "**/test/**";
 
   /** {@return the module path elements for compiling and running test modules} */
   String[] testModulePaths() default {MAIN_MODULES, EXTERNAL_MODULES};

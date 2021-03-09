@@ -37,6 +37,14 @@ class BachTests {
     assertEquals(Libraries.of(), project.libraries());
     assertEquals(JavaStyle.FREE, project.spaces().style());
     assertEquals("main", project.spaces().main().name());
+    assertLinesMatch(
+        """
+        com.github.sormuras.bach
+        >> default pattern "**module-info.java" matches many modules... >>
+        simplicissimus
+        """
+            .lines(),
+        project.spaces().main().declarations().toNames());
     assertEquals(
         List.of(
             newTweak("javac", "-encoding", "UTF-8"),
@@ -47,6 +55,15 @@ class BachTests {
             newTweak("jlink", "--strip-debug")),
         project.spaces().main().tweaks().values());
     assertEquals("test", project.spaces().test().name());
+    assertLinesMatch(
+        """
+        com.github.sormuras.bach
+        test.base
+        test.integration
+        test.projects
+        """
+            .lines(),
+        project.spaces().test().declarations().toNames());
     assertEquals(
         List.of(newTweak("javac", "-encoding", "UTF-8")),
         project.spaces().test().tweaks().values());

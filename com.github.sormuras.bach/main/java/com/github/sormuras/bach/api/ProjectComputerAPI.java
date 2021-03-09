@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Libraries;
@@ -120,26 +121,31 @@ public interface ProjectComputerAPI {
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
     var root = settings.folders().root();
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
+    if (paths.isEmpty()) throw new RuntimeException("No module-info.java file in " + root.toUri());
+    bach().debug("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");
 
-    var testDeclarations = new TreeMap<String, ModuleDeclaration>();
     var mainDeclarations = new TreeMap<String, ModuleDeclaration>();
+    var testDeclarations = new TreeMap<String, ModuleDeclaration>();
 
-    var iterator = paths.listIterator();
-    while (iterator.hasNext()) {
-      var path = iterator.next();
-      if (path.startsWith(".bach")) continue;
-      var reference = ModuleInfoReference.of(path);
-      if (computeProjectSpaceTestMembership(reference)) {
-        var declaration = computeProjectModuleDeclaration(root, path, false);
-        testDeclarations.put(declaration.name(), declaration);
-        iterator.remove();
+    var mainMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.modules());
+    var testMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.testModules());
+
+    for (var path : paths) {
+      if (Paths.countName(path, ".bach") >= 1) {
+        bach().debug("Skip module %s - it contains `.bach` in its path names", path);
         continue;
       }
-      if (computeProjectSpaceMainMembership(reference)) {
+      if (testMatcher.anyMatch(path)) {
+        var declaration = computeProjectModuleDeclaration(root, path, false);
+        testDeclarations.put(declaration.name(), declaration);
+        continue;
+      }
+      if (mainMatcher.anyMatch(path)) {
         var declaration = computeProjectModuleDeclaration(root, path, false);
         mainDeclarations.put(declaration.name(), declaration);
-        iterator.remove();
+        continue;
       }
+      bach().debug("Skip module %s - no match for main nor test space", path);
     }
 
     var main =
@@ -154,14 +160,6 @@ public interface ProjectComputerAPI {
             computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.format(), main, test);
-  }
-
-  default boolean computeProjectSpaceTestMembership(ModuleInfoReference reference) {
-    return reference.name().startsWith("test.") || Paths.countName(reference.info(), "test") == 1;
-  }
-
-  default boolean computeProjectSpaceMainMembership(ModuleInfoReference reference) {
-    return true;
   }
 
   default SourceFolder computeProjectSourceFolder(Path path) {
