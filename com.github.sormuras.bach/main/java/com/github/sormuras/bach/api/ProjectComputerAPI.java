@@ -66,6 +66,13 @@ public interface ProjectComputerAPI {
     return info.version();
   }
 
+  default int computeProjectTargetsJava(ProjectInfo info) {
+    return bach()
+        .get(Property.PROJECT_TARGETS_JAVA)
+        .map(Integer::parseInt)
+        .orElseGet(info::compileModulesForJavaRelease);
+  }
+
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
     var requires = Set.of(info.requires());
     bach().debug("Computed additionally required modules: %d", requires.size());
@@ -135,16 +142,11 @@ public interface ProjectComputerAPI {
       }
     }
 
-    var release =
-        bach().get(Property.PROJECT_TARGETS_JAVA).stream()
-            .mapToInt(Integer::parseInt)
-            .findFirst()
-            .orElseGet(info::compileModulesForJavaRelease);
     var main =
         new MainSpace(
             new ModuleDeclarations(mainDeclarations),
             computeProjectModulePaths(root, info.modulePaths()),
-            release,
+            computeProjectTargetsJava(info),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(

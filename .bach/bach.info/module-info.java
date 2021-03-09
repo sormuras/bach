@@ -12,6 +12,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     name = "bach",
     version = "17-ea",
     format = JavaStyle.GOOGLE,
+    compileModulesForJavaRelease = 16,
     tweaks = {
       @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
       @Tweak(tool = "javac", option = "-g"),
