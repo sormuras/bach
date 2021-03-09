@@ -15,8 +15,6 @@ class MultiRelease9Tests {
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiRelease-9", temp);
     var out = cli.build("--verbose", "--project-targets-java", "9");
-    var foo = cli.workspace("modules", "foo@0.jar");
-    assertTrue(Files.exists(foo));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -28,6 +26,8 @@ class MultiRelease9Tests {
         """
             .lines(),
         out.lines());
+    var foo = cli.workspace("modules", "foo@0.jar");
+    assertTrue(Files.exists(foo));
     assertLinesMatch(
         """
         META-INF/

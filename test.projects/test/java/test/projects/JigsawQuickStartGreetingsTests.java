@@ -14,7 +14,6 @@ class JigsawQuickStartGreetingsTests {
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("JigsawQuickStartGreetings", temp);
     var out = cli.build("--strict", "--verbose");
-    assertTrue(Files.exists(cli.workspace("modules", "com.greetings@0.jar")));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -26,5 +25,6 @@ class JigsawQuickStartGreetingsTests {
         """
             .lines(),
         out.lines());
+    assertTrue(Files.exists(cli.workspace("modules", "com.greetings@0.jar")));
   }
 }

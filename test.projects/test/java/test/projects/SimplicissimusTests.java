@@ -14,7 +14,6 @@ class SimplicissimusTests {
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("Simplicissimus", temp);
     var out = cli.build("--strict", "--verbose");
-    assertTrue(Files.exists(cli.workspace("modules", "simplicissimus@0.jar")));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -26,5 +25,6 @@ class SimplicissimusTests {
         """
             .lines(),
         out.lines());
+    assertTrue(Files.exists(cli.workspace("modules", "simplicissimus@0.jar")));
   }
 }
