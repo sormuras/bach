@@ -13,6 +13,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     version = "17-ea",
     format = JavaStyle.GOOGLE,
     compileModulesForJavaRelease = 16,
+    // <editor-fold desc="Main Space Modules">
     modules = "*/main/java",
     tweaks = {
       @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
@@ -25,6 +26,8 @@ import com.github.sormuras.bach.project.JavaStyle;
       @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
       @Tweak(tool = "javadoc", option = "-Werror"),
     },
+    // </editor-fold>
+    // <editor-fold desc="Test Space Modules">
     testModules = "*/test/{java,java-module}",
     testTweaks = {
       @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
@@ -38,6 +41,8 @@ import com.github.sormuras.bach.project.JavaStyle;
           option = "--config",
           value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
     },
+    // </editor-fold>
+    // <editor-fold desc="Libraries - External Modules">
     requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
     lookupExternal = {
       @External(module = "junit", via = "junit:junit:4.13.2"),
@@ -50,6 +55,8 @@ import com.github.sormuras.bach.project.JavaStyle;
       @Externals(name = SORMURAS_MODULES, version = "2021.03"),
       @Externals(name = GITHUB_RELEASES, version = "*"),
     },
+    // </editor-fold>
+    // <editor-fold desc="Libraries - Metadata">
     metadata = {
       @Metadata(
           module = "net.bytebuddy",
@@ -99,7 +106,9 @@ import com.github.sormuras.bach.project.JavaStyle;
           module = "org.opentest4j",
           size = 7653,
           checksums = @Checksum("45c9a837c21f68e8c93e85b121e2fb90")),
-    })
+    }
+    // </editor-fold>
+    )
 module bach.info {
   requires com.github.sormuras.bach;
 
