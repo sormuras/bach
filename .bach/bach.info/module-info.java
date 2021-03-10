@@ -51,7 +51,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     },
     // </editor-fold>
     // <editor-fold desc="Libraries - External Modules">
-    requires = {"org.junit.platform.console", "org.junit.jupiter", "net.bytebuddy"},
+    requires = "org.junit.platform.console",
     lookupExternal = {
       @External(module = "junit", via = "junit:junit:4.13.2"),
       @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
@@ -66,10 +66,6 @@ import com.github.sormuras.bach.project.JavaStyle;
     // </editor-fold>
     // <editor-fold desc="Libraries - Metadata">
     metadata = {
-      @Metadata(
-          module = "net.bytebuddy",
-          size = 3502105,
-          checksums = @Checksum("5c3f1e9eca0d4a71fdf47ddf9311a4c4")),
       @Metadata(
           module = "org.apiguardian.api",
           size = 6452,

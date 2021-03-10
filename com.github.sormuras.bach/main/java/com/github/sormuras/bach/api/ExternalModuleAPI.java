@@ -44,24 +44,27 @@ public interface ExternalModuleAPI {
   }
 
   default Set<String> computeMissingExternalModules(boolean includeRequiresOfExternalModules) {
+    // Populate a set with all module names being in a "requires MODULE;" directive
     var requires = new TreeSet<>(bach().project().libraries().requires()); // project-info
-    // TODO requires.addAll(requires(bach().project().declaredModules())); // module-info(s)
-    if (includeRequiresOfExternalModules)
-      requires.addAll(
-          required(ModuleFinder.of(bach().folders().externalModules()))); // external-modules
-    return computeMissingExternalModules(requires);
-  }
-
-  default Set<String> computeMissingExternalModules(Set<String> requires) {
+    requires.addAll(required(bach().project().spaces().toModuleFinder())); // module-info(s)
+    if (includeRequiresOfExternalModules) {
+      var externalFinder = ModuleFinder.of(bach().folders().externalModules());
+      requires.addAll(required(externalFinder)); // external-modules
+    }
+    bach().debug("Computed %d required external modules: %s", requires.size(), requires);
+    // Remove names of locatable modules from various locations
     if (requires.isEmpty()) return Set.of();
-    var missing = new TreeSet<>(requires);
-    missing.removeAll(declared(ModuleFinder.ofSystem()));
-    if (missing.isEmpty()) return Set.of();
-    missing.removeAll(declared(ModuleFinder.of(bach().folders().externalModules())));
-    if (missing.isEmpty()) return Set.of();
-    missing.removeAll(declared(ModuleFinder.of(Bach.bin())));
-    if (missing.isEmpty()) return Set.of();
-    return Set.copyOf(missing);
+    requires.removeAll(declared(ModuleFinder.ofSystem()));
+    if (requires.isEmpty()) return Set.of();
+    requires.removeAll(declared(bach().project().spaces().toModuleFinder()));
+    if (requires.isEmpty()) return Set.of();
+    requires.removeAll(declared(ModuleFinder.of(bach().folders().externalModules())));
+    if (requires.isEmpty()) return Set.of();
+    requires.removeAll(declared(ModuleFinder.of(Bach.bin())));
+    if (requires.isEmpty()) return Set.of();
+    // Still here? Return names of missing modules
+    bach().debug("Computed %d missing external modules: %s", requires.size(), requires);
+    return Set.copyOf(requires);
   }
 
   default void loadExternalModules(String... modules) {
