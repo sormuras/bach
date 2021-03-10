@@ -106,6 +106,12 @@ public interface Command<C extends Command<C>> {
     return command;
   }
 
+  default String toDescription(int maxLineLength) {
+    var arguments = arguments();
+    var line = arguments.isEmpty() ? "</>" : String.join(" ", arguments);
+    return line.length() <= maxLineLength ? line : line.substring(0, maxLineLength - 5) + "[...]";
+  }
+
   default String toLine() {
     var joiner = new StringJoiner(" ");
     joiner.add(name());

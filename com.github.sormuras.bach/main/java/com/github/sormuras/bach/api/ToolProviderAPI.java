@@ -37,12 +37,16 @@ public interface ToolProviderAPI {
   }
 
   default Recording run(Command<?> command) {
-    bach().debug("Run %s", command.toLine());
-    if (command instanceof ToolProvider provider) return run(provider, command.arguments());
+   return run(command, command.toDescription(117));
+  }
+
+  default Recording run(Command<?> command, String description) {
     var name = command.name();
+    var arguments = command.arguments();
+    if (command instanceof ToolProvider provider) return run(provider, arguments, description);
     var provider = computeToolProvider(name);
     if (provider.isEmpty()) throw new RuntimeException("No tool provider found for name: " + name);
-    return run(provider.get(), command.arguments());
+    return run(provider.get(), arguments, description);
   }
 
   default Recordings run(Command<?> command, Command<?>... commands) {
@@ -59,13 +63,12 @@ public interface ToolProviderAPI {
   }
 
   default Recording run(Command<?> command, ModuleFinder finder, String... roots) {
-    bach().debug("Run %s", command.toLine());
     var providers = computeToolProviders(finder, roots);
     var provider = providers.filter(it -> it.name().equals(command.name())).findFirst();
-    return run(provider.orElseThrow(), command.arguments());
+    return run(provider.orElseThrow(), command.arguments(), command.toDescription(117));
   }
 
-  default Recording run(ToolProvider provider, List<String> arguments) {
+  default Recording run(ToolProvider provider, List<String> arguments, String description) {
     var name = provider.name();
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
@@ -79,7 +82,8 @@ public interface ToolProviderAPI {
     try {
       var skips = bach().options().values(Options.Property.SKIP_TOOL);
       var skip = skips.contains(name);
-      if (skip) bach().debug("Skip run of '%s' due to --skip-tool=%s", name, skips);
+      if (skip) bach().print("Skip run of '%s' due to --skip-tool=%s", name, skips);
+      else if (!description.isEmpty()) bach().print("  %-8s %s", name, description);
       code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
     } finally {
       currentThread.setContextClassLoader(currentLoader);
