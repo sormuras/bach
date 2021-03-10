@@ -182,6 +182,19 @@ public record Options(
     HELP("Print usage information and exit."),
 
     /**
+     * Activate all best-effort guessing magic.
+     *
+     * <ul>
+     *   <li>Lookup external modules via `sormuras/modules`
+     *   <li>Lookup external modules via GitHub releases
+     * </ul>
+     *
+     * @see com.github.sormuras.bach.lookup.SormurasModulesModuleLookup
+     * @see com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup
+     */
+    GUESS("Activate all best-effort guessing magic."),
+
+    /**
      * Activate all verification measures available.
      *
      * <p>When Bach runs in strict mode the following default implementations change their behaviour

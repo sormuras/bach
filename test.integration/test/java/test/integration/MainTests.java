@@ -29,6 +29,8 @@ class MainTests {
             Print Bach's version and continue.
           --help
             Print usage information and exit.
+          --guess
+            Activate all best-effort guessing magic.
           --strict
             Activate all verification measures available.
           --run-commands-sequentially

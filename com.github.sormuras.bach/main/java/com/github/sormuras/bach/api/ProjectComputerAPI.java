@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
@@ -80,6 +81,12 @@ public interface ProjectComputerAPI {
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
     for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
+    if (bach().is(Options.Flag.GUESS)) {
+      bach().print("Guess external modules by looking them up from GitHub Releases");
+      lookups.add(ModuleLookup.ofGitHubReleases(bach()));
+      bach().print("Guess external modules by looking them up via sormuras/modules 0-ea");
+      lookups.add(ModuleLookup.ofSormurasModules(bach(), "0-ea"));
+    }
     bach().debug("Computed module lookup functions: %s", lookups.size());
     var metamap =
         Arrays.stream(info.metadata())
