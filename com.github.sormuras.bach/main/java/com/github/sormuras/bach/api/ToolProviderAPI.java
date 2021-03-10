@@ -12,6 +12,7 @@ import java.lang.module.ModuleFinder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.spi.ToolProvider;
@@ -31,16 +32,17 @@ public interface ToolProviderAPI {
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
-  default ToolProvider computeToolProvider(String name) {
-    var provider = computeToolProviders().filter(it -> it.name().equals(name)).findFirst();
-    if (provider.isPresent()) return provider.get();
-    throw new RuntimeException("No tool provider found for name: " + name);
+  default Optional<ToolProvider> computeToolProvider(String name) {
+    return computeToolProviders().filter(it -> it.name().equals(name)).findFirst();
   }
 
   default Recording run(Command<?> command) {
     bach().debug("Run %s", command.toLine());
-    var provider = command instanceof ToolProvider it ? it : computeToolProvider(command.name());
-    return run(provider, command.arguments());
+    if (command instanceof ToolProvider provider) return run(provider, command.arguments());
+    var name = command.name();
+    var provider = computeToolProvider(name);
+    if (provider.isEmpty()) throw new RuntimeException("No tool provider found for name: " + name);
+    return run(provider.get(), command.arguments());
   }
 
   default Recordings run(Command<?> command, Command<?>... commands) {

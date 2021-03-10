@@ -221,8 +221,26 @@ public interface ProjectBuilderAPI {
     var names = modules.toNames().toList();
     var jars = names.stream().map(name -> buildProjectTestJar(testModules, name, testClasses));
     bach().run(jars).requireSuccessful();
-    var runs = names.stream().map(name -> buildProjectTestJUnitRun(testModules, name));
-    new Recordings(runs.toList()).requireSuccessful();
+    if (bach().computeToolProvider("junit").isPresent()) {
+      var runs = names.stream().map(name -> buildProjectTestJUnitRun(testModules, name));
+      new Recordings(runs.toList()).requireSuccessful();
+    } else {
+      var message =
+          """
+          
+            Tool 'junit' not found!
+          
+          Either add `requires static org.junit.platform.console;` in one of the
+          (test) module declarations or configure "org.junit.platform.console"
+          into the list of required module names in the project declaration, like:
+          
+              @ProjectInfo(
+                requires = {..., "org.junit.platform.console", ...}
+              )
+              module bach.info {...}
+          """;
+      bach().print(message);
+    }
   }
 
   default Javac buildProjectTestJavac(Path classes) {
