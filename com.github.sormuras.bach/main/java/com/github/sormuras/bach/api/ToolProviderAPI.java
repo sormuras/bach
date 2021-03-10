@@ -37,7 +37,7 @@ public interface ToolProviderAPI {
   }
 
   default Recording run(Command<?> command) {
-   return run(command, command.toDescription(117));
+    return run(command, command.toDescription(117));
   }
 
   default Recording run(Command<?> command, String description) {
