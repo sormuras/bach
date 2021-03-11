@@ -35,9 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Methods related to building projects. */
-public interface ProjectComputerAPI {
-
-  Bach bach();
+public interface ProjectComputerAPI extends API {
 
   default Project computeProject() {
     var info = computeProjectInfo();

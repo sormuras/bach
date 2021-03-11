@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
@@ -20,9 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Methods related to building projects. */
-public interface ProjectBuilderAPI {
-
-  Bach bach();
+public interface ProjectBuilderAPI extends API {
 
   default void buildProject() throws Exception {
     var bach = bach();

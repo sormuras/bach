@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.tool.GoogleJavaFormat;
@@ -11,14 +10,12 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /** Methods related to formatting Java source-code files. */
-public interface JavaFormatterAPI {
+public interface JavaFormatterAPI extends API {
 
   enum Mode {
     APPLY,
     VERIFY
   }
-
-  Bach bach();
 
   default List<Path> computeJavaSourceFilesToFormat() {
     return find(bach().folders().root(), JavaFormatterAPI::isJavaSourceFile);

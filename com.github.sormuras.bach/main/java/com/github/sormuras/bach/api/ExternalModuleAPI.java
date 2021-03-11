@@ -23,9 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Methods related to manage external modules. */
-public interface ExternalModuleAPI {
-
-  Bach bach();
+public interface ExternalModuleAPI extends API {
 
   default String computeExternalModuleUri(String module) {
     var bach = bach();

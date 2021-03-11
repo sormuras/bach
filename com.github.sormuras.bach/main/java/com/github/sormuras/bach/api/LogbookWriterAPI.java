@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.util.Records;
@@ -17,9 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** Methods for writing logbooks in markdown format. */
-public interface LogbookWriterAPI {
-
-  Bach bach();
+public interface LogbookWriterAPI extends API {
 
   default Path writeLogbook() throws Exception {
     var now = LocalDateTime.now(ZoneOffset.UTC);

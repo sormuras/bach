@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Recording;
@@ -19,9 +18,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 /** Methods related to finding and running provided tools. */
-public interface ToolProviderAPI {
-
-  Bach bach();
+public interface ToolProviderAPI extends API {
 
   default Stream<ToolProvider> computeToolProviders() {
     return computeToolProviders(ModuleFinder.of(bach().folders().externalModules()));
