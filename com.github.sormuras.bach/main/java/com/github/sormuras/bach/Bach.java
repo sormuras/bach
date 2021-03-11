@@ -33,7 +33,7 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public static Bach of(Options options) {
-    var root = Path.of(options.get(Property.PROJECT_ROOT, ""));
+    var root = Path.of("");
     var bach = root.resolve(".bach");
     var name = options.get(Property.BACH_INFO, ProjectInfo.MODULE);
     var layer = ModuleLayerBuilder.build(bach, name, Bach.bin(), bach.resolve("workspace"));

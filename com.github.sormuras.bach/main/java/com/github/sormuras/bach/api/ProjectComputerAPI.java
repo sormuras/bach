@@ -52,16 +52,16 @@ public interface ProjectComputerAPI {
   }
 
   default Settings computeProjectSettings(ProjectInfo info) {
-    var root = bach().get(Property.PROJECT_ROOT, "");
+    var root = "";
     var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info, root));
     var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
     return Settings.of(root, name, version);
   }
 
-  default String computeProjectName(ProjectInfo info, String base) {
+  default String computeProjectName(ProjectInfo info, String root) {
     var name = info.name();
     if (!name.equals("*")) return name;
-    return Path.of(base).toAbsolutePath().getFileName().toString();
+    return Path.of(root).toAbsolutePath().getFileName().toString();
   }
 
   default String computeProjectVersion(ProjectInfo info) {

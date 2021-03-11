@@ -40,8 +40,6 @@ class MainTests {
 
           --bach-info VALUE
             Specify the module to load on startup, defaults to "bach.info"
-          --project-root VALUE
-            Specify the root directory of the project, defaults to user's current directory
           --project-name VALUE
             Specify the name of the project.
           --project-version VALUE

@@ -235,9 +235,6 @@ public record Options(
     /** Name of the module to load on startup passed via {@code --bach-info MODULE}. */
     BACH_INFO("Specify the module to load on startup, defaults to \"" + ProjectInfo.MODULE + "\""),
 
-    /** Root directory of the project, defaults to user's current directory. */
-    PROJECT_ROOT("Specify the root directory of the project, defaults to user's current directory"),
-
     /**
      * Project's name passed via {@code --project-name NAME}.
      *
