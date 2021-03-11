@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -95,8 +96,13 @@ public interface Command<C extends Command<C>> {
   }
 
   @SuppressWarnings("unchecked")
-  default <E extends Collection<?>> C ifPresent(E collection, BiFunction<C, E, C> function) {
+  default <T extends Collection<?>> C ifPresent(T collection, BiFunction<C, T, C> function) {
     return collection.isEmpty() ? (C) this : function.apply((C) this, collection);
+  }
+
+  @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
+  default <T> C ifPresent(Optional<T> optional, BiFunction<C, T, C> function) {
+    return optional.isPresent() ? function.apply((C) this, optional.get()) : (C) this;
   }
 
   @SuppressWarnings("unchecked")

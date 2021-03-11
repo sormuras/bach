@@ -157,11 +157,13 @@ public interface ProjectBuilderAPI {
     var main = project.spaces().main();
     var name = declaration.name();
     var file = bach().folders().workspace("modules", buildProjectMainJarFileName(name));
+    var mainClass = declaration.reference().descriptor().mainClass();
     var jar =
         Command.jar()
             .ifTrue(bach().is(Options.Flag.VERBOSE), command -> command.add("--verbose"))
             .add("--create")
             .add("--file", file)
+            .ifPresent(mainClass, (args, value) -> args.add("--main-class", value))
             .addAll(main.tweaks().arguments("jar"))
             .addAll(main.tweaks().arguments("jar(" + name + ")"));
     var baseClasses = classes.resolve(name);
