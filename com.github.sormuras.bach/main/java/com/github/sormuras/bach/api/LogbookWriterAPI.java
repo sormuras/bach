@@ -68,13 +68,15 @@ public interface LogbookWriterAPI {
 
     var directory = bach().folders().workspace("modules");
 
-    record ModularJar(Path path, long size, ModuleDescriptor descriptor) {}
+    record ModularJar(Path path, long size, ModuleDescriptor descriptor, String md5, String sha) {}
     var jars = new ArrayList<ModularJar>();
     try (var stream = Files.newDirectoryStream(directory, "*.jar")) {
       for (var path : stream) {
         var size = Files.size(path);
         var descriptor = ModuleFinder.of(path).findAll().iterator().next().descriptor();
-        jars.add(new ModularJar(path, size, descriptor));
+        var md5 = ExternalModuleAPI.hash("MD5", path);
+        var sha = ExternalModuleAPI.hash("SHA-256", path);
+        jars.add(new ModularJar(path, size, descriptor, md5, sha));
       }
     } catch (Exception exception) {
       md.add(String.format("Streaming directory `%s` failed", directory));
@@ -90,12 +92,15 @@ public interface LogbookWriterAPI {
     if (jars.isEmpty()) return md;
 
     md.add("");
-    md.add("| Size | File | Module |");
-    md.add("|-----:|------|--------|");
+    md.add("| Size | File | Module | MD5 | SHA-256 |");
+    md.add("|-----:|------|--------|-----|---------|");
     for (var jar : jars) {
+      var size = jar.size;
       var file = jar.path.getFileName();
-      var module = jar.descriptor.name();
-      md.add(String.format("|%,d bytes|`%s`|`%s`", jar.size, file, module));
+      var name = jar.descriptor.name();
+      var md5 = jar.md5;
+      var sha = jar.sha;
+      md.add(String.format("|%,d bytes|`%s`|`%s` | %s | %s ", size, file, name, md5, sha));
     }
 
     md.add("");

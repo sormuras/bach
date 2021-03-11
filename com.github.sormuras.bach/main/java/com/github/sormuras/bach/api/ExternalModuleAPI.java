@@ -140,7 +140,7 @@ public interface ExternalModuleAPI {
     }
   }
 
-  private static String hash(String algorithm, Path file) throws Exception {
+  static String hash(String algorithm, Path file) throws Exception {
     var md = MessageDigest.getInstance(algorithm);
     try (var in = new BufferedInputStream(new FileInputStream(file.toFile()));
         var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
