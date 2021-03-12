@@ -17,7 +17,7 @@ class SimplicissimusTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        // Perform main action: `build`
+        Perform main action: `build`
         Build Simplicissimus 0
         >> INFO + BUILD >>
         Build took .+

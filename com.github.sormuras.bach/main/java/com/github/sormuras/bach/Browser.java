@@ -22,7 +22,7 @@ public class Browser {
   }
 
   public void load(String uri, Path file) {
-    bach.debug("Load %s from %s", file, uri);
+    bach.log("Load %s from %s", file, uri);
     var request = HttpRequest.newBuilder(URI.create(uri)).build();
     try {
       Files.createDirectories(file.getParent());
@@ -33,13 +33,13 @@ public class Browser {
   }
 
   public void load(Map<String, Path> map) {
-    bach.debug("Load %d file%s", map.size(), map.size() == 1 ? "" : "s");
+    bach.log("Load %d file%s", map.size(), map.size() == 1 ? "" : "s");
     if (map.isEmpty()) return;
     var futures = new ArrayList<CompletableFuture<Path>>();
     for (var entry : map.entrySet()) {
       var uri = entry.getKey();
       var file = entry.getValue();
-      bach.debug("Load %s from %s", file, uri);
+      bach.log("Load %s from %s", file, uri);
       try {
         Files.createDirectories(file.getParent());
       } catch (Exception exception) {
@@ -55,7 +55,7 @@ public class Browser {
   public String read(String uri) {
     var request = HttpRequest.newBuilder(URI.create(uri)).build();
     try {
-      bach.debug("Read %s", uri);
+      bach.log("Read %s", uri);
       return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
     } catch (Exception exception) {
       throw new RuntimeException(exception);

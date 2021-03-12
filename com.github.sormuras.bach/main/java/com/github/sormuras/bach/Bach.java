@@ -9,11 +9,8 @@ import com.github.sormuras.bach.util.Records;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.ServiceLoader;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** Java Shell Builder. */
 public class Bach implements AutoCloseable, BachAPI {
@@ -61,13 +58,13 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   private final Options options;
-  private final Queue<Recording> recordings;
+  private final Logbook logbook;
   private /*-*/ Browser browser;
   private final Project project;
 
   public Bach(Options options) {
     this.options = options;
-    this.recordings = new ConcurrentLinkedQueue<>();
+    this.logbook = new Logbook(options);
     this.browser = null; // defered creation in its accessor
     this.project = newProject();
   }
@@ -97,10 +94,6 @@ public class Bach implements AutoCloseable, BachAPI {
     return project.settings().folders();
   }
 
-  public final List<Recording> recordings() {
-    return recordings.stream().toList();
-  }
-
   public final synchronized Browser browser() {
     if (browser == null) browser = new Browser(this);
     return browser;
@@ -109,6 +102,8 @@ public class Bach implements AutoCloseable, BachAPI {
   public final Project project() {
     return project;
   }
+
+  public final Logbook logbook() { return logbook; }
 
   public final boolean is(Flag flag) {
     return options.is(flag);
@@ -128,52 +123,39 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public final void clean() throws Exception {
-    debug("Clean...");
+    log("Clean...");
 
     var workspace = folders().workspace();
     if (Files.notExists(workspace)) return;
     try (var walk = Files.walk(workspace)) {
       var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
-      debug("Delete %s paths", paths.length);
+      log("Delete %s paths", paths.length);
       for (var path : paths) Files.deleteIfExists(path);
     }
   }
 
   @Override
   public void close() {
-    if (recordings.isEmpty()) return;
+    if (logbook.runs().isEmpty()) return;
     try {
       var logbook = writeLogbook();
-      print("Logbook written to %s", logbook.toUri());
+      say("Logbook written to %s", logbook.toUri());
     } catch (Exception exception) {
-      print("Write logbook failed: %s", exception.getMessage());
+      say("Write logbook failed: %s", exception.getMessage());
     }
   }
 
-  public final void debug(String format, Object... args) {
-    if (is(Flag.VERBOSE)) print("// " + format, args);
-  }
-
-  public final void print(String format, Object... args) {
-    var message = args == null || args.length == 0 ? format : String.format(format, args);
-    options.out().println(message);
-  }
-
   public final void info() {
-    print("bin: %s", bin());
-    print("bach: %s/%s", getClass().getModule().getName(), getClass().getName());
-    print("project.name: %s", project.name());
-    print("project.version: %s", project.version());
-    print("%s", Records.toLines(project));
+    say("bin: %s", bin());
+    say("bach: %s/%s", getClass().getModule().getName(), getClass().getName());
+    say("project.name: %s", project.name());
+    say("project.version: %s", project.version());
+    say("%s", Records.toLines(project));
   }
 
   @Override
   public final void format() {
-    debug("Format...");
+    log("Format...");
     formatJavaSourceFiles();
-  }
-
-  public final void record(Recording recording) {
-    recordings.add(recording);
   }
 }

@@ -581,11 +581,11 @@ public class boot {
       out("%n-> %d tool%s", size, size == 1 ? "" : "s");
     }
 
-    static void recordings() {
-      var list = bach().recordings();
+    static void runs() {
+      var list = bach().logbook().runs();
       var size = list.size();
       list.forEach(out);
-      out("%n-> %d recording%s", size, size == 1 ? "" : "s");
+      out("%n-> %d run%s", size, size == 1 ? "" : "s");
     }
 
     static void run(String tool, Object... args) {

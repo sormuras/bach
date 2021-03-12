@@ -17,7 +17,7 @@ class JigsawQuickStartWorldTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        // Perform main action: `build`
+        Perform main action: `build`
         Build JigsawQuickStartWorld 0
         >> INFO + BUILD >>
         Build took .+

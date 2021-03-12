@@ -95,24 +95,24 @@ public class Main implements ToolProvider {
 
   private Status runAndReturnStatus(Bach bach) {
     if (bach.is(Flag.VERSION) || bach.is(Flag.SHOW_VERSION)) {
-      bach.print("%s", Bach.version());
+      bach.say("%s", Bach.version());
       if (bach.is(Flag.VERSION /* and exit */)) return Status.OK;
     }
     if (bach.is(Flag.HELP /* and exit */)) {
-      bach.print("%s", computeHelpMessage());
+      bach.say("%s", computeHelpMessage());
       return Status.OK;
     }
     if (bach.options().tool().isPresent()) {
       var command = bach.options().tool().get();
       var recording = bach.run(command);
-      if (!recording.errors().isEmpty()) bach.print(recording.errors());
-      if (!recording.output().isEmpty()) bach.print(recording.output());
+      if (!recording.errors().isEmpty()) bach.say(recording.errors());
+      if (!recording.output().isEmpty()) bach.say(recording.output());
       if (recording.isSuccessful()) return Status.OK;
-      bach.print("Tool %s returned exit code %d", command.name(), recording.code());
+      bach.say("Tool %s returned exit code %d", command.name(), recording.code());
       return Status.TOOL_FAILED;
     }
     for (var action : bach.options().actions()) {
-      bach.debug("Perform main action: `%s`", action);
+      bach.log("Perform main action: `%s`", action);
       try {
         switch (action) {
           case "build" -> bach.build();
@@ -120,12 +120,12 @@ public class Main implements ToolProvider {
           case "format" -> bach.format();
           case "info" -> bach.info();
           default -> {
-            bach.print("Unsupported action: %s", action);
+            bach.say("Unsupported action: %s", action);
             return Status.ACTION_UNSUPPORTED;
           }
         }
       } catch (Exception exception) {
-        bach.print("Action %s failed: %s", action, exception);
+        bach.say("Action %s failed: %s", action, exception);
         exception.printStackTrace(bach.options().err());
         return Status.ACTION_FAILED;
       }

@@ -1,8 +1,7 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.Recording;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.internal.Strings;
-import com.github.sormuras.bach.util.Records;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -45,10 +44,10 @@ public interface LogbookWriterAPI extends API {
     md.add(String.format("- external-tools = `%s`", folder.externalTools()));
     md.add(String.format("- workspace = `%s`", folder.workspace()));
 
-    md.addAll(writeLogbookModulesOverviewLines());
-    md.addAll(writeLogbookRecordingsOverviewLines());
-    md.addAll(writeLogbookRecordingsDetailLines());
-    md.addAll(writeLogbookProjectConfiguration());
+    md.addAll(writeLogbookModulesOverview());
+    md.addAll(writeLogbookToolRunOverview());
+    md.addAll(writeLogbookToolRunDetails());
+    md.addAll(writeLogbookMessages());
 
     md.add("");
     md.add("## Thanks for using Bach");
@@ -57,7 +56,7 @@ public interface LogbookWriterAPI extends API {
     return md;
   }
 
-  default List<String> writeLogbookModulesOverviewLines() {
+  default List<String> writeLogbookModulesOverview() {
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Modules");
@@ -117,69 +116,71 @@ public interface LogbookWriterAPI extends API {
     return md;
   }
 
-  default List<String> writeLogbookRecordingsOverviewLines() {
-    var recordings = bach().recordings();
+  default List<String> writeLogbookToolRunOverview() {
+    var runs = bach().logbook().runs();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Run Overview");
     md.add("");
-    var size = recordings.size();
+    var size = runs.size();
     md.add(String.format("Recorded %d tool run%s.", size, size == 1 ? "" : "s"));
     md.add("");
     md.add("|Thread| Duration |Tool|Arguments");
     md.add("|-----:|---------:|----|---------");
-    for (var recording : recordings) {
-      var thread = recording.thread();
-      var duration = Strings.toString(recording.duration());
-      var tool = "[" + recording.name() + "](#" + markdownAnchor(recording) + ")";
-      var arguments = "`" + String.join("` `", recording.args()) + "`";
+    for (var run : runs) {
+      var thread = run.thread();
+      var duration = Strings.toString(run.duration());
+      var tool = "[" + run.name() + "](#" + markdownAnchor(run) + ")";
+      var arguments = "`" + String.join("` `", run.args()) + "`";
       var row = String.format("|%6X|%10s|%s|%s", thread, duration, tool, arguments);
       md.add(row);
     }
     return md;
   }
 
-  default List<String> writeLogbookRecordingsDetailLines() {
-    var recordings = bach().recordings();
+  default List<String> writeLogbookToolRunDetails() {
+    var runs = bach().logbook().runs();
     var md = new ArrayList<String>();
     md.add("");
-    md.add("## Recordings");
+    md.add("## Tool Run Details");
     md.add("");
-    var size = recordings.size();
+    var size = runs.size();
     md.add(String.format("%d recording%s", size, size == 1 ? "" : "s"));
 
-    for (var recording : recordings) {
+    for (var run : runs) {
       md.add("");
-      md.add("### " + markdownAnchor(recording));
+      md.add("### " + markdownAnchor(run));
       md.add("");
-      md.add("- tool = `" + recording.name() + '`');
-      md.add("- args = `" + String.join("` `", recording.args()) + '`');
-      md.add("- thread = " + recording.thread());
-      md.add("- duration = " + Strings.toString(recording.duration()));
-      md.add("- code = " + recording.code());
-      if (!recording.output().isEmpty()) {
+      md.add("- tool = `" + run.name() + '`');
+      md.add("- args = `" + String.join("` `", run.args()) + '`');
+      md.add("- thread = " + run.thread());
+      md.add("- duration = " + Strings.toString(run.duration()));
+      md.add("- code = " + run.code());
+      if (!run.output().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(markdown(recording.output()));
+        md.add(markdown(run.output()));
         md.add("```");
       }
-      if (!recording.errors().isEmpty()) {
+      if (!run.errors().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(markdown(recording.errors()));
+        md.add(markdown(run.errors()));
         md.add("```");
       }
     }
     return md;
   }
 
-  default List<String> writeLogbookProjectConfiguration() {
+  default List<String> writeLogbookMessages() {
     var md = new ArrayList<String>();
     md.add("");
-    md.add("## Project Configuration");
+    md.add("## Log Messages");
     md.add("");
     md.add("```text");
-    md.add(Records.toLines(bach().project()));
+    for (var message : bach().logbook().messages()) {
+      md.add(String.format("[%s] %s", message.level().name().toCharArray()[0], message.text()));
+    }
     md.add("```");
     return md;
   }
@@ -196,7 +197,7 @@ public interface LogbookWriterAPI extends API {
         .collect(Collectors.joining("`, `", "`", "`"));
   }
 
-  private static String markdownAnchor(Recording recording) {
+  private static String markdownAnchor(Logbook.Run recording) {
     return recording.name() + '-' + Integer.toHexString(System.identityHashCode(recording));
   }
 }

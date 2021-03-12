@@ -18,7 +18,7 @@ class MultiRelease9Tests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        // Perform main action: `build`
+        Perform main action: `build`
         Build MultiRelease-9 0
         >> INFO + BUILD >>
         Build took .+

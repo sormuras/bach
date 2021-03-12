@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Recording;
 import com.github.sormuras.bach.lookup.LookupException;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
@@ -27,9 +27,9 @@ class BachTests {
   void defaults() {
     var bach = new Bach(Options.of());
     // top-level "components"
+    assertTrue(bach.logbook().runs().isEmpty());
     assertNotNull(bach.project());
     assertNotNull(bach.browser());
-    assertTrue(bach.recordings().isEmpty());
     // default properties
     var project = bach.project();
     assertEquals("bach", project.name());
@@ -86,6 +86,6 @@ class BachTests {
         10 PRINT 'HELLO WORLD'
         20 GOTO 10
         """.lines(),
-        bach.recordings().stream().map(Recording::output));
+        bach.logbook().runs().stream().map(Logbook.Run::output));
   }
 }

@@ -165,7 +165,7 @@ public record Options(
     /**
      * Print messages about what Bach is doing.
      *
-     * @see Bach#debug(String, Object...)
+     * @see Bach#log(String, Object...)
      */
     VERBOSE("Print messages about what Bach is doing."),
 

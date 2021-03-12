@@ -29,7 +29,7 @@ public interface ExternalModuleAPI extends API {
     var bach = bach();
     var libraries = bach.project().libraries();
     var found = libraries.find(module).orElseThrow(() -> new LookupException(module));
-    bach.debug("%s <- %s", module, found);
+    bach.log("%s <- %s", module, found);
     return found.uri();
   }
 
@@ -49,7 +49,7 @@ public interface ExternalModuleAPI extends API {
       var externalFinder = ModuleFinder.of(bach().folders().externalModules());
       requires.addAll(required(externalFinder)); // external-modules
     }
-    bach().debug("Computed %d required external modules: %s", requires.size(), requires);
+    log("Computed %d required modules: %s", requires.size(), requires);
     // Remove names of locatable modules from various locations
     if (requires.isEmpty()) return Set.of();
     requires.removeAll(declared(ModuleFinder.ofSystem()));
@@ -61,13 +61,13 @@ public interface ExternalModuleAPI extends API {
     requires.removeAll(declared(ModuleFinder.of(Bach.bin())));
     if (requires.isEmpty()) return Set.of();
     // Still here? Return names of missing modules
-    bach().debug("Computed %d missing external modules: %s", requires.size(), requires);
+    log("Computed %d missing external modules: %s", requires.size(), requires);
     return Set.copyOf(requires);
   }
 
   default void loadExternalModules(String... modules) {
     var bach = bach();
-    bach.debug("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
+    bach.log("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
     if (modules.length == 0) return;
     var browser = bach.browser();
     UnaryOperator<String> uri = this::computeExternalModuleUri;
@@ -78,7 +78,7 @@ public interface ExternalModuleAPI extends API {
 
   default void loadMissingExternalModules() {
     var bach = bach();
-    bach.debug("Load missing external modules");
+    bach.log("Load missing external modules");
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
     while (true) {
@@ -90,17 +90,17 @@ public interface ExternalModuleAPI extends API {
       bach.loadExternalModules(missing.toArray(String[]::new));
       loaded.addAll(missing);
     }
-    bach.debug("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
+    bach.log("Loaded %d module%s", loaded.size(), loaded.size() == 1 ? "" : "s");
   }
 
   default void verifyExternalModules() throws Exception {
     var directory = bach().folders().externalModules();
     if (Files.notExists(directory)) return;
-    bach().debug("Verify external modules located in %s", directory.toUri());
+    log("Verify external modules located in %s", directory.toUri());
     try (var jars = Files.newDirectoryStream(directory, "*.jar")) {
       for (var jar : jars) {
         var module = ModuleFinder.of(jar).findAll().iterator().next().descriptor();
-        bach().debug("Verify module %s (%s)", module.toNameAndVersion(), jar.getFileName());
+        log("Verify module %s (%s)", module.toNameAndVersion(), jar.getFileName());
         verifyExternalModule(module, jar);
       }
     }
@@ -115,7 +115,7 @@ public interface ExternalModuleAPI extends API {
     var name = module.name();
     var metadata = bach().project().libraries().metamap().get(name);
     if (metadata == null) {
-      bach().debug("No verification metadata available for module: %s", name);
+      log("No verification metadata available for module: %s", name);
       if (bach().is(Options.Flag.STRICT))
         throw new IllegalArgumentException("No metadata for: " + name);
       return;

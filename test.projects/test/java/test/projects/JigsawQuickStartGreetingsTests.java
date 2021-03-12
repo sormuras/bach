@@ -17,7 +17,7 @@ class JigsawQuickStartGreetingsTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        // Perform main action: `build`
+        Perform main action: `build`
         Build JigsawQuickStartGreetings 0
         >> INFO + BUILD >>
         Build took .+

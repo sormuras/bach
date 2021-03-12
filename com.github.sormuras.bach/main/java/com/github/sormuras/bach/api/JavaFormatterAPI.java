@@ -44,7 +44,7 @@ public interface JavaFormatterAPI extends API {
     if (style == JavaStyle.FREE) return;
     var files = computeJavaSourceFilesToFormat();
     if (files.isEmpty()) return;
-    bach().debug("Format %s .java file%s: %s", files.size(), files.size() == 1 ? "" : "s", mode);
+    log("Format %s .java file%s: %s", files.size(), files.size() == 1 ? "" : "s", mode);
     var format = computeJavaSourceFilesFormatCommand(files, mode, style);
     bach().run(format).requireSuccessful();
   }

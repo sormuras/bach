@@ -1,9 +1,8 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Recording;
-import com.github.sormuras.bach.Recordings;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -33,11 +32,11 @@ public interface ToolProviderAPI extends API {
     return computeToolProviders().filter(it -> it.name().equals(name)).findFirst();
   }
 
-  default Recording run(Command<?> command) {
+  default Logbook.Run run(Command<?> command) {
     return run(command, command.toDescription(117));
   }
 
-  default Recording run(Command<?> command, String description) {
+  default Logbook.Run run(Command<?> command, String description) {
     var name = command.name();
     var arguments = command.arguments();
     if (command instanceof ToolProvider provider) return run(provider, arguments, description);
@@ -46,26 +45,26 @@ public interface ToolProviderAPI extends API {
     return run(provider.get(), arguments, description);
   }
 
-  default Recordings run(Command<?> command, Command<?>... commands) {
+  default Logbook.Runs run(Command<?> command, Command<?>... commands) {
     return run(Stream.concat(Stream.of(command), Stream.of(commands)));
   }
 
-  default Recordings run(Stream<? extends Command<?>> commands) {
+  default Logbook.Runs run(Stream<? extends Command<?>> commands) {
     var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
-    bach().debug("Run stream of commands %s", sequential ? "sequentially" : "in parallel");
+    log("Stream tool runs %s", sequential ? "sequentially" : "in parallel");
     var stream = sequential ? commands.sequential() : commands.parallel();
-    var recordings = stream.map(this::run).toList();
-    bach().debug("Return %d recording%s", recordings.size(), recordings.size() == 1 ? "" : "s");
-    return new Recordings(recordings);
+    var runs = stream.map(this::run).toList();
+    log("Collected %d tool run%s", runs.size(), runs.size() == 1 ? "" : "s");
+    return new Logbook.Runs(runs);
   }
 
-  default Recording run(Command<?> command, ModuleFinder finder, String... roots) {
+  default Logbook.Run run(Command<?> command, ModuleFinder finder, String... roots) {
     var providers = computeToolProviders(finder, roots);
     var provider = providers.filter(it -> it.name().equals(command.name())).findFirst();
     return run(provider.orElseThrow(), command.arguments(), command.toDescription(117));
   }
 
-  default Recording run(ToolProvider provider, List<String> arguments, String description) {
+  default Logbook.Run run(ToolProvider provider, List<String> arguments, String description) {
     var name = provider.name();
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
@@ -79,8 +78,8 @@ public interface ToolProviderAPI extends API {
     try {
       var skips = bach().options().values(Options.Property.SKIP_TOOL);
       var skip = skips.contains(name);
-      if (skip) bach().print("Skip run of '%s' due to --skip-tool=%s", name, skips);
-      else if (!description.isEmpty()) bach().print("  %-8s %s", name, description);
+      if (skip) say("Skip run of '%s' due to --skip-tool=%s", name, skips);
+      else if (!description.isEmpty()) say("  %-8s %s", name, description);
       code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
     } finally {
       currentThread.setContextClassLoader(currentLoader);
@@ -90,9 +89,9 @@ public interface ToolProviderAPI extends API {
     var tid = currentThread.getId();
     var output = out.toString().trim();
     var errors = err.toString().trim();
-    var recording = new Recording(name, arguments, tid, duration, code, output, errors);
+    var recording = new Logbook.Run(name, arguments, tid, duration, code, output, errors);
 
-    bach().record(recording);
+    bach().logbook().log(recording);
     return recording;
   }
 }

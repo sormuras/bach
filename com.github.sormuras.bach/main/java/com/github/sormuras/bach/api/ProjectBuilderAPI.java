@@ -1,9 +1,8 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Recording;
-import com.github.sormuras.bach.Recordings;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.SourceFolder;
@@ -23,8 +22,7 @@ public interface ProjectBuilderAPI extends API {
 
   default void buildProject() throws Exception {
     var bach = bach();
-    var project = bach.project();
-    bach.print("Build %s %s", project.name(), project.version());
+    say("Build %s %s", bach.project().name(), bach.project().version());
     if (bach.is(Options.Flag.VERBOSE)) bach.info();
     var start = Instant.now();
     if (bach.is(Options.Flag.STRICT)) bach.formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
@@ -32,7 +30,7 @@ public interface ProjectBuilderAPI extends API {
     bach.verifyExternalModules();
     buildProjectMainSpace();
     buildProjectTestSpace();
-    bach.print("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
+    say("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
 
   /**
@@ -49,11 +47,11 @@ public interface ProjectBuilderAPI extends API {
     var main = bach().project().spaces().main();
     var modules = main.declarations();
     if (modules.isEmpty()) {
-      bach().debug("Main module list is empty, nothing to build here.");
+      log("Main module list is empty, nothing to build here.");
       return;
     }
     var s = modules.size() == 1 ? "" : "s";
-    bach().print("Build %d main module%s: %s", modules.size(), s, modules.toNames(", "));
+    say("Build %d main module%s: %s", modules.size(), s, modules.toNames(", "));
 
     var release = main.release();
     var feature = release != 0 ? release : Runtime.version().feature();
@@ -204,11 +202,11 @@ public interface ProjectBuilderAPI extends API {
     var test = bach().project().spaces().test();
     var modules = test.declarations();
     if (modules.isEmpty()) {
-      bach().debug("Test module list is empty, nothing to build here.");
+      log("Test module list is empty, nothing to build here.");
       return;
     }
     var s = modules.size() == 1 ? "" : "s";
-    bach().print("Build %d test module%s: %s", modules.size(), s, modules.toNames(", "));
+    say("Build %d test module%s: %s", modules.size(), s, modules.toNames(", "));
 
     var testClasses = bach().folders().workspace("classes-test");
     var testModules = bach().folders().workspace("modules-test");
@@ -222,7 +220,7 @@ public interface ProjectBuilderAPI extends API {
     bach().run(jars).requireSuccessful();
     if (bach().computeToolProvider("junit").isPresent()) {
       var runs = names.stream().map(name -> buildProjectTestJUnitRun(testModules, name));
-      new Recordings(runs.toList()).requireSuccessful();
+      new Logbook.Runs(runs.toList()).requireSuccessful();
     } else {
       var message =
           """
@@ -238,7 +236,7 @@ public interface ProjectBuilderAPI extends API {
               )
               module bach.info {...}
           """;
-      bach().print(message);
+      say(message);
     }
   }
 
@@ -273,7 +271,7 @@ public interface ProjectBuilderAPI extends API {
         .add("-C", bach().folders().root(module, "test/java"), ".");
   }
 
-  default Recording buildProjectTestJUnitRun(Path testModules, String module) {
+  default Logbook.Run buildProjectTestJUnitRun(Path testModules, String module) {
     var finder =
         ModuleFinder.of(
             testModules.resolve(buildProjectTestJarFileName(module)), // module under test

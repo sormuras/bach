@@ -59,7 +59,7 @@ public interface ProjectComputerAPI extends API {
   default String computeProjectName(ProjectInfo info, String root) {
     var name = info.name();
     if (!name.equals("*")) return name;
-    return Path.of(root).toAbsolutePath().getFileName().toString();
+    return Paths.nameOrElse(Path.of(root), "noname");
   }
 
   default String computeProjectVersion(ProjectInfo info) {
@@ -75,22 +75,22 @@ public interface ProjectComputerAPI extends API {
 
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
     var requires = Set.of(info.requires());
-    bach().debug("Computed additionally required modules: %d", requires.size());
+    log("Computed additionally required modules: %d", requires.size());
     var lookups = new ArrayList<ModuleLookup>();
     for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
     for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
     if (bach().is(Options.Flag.GUESS)) {
-      bach().print("Guess external modules by looking them up from GitHub Releases");
+      say("Guess external modules by looking them up from GitHub Releases");
       lookups.add(ModuleLookup.ofGitHubReleases(bach()));
-      bach().print("Guess external modules by looking them up via sormuras/modules 0-ea");
+      say("Guess external modules by looking them up via sormuras/modules 0-ea");
       lookups.add(ModuleLookup.ofSormurasModules(bach(), "0-ea"));
     }
-    bach().debug("Computed module lookup functions: %s", lookups.size());
+    log("Computed module lookup functions: %s", lookups.size());
     var metamap =
         Arrays.stream(info.metadata())
             .map(this::computeProjectModuleMetadata)
             .collect(Collectors.toMap(ModuleMetadata::name, Function.identity()));
-    bach().debug("External modules directory present: %s", settings.folders().externalModules());
+    log("External modules directory present: %s", settings.folders().externalModules());
     return new Libraries(requires, List.copyOf(lookups), Map.copyOf(metamap));
   }
 
@@ -127,7 +127,7 @@ public interface ProjectComputerAPI extends API {
     var root = settings.folders().root();
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
     if (paths.isEmpty()) throw new RuntimeException("No module-info.java file in " + root.toUri());
-    bach().debug("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");
+    log("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");
 
     var mainDeclarations = new TreeMap<String, ModuleDeclaration>();
     var testDeclarations = new TreeMap<String, ModuleDeclaration>();
@@ -137,7 +137,7 @@ public interface ProjectComputerAPI extends API {
 
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
-        bach().debug("Skip module %s - it contains `.bach` in its path names", path);
+        log("Skip module %s - it contains `.bach` in its path names", path);
         continue;
       }
       if (testMatcher.anyMatch(path)) {
@@ -150,7 +150,7 @@ public interface ProjectComputerAPI extends API {
         mainDeclarations.put(declaration.name(), declaration);
         continue;
       }
-      bach().debug("Skip module %s - no match for main nor test space", path);
+      log("Skip module %s - no match for main nor test space", path);
     }
 
     var main =
