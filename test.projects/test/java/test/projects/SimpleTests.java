@@ -13,7 +13,7 @@ class SimpleTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("Simple", temp);
-    var out = cli.build("--strict", "--verbose");
+    var out = cli.build("--strict", "--verbose", "--skip-tool", "javadoc");
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>

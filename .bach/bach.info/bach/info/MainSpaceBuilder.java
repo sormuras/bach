@@ -1,6 +1,5 @@
 package bach.info;
 
-import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.api.ProjectBuilderAPI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,17 +18,7 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
 
     var pom = generateMavenConsumerPom(module, version, file);
     var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);
-    var javadoc =
-        Command.javadoc()
-            .add("--module", module)
-            .add("--module-source-path", "./*/main/java")
-            .add("--module-path", bach().folders().externalModules())
-            .add("-windowtitle", "🎼 Bach " + version)
-            .add("-doctitle", "🎼 Bach " + version)
-            .add("-header", "🎼 Bach " + version)
-            .addAll(bach().project().spaces().main().tweaks().arguments("javadoc"))
-            .add("-d", bach().folders().workspace("documentation", "api"));
-    bach().run(pomcheck, javadoc).requireSuccessful();
+    bach().run(pomcheck).requireSuccessful();
   }
 
   private Path generateMavenConsumerPom(String module, String version, Path file) throws Exception {

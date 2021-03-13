@@ -9,6 +9,7 @@ import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.JDeps;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
+import com.github.sormuras.bach.tool.Javadoc;
 import com.github.sormuras.bach.util.Paths;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -86,6 +87,10 @@ public interface ProjectBuilderAPI extends API {
       jdeps.add(buildProjectMainJDeps(declaration));
     }
     bach().run(jdeps.stream()).requireSuccessful();
+
+    var api = bach().folders().workspace("documentation", "api");
+    bach().run(buildProjectMainJavadoc(api)).requireSuccessful();
+    bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
   }
 
   default void buildProjectMainSpaceClassesForJava8(Path classes) {
@@ -155,6 +160,10 @@ public interface ProjectBuilderAPI extends API {
         .addAll(javaSourceFiles);
   }
 
+  private Path buildProjectMultiReleaseClasses(String module, int release) {
+    return bach().folders().workspace("classes-mr", String.valueOf(release), module);
+  }
+
   default Jar buildProjectMainJar(ModuleDeclaration declaration, Path classes) {
     var project = bach().project();
     var main = project.spaces().main();
@@ -201,8 +210,30 @@ public interface ProjectBuilderAPI extends API {
         .add("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
   }
 
-  private Path buildProjectMultiReleaseClasses(String module, int release) {
-    return bach().folders().workspace("classes-mr", String.valueOf(release), module);
+  default Javadoc buildProjectMainJavadoc(Path destination) {
+    var project = bach().project();
+    var main = project.spaces().main();
+    return Command.javadoc()
+        .add("--module", main.declarations().toNames(","))
+        .forEach(
+            main.declarations().toModuleSourcePaths(false),
+            (javac, path) -> javac.add("--module-source-path", path))
+        .ifPresent(
+            main.modulePaths().pruned(), (javadoc, paths) -> javadoc.add("--module-path", paths))
+        .ifTrue(bach().is(Options.Flag.STRICT), javadoc -> javadoc.add("-Xdoclint").add("-Werror"))
+        .addAll(main.tweaks().arguments("javadoc"))
+        .add("-d", destination);
+  }
+
+  /** {@return the jar call generating the API documentation archive} */
+  default Jar buildProjectMainJavadocJar(Path api) {
+    var project = bach().project();
+    var file = project.name() + "-api-" + project.version() + ".zip";
+    return Command.jar()
+        .add("--create")
+        .add("--file", api.getParent().resolve(file))
+        .add("--no-manifest")
+        .add("-C", api, ".");
   }
 
   /**
