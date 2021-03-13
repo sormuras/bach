@@ -41,7 +41,7 @@ public interface ProjectBuilderAPI extends API {
    * <ul>
    *   <li>{@code javac} + {@code jar}
    *   <li>{@code jdeps}
-   *   <li>TODO {@code javadoc}
+   *   <li>{@code javadoc}
    *   <li>TODO {@code jlink}
    *   <li>TODO {@code jpackage}
    * </ul>
@@ -90,7 +90,7 @@ public interface ProjectBuilderAPI extends API {
 
     var api = bach().folders().workspace("documentation", "api");
     bach().run(buildProjectMainJavadoc(api)).requireSuccessful();
-    bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
+    if (Files.isDirectory(api)) bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
   }
 
   default void buildProjectMainSpaceClassesForJava8(Path classes) {
