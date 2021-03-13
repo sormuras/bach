@@ -19,7 +19,6 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
 
     var pom = generateMavenConsumerPom(module, version, file);
     var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);
-    var jdeps = Command.jdeps().add("--module-path", modules).add("--check", module);
     var javadoc =
         Command.javadoc()
             .add("--module", module)
@@ -30,7 +29,7 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
             .add("-header", "🎼 Bach " + version)
             .addAll(bach().project().spaces().main().tweaks().arguments("javadoc"))
             .add("-d", bach().folders().workspace("documentation", "api"));
-    bach().run(pomcheck, jdeps, javadoc).requireSuccessful();
+    bach().run(pomcheck, javadoc).requireSuccessful();
   }
 
   private Path generateMavenConsumerPom(String module, String version, Path file) throws Exception {

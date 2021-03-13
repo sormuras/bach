@@ -6,6 +6,7 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.SourceFolder;
+import com.github.sormuras.bach.tool.JDeps;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.util.Paths;
@@ -38,6 +39,7 @@ public interface ProjectBuilderAPI extends API {
    *
    * <ul>
    *   <li>{@code javac} + {@code jar}
+   *   <li>{@code jdeps}
    *   <li>TODO {@code javadoc}
    *   <li>TODO {@code jlink}
    *   <li>TODO {@code jpackage}
@@ -78,6 +80,12 @@ public interface ProjectBuilderAPI extends API {
     }
     if (!javacs.isEmpty()) bach().run(javacs.stream()).requireSuccessful();
     bach().run(jars.stream()).requireSuccessful();
+
+    var jdeps = new ArrayList<JDeps>();
+    for (var declaration : modules.map().values()) {
+      jdeps.add(buildProjectMainJDeps(declaration));
+    }
+    bach().run(jdeps.stream()).requireSuccessful();
   }
 
   default void buildProjectMainSpaceClassesForJava8(Path classes) {
@@ -183,6 +191,14 @@ public interface ProjectBuilderAPI extends API {
 
   default String buildProjectMainJarFileName(String module) {
     return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
+  }
+
+  default JDeps buildProjectMainJDeps(ModuleDeclaration declaration) {
+    var folders = bach().folders();
+    return Command.jdeps()
+        .add("--check", declaration.name())
+        .add("--multi-release", "BASE")
+        .add("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
   }
 
   private Path buildProjectMultiReleaseClasses(String module, int release) {
