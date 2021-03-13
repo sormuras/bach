@@ -37,34 +37,25 @@ public final class Logbook {
       String output,
       String errors) {
 
-    /**
-     * Returns {@code true} if this recording represents an errored tool run.
-     *
-     * @return {@code true} if the {@link #code} component holds a non-zero value, else {@code false}
-     */
+    /** {@return {@code true} if this recording represents an errored tool run} */
     public boolean isError() {
       return code != 0;
     }
 
-    /**
-     * Returns {@code true} if this recording represents a successful tool run.
-     *
-     * @return {@code true} if the {@link #code} component is zero, else {@code false}
-     */
+    /** {@return {@code true} if this recording represents a successful tool run} */
     public boolean isSuccessful() {
       return code == 0;
     }
 
     /**
-     * Returns silently if this recording represents a successful tool run.
+     * {@return silently if this recording represents a successful tool run}
      *
      * @throws RuntimeException if {@link #isError()} returns {@code true}
      */
     public void requireSuccessful() {
       if (isSuccessful()) return;
-      throw new RuntimeException(name + " returned error code " + code + "\n" + toString().indent(4));
+      throw new RuntimeException(name + " returned code " + code + "\n" + toString().indent(4));
     }
-
   }
 
   /** A multi-recordings collector. */
@@ -79,7 +70,7 @@ public final class Logbook {
       var errors = values.stream().filter(Run::isError).toList();
       if (errors.isEmpty()) return;
       if (errors.size() == 1) errors.get(0).requireSuccessful();
-      throw new RuntimeException(errors.size() + " runs returned a non-zero error code \n" + errors);
+      throw new RuntimeException(errors.size() + " runs returned a non-zero code");
     }
   }
 

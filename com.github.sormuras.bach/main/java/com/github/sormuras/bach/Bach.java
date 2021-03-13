@@ -103,7 +103,9 @@ public class Bach implements AutoCloseable, BachAPI {
     return project;
   }
 
-  public final Logbook logbook() { return logbook; }
+  public final Logbook logbook() {
+    return logbook;
+  }
 
   public final boolean is(Flag flag) {
     return options.is(flag);
