@@ -48,7 +48,7 @@ public final class Logbook {
     }
 
     /**
-     * {@return silently if this recording represents a successful tool run}
+     * Returns silently if this recording represents a successful tool run.
      *
      * @throws RuntimeException if {@link #isError()} returns {@code true}
      */

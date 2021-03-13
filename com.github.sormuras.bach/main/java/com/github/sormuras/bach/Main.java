@@ -19,9 +19,9 @@ public class Main implements ToolProvider {
 
     var properties = new StringJoiner("\n");
     for (var property : Property.values()) {
-      var repeatable = property.repeatable() ? " (repeatable option)" : "";
+      var repeatable = property.repeatable ? " (repeatable option)" : "";
       properties.add(Options.key(property) + " VALUE" + repeatable);
-      properties.add("  " + property.help());
+      properties.add("  " + property.help);
     }
 
     return """

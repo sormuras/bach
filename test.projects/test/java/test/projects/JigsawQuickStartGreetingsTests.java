@@ -13,7 +13,7 @@ class JigsawQuickStartGreetingsTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("JigsawQuickStartGreetings", temp);
-    var out = cli.build("--strict", "--verbose", "--skip-tool", "javadoc");
+    var out = cli.build("--strict", "--verbose", "--limit-tools", "javac,jar");
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>

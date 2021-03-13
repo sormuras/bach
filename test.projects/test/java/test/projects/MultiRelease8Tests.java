@@ -14,7 +14,7 @@ class MultiRelease8Tests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiRelease-8", temp);
-    var out = cli.build("--verbose", "--project-targets-java", "8");
+    var out = cli.build("--verbose", "--project-targets-java", "8", "--limit-tools", "javac,jar");
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>

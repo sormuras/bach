@@ -5,6 +5,7 @@ import com.github.sormuras.bach.ProjectInfo.External;
 import com.github.sormuras.bach.ProjectInfo.Externals;
 import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Metadata.Checksum;
+import com.github.sormuras.bach.ProjectInfo.Tools;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 import com.github.sormuras.bach.project.JavaStyle;
 
@@ -13,6 +14,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     version = "17-ea",
     format = JavaStyle.GOOGLE,
     compileModulesForJavaRelease = 16,
+    tools = @Tools(skip = "jlink"),
     // <editor-fold desc="Main Space Modules">
     modules = "*/main/java",
     tweaks = {

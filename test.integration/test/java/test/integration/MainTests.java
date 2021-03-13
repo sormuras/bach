@@ -46,7 +46,9 @@ class MainTests {
             Specify the version of the project.
           --project-targets-java VALUE
             Compile main modules for specified Java release.
-          --skip-tool VALUE (repeatable option)
+          --limit-tools VALUE (repeatable option)
+            Add specified tools to the universe of executable tools.
+          --skip-tools VALUE (repeatable option)
             Skip all executions of the specified tool.
 
         Actions include:

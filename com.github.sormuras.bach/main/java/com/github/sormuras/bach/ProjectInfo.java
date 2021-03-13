@@ -119,9 +119,6 @@ public @interface ProjectInfo {
     /** {@return the type of the {@link #via()} target string, defaults to {@link Type#AUTO}} */
     Type type() default Type.AUTO;
 
-    /** {@return the base path of path targets} */
-    String pathBase() default ".";
-
     /** {@return the base URI of the repository for Maven-based target coordinates} */
     String mavenRepository() default "https://repo.maven.apache.org/maven2";
 
@@ -228,5 +225,17 @@ public @interface ProjectInfo {
 
     /** {@return the additional arguments to be passed to the tool call} */
     String[] value() default {};
+  }
+
+  /** {@return the tools-releated settings} */
+  Tools tools() default @Tools;
+
+  /** Tools-related settings. */
+  @Target({})
+  @interface Tools {
+    /** {@return limit the universe of executable tools} */
+    String[] limit() default {};
+    /** {@return list of tools to skip} */
+    String[] skip() default {};
   }
 }

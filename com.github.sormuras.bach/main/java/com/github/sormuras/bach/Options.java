@@ -52,12 +52,12 @@ public record Options(
     return new Options(info, out, err, flags, properties, actions, tool);
   }
 
-  public List<String> values(Property property) {
+  public List<String> list(Property property) {
     return properties.getOrDefault(property, List.of());
   }
 
   public String get(Property property, String defaultValue) {
-    var values = values(property);
+    var values = list(property);
     return values.isEmpty() ? defaultValue : values.get(0);
   }
 
@@ -68,6 +68,14 @@ public record Options(
    */
   public boolean is(Flag flag) {
     return flags.contains(flag);
+  }
+
+  public final Optional<String> find(Property property) {
+    return Optional.ofNullable(get(property, null));
+  }
+
+  public final Optional<List<String>> findRepeatable(Property property) {
+    return Optional.ofNullable(properties.get(property));
   }
 
   /**
@@ -112,7 +120,8 @@ public record Options(
         var property = mapOfPropertyArguments.get(argument);
         if (property != null) {
           var value = next(deque, property.name());
-          properties.merge(property, List.of(value), Options::merge);
+          var values = property.repeatable ? List.of(value.split(",")) : List.of(value);
+          properties.merge(property, values, Options::merge);
           continue;
         }
         throw new IllegalArgumentException("No flag, no property: " + argument);
@@ -256,8 +265,11 @@ public record Options(
      */
     PROJECT_TARGETS_JAVA("Compile main modules for specified Java release."),
 
-    /** Skip all executions for the specified tool, this option is repeatable */
-    SKIP_TOOL("Skip all executions of the specified tool.", true);
+    /** Add specified tool to the universe of executable tools. */
+    LIMIT_TOOLS("Add specified tools to the universe of executable tools.", true),
+
+    /** Skip all executions for the specified tool, this option is repeatable. */
+    SKIP_TOOLS("Skip all executions of the specified tool.", true);
 
     final String help;
     final boolean repeatable;
@@ -269,14 +281,6 @@ public record Options(
     Property(String help, boolean repeatable) {
       this.help = help;
       this.repeatable = repeatable;
-    }
-
-    String help() {
-      return help;
-    }
-
-    boolean repeatable() {
-      return repeatable;
     }
   }
 }

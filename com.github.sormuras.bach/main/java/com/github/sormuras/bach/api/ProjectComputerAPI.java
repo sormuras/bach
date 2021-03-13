@@ -19,6 +19,7 @@ import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.project.SourceFolders;
 import com.github.sormuras.bach.project.Spaces;
 import com.github.sormuras.bach.project.TestSpace;
+import com.github.sormuras.bach.project.Tools;
 import com.github.sormuras.bach.project.Tweak;
 import com.github.sormuras.bach.project.Tweaks;
 import com.github.sormuras.bach.util.Paths;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,26 +53,46 @@ public interface ProjectComputerAPI extends API {
 
   default Settings computeProjectSettings(ProjectInfo info) {
     var root = "";
-    var name = bach().get(Property.PROJECT_NAME).orElseGet(() -> computeProjectName(info, root));
-    var version = bach().get(Property.PROJECT_VERSION).orElseGet(() -> computeProjectVersion(info));
-    return Settings.of(root, name, version);
+    var name = computeProjectName(info, root);
+    var version = computeProjectVersion(info);
+    var tools = new Tools(computeProjectToolsLimit(info), computeProjectToolsSkip(info));
+    return Settings.of(root, name, version, tools);
   }
 
   default String computeProjectName(ProjectInfo info, String root) {
+    var value = bach().options().find(Property.PROJECT_NAME);
+    if (value.isPresent()) return value.get();
     var name = info.name();
     if (!name.equals("*")) return name;
     return Paths.nameOrElse(Path.of(root), "noname");
   }
 
   default String computeProjectVersion(ProjectInfo info) {
-    return info.version();
+    return bach().options().find(Property.PROJECT_VERSION).orElseGet(info::version);
   }
 
   default int computeProjectTargetsJava(ProjectInfo info) {
     return bach()
-        .get(Property.PROJECT_TARGETS_JAVA)
+        .options()
+        .find(Property.PROJECT_TARGETS_JAVA)
         .map(Integer::parseInt)
         .orElseGet(info::compileModulesForJavaRelease);
+  }
+
+  default Set<String> computeProjectToolsLimit(ProjectInfo info) {
+    return new TreeSet<>(
+        bach()
+            .options()
+            .findRepeatable(Property.LIMIT_TOOLS)
+            .orElseGet(() -> List.of(info.tools().limit())));
+  }
+
+  default Set<String> computeProjectToolsSkip(ProjectInfo info) {
+    return new TreeSet<>(
+        bach()
+            .options()
+            .findRepeatable(Property.SKIP_TOOLS)
+            .orElseGet(() -> List.of(info.tools().skip())));
   }
 
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {

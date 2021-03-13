@@ -9,7 +9,6 @@ import com.github.sormuras.bach.util.Records;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.ServiceLoader;
 
 /** Java Shell Builder. */
@@ -109,14 +108,6 @@ public class Bach implements AutoCloseable, BachAPI {
 
   public final boolean is(Flag flag) {
     return options.is(flag);
-  }
-
-  public final String get(Property property, String defaultValue) {
-    return options.get(property, defaultValue);
-  }
-
-  public final Optional<String> get(Property property) {
-    return Optional.ofNullable(get(property, null));
   }
 
   @Override

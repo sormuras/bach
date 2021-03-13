@@ -76,11 +76,10 @@ public interface ToolProviderAPI extends API {
     var start = Instant.now();
     int code;
     try {
-      var skips = bach().options().values(Options.Property.SKIP_TOOL);
-      var skip = skips.contains(name);
-      if (skip) say("Skip run of '%s' due to --skip-tool=%s", name, skips);
-      else if (!description.isEmpty()) say("  %-8s %s", name, description);
-      code = skip ? 0 : provider.run(new PrintWriter(out), new PrintWriter(err), args);
+      var enabled = bach().project().settings().tools().enabled(name);
+      if (enabled) say("  %-8s %s", name, description);
+      else log("Skip %s", name);
+      code = enabled ? provider.run(new PrintWriter(out), new PrintWriter(err), args) : 0;
     } finally {
       currentThread.setContextClassLoader(currentLoader);
     }
