@@ -3,7 +3,6 @@ package bach.info;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.ProjectInfo;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +19,7 @@ public class CustomBach extends Bach implements MainSpaceBuilder {
   }
 
   public static Provider<CustomBach> provider() {
-    return options -> new CustomBach(options.with(Flag.VERBOSE));
+    return CustomBach::new;
   }
 
   private CustomBach(Options options) {
