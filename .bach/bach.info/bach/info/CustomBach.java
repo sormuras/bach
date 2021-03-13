@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.ProjectInfo;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -28,12 +29,15 @@ public class CustomBach extends Bach implements MainSpaceBuilder {
 
   @Override
   public String computeProjectVersion(ProjectInfo info) {
+    var value = bach().options().find(Options.Property.PROJECT_VERSION);
+    if (value.isPresent()) return value.get();
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);
     try {
       return Files.readString(Path.of("VERSION")) + "-custom+" + timestamp;
     } catch (Exception exception) {
-      throw new RuntimeException("Read version failed: " + exception);
+      logbook().log(Level.WARNING, "Read version failed: %s", exception);
+      return info.version();
     }
   }
 }
