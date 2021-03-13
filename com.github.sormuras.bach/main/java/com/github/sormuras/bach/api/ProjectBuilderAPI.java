@@ -7,6 +7,7 @@ import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.JDeps;
+import com.github.sormuras.bach.tool.JLink;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.tool.Javadoc;
@@ -91,6 +92,10 @@ public interface ProjectBuilderAPI extends API {
     var api = bach().folders().workspace("documentation", "api");
     bach().run(buildProjectMainJavadoc(api)).requireSuccessful();
     if (Files.isDirectory(api)) bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
+
+    var image = bach().folders().workspace("image");
+    Paths.deleteDirectories(image);
+    bach().run(buildProjectMainJLink(image));
   }
 
   default void buildProjectMainSpaceClassesForJava8(Path classes) {
@@ -234,6 +239,17 @@ public interface ProjectBuilderAPI extends API {
         .add("--file", api.getParent().resolve(file))
         .add("--no-manifest")
         .add("-C", api, ".");
+  }
+
+  default JLink buildProjectMainJLink(Path image) {
+    var project = bach().project();
+    var main = project.spaces().main();
+    var test = project.spaces().test();
+    return Command.jlink()
+        .add("--add-modules", main.declarations().toNames(","))
+        .ifPresent(test.modulePaths().pruned(), (jlink, paths) -> jlink.add("--module-path", paths))
+        .addAll(main.tweaks().arguments("jlink"))
+        .add("--output", image);
   }
 
   /**
