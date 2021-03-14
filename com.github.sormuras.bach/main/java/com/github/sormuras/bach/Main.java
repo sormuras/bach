@@ -1,7 +1,7 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.Options.Flag;
-import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.project.Flag;
+import com.github.sormuras.bach.project.Property;
 import java.io.PrintWriter;
 import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
@@ -15,7 +15,7 @@ public class Main implements ToolProvider {
 
   public static String computeHelpMessage() {
     var flags = new StringJoiner("\n");
-    for (var flag : Flag.values()) flags.add(Options.key(flag)).add("  " + flag.help());
+    for (var flag : Flag.values()) flags.add(Options.key(flag)).add("  " + flag.help);
 
     var properties = new StringJoiner("\n");
     for (var property : Property.values()) {

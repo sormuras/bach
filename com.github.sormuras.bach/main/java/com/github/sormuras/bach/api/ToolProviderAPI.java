@@ -1,8 +1,8 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.Logbook;
-import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -50,7 +50,7 @@ public interface ToolProviderAPI extends API {
   }
 
   default Logbook.Runs run(Stream<? extends Command<?>> commands) {
-    var sequential = bach().is(Options.Flag.RUN_COMMANDS_SEQUENTIALLY);
+    var sequential = bach().is(Flag.RUN_COMMANDS_SEQUENTIALLY);
     log("Stream tool runs %s", sequential ? "sequentially" : "in parallel");
     var stream = sequential ? commands.sequential() : commands.parallel();
     var runs = stream.map(this::run).toList();

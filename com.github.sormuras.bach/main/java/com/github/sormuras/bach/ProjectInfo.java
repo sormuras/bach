@@ -4,6 +4,7 @@ import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.project.Settings;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -80,7 +81,7 @@ public @interface ProjectInfo {
    *
    * <p>For a value of {@code 0}, the default value, the {@code --release} option is omitted.
    *
-   * @see Options.Property#PROJECT_TARGETS_JAVA
+   * @see Property#PROJECT_TARGETS_JAVA
    */
   int compileModulesForJavaRelease() default 0;
 

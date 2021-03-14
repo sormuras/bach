@@ -1,7 +1,7 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.JDeps;
@@ -124,7 +124,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
           Command.javac()
               .add("--release", main.release()) // 8
               .add("--class-path", classPaths)
-              .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
+              .ifTrue(bach().is(Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
               .addAll(main.tweaks().arguments("javac"))
               .add("-d", classes.resolve(name))
               .addAll(java8Files);
@@ -149,7 +149,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
             main.declarations().toModuleSourcePaths(false),
             (javac, path) -> javac.add("--module-source-path", path))
         .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
-        .ifTrue(bach().is(Options.Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
+        .ifTrue(bach().is(Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
         .addAll(main.tweaks().arguments("javac"))
         .add("-d", classes);
   }
@@ -188,7 +188,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var mainClass = declaration.reference().descriptor().mainClass();
     var jar =
         Command.jar()
-            .ifTrue(bach().is(Options.Flag.VERBOSE), command -> command.add("--verbose"))
+            .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
             .add("--create")
             .add("--file", file)
             .ifPresent(mainClass, (args, value) -> args.add("--main-class", value))
@@ -236,7 +236,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
             (javac, path) -> javac.add("--module-source-path", path))
         .ifPresent(
             main.modulePaths().pruned(), (javadoc, paths) -> javadoc.add("--module-path", paths))
-        .ifTrue(bach().is(Options.Flag.STRICT), javadoc -> javadoc.add("-Xdoclint").add("-Werror"))
+        .ifTrue(bach().is(Flag.STRICT), javadoc -> javadoc.add("-Xdoclint").add("-Werror"))
         .addAll(main.tweaks().arguments("javadoc"))
         .add("-d", destination);
   }

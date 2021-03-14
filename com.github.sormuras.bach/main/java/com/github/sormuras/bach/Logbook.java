@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.Flag;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
 import java.util.List;
@@ -81,7 +82,7 @@ public final class Logbook {
 
   Logbook(Options options) {
     this.options = options;
-    this.verbose = options.is(Options.Flag.VERBOSE);
+    this.verbose = options.is(Flag.VERBOSE);
     this.messages = new ConcurrentLinkedQueue<>();
     this.runs = new ConcurrentLinkedQueue<>();
   }

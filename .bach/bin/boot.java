@@ -3,7 +3,7 @@ package bin;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Options.Property;
+import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.ProjectInfo;
 import java.io.PrintWriter;
 import java.io.StringWriter;

@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.project.Property;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ public class CustomBach extends Bach implements MainSpaceBuilder {
 
   @Override
   public String computeProjectVersion(ProjectInfo info) {
-    var value = bach().options().find(Options.Property.PROJECT_VERSION);
+    var value = bach().options().find(Property.PROJECT_VERSION);
     if (value.isPresent()) return value.get();
     var now = LocalDateTime.now(ZoneOffset.UTC);
     var timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(now);

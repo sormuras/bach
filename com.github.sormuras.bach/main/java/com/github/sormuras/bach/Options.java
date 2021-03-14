@@ -1,5 +1,7 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.Flag;
+import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.tool.Tool;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -166,121 +168,5 @@ public record Options(
 
   private static <E> List<E> merge(List<E> head, List<E> tail) {
     return Stream.concat(head.stream(), tail.stream()).toList();
-  }
-
-  /** Feature toggle. */
-  public enum Flag {
-
-    /**
-     * Print messages about what Bach is doing.
-     *
-     * @see Bach#log(String, Object...)
-     */
-    VERBOSE("Print messages about what Bach is doing."),
-
-    /** Mute all normal (expected) printouts. */
-    SILENT("Mute all normal (expected) printouts."),
-
-    /** Print Bach's version and exit. */
-    VERSION("Print Bach's version and exit."),
-
-    /** Print Bach's version and continue. */
-    SHOW_VERSION("Print Bach's version and continue."),
-
-    /** Print usage information and exit. */
-    HELP("Print usage information and exit."),
-
-    /**
-     * Activate all best-effort guessing magic.
-     *
-     * <ul>
-     *   <li>Lookup external modules via `sormuras/modules`
-     *   <li>Lookup external modules via GitHub releases
-     * </ul>
-     *
-     * @see com.github.sormuras.bach.lookup.SormurasModulesModuleLookup
-     * @see com.github.sormuras.bach.lookup.GitHubReleasesModuleLookup
-     */
-    GUESS("Activate all best-effort guessing magic."),
-
-    /**
-     * Activate all verification measures available.
-     *
-     * <p>When Bach runs in strict mode the following default implementations change their behaviour
-     * into a more defensive way of doing things:
-     *
-     * <ul>
-     *   <li>Source code style is checked via running a formatter in `VERIFY` mode.
-     *   <li>Only explicitly declared requires are considered when downloading external modules.
-     *   <li>All external modular JAR files are verified to conform with expected metadata.
-     * </ul>
-     *
-     * @see ProjectInfo#format()
-     * @see ProjectInfo#metadata()
-     */
-    STRICT("Activate all verification measures available."),
-
-    /**
-     * Prevent parallel execution of commands.
-     *
-     * @see Bach#run(Command, Command[])
-     * @see Bach#run(Stream)
-     */
-    RUN_COMMANDS_SEQUENTIALLY("Prevent parallel execution of commands.");
-
-    final String help;
-
-    Flag(String help) {
-      this.help = help;
-    }
-
-    String help() {
-      return help;
-    }
-  }
-
-  /** Key-value pair option. */
-  public enum Property {
-    /** Name of the module to load on startup passed via {@code --bach-info MODULE}. */
-    BACH_INFO("Specify the module to load on startup, defaults to \"" + ProjectInfo.MODULE + "\""),
-
-    /**
-     * Project's name passed via {@code --project-name NAME}.
-     *
-     * @see ProjectInfo#name()
-     */
-    PROJECT_NAME("Specify the name of the project."),
-
-    /**
-     * Project's version passed via {@code --project-version VERSION}.
-     *
-     * @see ProjectInfo#version()
-     */
-    PROJECT_VERSION("Specify the version of the project."),
-
-    /**
-     * Compile main modules for specified Java release.
-     *
-     * @see ProjectInfo#compileModulesForJavaRelease()
-     */
-    PROJECT_TARGETS_JAVA("Compile main modules for specified Java release."),
-
-    /** Add specified tool to the universe of executable tools. */
-    LIMIT_TOOLS("Add specified tools to the universe of executable tools.", true),
-
-    /** Skip all executions for the specified tool, this option is repeatable. */
-    SKIP_TOOLS("Skip all executions of the specified tool.", true);
-
-    final String help;
-    final boolean repeatable;
-
-    Property(String help) {
-      this(help, false);
-    }
-
-    Property(String help, boolean repeatable) {
-      this.help = help;
-      this.repeatable = repeatable;
-    }
   }
 }
