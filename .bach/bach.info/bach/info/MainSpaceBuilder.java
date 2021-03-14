@@ -1,15 +1,15 @@
 package bach.info;
 
-import com.github.sormuras.bach.api.ProjectBuilderAPI;
+import com.github.sormuras.bach.api.ProjectBuildMainSpaceAPI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.StringJoiner;
 
-public interface MainSpaceBuilder extends ProjectBuilderAPI {
+public interface MainSpaceBuilder extends ProjectBuildMainSpaceAPI {
 
   @Override
   default void buildProjectMainSpace() throws Exception {
-    ProjectBuilderAPI.super.buildProjectMainSpace();
+    ProjectBuildMainSpaceAPI.super.buildProjectMainSpace();
 
     var module = "com.github.sormuras.bach";
     var version = bach().project().versionNumberAndPreRelease();

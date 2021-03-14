@@ -3,12 +3,16 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.Options.Flag;
 import com.github.sormuras.bach.Options.Property;
 import com.github.sormuras.bach.api.BachAPI;
+import com.github.sormuras.bach.api.JavaFormatterAPI;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.project.Folders;
 import com.github.sormuras.bach.util.Records;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ServiceLoader;
 
 /** Java Shell Builder. */
@@ -112,7 +116,15 @@ public class Bach implements AutoCloseable, BachAPI {
 
   @Override
   public final void build() throws Exception {
-    buildProject();
+    say("Build %s %s", project().name(), project().version());
+    if (is(Options.Flag.VERBOSE)) info();
+    var start = Instant.now();
+    if (is(Options.Flag.STRICT)) formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
+    loadMissingExternalModules();
+    verifyExternalModules();
+    buildProjectMainSpace();
+    buildProjectTestSpace();
+    say("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
 
   public final void clean() throws Exception {

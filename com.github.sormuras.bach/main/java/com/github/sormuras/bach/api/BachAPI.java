@@ -5,7 +5,8 @@ public interface BachAPI
     extends JavaFormatterAPI,
         ExternalModuleAPI,
         ProjectComputerAPI,
-        ProjectBuilderAPI,
+        ProjectBuildMainSpaceAPI,
+        ProjectBuildTestSpaceAPI,
         ToolProviderAPI,
         LogbookWriterAPI {
 
