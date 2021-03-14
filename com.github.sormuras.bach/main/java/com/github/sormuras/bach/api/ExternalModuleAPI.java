@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -96,14 +97,18 @@ public interface ExternalModuleAPI extends API {
   default void verifyExternalModules() throws Exception {
     var directory = bach().folders().externalModules();
     if (Files.notExists(directory)) return;
-    log("Verify external modules located in %s", directory.toUri());
+    say("Verify external modules located in %s", directory.toUri());
+    var verified = new ArrayList<String>();
     try (var jars = Files.newDirectoryStream(directory, "*.jar")) {
       for (var jar : jars) {
         var module = ModuleFinder.of(jar).findAll().iterator().next().descriptor();
-        log("Verify module %s (%s)", module.toNameAndVersion(), jar.getFileName());
+        var name = module.toNameAndVersion();
+        log("Verify module %s (%s)", name, jar.getFileName());
         verifyExternalModule(module, jar);
+        verified.add(name);
       }
     }
+    say("Verified %d external modules", verified.size());
   }
 
   default void verifyExternalModule(ModuleDescriptor module, Path jar) throws Exception {
