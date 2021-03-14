@@ -16,6 +16,7 @@ public interface MainSpaceBuilder extends ProjectBuilderAPI {
     var modules = bach().folders().workspace("modules");
     var file = modules.resolve(bach().buildProjectMainJarFileName(module));
 
+    say("Generate and check Maven consumer POM file");
     var pom = generateMavenConsumerPom(module, version, file);
     var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);
     bach().run(pomcheck).requireSuccessful();

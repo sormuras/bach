@@ -37,17 +37,29 @@ public interface ProjectBuilderAPI extends API {
   }
 
   /**
-   * Build modules of the main code space.
+   * Build all assets of the main code space.
    *
    * <ul>
-   *   <li>{@code javac} + {@code jar}
-   *   <li>{@code jdeps}
-   *   <li>{@code javadoc}
-   *   <li>TODO {@code jlink}
-   *   <li>TODO {@code jpackage}
+   *   <li>Compile sources and jar generated classes
+   *   <li>Check modules
+   *   <li>Generate API documentation
+   *   <li>Generate custom runtime image
    * </ul>
+   *
+   * @see #buildProjectMainBuildModules()
+   * @see #buildProjectMainCheckModules()
+   * @see #buildProjectMainGenerateAPIDocumentation()
+   * @see #buildProjectMainGenerateCustomRuntimeImage()
    */
   default void buildProjectMainSpace() throws Exception {
+    buildProjectMainBuildModules();
+    buildProjectMainCheckModules();
+    buildProjectMainGenerateAPIDocumentation();
+    buildProjectMainGenerateCustomRuntimeImage();
+  }
+
+  /** Compile and jar main modules. */
+  default void buildProjectMainBuildModules() {
     var main = bach().project().spaces().main();
     var modules = main.declarations();
     if (modules.isEmpty()) {
@@ -82,17 +94,34 @@ public interface ProjectBuilderAPI extends API {
     }
     if (!javacs.isEmpty()) bach().run(javacs.stream()).requireSuccessful();
     bach().run(jars.stream()).requireSuccessful();
+  }
 
+  /** Check main modules. */
+  default void buildProjectMainCheckModules() {
+    if (!bach().project().settings().tools().enabled("jdeps")) return;
+    say("Check main modules");
+    var main = bach().project().spaces().main();
+    var modules = main.declarations();
     var jdeps = new ArrayList<JDeps>();
     for (var declaration : modules.map().values()) {
       jdeps.add(buildProjectMainJDeps(declaration));
     }
     bach().run(jdeps.stream()).requireSuccessful();
+  }
 
+  /** Generate HTML pages of API documentation from main modules' source files. */
+  default void buildProjectMainGenerateAPIDocumentation() {
+    if (!bach().project().settings().tools().enabled("javadoc")) return;
+    say("Generate API documentation");
     var api = bach().folders().workspace("documentation", "api");
     bach().run(buildProjectMainJavadoc(api)).requireSuccessful();
-    if (Files.isDirectory(api)) bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
+    bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
+  }
 
+  /** Assemble and optimize main modules and their dependencies into a custom runtime image. */
+  default void buildProjectMainGenerateCustomRuntimeImage() {
+    if (!bach().project().settings().tools().enabled("jlink")) return;
+    say("Assemble custom runtime image");
     var image = bach().folders().workspace("image");
     Paths.deleteDirectories(image);
     bach().run(buildProjectMainJLink(image));
@@ -281,7 +310,9 @@ public interface ProjectBuilderAPI extends API {
     var names = modules.toNames().toList();
     var jars = names.stream().map(name -> buildProjectTestJar(testModules, name, testClasses));
     bach().run(jars).requireSuccessful();
-    if (bach().computeToolProvider("junit").isPresent()) {
+    if (bach().computeToolProvider("junit").isPresent()
+        && bach().project().settings().tools().enabled("junit")) {
+      say("Launch JUnit Platform for each module");
       var runs = names.stream().map(name -> buildProjectTestJUnitRun(testModules, name));
       new Logbook.Runs(runs.toList()).requireSuccessful();
     } else {
