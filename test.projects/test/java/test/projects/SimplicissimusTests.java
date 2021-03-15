@@ -1,9 +1,8 @@
 package test.projects;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
+import com.github.sormuras.bach.Command;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -13,7 +12,14 @@ class SimplicissimusTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("Simplicissimus", temp);
-    var out = cli.build("--strict", "--verbose", "--limit-tools", "javac,jar");
+    var out =
+        cli.start(
+            Command.of("bach")
+                .add("--verbose")
+                .add("--strict")
+                .add("--limit-tools", "javac,jar")
+                .add("--jar-with-sources") // has no effect, yet
+                .add("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -25,6 +31,15 @@ class SimplicissimusTests {
         """
             .lines(),
         out.lines());
-    assertTrue(Files.exists(cli.workspace("modules", "simplicissimus@0.jar")));
+    var jar = cli.workspace("modules", "simplicissimus@0.jar");
+    assertLinesMatch(
+        """
+        META-INF/
+        META-INF/MANIFEST.MF
+        module-info.class
+        """
+            .lines()
+            .sorted(),
+        CLI.run(Command.jar().add("--list").add("--file", jar)).lines().sorted());
   }
 }

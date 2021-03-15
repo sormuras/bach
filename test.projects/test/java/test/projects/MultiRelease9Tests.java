@@ -58,7 +58,8 @@ class MultiRelease9Tests {
         META-INF/versions/15/foo/Foo.class
         META-INF/versions/15/foo/Foo.java
         """
-            .lines(),
-        CLI.run(Command.jar().add("--list").add("--file", foo)).lines());
+            .lines()
+            .sorted(),
+        CLI.run(Command.jar().add("--list").add("--file", foo)).lines().sorted());
   }
 }
