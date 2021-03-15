@@ -172,11 +172,11 @@ public interface ProjectBuildMainSpaceAPI extends API {
         .addAll(main.tweaks().arguments("javac(" + name + ")"))
         .addAll(main.tweaks().arguments("javac(" + release + ")"))
         .addAll(main.tweaks().arguments("javac(" + name + "@" + release + ")"))
-        .add("-d", buildProjectMultiReleaseClasses(name, release))
+        .add("-d", buildProjectMultiReleaseClassesDirectory(name, release))
         .addAll(javaSourceFiles);
   }
 
-  private Path buildProjectMultiReleaseClasses(String module, int release) {
+  private Path buildProjectMultiReleaseClassesDirectory(String module, int release) {
     return bach().folders().workspace("classes-mr", String.valueOf(release), module);
   }
 
@@ -201,12 +201,12 @@ public interface ProjectBuildMainSpaceAPI extends API {
       if (folder.isTargeted()) continue; // handled later
       jar = jar.add("-C", folder.path(), ".");
     }
-    // add targeted classes and targeted resources in ascending order
+    // add (future) targeted classes and targeted resources in ascending order
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
-      var pathN = buildProjectMultiReleaseClasses(name, release);
-      declaration.sources().targets(release).ifPresent(it -> paths.add(pathN));
-      declaration.resources().targets(release).ifPresent(it -> paths.add(it.path()));
+      var isSourceTargeted = declaration.sources().stream(release).findAny().isPresent();
+      if (isSourceTargeted) paths.add(buildProjectMultiReleaseClassesDirectory(name, release));
+      declaration.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
       if (paths.isEmpty()) continue;
       jar = jar.add("--release", release);
       for (var path : paths) jar = jar.add("-C", path, ".");

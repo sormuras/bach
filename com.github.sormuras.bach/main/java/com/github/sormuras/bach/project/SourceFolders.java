@@ -3,7 +3,7 @@ package com.github.sormuras.bach.project;
 import com.github.sormuras.bach.internal.Strings;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Stream;
 
 /** A list of source folder objects. */
 public record SourceFolders(List<SourceFolder> list) {
@@ -13,10 +13,9 @@ public record SourceFolders(List<SourceFolder> list) {
     return list.get(0);
   }
 
-  /** {@return the first source folder that targets the specified release} */
-  public Optional<SourceFolder> targets(int release) {
-    for (var folder : list) if (folder.release() == release) return Optional.of(folder);
-    return Optional.empty();
+  /** {@return a stream of source folders that target the specified release} */
+  public Stream<SourceFolder> stream(int release) {
+    return list.stream().filter(sourceFolder -> sourceFolder.release() == release);
   }
 
   /** {@return a string for {@code javac --module-source-path PATH} in module-specific form} */
