@@ -1,19 +1,19 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ProjectInfo;
 import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
+import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.ModuleDeclarations;
 import com.github.sormuras.bach.project.ModuleInfoReference;
 import com.github.sormuras.bach.project.ModulePaths;
+import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.project.Settings;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.project.SourceFolders;
@@ -77,6 +77,10 @@ public interface ProjectComputerAPI extends API {
         .find(Property.PROJECT_TARGETS_JAVA)
         .map(Integer::parseInt)
         .orElseGet(info::compileModulesForJavaRelease);
+  }
+
+  default boolean computeProjectJarWithSources(ProjectInfo info) {
+    return bach().is(Flag.JAR_WITH_SOURCES) || info.includeSourceFilesIntoModules();
   }
 
   default Set<String> computeProjectToolsLimit(ProjectInfo info) {
@@ -157,18 +161,19 @@ public interface ProjectComputerAPI extends API {
     var mainMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.modules());
     var testMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.testModules());
 
+    var treatSourcesAsResources = computeProjectJarWithSources(info);
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
         log("Skip module %s - it contains `.bach` in its path names", path);
         continue;
       }
       if (testMatcher.anyMatch(path)) {
-        var declaration = computeProjectModuleDeclaration(root, path, false);
+        var declaration = computeProjectModuleDeclaration(root, path, treatSourcesAsResources);
         testDeclarations.put(declaration.name(), declaration);
         continue;
       }
       if (mainMatcher.anyMatch(path)) {
-        var declaration = computeProjectModuleDeclaration(root, path, false);
+        var declaration = computeProjectModuleDeclaration(root, path, treatSourcesAsResources);
         mainDeclarations.put(declaration.name(), declaration);
         continue;
       }

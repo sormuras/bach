@@ -4,7 +4,6 @@ import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.JavaStyle;
 import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.project.Settings;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -81,9 +80,16 @@ public @interface ProjectInfo {
    *
    * <p>For a value of {@code 0}, the default value, the {@code --release} option is omitted.
    *
-   * @see Property#PROJECT_TARGETS_JAVA
+   * @see com.github.sormuras.bach.project.Property#PROJECT_TARGETS_JAVA
    */
   int compileModulesForJavaRelease() default 0;
+
+  /**
+   * {@return {@code true} in order to include all files found in source folders into their modules}
+   *
+   * @see com.github.sormuras.bach.project.Flag#JAR_WITH_SOURCES
+   */
+  boolean includeSourceFilesIntoModules() default false;
 
   /**
    * {@return an array of external modules on which the project has a dependence}

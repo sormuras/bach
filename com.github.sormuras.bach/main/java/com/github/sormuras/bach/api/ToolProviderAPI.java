@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.project.Flag;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.module.ModuleFinder;

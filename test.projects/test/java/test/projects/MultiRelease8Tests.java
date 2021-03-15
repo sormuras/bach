@@ -14,7 +14,14 @@ class MultiRelease8Tests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiRelease-8", temp);
-    var out = cli.build("--verbose", "--project-targets-java", "8", "--limit-tools", "javac,jar");
+    var out =
+        cli.start(
+            Command.of("bach")
+                .add("--verbose")
+                .add("--project-targets-java", "8")
+                .add("--limit-tools", "javac,jar")
+                .add("--jar-with-sources")
+                .add("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -35,12 +42,16 @@ class MultiRelease8Tests {
         module-info.class
         foo/
         foo/Foo.class
+        foo/Foo.java
+        module-info.java
         META-INF/versions/9/
         META-INF/versions/9/foo/
         META-INF/versions/9/foo/Foo.class
+        META-INF/versions/9/foo/Foo.java
         META-INF/versions/10/
         META-INF/versions/10/foo/
         META-INF/versions/10/foo/Foo.class
+        META-INF/versions/10/foo/Foo.java
         """
             .lines(),
         CLI.run(Command.jar().add("--list").add("--file", foo)).lines());

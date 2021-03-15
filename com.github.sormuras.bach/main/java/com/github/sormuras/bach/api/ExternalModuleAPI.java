@@ -1,8 +1,8 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.lookup.LookupException;
+import com.github.sormuras.bach.project.Flag;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.OutputStream;
@@ -121,8 +121,7 @@ public interface ExternalModuleAPI extends API {
     var metadata = bach().project().libraries().metamap().get(name);
     if (metadata == null) {
       log("No verification metadata available for module: %s", name);
-      if (bach().is(Flag.STRICT))
-        throw new IllegalArgumentException("No metadata for: " + name);
+      if (bach().is(Flag.STRICT)) throw new IllegalArgumentException("No metadata for: " + name);
       return;
     }
 

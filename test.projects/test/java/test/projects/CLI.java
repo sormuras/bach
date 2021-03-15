@@ -8,7 +8,6 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.spi.ToolProvider;
 
 /** A project build context. */
@@ -41,7 +40,11 @@ class CLI {
     return root.resolve(".bach/workspace").resolve(Path.of(first, more));
   }
 
-  String build(String... options) throws Exception {
+  String build(String... args) throws Exception {
+    return start(Command.of("java", args).add("build"));
+  }
+
+  String start(Command<?> options) throws Exception {
     var idea = Path.of(".idea/out/production/com.github.sormuras.bach").toAbsolutePath();
     var work = Path.of(".bach/workspace/modules").toAbsolutePath();
     var bin = (Files.isDirectory(idea) ? idea : work).toString();
@@ -52,8 +55,7 @@ class CLI {
     command.add(bin);
     command.add("--module");
     command.add("com.github.sormuras.bach/com.github.sormuras.bach.Main");
-    command.addAll(List.of(options));
-    command.add("build");
+    command.addAll(options.arguments());
     var redirect = temp.resolve("redirect.txt");
     var process =
         new ProcessBuilder(command)

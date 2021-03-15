@@ -14,6 +14,7 @@ import com.github.sormuras.bach.project.JavaStyle;
     version = "17-ea",
     format = JavaStyle.GOOGLE,
     compileModulesForJavaRelease = 16,
+    includeSourceFilesIntoModules = true,
     tools = @Tools(skip = "jlink"),
     // <editor-fold desc="Main Space Modules">
     modules = "*/main/java",
@@ -23,10 +24,6 @@ import com.github.sormuras.bach.project.JavaStyle;
       @Tweak(tool = "javac", option = "-parameters"),
       @Tweak(tool = "javac", option = "-Xlint"),
       @Tweak(tool = "javac", option = "-Werror"),
-      @Tweak(
-          tool = "jar(com.github.sormuras.bach)",
-          option = "-C",
-          value = {"com.github.sormuras.bach/main/java", "."}),
       @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
       @Tweak(tool = "javadoc", option = "-notimestamp"),
       @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),

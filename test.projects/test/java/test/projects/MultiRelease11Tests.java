@@ -14,7 +14,14 @@ class MultiRelease11Tests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiRelease-11", temp);
-    var out = cli.build("--verbose", "--project-targets-java", "11", "--limit-tools", "javac,jar");
+    var out =
+        cli.start(
+            Command.of("bach")
+                .add("--verbose")
+                .add("--project-targets-java", "11")
+                .add("--limit-tools", "javac,jar")
+                .add("--jar-with-sources")
+                .add("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -35,21 +42,28 @@ class MultiRelease11Tests {
         module-info.class
         foo/
         foo/Foo.class
+        foo/Foo.java
+        module-info.java
         META-INF/versions/16/
         META-INF/versions/16/foo/
         META-INF/versions/16/foo/Foo.class
+        META-INF/versions/16/foo/Foo.java
         META-INF/versions/12/
         META-INF/versions/12/foo/
         META-INF/versions/12/foo/Foo.class
+        META-INF/versions/12/foo/Foo.java
         META-INF/versions/13/
         META-INF/versions/13/foo/
         META-INF/versions/13/foo/Foo.class
+        META-INF/versions/13/foo/Foo.java
         META-INF/versions/14/
         META-INF/versions/14/foo/
         META-INF/versions/14/foo/Foo.class
+        META-INF/versions/14/foo/Foo.java
         META-INF/versions/15/
         META-INF/versions/15/foo/
         META-INF/versions/15/foo/Foo.class
+        META-INF/versions/15/foo/Foo.java
         """
             .lines(),
         CLI.run(Command.jar().add("--list").add("--file", foo)).lines());

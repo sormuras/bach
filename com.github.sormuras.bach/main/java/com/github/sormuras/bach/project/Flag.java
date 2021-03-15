@@ -62,6 +62,13 @@ public enum Flag {
   STRICT("Activate all verification measures available."),
 
   /**
+   * Include all files found in source folders into their modular JAR files.
+   *
+   * @see ProjectInfo#includeSourceFilesIntoModules()
+   */
+  JAR_WITH_SOURCES("Include all files found in source folders into their modular JAR files."),
+
+  /**
    * Prevent parallel execution of commands.
    *
    * @see Bach#run(Command, Command[])

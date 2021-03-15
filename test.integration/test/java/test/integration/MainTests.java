@@ -33,6 +33,8 @@ class MainTests {
             Activate all best-effort guessing magic.
           --strict
             Activate all verification measures available.
+          --jar-with-sources
+            Include all files found in source folders into their modular JAR files.
           --run-commands-sequentially
             Prevent parallel execution of commands.
 
