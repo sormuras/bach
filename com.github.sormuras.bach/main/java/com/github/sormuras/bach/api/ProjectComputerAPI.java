@@ -215,21 +215,22 @@ public interface ProjectComputerAPI extends API {
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     var reference = ModuleInfoReference.of(info);
 
-    // no source folder, module declaration in root directory
+    // no source folder, no resource folder, module declaration in root directory
     // "module-info.java"
-    if (root.relativize(info).getNameCount() == 1)
-      return new ModuleDeclaration(
-          reference, new SourceFolders(List.of()), new SourceFolders(List.of()));
+    if (root.relativize(info).getNameCount() == 1) {
+      var sources = new SourceFolders(List.of());
+      var resources = new SourceFolders(List.of());
+      return new ModuleDeclaration(reference, sources, resources);
+    }
 
     // assume single source folder, directory and module names are equal
     // "foo.bar/module-info.java" with "module foo.bar {...}"
     var parent = info.getParent();
     if (Paths.name(parent).equals(reference.name())) {
       var folder = computeProjectSourceFolder(parent);
-      return new ModuleDeclaration(
-          reference,
-          new SourceFolders(List.of(folder)),
-          new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of()));
+      var sources = new SourceFolders(List.of(folder));
+      var resources = new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of());
+      return new ModuleDeclaration(reference, sources, resources);
     }
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
     // resources = "resources", or targeted "resource.*?(\d+)$"
