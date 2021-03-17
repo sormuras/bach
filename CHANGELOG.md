@@ -10,7 +10,7 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 Nothing notable, yet.
 
-## Version [17-ea-1] released ... soon™
+## Version [17-ea-1] released 2021-03-17
 
 Initial Early-Access release.
 
