@@ -6,13 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com).
 
 This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.java.net/jeps/223).
 
-## Version [Early Access]
+## Version [17-ea]
 
 Nothing notable, yet.
 
-## Version [16] released 2020-12-27
+## Version [17-ea-1] released ... soon™
 
-Initial release.
+Initial Early-Access release.
 
-[Early Access]: https://github.com/sormuras/bach/releases/tag/early-access
-[16]: https://github.com/sormuras/bach/compare/16...main
+[17-ea]: https://github.com/sormuras/bach/releases/tag/17-ea
+[17-ea-1]: https://github.com/sormuras/bach/compare/17-ea-1...main
