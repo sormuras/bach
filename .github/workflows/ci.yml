@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [ '*' ]
   workflow_dispatch:
-    inputs:
-      name:
-        description: 'Reason'
-        required: false
-        default: 'Because...'
 
 jobs:
 
@@ -41,16 +36,10 @@ jobs:
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
-      - name: 'Download JDK'
-        uses: sormuras/download-jdk@v1
-        id: jdk
-        with:
-          feature: 17
       - name: 'Set up JDK'
         uses: actions/setup-java@v1
         with:
-          java-version: ${{ steps.jdk.outputs.version }}
-          jdkFile: ${{ steps.jdk.outputs.file }}
+          java-version: 16
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/bin/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
@@ -78,7 +67,6 @@ jobs:
         with:
           github_token: ${{ github.token }}
           files: .bach/workspace/reports/junit/**/*.xml
-
 
   deploy-to-releases:
     needs: [ setup, build ]
