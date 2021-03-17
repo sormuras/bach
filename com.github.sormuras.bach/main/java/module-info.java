@@ -6,8 +6,8 @@
  * <ul>
  *   <li>Bach's <a href="https://github.com/sormuras/bach">Code &amp; Issues</a>
  *   <li>Bach's <a href="https://sormuras.github.io/api/#bach">API</a>
- *   <li>Java® Development Kit Version 15 <a
- *       href="https://docs.oracle.com/en/java/javase/15/docs/specs/man/">Tool Specifications</a>
+ *   <li>Java® Development Kit Version 16 <a
+ *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
  * @uses com.github.sormuras.bach.Bach.Provider
