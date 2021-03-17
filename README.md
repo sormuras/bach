@@ -57,26 +57,26 @@ Build bach 17-ea+1c4b8cc
 Verify external modules located in file:///home/runner/work/bach/bach/.bach/external-modules/
 Verified 11 external modules
 Build 1 main module: com.github.sormuras.bach
-  javac    --release 16 --module com.github.sormuras.bach --module-version 17-ea+1c4b8cc --module-source-p..
-  jar      --create --file .bach/workspace/modules/com.github.sormuras.bach@17-ea.jar --main-class com.git..
+  javac    --release 16 --module com.github.sormuras.bach --module-version 17-ea+1c4b8cc --module-source..
+  jar      --create --file .bach/workspace/modules/com.github.sormuras.bach@17-ea.jar --main-class com.g..
 Check main modules
-  jdeps    --check com.github.sormuras.bach --multi-release BASE --module-path .bach/workspace/modules:.ba..
+  jdeps    --check com.github.sormuras.bach --multi-release BASE --module-path .bach/workspace/modules:...
 Generate API documentation
-  javadoc  --module com.github.sormuras.bach --module-source-path ./*/main/java --module-path .bach/extern..
-  jar      --create --file .bach/workspace/documentation/bach-api-17-ea+1c4b8cc.zip --no-manifest -C .bach..
+  javadoc  --module com.github.sormuras.bach --module-source-path ./*/main/java --module-path .bach/exte..
+  jar      --create --file .bach/workspace/documentation/bach-api-17-ea+1c4b8cc.zip --no-manifest -C .ba..
 Generate and check Maven consumer POM file
-  pomchecker check-maven-central --file /home/runner/work/bach/bach/.bach/workspace/deploy/maven/com.githu..
+  pomchecker check-maven-central --file /home/runner/work/bach/bach/.bach/workspace/deploy/maven/com.git..
 Build 4 test modules: com.github.sormuras.bach, test.base, test.integration, test.projects
-  javac    --module com.github.sormuras.bach,test.base,test.integration,test.projects --module-source-path..
-  jar      --verbose --create --file .bach/workspace/modules-test/test.projects@17-ea+test.jar -C .bach/wo..
-  jar      --verbose --create --file .bach/workspace/modules-test/test.base@17-ea+test.jar -C .bach/worksp..
-  jar      --verbose --create --file .bach/workspace/modules-test/test.integration@17-ea+test.jar -C .bach..
-  jar      --verbose --create --file .bach/workspace/modules-test/com.github.sormuras.bach@17-ea+test.jar ..
+  javac    --module com.github.sormuras.bach,test.base,test.integration,test.projects --module-source-pa..
+  jar      --verbose --create --file .bach/workspace/modules-test/test.projects@17-ea+test.jar -C .bach/..
+  jar      --verbose --create --file .bach/workspace/modules-test/test.base@17-ea+test.jar -C .bach/work..
+  jar      --verbose --create --file .bach/workspace/modules-test/test.integration@17-ea+test.jar -C .ba..
+  jar      --verbose --create --file .bach/workspace/modules-test/com.github.sormuras.bach@17-ea+test.ja..
 Launch JUnit Platform for each module
-  junit    --select-module com.github.sormuras.bach --fail-if-no-tests --reports-dir .bach/workspace/repor..
-  junit    --select-module test.base --fail-if-no-tests --reports-dir .bach/workspace/reports/junit/test.b..
-  junit    --select-module test.integration --fail-if-no-tests --reports-dir .bach/workspace/reports/junit..
-  junit    --select-module test.projects --fail-if-no-tests --config junit.jupiter.execution.parallel.enab..
+  junit    --select-module com.github.sormuras.bach --fail-if-no-tests --reports-dir .bach/workspace/rep..
+  junit    --select-module test.base --fail-if-no-tests --reports-dir .bach/workspace/reports/junit/test..
+  junit    --select-module test.integration --fail-if-no-tests --reports-dir .bach/workspace/reports/jun..
+  junit    --select-module test.projects --fail-if-no-tests --config junit.jupiter.execution.parallel.en..
 Build took 18.788s
 Logbook written to file:///home/runner/work/bach/bach/.bach/workspace/logbook.md
 ```
