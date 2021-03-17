@@ -57,8 +57,8 @@ Build bach 17-ea+1c4b8cc
 Verify external modules located in file:///home/runner/work/bach/bach/.bach/external-modules/
 Verified 11 external modules
 Build 1 main module: com.github.sormuras.bach
-  javac    --release 16 --module com.github.sormuras.bach --module-version 17-ea+1c4b8cc --module-source-p...
-  jar      --create --file .bach/workspace/modules/com.github.sormuras.bach@17-ea.jar --main-class com.git...
+  javac    --release 16 --module com.github.sormuras.bach --module-version 17-ea+1c4b8cc --module-source-p..
+  jar      --create --file .bach/workspace/modules/com.github.sormuras.bach@17-ea.jar --main-class com.git..
 Check main modules
   jdeps    --check com.github.sormuras.bach --multi-release BASE --module-path .bach/workspace/modules:.ba..
 Generate API documentation
