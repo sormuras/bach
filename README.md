@@ -65,7 +65,7 @@ messages at debug level (same as passing `--verbose` flag at the command line) a
 
 ## Modulation
 
-Here are some suggestions that right after you "played" the [Prelude](#Prelude)
+Here are some suggestions to try right after you "played" the [Prelude](#Prelude).
 
 - Extend the `PATH` environment variable with a `.bach/bin` element in order to save some key strokes.
     - `PATH=%PATH%;.bach\bin` on Windows
@@ -75,7 +75,7 @@ Here are some suggestions that right after you "played" the [Prelude](#Prelude)
 - Run `bach --help` to show Bach's usage help message including available options.
 
 - Try following options:
-    - `bach --skip-tools jdpes,javadoc,jlink build`
+    - `bach --skip-tools jdeps,javadoc,jlink build`
     - `bach --limit-tools javac,jar build`
     - `bach --project-version 1.2.3-ea+BAC8CAFE build`
     - `bach --project-targets-java 11 build`
