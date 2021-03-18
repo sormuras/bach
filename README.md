@@ -4,17 +4,17 @@
 >
 > [Edsger W. Dijkstra, 18 June 1975](https://www.cs.virginia.edu/~evans/cs655/readings/ewd498.html)
 
-Bach is a lightweight Java build tool that orchestrates JDK foundation tools ([1]) for building modular Java projects.
+Bach is a lightweight Java build tool that orchestrates [JDK tools] for building modular Java projects.
 
 By default, it tries its best to call the right tool at the right time with the right arguments. Bach encourages
-developers to explore, learn, and master these tools and their options in order to allow a good understanding of what is
-going on under the hood. Pass those learnings and optimizations as fine-grained tweaks in a declarative manner back to
-Bach using pure Java syntax.
+developers to explore, learn, and master these foundation tools and their options in order to allow a good understanding
+of what is really going on when building a Java project. Pass those learnings and optimizations as fine-grained tweaks
+in a declarative manner back to Bach using pure Java syntax.
 
 ## Prelude
 
 - Install [JDK] 16 or later.
-- Open a console window and verify `java --version` is at least Java 16.
+- Open a terminal and verify `java --version` reports at least Java 16.
   ```text
   > java --version
   
@@ -30,37 +30,69 @@ Bach using pure Java syntax.
   ```text
   air> jshell https://bit.ly/bach-init
   ```
-- Create and save a `module-info.java` file in the current directory.
+- Create and save a `module-info.java` file in the current directory. For example, on Windows w/o using an editor, via:
   ```text
   air> copy con module-info.java <ENTER>
-  module air {}<ENTER>
+  module air {} <ENTER>
   <CTRL+Z>
   ```
-- Let Bach build this project
+- That's it! Let Bach build this project.
   ```text
   air> .bach\bin\bach build
 
-  Bach 17-ea+55ecf77 (file:///.../.bach/bin/)
   Build air 0
-  Build 1 main module: foo
-    javac    --module foo --module-version 0 --module-source-p...
-    jar      --create --file .bach\workspace\modules\foo@0.jar...
+
+  Build 1 main module: air
+    javac   --module air --module-version 0 --module-source-path air=. -encoding UTF-8 -d .bach\workspa...
+    jar     --create --file .bach\workspace\modules\air@0.jar -C .bach\workspace\classes-main\16\air .
   Check main modules
-    jdeps    --check foo --multi-release BASE --module-path .b...
+    jdeps   --check air --multi-release BASE --module-path .bach\workspace\modules;.bach\external-modules
   Generate API documentation
-    javadoc  --module foo --module-source-path foo=. -encoding...
-    jar      --create --file .bach\workspace\documentation\air...
+    javadoc --module air --module-source-path air=. -encoding UTF-8 -d .bach\workspace\documentation\api
+    jar     --create --file .bach\workspace\documentation\air-api-0.zip --no-manifest -C .bach\workspac...
   Assemble custom runtime image
-    jlink    --add-modules foo --module-path .bach\workspace\m...
-  Build took 2.612s
-  Logbook written to file:///F:/air/.bach/workspace/logbook.md
+    jlink   --add-modules air --module-path .bach\workspace\modules --compress 2 --no-header-files --no...
+  Build took 2.822s
+  Logbook written to file:///.../air/.bach/workspace/logbook.md
   ```
+- Next steps?
+    - Extend the `PATH` environment variable with a `.bach/bin` element in order to save some key strokes.
+        - `PATH=%PATH%;.bach\bin` on Windows
+        - `PATH=$PATH:.bach/bin` on Linux and Macs.
+    - Run `bach --help` to show Bach's usage help message including available options. Try following commands:
+        - `bach --skip-tools jdpes,javadoc,jlink build`
+        - `bach --limit-tools javac,jar build`
+        - `bach --project-version 1.2.3-ea+BAC8CAFE build`
+        - `bach --project-targets-java 11 build`
+        - `bach --project-targets-java 8 build`
+    - Create a `Main.java` file in subdirectory `air/`, run `bach build` from within the root directory again and launch
+      the program via `java --module-path .bach/workspace/modules --module air`:
+      ```java
+      package air;                                      // air> tree
+                                                        //  .
+      class Main {                                      //  │   module-info.java
+        public static void main(String... args) {       //  ├───.bach
+          System.out.println("Aire");                   //  └───air
+        }                                               //         Main.java
+      }                                                 //
+      ```
+    - Run `bach boot` to open a JShell session. Explore core Java by writing plain Java code snippets; and list Bach's
+      overlay API by calling `api()`.
+    - Browse other [Projects Using Bach](https://github.com/sormuras/bach/wiki/Projects-Using-Bach) - you're welcome to
+      add yours!
+    - [Discuss](https://github.com/sormuras/bach/discussions) ideas and
+      file [issues](https://github.com/sormuras/bach/issues) at Bach's GitHub page.
+
+Inspect the `logbook.md` file stored in directory `.bach/workspace` after each run of Bach. The Logbook is a good source
+to learn which tool was called with which arguments. It also contains the output of each tool run together with
+additional information about the executing thread, the duration, and exit code. The Logbook also records all messages at
+debug level (same as passing `--verbose` flag at the command line) and describes each generated module.
 
 ## Motivation
 
-The JDK contains a set of tools ([1]) but none of them guides developers from processing Java source files into
-shippable products: be it a reusable modular JAR file with its API documentation or an entire custom (soon static [2])
-runtime image. There exists however an implicit workflow encoded in the available tools and their options. The (binary)
+The JDK contains a set of foundation tools but none of them guides developers from processing Java source files into
+shippable products: be it a reusable modular JAR file with its API documentation or an entire custom runtime image.
+There exists however an implicit workflow encoded in the available tools and their options. The (binary)
 output of one tool is the input of one or more other tools. With the introduction of modules in Java 9 some structural
 parts of that workflow got promoted into the language itself and resulted in explicit module-related tool options.
 
@@ -127,6 +159,35 @@ Build took 18.788s
 Logbook written to file:///home/runner/work/bach/bach/.bach/workspace/logbook.md
 ```
 
+## Goals
+
+Bach...
+
+- builds Java projects.
+- builds modular Java projects.
+- is a lightweight wrapper for existing and future tools, mainly foundation tools provided the JDK.
+- supports running non-foundation tools registered via the `ToolProvider` SPI.
+- can be invoked directly from the command line, or programmatically via its modular API (in a JShell session).
+- infers basic project information from `module-info.java` files.
+- uses standard Java syntax for extra configuration purposes (via `@ProjectInfo`).
+- supports creation of multi-release JARs (via javac's and jar's `--release` option).
+- helps resolving missing external dependences by downloading required modules into a single project-local directory.
+- launches the [JUnit] Platform Console (if provided as `junit` tool by the project).
+
+### Non-Goals
+
+Bach will **not** support "all features known from other build tools".
+
+> If a feature F is not provided by another tool, Bach will not support F.
+
+Bach will **not**...
+
+- support non-Java projects.
+- support non-modular Java projects.
+- provide a GUI for the tool.
+- resolve conflicting external dependencies.
+- deploy modules to external services.
+
 # be free - have fun
 
 [![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
@@ -134,10 +195,8 @@ Logbook written to file:///home/runner/work/bach/bach/.bach/workspace/logbook.md
 
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[1]: https://docs.oracle.com/en/java/javase/16/docs/specs/man/index.html
-
-[2]: https://mail.openjdk.java.net/pipermail/discuss/2020-April/005429.html
-
-[3]: https://openjdk.java.net/projects/jigsaw/quick-start#greetingsworld
-
 [JDK]: https://jdk.java.net
+
+[JDK tools]: https://docs.oracle.com/en/java/javase/16/docs/specs/man/index.html
+
+[JUnit]: https://junit.org
