@@ -40,6 +40,11 @@ public final class Records {
         try {
           var object = component.getAccessor().invoke(record);
           if (object instanceof Record nested) {
+            var text = nested.toString();
+            if (text.length() <= 99) {
+              lines.add(format("%s%s%s: %s", shift, indent, name, text));
+              continue;
+            }
             lines.add(format("%s%s%s: %s", shift, indent, name, simpleName(nested)));
             lines.addAll(toLines(level + 2, nested));
             continue;
@@ -74,6 +79,11 @@ public final class Records {
       lines.add(format("%s%s: Set(size=%d)", shift, name, set.size()));
       for (var value : set) {
         if (value instanceof Record nested) {
+          var text = nested.toString();
+          if (text.length() <= 99) {
+            lines.add(format("%s%s %s", shift, indent, text));
+            continue;
+          }
           lines.add(format("%s%s %s", shift, indent, simpleName(nested)));
           lines.addAll(toLines(level + 2, nested));
         } else lines.add(format("%s%s - %s", shift, indent, value));
@@ -90,6 +100,11 @@ public final class Records {
         var key = iterator.nextIndex();
         var value = iterator.next();
         if (value instanceof Record nested) {
+          var text = nested.toString();
+          if (text.length() <= 99) {
+            lines.add(format("%s%s%s: %s", shift, indent, key, text));
+            continue;
+          }
           lines.add(format("%s%s#%s: %s", shift, indent, key, simpleName(nested)));
           lines.addAll(toLines(level + 2, nested));
         } else lines.add(format("%s%s#%s: %s", shift, indent, key, value));
@@ -105,6 +120,11 @@ public final class Records {
         var key = entry.getKey();
         var value = entry.getValue();
         if (value instanceof Record nested) {
+          var text = nested.toString();
+          if (text.length() <= 99) {
+            lines.add(format("%s%s%s: %s", shift, indent, key, text));
+            continue;
+          }
           lines.add(format("%s%s(%s) -> %s", shift, indent, key, simpleName(nested)));
           lines.addAll(toLines(level + 2, nested));
         } else lines.add(format("%s%s(%s) -> %s", shift, indent, key, value));
