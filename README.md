@@ -55,38 +55,54 @@ in a declarative manner back to Bach using pure Java syntax.
   Build took 2.822s
   Logbook written to file:///.../air/.bach/workspace/logbook.md
   ```
-- Next steps?
-    - Extend the `PATH` environment variable with a `.bach/bin` element in order to save some key strokes.
-        - `PATH=%PATH%;.bach\bin` on Windows
-        - `PATH=$PATH:.bach/bin` on Linux and Macs.
-    - Run `bach --help` to show Bach's usage help message including available options. Try following commands:
-        - `bach --skip-tools jdpes,javadoc,jlink build`
-        - `bach --limit-tools javac,jar build`
-        - `bach --project-version 1.2.3-ea+BAC8CAFE build`
-        - `bach --project-targets-java 11 build`
-        - `bach --project-targets-java 8 build`
-    - Create a `Main.java` file in subdirectory `air/`, run `bach build` from within the root directory again and launch
-      the program via `java --module-path .bach/workspace/modules --module air`:
-      ```java
-      package air;                                      // air> tree
-                                                        //  .
-      class Main {                                      //  │   module-info.java
-        public static void main(String... args) {       //  ├───.bach
-          System.out.println("Aire");                   //  └───air
-        }                                               //         Main.java
-      }                                                 //
-      ```
-    - Run `bach boot` to open a JShell session. Explore core Java by writing plain Java code snippets; and list Bach's
-      overlay API by calling `api()`.
-    - Browse other [Projects Using Bach](https://github.com/sormuras/bach/wiki/Projects-Using-Bach) - you're welcome to
-      add yours!
-    - [Discuss](https://github.com/sormuras/bach/discussions) ideas and
-      file [issues](https://github.com/sormuras/bach/issues) at Bach's GitHub page.
 
 Inspect the `logbook.md` file stored in directory `.bach/workspace` after each run of Bach. The Logbook is a good source
-to learn which tool was called with which arguments. It also contains the output of each tool run together with
-additional information about the executing thread, the duration, and exit code. The Logbook also records all messages at
-debug level (same as passing `--verbose` flag at the command line) and describes each generated module.
+to learn which tool was called with which arguments. It also contains the output of each individual tool run together
+with additional information about the executing thread, the duration, and exit code. The Logbook also records all
+messages at debug level (same as passing `--verbose` flag at the command line) and describes each generated module.
+
+## Modulation
+
+Here are some suggestions that right after you "played" the [Prelude](#Prelude)
+
+- Extend the `PATH` environment variable with a `.bach/bin` element in order to save some key strokes.
+    - `PATH=%PATH%;.bach\bin` on Windows
+    - `PATH=$PATH:.bach/bin` on Linux and Macs.
+
+
+- Run `bach --help` to show Bach's usage help message including available options.
+
+- Try following options:
+    - `bach --skip-tools jdpes,javadoc,jlink build`
+    - `bach --limit-tools javac,jar build`
+    - `bach --project-version 1.2.3-ea+BAC8CAFE build`
+    - `bach --project-targets-java 11 build`
+    - `bach --project-targets-java 8 build`
+
+
+- Create a `Main.java` file in subdirectory `air/`, run `bach build` from within the root directory again and launch the
+  program via `java --module-path .bach/workspace/modules --module air`:
+  ```java
+  package air;                                      // air> tree
+                                                    //  .
+  class Main {                                      //  │   module-info.java
+    public static void main(String... args) {       //  ├───.bach
+      System.out.println("Aire");                   //  └───air
+    }                                               //         Main.java
+  }                                                 //
+  ```
+
+
+- Run `bach boot` to open a JShell session. Explore core Java by writing plain Java code snippets; and list Bach's
+  overlay API by calling `api()`.
+
+
+- Browse other [Projects Using Bach](https://github.com/sormuras/bach/wiki/Projects-Using-Bach) - you're welcome to add
+  yours!
+
+
+- [Discuss](https://github.com/sormuras/bach/discussions) ideas and
+  file [issues](https://github.com/sormuras/bach/issues) at Bach's GitHub page.
 
 ## Motivation
 
@@ -174,7 +190,7 @@ Bach...
 - helps resolving missing external dependences by downloading required modules into a single project-local directory.
 - launches the [JUnit] Platform Console (if provided as `junit` tool by the project).
 
-### Non-Goals
+## Non-Goals
 
 Bach will **not** support "all features known from other build tools".
 
