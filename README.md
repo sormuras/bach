@@ -30,7 +30,7 @@ in a declarative manner back to Bach using pure Java syntax.
   ```text
   air> jshell https://bit.ly/bach-init
   ```
-- Create and save a `module-info.java` file in the current directory. For example, on Windows w/o using an editor, via:
+- Create and save a `module-info.java` file in the current directory. For example, on Windows w/o using an editor:
   ```text
   air> copy con module-info.java <ENTER>
   module air {} <ENTER>
@@ -43,15 +43,15 @@ in a declarative manner back to Bach using pure Java syntax.
   Build air 0
 
   Build 1 main module: air
-    javac   --module air --module-version 0 --module-source-path air=. -encoding UTF-8 -d .bach\workspa...
+    javac   --module air --module-version 0 --module-source-path air=. -encoding UTF-8 -d .bach\worksp...
     jar     --create --file .bach\workspace\modules\air@0.jar -C .bach\workspace\classes-main\16\air .
   Check main modules
     jdeps   --check air --multi-release BASE --module-path .bach\workspace\modules;.bach\external-modules
   Generate API documentation
     javadoc --module air --module-source-path air=. -encoding UTF-8 -d .bach\workspace\documentation\api
-    jar     --create --file .bach\workspace\documentation\air-api-0.zip --no-manifest -C .bach\workspac...
+    jar     --create --file .bach\workspace\documentation\air-api-0.zip --no-manifest -C .bach\workspa...
   Assemble custom runtime image
-    jlink   --add-modules air --module-path .bach\workspace\modules --compress 2 --no-header-files --no...
+    jlink   --add-modules air --module-path .bach\workspace\modules --compress 2 --no-header-files --n...
   Build took 2.822s
   Logbook written to file:///.../air/.bach/workspace/logbook.md
   ```
