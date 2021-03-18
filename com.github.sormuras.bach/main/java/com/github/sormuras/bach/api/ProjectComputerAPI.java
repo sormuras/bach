@@ -152,7 +152,6 @@ public interface ProjectComputerAPI extends API {
   default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
     var root = settings.folders().root();
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
-    if (paths.isEmpty()) throw new RuntimeException("No module-info.java file in " + root.toUri());
     log("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");
 
     var mainDeclarations = new TreeMap<String, ModuleDeclaration>();
