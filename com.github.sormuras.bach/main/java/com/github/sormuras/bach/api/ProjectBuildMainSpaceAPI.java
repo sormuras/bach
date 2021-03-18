@@ -111,6 +111,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
 
   default void buildProjectMainSpaceClassesForJava8(Path classes) {
     var project = bach().project();
+    var folders = project.settings().folders();
     var main = project.spaces().main();
     var classPaths = new ArrayList<Path>();
     main.declarations().toNames().forEach(name -> classPaths.add(classes.resolve(name)));
@@ -118,7 +119,9 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var javacs = new ArrayList<Javac>();
     for (var declaration : main.declarations().map().values()) {
       var name = declaration.name();
-      var java8Files = Paths.find(declaration.sources().first().path(), 99, Paths::isJava8File);
+      var sources = declaration.sources();
+      var root = sources.list().isEmpty() ? folders.root() : sources.first().path();
+      var java8Files = Paths.find(root, 99, ProjectBuildMainSpaceAPI::isJava8File);
       if (java8Files.isEmpty()) continue; // skip aggregator module
       var compileSources =
           Command.javac()
@@ -130,7 +133,17 @@ public interface ProjectBuildMainSpaceAPI extends API {
               .addAll(java8Files);
       javacs.add(compileSources);
     }
+    if (javacs.isEmpty()) return; // no javac command collected
     bach().run(javacs.stream()).requireSuccessful();
+  }
+
+  /** Test supplied path for pointing to a Java 8 compilation unit. */
+  private static boolean isJava8File(Path path) {
+    var name = Paths.name(path);
+    return !path.startsWith(".bach") // ignore all files in `.bach` directory
+        && name.endsWith(".java")
+        && !name.equals("module-info.java") // ignore module declaration compilation units
+        && Files.isRegularFile(path);
   }
 
   /**
