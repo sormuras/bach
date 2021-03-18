@@ -11,6 +11,8 @@ developers to explore, learn, and master these foundation tools and their option
 of what is really going on when building a Java project. Pass those learnings and optimizations as fine-grained tweaks
 in a declarative manner back to Bach using pure Java syntax.
 
+Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), and ❌ [Non-Goals](#non-goals)
+
 ## Prelude
 
 - Install [JDK] 16 or later.
