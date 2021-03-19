@@ -16,13 +16,10 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
 ## Prelude
 
 - Install [JDK] 16 or later.
-- Open a terminal and verify `java --version` reports at least Java 16.
+- Open a terminal and verify `java --version` and `jshell --version` reports at least Java 16.
   ```text
-  > java --version
-  
-  openjdk 16 2021-03-16
-  OpenJDK Runtime Environment (build 16+36-2231)
-  OpenJDK 64-Bit Server VM (build 16+36-2231, mixed mode, sharing)
+  > java --version                                          > jshell --version
+  openjdk 16 2021-03-16                                     jshell 16
   ```
 - Create a new directory and change into it.
   ```text
@@ -32,18 +29,24 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
   ```text
   air> jshell https://bit.ly/bach-init
   ```
-- Create and save a `module-info.java` file in the current directory. For example, on Windows w/o using an editor:
+- Boot Bach into a JShell session.
   ```text
-  air> copy con module-info.java <ENTER>
-  module air {} <ENTER>
-  <CTRL+Z>
+  air> .bach/bin/bach boot
   ```
-- That's it! Let Bach build this project.
+- Let's create a minimal modular Java project by writing a `module-info.java` file in the current directory.
   ```text
-  air> .bach\bin\bach build
-
+  jshell> Files.writeString(Path.of("module-info.java"), """
+     ...> module air {
+     ...>   requires java.base;
+     ...> }
+     ...> """)
+  $6 ==> module-info.java
+  ```
+- That's it! Now, let Bach build this minimal modular project by invoking the `build()` method on the instance return
+  by `bach()`.
+  ```text
+  jshell> bach().build()
   Build air 0
-
   Build 1 main module: air
     javac   --module air --module-version 0 --module-source-path air=. -encoding UTF-8 -d .bach\worksp...
     jar     --create --file .bach\workspace\modules\air@0.jar -C .bach\workspace\classes-main\16\air .
@@ -56,6 +59,17 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
     jlink   --add-modules air --module-path .bach\workspace\modules --compress 2 --no-header-files --n...
   Build took 2.822s
   Logbook written to file:///.../air/.bach/workspace/logbook.md
+  ```
+- Exit JShell and build the project directly on the command line prompt.
+  ```text
+  jshell> /exit
+  |  Goodbye
+
+  air> .bach/bin/bach build
+  Build air 0
+  ...
+  Build took ...
+  Logbook written to ...
   ```
 
 Inspect the `logbook.md` file stored in directory `.bach/workspace` after each run of Bach. The Logbook is a good source
@@ -71,7 +85,6 @@ Here are some suggestions to try right after you "played" the [Prelude](#Prelude
     - `PATH=%PATH%;.bach\bin` on Windows
     - `PATH=$PATH:.bach/bin` on Linux and Macs.
 
-
 - Run `bach --help` to show Bach's usage help message including available options.
 
 - Try following options:
@@ -81,7 +94,6 @@ Here are some suggestions to try right after you "played" the [Prelude](#Prelude
     - `bach --project-targets-java 11 build`
     - `bach --project-targets-java 8 build`
 
-
 - Create a `Main.java` file in subdirectory `air/`, run `bach build` from within the root directory again and launch the
   program via `java --module-path .bach/workspace/modules --module air`:
   ```java
@@ -89,19 +101,16 @@ Here are some suggestions to try right after you "played" the [Prelude](#Prelude
                                                     //  .
   class Main {                                      //  │   module-info.java
     public static void main(String... args) {       //  ├───.bach
-      System.out.println("Aire");                   //  └───air
+      System.out.println("Aria");                   //  └───air
     }                                               //         Main.java
   }                                                 //
   ```
 
-
-- Run `bach boot` to open a JShell session. Explore core Java by writing plain Java code snippets; and list Bach's
-  overlay API by calling `api()`.
-
+- Run `bach boot` to open a JShell session. Explore core Java features by writing plain Java code snippets; and list
+  Bach's overlay API by calling `api()`.
 
 - Browse other [Projects Using Bach](https://github.com/sormuras/bach/wiki/Projects-Using-Bach) - you're welcome to add
   yours!
-
 
 - [Discuss](https://github.com/sormuras/bach/discussions) ideas and
   file [issues](https://github.com/sormuras/bach/issues) at Bach's GitHub page.
@@ -122,9 +131,11 @@ values such as a short name, a version that is applied to all modules of the pro
 find modules, and a lot more. Most of these project-specific values have pre-defined default values; some of these
 values provide an auto-configuration feature.
 
-Here's an excerpt of [Bach's project-info](.bach/bach.info/module-info.java) module declaration:
+Here's an excerpt of [.bach/bach.info/module-info.java](.bach/bach.info/module-info.java) module declaration:
 
 ```java
+import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.ProjectInfo.*;
 
 @ProjectInfo(
     name = "bach",     // short name of the project, defaults to current working directory's name
@@ -196,7 +207,7 @@ Bach...
 
 Bach will **not** support "all features known from other build tools".
 
-> If a feature F is not provided by another tool, Bach will not support F.
+> If a feature F is not provided by an underlying tool, Bach will not support F.
 
 Bach will **not**...
 
@@ -204,7 +215,7 @@ Bach will **not**...
 - support non-modular Java projects.
 - provide a GUI for the tool.
 - resolve conflicting external dependencies.
-- deploy modules to external services.
+- deploy modules to external hosting services.
 
 # be free - have fun
 
