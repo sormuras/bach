@@ -13,6 +13,17 @@ public class Main implements ToolProvider {
     System.exit(new Main().run(args));
   }
 
+  public static String computeBanner() {
+    return "Bach"
+        + " "
+        + Bach.version()
+        + " "
+        + new StringJoiner(", ", "(", ")")
+            .add("Java " + Runtime.version().toString())
+            .add(System.getProperty("os.name"))
+            .add(System.getProperty("user.dir"));
+  }
+
   public static String computeHelpMessage() {
     var flags = new StringJoiner("\n");
     for (var flag : Flag.values()) flags.add(Options.key(flag)).add("  " + flag.help);
@@ -74,10 +85,11 @@ public class Main implements ToolProvider {
 
   public int run(Options options) {
     var out = options.out();
-    out.printf("Bach %s (%s)%n", Bach.version(), Bach.bin().toUri());
     if (options.is(Flag.VERBOSE)) {
+      out.println("Bach is running in verbose mode");
       out.printf("  version = %s%n", Bach.version());
-      out.printf("  bin = %s%n", Bach.bin());
+      out.printf("  bin (Path) = %s%n", Bach.bin());
+      out.printf("  bin (URI) = %s%n", Bach.bin().toUri());
       out.printf("  info = %s%n", options.info());
       out.printf("  flags = %s%n", options.flags());
       out.printf("  properties = %s%n", options.properties());
@@ -98,6 +110,7 @@ public class Main implements ToolProvider {
       bach.say("%s", Bach.version());
       if (bach.is(Flag.VERSION /* and exit */)) return Status.OK;
     }
+    bach.say(computeBanner());
     if (bach.is(Flag.HELP /* and exit */)) {
       bach.say("%s", computeHelpMessage());
       return Status.OK;
