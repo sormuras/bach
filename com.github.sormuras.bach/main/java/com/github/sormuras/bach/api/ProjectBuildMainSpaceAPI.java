@@ -178,8 +178,8 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return Command.javac()
         .add("--release", release)
         .add("--module-version", project.version())
-        .add("--patch-module", name + '=' + classes.resolve(name))
         .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
+        .add("--class-path", classes.resolve(name))
         .add("-implicit:none") // generate classes for explicitly referenced source files
         .addAll(main.tweaks().arguments("javac"))
         .addAll(main.tweaks().arguments("javac(" + name + ")"))

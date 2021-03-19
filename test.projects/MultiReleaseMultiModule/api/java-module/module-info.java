@@ -1,0 +1,3 @@
+module api {
+  exports api;
+}

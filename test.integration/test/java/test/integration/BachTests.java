@@ -39,8 +39,9 @@ class BachTests {
     assertEquals("main", project.spaces().main().name());
     assertLinesMatch(
         """
-        com.github.sormuras.bach
         >> default pattern "**module-info.java" matches many modules... >>
+        com.github.sormuras.bach
+        >> default pattern "**module-info.java" matches more modules... >>
         simplicissimus
         """
             .lines(),
