@@ -150,4 +150,4 @@ jobs:
         run: .bach/bin/bach build
       - name: 'Run program'
         working-directory: air
-        run: .bach/workspace/image/java --module air
+        run: .bach/workspace/image/bin/java --module air
