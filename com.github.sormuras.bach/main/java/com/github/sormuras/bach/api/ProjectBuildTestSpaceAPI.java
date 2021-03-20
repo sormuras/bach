@@ -2,6 +2,7 @@ package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Logbook;
+import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.util.Paths;
@@ -88,12 +89,15 @@ public interface ProjectBuildTestSpaceAPI extends API {
   }
 
   default Jar buildProjectTestJar(Path testModules, String module, Path classes) {
+    var project = bach().project();
+    var test = project.spaces().test();
     return Command.jar()
-        .add("--verbose")
+        .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
         .add("--create")
         .add("--file", testModules.resolve(buildProjectTestJarFileName(module)))
-        .add("-C", classes.resolve(module), ".")
-        .add("-C", bach().folders().root(module, "test/java"), ".");
+        .addAll(test.tweaks().arguments("jar"))
+        .addAll(test.tweaks().arguments("jar(" + module + ")"))
+        .add("-C", classes.resolve(module), ".");
   }
 
   default Logbook.Run buildProjectTestJUnitRun(Path testModules, String module) {
