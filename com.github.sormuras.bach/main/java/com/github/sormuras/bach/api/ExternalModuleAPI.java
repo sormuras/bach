@@ -45,7 +45,8 @@ public interface ExternalModuleAPI extends API {
   default Set<String> computeMissingExternalModules(boolean includeRequiresOfExternalModules) {
     // Populate a set with all module names being in a "requires MODULE;" directive
     var requires = new TreeSet<>(bach().project().libraries().requires()); // project-info
-    requires.addAll(required(bach().project().spaces().toModuleFinder())); // module-info(s)
+    requires.addAll(required(bach().project().spaces().main().declarations())); // main module-info
+    requires.addAll(required(bach().project().spaces().test().declarations())); // test module-info
     if (includeRequiresOfExternalModules) {
       var externalFinder = ModuleFinder.of(bach().folders().externalModules());
       requires.addAll(required(externalFinder)); // external-modules
@@ -55,7 +56,8 @@ public interface ExternalModuleAPI extends API {
     if (requires.isEmpty()) return Set.of();
     requires.removeAll(declared(ModuleFinder.ofSystem()));
     if (requires.isEmpty()) return Set.of();
-    requires.removeAll(declared(bach().project().spaces().toModuleFinder()));
+    requires.removeAll(declared(bach().project().spaces().main().declarations()));
+    requires.removeAll(declared(bach().project().spaces().test().declarations()));
     if (requires.isEmpty()) return Set.of();
     requires.removeAll(declared(ModuleFinder.of(bach().folders().externalModules())));
     if (requires.isEmpty()) return Set.of();
