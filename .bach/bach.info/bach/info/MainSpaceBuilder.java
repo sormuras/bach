@@ -20,6 +20,10 @@ public interface MainSpaceBuilder extends ProjectBuildMainSpaceAPI {
     var pom = generateMavenConsumerPom(module, version, file);
     var pomcheck = PomChecker.install(bach()).checkMavenCentral(pom);
     bach().run(pomcheck).requireSuccessful();
+
+    say("Initialize JReleaser");
+    var jreleaserInit = JReleaser.install(bach()).add("init");
+    bach().run(jreleaserInit).requireSuccessful();
   }
 
   private Path generateMavenConsumerPom(String module, String version, Path file) throws Exception {
