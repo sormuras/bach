@@ -8,7 +8,9 @@ import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.util.Paths;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.spi.ToolProvider;
 
 /** Methods related to building and running test modules. */
 public interface ProjectBuildTestSpaceAPI extends API {
@@ -19,6 +21,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
    * <ul>
    *   <li>{@code javac}
    *   <li>{@code jar}
+   *   <li>{@code test}
    *   <li>{@code junit}
    * </ul>
    */
@@ -42,28 +45,8 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var names = modules.toNames().toList();
     var jars = names.stream().map(name -> buildProjectTestJar(testModules, name, testClasses));
     bach().run(jars).requireSuccessful();
-    if (bach().computeToolProvider("junit").isPresent()
-        && bach().project().settings().tools().enabled("junit")) {
-      say("Launch JUnit Platform for each module");
-      var runs = names.stream().map(name -> buildProjectTestJUnitRun(testModules, name));
-      new Logbook.Runs(runs.toList()).requireSuccessful();
-    } else {
-      var message =
-          """
 
-            Tool 'junit' not found!
-
-          Either add `requires static org.junit.platform.console;` in one of the
-          (test) module declarations or configure "org.junit.platform.console"
-          into the list of required module names in the project declaration, like:
-
-              @ProjectInfo(
-                requires = {..., "org.junit.platform.console", ...}
-              )
-              module bach.info {...}
-          """;
-      say(message);
-    }
+    buildProjectTestRuns(testModules, names);
   }
 
   default Javac buildProjectTestJavac(Path classes) {
@@ -100,14 +83,53 @@ public interface ProjectBuildTestSpaceAPI extends API {
         .add("-C", classes.resolve(module), ".");
   }
 
-  default Logbook.Run buildProjectTestJUnitRun(Path testModules, String module) {
-    var finder =
-        ModuleFinder.of(
-            testModules.resolve(buildProjectTestJarFileName(module)), // module under test
-            bach().folders().workspace("modules"), // main modules
-            testModules, // (more) test modules
-            bach().folders().externalModules());
+  default void buildProjectTestRuns(Path testModules, List<String> names) {
+    var tools = bach().project().settings().tools();
+    var testsEnabled = tools.enabled("test");
+    var junitEnabled = tools.enabled("junit");
+    var junitPresent = bach().computeToolProvider("junit").isPresent();
 
+    if (!testsEnabled && !junitEnabled) {
+      log("Test runs are disabled");
+      return;
+    }
+
+    say("Execute each test module");
+    var runs = new ArrayList<Logbook.Run>();
+    for (var name : names) {
+      log("Test module %s", name);
+      // "test"
+      var finder = buildProjectTestModuleFinder(testModules, name);
+      if (testsEnabled)
+        bach()
+            .computeToolProviders(finder, name)
+            .filter(provider -> provider.getClass().getModule().getName().equals(name))
+            .filter(provider -> provider.name().equals("test"))
+            .map(this::buildProjectTestRun)
+            .forEach(runs::add);
+      // "junit"
+      if (junitEnabled && junitPresent) runs.add(buildProjectTestJUnitRun(testModules, name));
+    }
+
+    new Logbook.Runs(runs).requireSuccessful();
+  }
+
+  default ModuleFinder buildProjectTestModuleFinder(Path testModules, String module) {
+    return ModuleFinder.of(
+        testModules.resolve(buildProjectTestJarFileName(module)), // module under test
+        bach().folders().workspace("modules"), // main modules
+        testModules, // (more) test modules
+        bach().folders().externalModules());
+  }
+
+  private Logbook.Run buildProjectTestRun(ToolProvider provider, String... args) {
+    var providerClass = provider.getClass();
+    var description = providerClass.getModule().getName() + "/" + providerClass.getName();
+    return bach().run(provider, List.of(args), description);
+  }
+
+  default Logbook.Run buildProjectTestJUnitRun(Path testModules, String module) {
+    var finder = buildProjectTestModuleFinder(testModules, module);
     var junit =
         Command.of("junit")
             .add("--select-module", module)
