@@ -14,6 +14,10 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 - Creation of test JAR files as computed by the "test code space builder" fixed. [#213]
 - Missing external modules computation now correctly includes `requires` directives of in-module test modules. [#213]
 
+### Added
+
+- Run each test module via their `ToolProvider` services named `test` in addition to launching `junit`. [#215]
+
 ## Version [17-ea-1] released 2021-03-17
 
 Initial Early-Access release.
@@ -25,3 +29,5 @@ Initial Early-Access release.
 [#209]: https://github.com/sormuras/bach/issues/209
 
 [#213]: https://github.com/sormuras/bach/issues/213
+
+[#215]: https://github.com/sormuras/bach/issues/215
