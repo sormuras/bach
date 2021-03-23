@@ -165,7 +165,7 @@ jobs:
         with:
           java-version: 16
       - name: 'Build with Bach''s GitHub Action'
-        uses: sormuras/bach-build@main
+        uses: sormuras/bach-build@v1
         with:
           working-directory: test.projects/JigsawQuickStartWorld
           bach-version: 17-ea
