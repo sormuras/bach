@@ -7,6 +7,7 @@ import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Flag;
+import com.github.sormuras.bach.project.Launcher;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
@@ -30,11 +31,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Methods related to building projects. */
 public interface ProjectComputerAPI extends API {
@@ -184,6 +187,7 @@ public interface ProjectComputerAPI extends API {
             new ModuleDeclarations(mainDeclarations),
             computeProjectModulePaths(root, info.modulePaths()),
             computeProjectTargetsJava(info),
+            computeProjectLauncher(settings.name(), mainDeclarations.values().stream()),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
@@ -242,6 +246,22 @@ public interface ProjectComputerAPI extends API {
 
   default ModulePaths computeProjectModulePaths(Path root, String... paths) {
     return new ModulePaths(Arrays.stream(paths).map(root::resolve).toList());
+  }
+
+  default Optional<Launcher> computeProjectLauncher(
+      String command, Stream<ModuleDeclaration> declarations) {
+    var modules =
+        declarations
+            .map(d -> d.reference().descriptor())
+            .filter(d -> d.mainClass().isPresent())
+            .toList();
+    if (modules.size() != 1) {
+      log("No or multiple main modules declare a main class: %s", modules);
+      return Optional.empty();
+    }
+    var launcher = new Launcher(command, modules.get(0).name(), "");
+    log("Launcher computed: %s", launcher);
+    return Optional.of(launcher);
   }
 
   default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {

@@ -270,6 +270,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var main = project.spaces().main();
     var test = project.spaces().test();
     return Command.jlink()
+        .ifPresent(main.launcher(), (jlink, launcher) -> jlink.add("--launcher", launcher.value()))
         .add("--add-modules", main.declarations().toNames(","))
         .ifPresent(test.modulePaths().pruned(), (jlink, paths) -> jlink.add("--module-path", paths))
         .addAll(main.tweaks().arguments("jlink"))
