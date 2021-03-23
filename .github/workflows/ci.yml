@@ -151,3 +151,20 @@ jobs:
       - name: 'Run program'
         working-directory: air
         run: .bach/workspace/image/bin/java --module air
+
+  use-action:
+    needs: [ setup, build, deploy-to-releases ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Install JDK 16 or later'
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
+      - name: 'Build with Bach''s GitHub Action'
+        uses: sormuras/bach-build@main
+        with:
+          working-directory: test.projects/JigsawQuickStartWorld
+          bach-version: 17-ea
+      - name: 'Run program'
+        working-directory: test.projects/JigsawQuickStartWorld
+        run: .bach/workspace/image/bin/java --module com.greetings
