@@ -16,6 +16,7 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 ### Added
 
+- Support and auto-detect launcher option values of `jlink`. [#208]
 - Run each test module via their `ToolProvider` services named `test` in addition to launching `junit`. [#215]
 
 ## Version [17-ea-1] released 2021-03-17
@@ -25,6 +26,8 @@ Initial Early-Access release.
 [17-ea]: https://github.com/sormuras/bach/releases/tag/17-ea
 
 [17-ea-1]: https://github.com/sormuras/bach/compare/17-ea-1...main
+
+[#208]: https://github.com/sormuras/bach/issues/208
 
 [#209]: https://github.com/sormuras/bach/issues/209
 
