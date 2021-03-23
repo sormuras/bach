@@ -156,6 +156,10 @@ jobs:
     needs: [ setup, build, deploy-to-releases ]
     runs-on: ubuntu-latest
     steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - name: 'Install JDK 16 or later'
         uses: actions/setup-java@v1
         with:
