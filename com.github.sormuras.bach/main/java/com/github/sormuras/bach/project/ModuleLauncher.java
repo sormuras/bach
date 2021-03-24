@@ -12,7 +12,7 @@ package com.github.sormuras.bach.project;
  * @param module the module to launch
  * @param main the possibly empty name of the main class
  */
-public record Launcher(String command, String module, String main) {
+public record ModuleLauncher(String command, String module, String main) {
   public String value() {
     return command + '=' + module + (main.isEmpty() ? "" : '/' + main);
   }

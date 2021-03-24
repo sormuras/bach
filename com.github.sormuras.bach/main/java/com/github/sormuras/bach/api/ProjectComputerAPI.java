@@ -7,12 +7,12 @@ import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.Launcher;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.MainSpace;
 import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.ModuleDeclarations;
 import com.github.sormuras.bach.project.ModuleInfoReference;
+import com.github.sormuras.bach.project.ModuleLauncher;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.Property;
 import com.github.sormuras.bach.project.Settings;
@@ -187,7 +187,7 @@ public interface ProjectComputerAPI extends API {
             new ModuleDeclarations(mainDeclarations),
             computeProjectModulePaths(root, info.modulePaths()),
             computeProjectTargetsJava(info),
-            computeProjectLauncher(settings.name(), mainDeclarations.values().stream()),
+            computeProjectModuleLauncher(info, settings, mainDeclarations.values().stream()),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
@@ -248,8 +248,13 @@ public interface ProjectComputerAPI extends API {
     return new ModulePaths(Arrays.stream(paths).map(root::resolve).toList());
   }
 
-  default Optional<Launcher> computeProjectLauncher(
-      String command, Stream<ModuleDeclaration> declarations) {
+  default Optional<ModuleLauncher> computeProjectModuleLauncher(
+      ProjectInfo info, Settings settings, Stream<ModuleDeclaration> declarations) {
+    var launcher = info.launcher();
+    var command = launcher.command().equals("*") ? settings.name() : launcher.command();
+    if (!launcher.module().equals("*")) {
+      return Optional.of(new ModuleLauncher(command, launcher.module(), launcher.mainClass()));
+    }
     var modules =
         declarations
             .map(d -> d.reference().descriptor())
@@ -259,9 +264,9 @@ public interface ProjectComputerAPI extends API {
       log("No or multiple main modules declare a main class: %s", modules);
       return Optional.empty();
     }
-    var launcher = new Launcher(command, modules.get(0).name(), "");
-    log("Launcher computed: %s", launcher);
-    return Optional.of(launcher);
+    var moduleLauncher = new ModuleLauncher(command, modules.get(0).name(), "");
+    log("Module launcher computed: %s", moduleLauncher);
+    return Optional.of(moduleLauncher);
   }
 
   default Tweaks computeProjectTweaks(ProjectInfo.Tweak... infos) {

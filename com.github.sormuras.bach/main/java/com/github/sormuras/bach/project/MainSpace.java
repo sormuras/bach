@@ -15,7 +15,7 @@ public record MainSpace(
     ModuleDeclarations declarations,
     ModulePaths modulePaths,
     int release,
-    Optional<Launcher> launcher,
+    Optional<ModuleLauncher> launcher,
     Tweaks tweaks)
     implements Space {
   @Override
