@@ -136,6 +136,7 @@ public interface ProjectComputerAPI extends API {
   default ModuleLookup computeProjectModuleLookup(ProjectInfo.Externals externals) {
     var version = externals.version();
     return switch (externals.name()) {
+      case FXGL -> ModuleLookup.ofFXGL(bach(), version);
       case GITHUB_RELEASES -> ModuleLookup.ofGitHubReleases(bach());
       case JAVAFX -> ModuleLookup.ofJavaFX(version);
       case JUNIT -> ModuleLookup.ofJUnit(version);

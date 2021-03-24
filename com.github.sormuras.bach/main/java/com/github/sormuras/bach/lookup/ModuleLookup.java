@@ -22,6 +22,10 @@ public interface ModuleLookup {
     return new ExternalModuleLookupBuilder(module);
   }
 
+  static ModuleLookup ofFXGL(Bach bach, String version) {
+    return new FXGLModuleLookup(bach, version);
+  }
+
   static ModuleLookup ofGitHubReleases(Bach bach) {
     return new GitHubReleasesModuleLookup(bach);
   }

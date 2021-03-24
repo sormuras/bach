@@ -187,6 +187,8 @@ public @interface ProjectInfo {
 
     /** The name of the module lookup, usually a name of a modular library or a framework. */
     enum Name {
+      /** Java/JavaFX/Kotlin Game Library, requires a version argument like {@code "11.14"}. */
+      FXGL,
       /** Look up module URIs for modules uploaded to their GitHub Releases environment. */
       GITHUB_RELEASES,
       /** Open JavaFX, requires a version argument like {@code "15.0.1"}. */
