@@ -13,10 +13,12 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 - Compilation of targeted sources in multi-module projects fixed. [#209]
 - Creation of test JAR files as computed by the "test code space builder" fixed. [#213]
 - Missing external modules computation now correctly includes `requires` directives of in-module test modules. [#213]
+- Prevent `FindException` when switching JDK version between Bach runs. [#216]
 
 ### Added
 
 - Support and auto-detect launcher option values of `jlink`. [#208]
+- Add [FXGL](https://almasb.github.io/FXGL) module lookup support [#210]
 - Run each test module via their `ToolProvider` services named `test` in addition to launching `junit`. [#215]
 
 ## Version [17-ea-1] released 2021-03-17
@@ -31,6 +33,10 @@ Initial Early-Access release.
 
 [#209]: https://github.com/sormuras/bach/issues/209
 
+[#210]: https://github.com/sormuras/bach/issues/210
+
 [#213]: https://github.com/sormuras/bach/issues/213
 
 [#215]: https://github.com/sormuras/bach/issues/215
+
+[#216]: https://github.com/sormuras/bach/issues/216

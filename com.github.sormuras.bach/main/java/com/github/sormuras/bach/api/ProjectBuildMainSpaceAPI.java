@@ -53,7 +53,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
 
     var release = main.release();
     var feature = release != 0 ? release : Runtime.version().feature();
-    var classes = bach().folders().workspace("classes-main", String.valueOf(feature));
+    var classes = bach().folders().workspace("classes-main-" + feature);
 
     var workspaceModules = bach().folders().workspace("modules");
     Paths.deleteDirectories(workspaceModules);
@@ -190,7 +190,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
   }
 
   private Path buildProjectMultiReleaseClassesDirectory(String module, int release) {
-    return bach().folders().workspace("classes-mr", String.valueOf(release), module);
+    return bach().folders().workspace("classes-mr-" + release, module);
   }
 
   default Jar buildProjectMainJar(ModuleDeclaration declaration, Path classes) {

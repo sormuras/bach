@@ -25,7 +25,7 @@ public class ModuleLayerBuilder {
     var moduleInfo = modulePath.resolve("module-info.java");
     if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
 
-    var destination = workspace.resolve(bach);
+    var destination = workspace.resolve("classes-bach-" + Runtime.version().feature());
     var args =
         Command.of("javac")
             .add("--module", module)

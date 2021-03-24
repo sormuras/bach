@@ -35,7 +35,8 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var s = modules.size() == 1 ? "" : "s";
     say("Build %d test module%s: %s", modules.size(), s, modules.toNames(", "));
 
-    var testClasses = bach().folders().workspace("classes-test");
+    var feature = Runtime.version().feature();
+    var testClasses = bach().folders().workspace("classes-test-" + feature);
     var testModules = bach().folders().workspace("modules-test");
 
     Paths.deleteDirectories(testModules);
