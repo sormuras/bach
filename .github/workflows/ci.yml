@@ -43,12 +43,7 @@ jobs:
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/bin/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
-        run: |
-          java \
-            --module-path .bach/bin \
-            --module com.github.sormuras.bach \
-            --project-version ${{ needs.setup.outputs.version }} \
-            build
+        run: .bach/bin/bach --project-version ${{ needs.setup.outputs.version }} build
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}'
         if: always()
         uses: actions/upload-artifact@v2
