@@ -15,5 +15,5 @@ if [[ $1 == 'init' ]]; then
   exit $?
 fi
 
-java --add-modules ALL-DEFAULT --module-path .bach/bin --module com.github.sormuras.bach "$@"
+java --module-path .bach/bin --module com.github.sormuras.bach "$@"
 exit $?

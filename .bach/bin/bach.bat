@@ -15,5 +15,5 @@ IF "%~1" == "init" (
   EXIT /B %ERRORLEVEL%
 )
 
-java --add-modules ALL-DEFAULT --module-path .bach\bin --module com.github.sormuras.bach %*
+java --module-path .bach\bin --module com.github.sormuras.bach %*
 EXIT /B %ERRORLEVEL%

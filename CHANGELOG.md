@@ -14,7 +14,7 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 - Creation of test JAR files as computed by the "test code space builder" fixed. [#213]
 - Missing external modules computation now correctly includes `requires` directives of in-module test modules. [#213]
 - Prevent `FindException` when switching JDK version between Bach runs. [#216]
-- All default system modules are added by default when starting Bach [#217]
+- All system modules are added by default when running tools and tests. [#217]
 
 ### Added
 

@@ -24,7 +24,12 @@ public interface ToolProviderAPI extends API {
   }
 
   default Stream<ToolProvider> computeToolProviders(ModuleFinder finder, String... roots) {
-    var layer = new ModuleLayerBuilder().before(finder).roots(Set.of(roots)).build();
+    var layer =
+        new ModuleLayerBuilder()
+            .before(finder)
+            .after(ModuleFinder.ofSystem()) // resolve modules that are not in the module graph
+            .roots(Set.of(roots))
+            .build();
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
