@@ -1,6 +1,7 @@
 open /*test*/ module test.base {
   exports test.base;
 
+  requires jdk.xml.dom; // #217
   requires transitive org.junit.jupiter;
 
   provides java.util.spi.ToolProvider with
