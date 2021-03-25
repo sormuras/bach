@@ -29,6 +29,7 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
   ```text
   air> jshell https://bit.ly/bach-init
   ```
+  > The Bitly-shortened URL expands effectively to: https://raw.githubusercontent.com/sormuras/bach/main/.bach/bin/init.jsh
 - Boot Bach into a JShell session.
   ```text
   air> .bach/bin/bach boot
