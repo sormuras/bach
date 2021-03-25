@@ -3,7 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="com.github.sormuras.bach.Main" />
     <module name="com.github.sormuras.bach" />
     <option name="PROGRAM_PARAMETERS" value="build" />
-    <option name="VM_PARAMETERS" value="-Debug" />
+    <option name="VM_PARAMETERS" value="--add-modules ALL-DEFAULT" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
