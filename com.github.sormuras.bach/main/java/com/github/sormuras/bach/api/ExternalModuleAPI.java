@@ -70,8 +70,9 @@ public interface ExternalModuleAPI extends API {
 
   default void loadExternalModules(String... modules) {
     var bach = bach();
-    bach.log("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
     if (modules.length == 0) return;
+    bach.say("Load %d external module%s", modules.length, modules.length == 1 ? "" : "s");
+    for (var module : modules) say("  %s", module);
     var browser = bach.browser();
     UnaryOperator<String> uri = this::computeExternalModuleUri;
     Function<String, Path> jar = this::computeExternalModuleFile;
