@@ -3,6 +3,9 @@ package com.github.sormuras.bach.api;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.project.Flag;
+import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.ModuleDeclarations;
+import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import com.github.sormuras.bach.util.Paths;
@@ -43,11 +46,12 @@ public interface ProjectBuildTestSpaceAPI extends API {
     bach().run(buildProjectTestJavac(testClasses)).requireSuccessful();
 
     Paths.createDirectories(testModules);
-    var names = modules.toNames().toList();
-    var jars = names.stream().map(name -> buildProjectTestJar(testModules, name, testClasses));
+    var jars =
+        modules.map().values().stream()
+            .map(module -> buildProjectTestJar(testModules, module, testClasses));
     bach().run(jars).requireSuccessful();
 
-    buildProjectTestRuns(testModules, names);
+    buildProjectTestRuns(testModules, modules);
   }
 
   default Javac buildProjectTestJavac(Path classes) {
@@ -72,19 +76,36 @@ public interface ProjectBuildTestSpaceAPI extends API {
     return module + '@' + bach().project().versionNumberAndPreRelease() + "+test.jar";
   }
 
-  default Jar buildProjectTestJar(Path testModules, String module, Path classes) {
+  default Jar buildProjectTestJar(Path testModules, ModuleDeclaration declaration, Path classes) {
+    var name = declaration.name();
     var project = bach().project();
     var test = project.spaces().test();
-    return Command.jar()
-        .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
-        .add("--create")
-        .add("--file", testModules.resolve(buildProjectTestJarFileName(module)))
-        .addAll(test.tweaks().arguments("jar"))
-        .addAll(test.tweaks().arguments("jar(" + module + ")"))
-        .add("-C", classes.resolve(module), ".");
+    var jar =
+        Command.jar()
+            .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
+            .add("--create")
+            .add("--file", testModules.resolve(buildProjectTestJarFileName(name)))
+            .addAll(test.tweaks().arguments("jar"))
+            .addAll(test.tweaks().arguments("jar(" + name + ")"));
+    var baseClasses = classes.resolve(name);
+    jar = jar.add("-C", baseClasses, ".");
+    // include base test resources
+    for (var folder : declaration.resources().list()) {
+      if (folder.isTargeted()) continue; // handled later
+      jar = jar.add("-C", folder.path(), ".");
+    }
+    // include targeted test resources in ascending order
+    for (int release = 9; release <= Runtime.version().feature(); release++) {
+      var paths = new ArrayList<Path>();
+      declaration.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
+      if (paths.isEmpty()) continue;
+      jar = jar.add("--release", release);
+      for (var path : paths) jar = jar.add("-C", path, ".");
+    }
+    return jar;
   }
 
-  default void buildProjectTestRuns(Path testModules, List<String> names) {
+  default void buildProjectTestRuns(Path testModules, ModuleDeclarations modules) {
     var tools = bach().project().settings().tools();
     var testsEnabled = tools.enabled("test");
     var junitEnabled = tools.enabled("junit");
@@ -97,7 +118,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
 
     say("Execute each test module");
     var runs = new ArrayList<Logbook.Run>();
-    for (var name : names) {
+    for (var name : modules.toNames().toList()) {
       log("Test module %s", name);
       // "test"
       var finder = buildProjectTestModuleFinder(testModules, name);
