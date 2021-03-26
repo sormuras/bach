@@ -21,6 +21,7 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 - Support and auto-detect launcher option values of `jlink`. [#208]
 - Add [FXGL](https://almasb.github.io/FXGL) module lookup support [#210]
 - Run each test module via their `ToolProvider` services named `test` in addition to launching `junit`. [#215]
+- Enable assertions in test space's class loaders by default [#220]
 
 ## Version [17-ea-1] released 2021-03-17
 
@@ -43,3 +44,5 @@ Initial Early-Access release.
 [#216]: https://github.com/sormuras/bach/issues/216
 
 [#217]: https://github.com/sormuras/bach/issues/217
+
+[#220]: https://github.com/sormuras/bach/issues/220

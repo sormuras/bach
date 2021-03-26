@@ -24,12 +24,17 @@ public interface ToolProviderAPI extends API {
   }
 
   default Stream<ToolProvider> computeToolProviders(ModuleFinder finder, String... roots) {
+    return computeToolProviders(finder, false, roots);
+  }
+
+  default Stream<ToolProvider> computeToolProviders(ModuleFinder finder, boolean enableAssertions, String... roots) {
     var layer =
         new ModuleLayerBuilder()
             .before(finder)
             .after(ModuleFinder.ofSystem()) // resolve modules that are not in the module graph
             .roots(Set.of(roots))
             .build();
+    if (enableAssertions) for (var root : roots) layer.findLoader(root).setDefaultAssertionStatus(true);
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 

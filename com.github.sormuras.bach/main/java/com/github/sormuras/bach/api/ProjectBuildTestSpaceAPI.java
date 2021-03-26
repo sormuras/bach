@@ -103,7 +103,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
       var finder = buildProjectTestModuleFinder(testModules, name);
       if (testsEnabled)
         bach()
-            .computeToolProviders(finder, name)
+            .computeToolProviders(finder, true, name)
             .filter(provider -> provider.getClass().getModule().getName().equals(name))
             .filter(provider -> provider.name().equals("test"))
             .map(this::buildProjectTestRun)
