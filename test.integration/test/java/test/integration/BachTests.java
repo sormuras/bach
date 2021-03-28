@@ -62,6 +62,7 @@ class BachTests {
         test.base
         test.integration
         test.projects
+        tests
         """
             .lines(),
         project.spaces().test().declarations().toNames());
