@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.util.Paths;
 import java.lang.ModuleLayer.Controller;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -17,19 +18,19 @@ public class ModuleLayerBuilder {
 
   public static ModuleLayer build(String module) {
     var bach = Path.of(".bach");
-    return build(bach, module, bach.resolve("bin"), bach.resolve("workspace"));
+    return build(bach, module, bach.resolve("bin"));
   }
 
-  public static ModuleLayer build(Path bach, String module, Path bin, Path workspace) {
-    var modulePath = bach.resolve(module);
+  public static ModuleLayer build(Path dotBach, String module, Path bin) {
+    var modulePath = dotBach.resolve(module);
     var moduleInfo = modulePath.resolve("module-info.java");
     if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
 
-    var destination = workspace.resolve("classes-bach-" + Runtime.version().feature());
+    var destination = Paths.createTempDirectory("bach-");
     var args =
         Command.of("javac")
             .add("--module", module)
-            .add("--module-source-path", bach)
+            .add("--module-source-path", dotBach)
             .add("--module-path", bin)
             .add("-encoding", "UTF-8")
             .add("-d", destination)

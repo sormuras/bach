@@ -10,7 +10,7 @@ class ModuleLayerBuilderTests {
   @Test
   void ofNotExistingPath() {
     var path = Path.of("does-not-exist");
-    var layer = ModuleLayerBuilder.build(path, "module", path, path);
+    var layer = ModuleLayerBuilder.build(path, "module", path);
     assertTrue(layer.modules().isEmpty());
   }
 

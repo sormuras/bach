@@ -15,6 +15,7 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 - Missing external modules computation now correctly includes `requires` directives of in-module test modules. [#213]
 - Prevent `FindException` when switching JDK version between Bach runs. [#216]
 - All system modules are added by default when running tools and tests. [#217]
+- Prevent potential `NoClassDefFoundError` when running `bach clean build`. [#218]
 - Test resources are now packaged into test modules. [#219]
 
 ### Added

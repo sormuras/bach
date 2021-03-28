@@ -21,6 +21,14 @@ public final class Paths {
     }
   }
 
+  public static Path createTempDirectory(String prefix) {
+    try {
+      return Files.createTempDirectory(prefix);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public static Path deleteDirectories(Path directory) {
     return deleteDirectories(directory, __ -> true);
   }

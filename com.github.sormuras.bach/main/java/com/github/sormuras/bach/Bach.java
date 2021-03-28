@@ -36,7 +36,7 @@ public class Bach implements AutoCloseable, BachAPI {
     var root = Path.of("");
     var bach = root.resolve(".bach");
     var name = options.get(Property.BACH_INFO, ProjectInfo.MODULE);
-    var layer = ModuleLayerBuilder.build(bach, name, Bach.bin(), bach.resolve("workspace"));
+    var layer = ModuleLayerBuilder.build(bach, name, Bach.bin());
     var module = layer.findModule(name);
     if (module.isEmpty()) return new Bach(options);
     var info = module.get().getAnnotation(ProjectInfo.class);
