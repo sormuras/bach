@@ -8,7 +8,8 @@ import java.util.List;
 public record JReleaser(Path jar, List<String> arguments) implements ExecutableJar<JReleaser> {
 
   public static JReleaser install(Bach bach) {
-    var uri = "https://github.com/jreleaser/jreleaser/releases/download/early-access/jreleaser-tool-provider-0.1.0-SNAPSHOT.jar";
+    var uri =
+        "https://github.com/jreleaser/jreleaser/releases/download/early-access/jreleaser-tool-provider-0.1.0-SNAPSHOT.jar";
     var jar = ExecutableJar.load(bach, "jreleaser", "0.1.0-SNAPSHOT", uri);
     return new JReleaser(jar, List.of());
   }
