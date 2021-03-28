@@ -52,7 +52,7 @@ import com.github.sormuras.bach.project.JavaStyle;
       @External(module = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
     },
     lookupExternals = {
-      @Externals(name = JAVAFX, version = "15.0.1"),
+      @Externals(name = JAVAFX, version = "16"),
       @Externals(name = JUNIT, version = "5.8.0-M1"),
       @Externals(name = LWJGL, version = "3.2.3"),
       @Externals(name = SORMURAS_MODULES, version = "2021.03"),
