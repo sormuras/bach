@@ -224,7 +224,7 @@ public interface ProjectComputerAPI extends API {
     if (root.relativize(info).getNameCount() == 1) {
       var sources = new SourceFolders(List.of());
       var resources = new SourceFolders(List.of());
-      return new ModuleDeclaration(reference, sources, resources);
+      return new ModuleDeclaration(root, reference, sources, resources);
     }
 
     // assume single source folder, directory and module names are equal
@@ -234,15 +234,16 @@ public interface ProjectComputerAPI extends API {
       var folder = computeProjectSourceFolder(parent);
       var sources = new SourceFolders(List.of(folder));
       var resources = new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of());
-      return new ModuleDeclaration(reference, sources, resources);
+      return new ModuleDeclaration(parent, reference, sources, resources);
     }
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
     // resources = "resources", or targeted "resource.*?(\d+)$"
     var space = parent.getParent(); // usually "main", "test", or equivalent
     if (space == null) throw new AssertionError("No parents' parent? info -> " + info);
+    var content = Paths.findNameOrElse(info, reference.name(), space.getParent());
     var sources = computeProjectSourceFolders(space, "java");
     var resources = computeProjectSourceFolders(space, treatSourcesAsResources ? "" : "resource");
-    return new ModuleDeclaration(reference, sources, resources);
+    return new ModuleDeclaration(content, reference, sources, resources);
   }
 
   default ModulePaths computeProjectModulePaths(Path root, String... paths) {

@@ -91,6 +91,14 @@ public final class Paths {
     return count;
   }
 
+  /** {@return a subpath of the given path ending with the given name, or the fall-back path} */
+  public static Path findNameOrElse(Path path, String name, Path fallback) {
+    for (int index = 0; index < path.getNameCount(); index++) {
+      if (name.equals(path.getName(index).toString())) return path.subpath(0, index + 1);
+    }
+    return fallback;
+  }
+
   /** {@return a listing of the directory in natural order with the given filter applied} */
   public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
     if (Files.notExists(directory)) return List.of();

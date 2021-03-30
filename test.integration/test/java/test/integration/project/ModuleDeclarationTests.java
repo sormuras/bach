@@ -29,7 +29,7 @@ class ModuleDeclarationTests {
     var reference = ModuleInfoReference.of(info);
     var sources = new SourceFolders(List.of());
     var resources = new SourceFolders(List.of());
-    var declaration = new ModuleDeclaration(reference, sources, resources);
+    var declaration = new ModuleDeclaration(temp, reference, sources, resources);
 
     assertEquals("empty", declaration.name());
     assertEquals(info, declaration.reference().info());
@@ -42,6 +42,7 @@ class ModuleDeclarationTests {
     var module = "com.github.sormuras.bach";
     var info = Path.of(module, "main", "java", "module-info.java");
     var declaration = newModuleDeclaration(Path.of(""), info);
+    assertEquals(Path.of(module), declaration.root());
     assertEquals(module, declaration.name());
     var first = declaration.sources().first();
     assertEquals(info.getParent(), first.path());
@@ -55,6 +56,7 @@ class ModuleDeclarationTests {
     var java = Path.of(module, "test", "java");
     var info = Path.of(module, "test", "java-module", "module-info.java");
     var declaration = newModuleDeclaration(Path.of(""), info);
+    assertEquals(Path.of(module), declaration.root());
     assertEquals(module, declaration.name());
     var first = declaration.sources().first();
     assertEquals(java, first.path());
@@ -70,6 +72,7 @@ class ModuleDeclarationTests {
     var root = Path.of("test.projects", "MultiRelease-11");
     var info = root.resolve(module + "/main/java/module-info.java");
     var declaration = newModuleDeclaration(root, info);
+    assertEquals(root.resolve(module), declaration.root());
     assertEquals(module, declaration.name());
 
     assertEquals(info.getParent(), declaration.sources().first().path());
@@ -88,6 +91,7 @@ class ModuleDeclarationTests {
     var root = Path.of("test.projects", "JigsawQuickStartGreetings");
     var info = root.resolve(module + "/module-info.java");
     var declaration = newModuleDeclaration(root, info);
+    assertEquals(root.resolve(module), declaration.root());
     assertEquals(module, declaration.name());
     assertEquals(info.getParent(), declaration.sources().first().path());
     assertTrue(declaration.resources().list().isEmpty());
@@ -99,6 +103,7 @@ class ModuleDeclarationTests {
     var root = Path.of("test.projects", "Simplicissimus");
     var info = root.resolve("module-info.java");
     var declaration = newModuleDeclaration(root, info);
+    assertEquals(root, declaration.root());
     assertEquals(module, declaration.name());
     assertTrue(declaration.sources().list().isEmpty());
     assertTrue(declaration.resources().list().isEmpty());

@@ -3,6 +3,7 @@ package test.integration.util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,6 +17,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class PathsTests {
+
+  @Test
+  void findNames() {
+    var path = Path.of("a/b/c/d/module-info.java");
+    assertEquals(Path.of("a"), Paths.findNameOrElse(path, "a", null));
+    assertEquals(Path.of("a/b"), Paths.findNameOrElse(path, "b", null));
+    assertEquals(Path.of("a/b/c"), Paths.findNameOrElse(path, "c", null));
+    assertEquals(Path.of("a/b/c/d"), Paths.findNameOrElse(path, "d", null));
+    assertNull(Paths.findNameOrElse(path, "null", null));
+  }
 
   @Nested
   class DeleteTests {
