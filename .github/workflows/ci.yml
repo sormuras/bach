@@ -82,6 +82,23 @@ jobs:
           files: |
             .bach/workspace/modules/*.jar
 
+  deploy-to-releases-with-jreleaser:
+    needs: [ setup, build ]
+    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Download build artifact ${{ needs.setup.outputs.version }}'
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+      - name: 'Release ${{ needs.setup.outputs.tag }}'
+        uses: jreleaser/release-action@v1
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_TAG_NAME: ${{ needs.setup.outputs.tag }}
+        with:
+          arguments: config
+
   deploy-to-api-repository:
     needs: [ setup, build ]
     if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'

@@ -1,0 +1,19 @@
+project:
+  name: bach
+  description: 🎼 Java Shell Builder
+  longDescription: 🎼 Java Shell Builder - Builds (on(ly)) Modules
+  website: https://github.com/sormuras/bach
+  authors:
+    - sormuras
+  license: MIT
+  java:
+    groupId: com.github.sormuras.bach
+    version: 16
+
+files:
+  globs:
+    - .bach/workspace/modules
+
+release:
+  github:
+    owner: sormuras
