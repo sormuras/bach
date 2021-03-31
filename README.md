@@ -201,8 +201,9 @@ Bach...
 
 - builds Java projects.
 - builds modular Java projects.
-- is a lightweight wrapper for existing and future tools, mainly foundation tools provided the JDK.
-- supports running non-foundation tools registered via the `ToolProvider` SPI.
+- is a lightweight wrapper for existing and future tools, mainly foundation tools provided by the JDK.
+- supports running modularized tools registered via the `ToolProvider` SPI.
+- supports running tools packaged in executable JAR files (via Java's `Process` API).  
 - can be invoked directly from the command line, or programmatically via its modular API (in a JShell session).
 - infers basic project information from `module-info.java` files.
 - uses standard Java syntax for extra configuration purposes (via `@ProjectInfo`).
