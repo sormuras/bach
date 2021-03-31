@@ -61,6 +61,7 @@ class BachTests {
         com.github.sormuras.bach
         test.base
         test.integration
+        test.modules
         test.projects
         tests
         """
