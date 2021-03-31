@@ -35,6 +35,12 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
   air> .bach/bin/bach boot
   ```
 - Let's create a minimal modular Java project by writing a `module-info.java` file in the current directory.
+  ```java
+  module air {
+    requires java.base;
+  }
+  ```
+  You may create the module declaration from within the running JShell via:
   ```text
   jshell> Files.writeString(Path.of("module-info.java"), """
      ...> module air {
@@ -217,6 +223,14 @@ Bach will **not**...
 - provide a GUI for the tool.
 - resolve conflicting external dependencies.
 - deploy modules to external hosting services.
+
+## Configuration And Customization
+
+- Declare `module-info.java` files.
+- Use Bach's CLI arguments to configure a specific build run.
+  Consult the message produced by `bach --help` for available flags and options.
+- Use `@ProjectInfo` on module `bach.info` (locacted at `.bach/bach.info/module-info.java`) to declare static configuration.
+- Extend `Bach` to augment and alter the default behaviour or even write your own build program.
 
 # be free - have fun
 

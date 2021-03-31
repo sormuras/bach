@@ -8,6 +8,12 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 ## Version [17-ea]
 
+_In progress..._
+
+## Version [17-ea-2] released 2021-03-31
+
+Bug fixes and minor features.
+
 ### Fixed
 
 - Compilation of targeted sources in multi-module projects fixed. [#209]
@@ -31,6 +37,8 @@ Initial Early-Access release.
 
 [17-ea]: https://github.com/sormuras/bach/releases/tag/17-ea
 
+[17-ea-2]: https://github.com/sormuras/bach/compare/17-ea-1...17-ea-2
+
 [17-ea-1]: https://github.com/sormuras/bach/compare/17-ea-1...main
 
 [#208]: https://github.com/sormuras/bach/issues/208
@@ -46,6 +54,8 @@ Initial Early-Access release.
 [#216]: https://github.com/sormuras/bach/issues/216
 
 [#217]: https://github.com/sormuras/bach/issues/217
+
+[#218]: https://github.com/sormuras/bach/issues/218
 
 [#219]: https://github.com/sormuras/bach/issues/219
 
