@@ -88,7 +88,7 @@ public class boot {
       Files.writeString(
           idea.resolve(".gitignore"),
           """
-          # Default ignored files
+          /out/
           /shelf/
           /workspace.xml
           """);
