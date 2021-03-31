@@ -47,11 +47,15 @@ public class Bach implements AutoCloseable, BachAPI {
   }
 
   public static Path bin() {
+    return jar().getParent();
+  }
+
+  public static Path jar() {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
     var resolved = module.getLayer().configuration().findModule(module.getName()).orElseThrow();
     var uri = resolved.reference().location().orElseThrow();
-    return Path.of(uri).getParent();
+    return Path.of(uri);
   }
 
   public static String version() {

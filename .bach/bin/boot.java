@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.project.ModuleDeclaration;
 import com.github.sormuras.bach.project.Property;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -61,12 +62,25 @@ public class boot {
         return;
       }
 
-      var name = bach().project().name();
+      var projectName = bach().project().name();
       Files.createDirectories(idea);
-      ideaMisc(idea);
-      ideaRootModule(idea, name);
-      ideaModules(idea, List.of(name, "bach.info"));
-      if (Files.exists(bach().folders().root(".bach/bach.info"))) ideaBachInfoModule(idea);
+      ideaMisc(idea); // ".idea/.gitignore.iml", ".idea/misc.xml", ...
+      ideaProjectModule(idea, projectName); // ".idea/${name}.iml"
+      var moduleNames = new ArrayList<>(List.of(projectName));
+      if (Files.exists(bach().folders().root(".bach/bach.info"))) {
+        ideaBachInfoModule(idea);
+        moduleNames.add("bach.info");
+      }
+      for (var mainModule : bach().project().spaces().main().declarations().map().values()) {
+        ideaModule(idea, mainModule, false); // TODO include in-module test assets
+        moduleNames.add(mainModule.name());
+      }
+      for (var testModule : bach().project().spaces().test().declarations().map().values()) {
+        if (moduleNames.contains(testModule.name())) continue; // exclude in-module tests
+        ideaModule(idea, testModule, true);
+        moduleNames.add(testModule.name());
+      }
+      ideaModules(idea, moduleNames);
       ideaLibraries(idea);
     }
 
@@ -92,7 +106,7 @@ public class boot {
     }
 
     private static void ideaModules(Path idea, List<String> files) throws Exception {
-      var modules = new StringJoiner("\n");
+      var modules = new StringJoiner(System.lineSeparator());
       for (var file : files) {
         modules.add(
             """
@@ -113,10 +127,10 @@ public class boot {
             </component>
           </project>
           """
-              .replace("{{MODULES}}", modules.toString().indent(6)));
+              .replace("{{MODULES}}", modules.toString().strip().indent(6)));
     }
 
-    private static void ideaRootModule(Path idea, String name) throws Exception {
+    private static void ideaProjectModule(Path idea, String name) throws Exception {
       Files.writeString(
           idea.resolve(name + ".iml"),
           """
@@ -153,23 +167,55 @@ public class boot {
           """);
     }
 
+    private static void ideaModule(Path idea, ModuleDeclaration module, boolean isTestSource)
+        throws Exception {
+      var content = new StringJoiner(System.lineSeparator());
+      for (var source : module.sources().list()) {
+        content.add(
+            """
+            <sourceFolder url="file://$MODULE_DIR$/{{PATH}}" isTestSource="{{IS_TEST_SOURCE}}" />"""
+                .replace("{{PATH}}", source.path().toString().replace('\\', '/'))
+                .replace("{{IS_TEST_SOURCE}}", Boolean.toString(isTestSource))
+                .strip());
+      }
+      Files.writeString(
+          idea.resolve(module.name() + ".iml"),
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <module type="JAVA_MODULE" version="4">
+            <component name="NewModuleRootManager" inherit-compiler-output="true">
+              <exclude-output />
+              <content url="file://$MODULE_DIR$/{{ROOT}}">
+          {{CONTENT}}
+              </content>
+              <orderEntry type="sourceFolder" forTests="false" />
+              <orderEntry type="library" name="bach-external-modules" level="project" />
+              <orderEntry type="inheritedJdk" />
+            </component>
+          </module>
+          """
+              .replace("{{ROOT}}", module.root().toString().replace('\\', '/'))
+              .replace("{{CONTENT}}", content.toString().strip().indent(6)));
+    }
+
     private static void ideaLibraries(Path idea) throws Exception {
       var libraries = Files.createDirectories(idea.resolve("libraries"));
-
       Files.writeString(
           libraries.resolve("bach_bin.xml"),
           """
           <component name="libraryTable">
             <library name="bach-bin">
               <CLASSES>
-                <root url="file://$PROJECT_DIR$/.bach/bin" />
+                <root url="jar://$PROJECT_DIR$/.bach/bin/{{JAR}}!/" />
               </CLASSES>
               <JAVADOC />
-              <SOURCES />
-              <jarDirectory url="file://$PROJECT_DIR$/.bach/bin" recursive="false" />
+              <SOURCES>
+                <root url="jar://$PROJECT_DIR$/.bach/bin/{{JAR}}!/" />
+              </SOURCES>
             </library>
           </component>
-          """);
+          """
+              .replace("{{JAR}}", Bach.jar().getFileName().toString()));
 
       Files.writeString(
           libraries.resolve("bach_external_modules.xml"),
