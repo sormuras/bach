@@ -10,6 +10,10 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 _In progress..._
 
+### Fixed
+
+- Download of Google Java Formatter tool fixed by upgrading it to version `1.10.0`. [#223]
+
 ## Version [17-ea-2] released 2021-03-31
 
 Bug fixes and minor features.

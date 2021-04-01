@@ -9,16 +9,14 @@ public record GoogleJavaFormat(Path jar, List<String> arguments)
     implements ExecutableJar<GoogleJavaFormat> {
 
   public static GoogleJavaFormat install(Bach bach) {
-    return install(bach, "1.10-SNAPSHOT");
+    return install(bach, "1.10.0");
   }
 
   public static GoogleJavaFormat install(Bach bach, String version) {
-    var uri =
-        version.equals("1.10-SNAPSHOT")
-            ? "https://oss.sonatype.org/content/repositories/snapshots/com/google/googlejavaformat/google-java-format/1.10-SNAPSHOT/google-java-format-1.10-20210217.055657-9-all-deps.jar"
-            : Maven.central(
-                "com.google.googlejavaformat", "google-java-format", version, "all-deps");
-    var jar = ExecutableJar.load(bach, "google-java-format", version, uri);
+    var group = "com.google.googlejavaformat";
+    var artifact = "google-java-format";
+    var uri = Maven.central(group, artifact, version, "all-deps");
+    var jar = ExecutableJar.load(bach, artifact, version, uri);
     return new GoogleJavaFormat(jar, List.of());
   }
 
@@ -36,9 +34,7 @@ public record GoogleJavaFormat(Path jar, List<String> arguments)
   public Java java() {
     return new Java()
         .add("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
         .add("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED")
         .add("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
         .add("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
         .add("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED");
