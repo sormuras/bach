@@ -10,7 +10,7 @@ public class TestProvider implements ToolProvider {
   }
 
   @Override
-  public int run (PrintWriter out, PrintWriter err, String... args) {
+  public int run(PrintWriter out, PrintWriter err, String... args) {
     return 0;
   }
 }
