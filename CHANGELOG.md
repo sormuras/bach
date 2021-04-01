@@ -39,11 +39,11 @@ Bug fixes and minor features.
 
 Initial Early-Access release.
 
-[17-ea]: https://github.com/sormuras/bach/releases/tag/17-ea
+[17-ea]: https://github.com/sormuras/bach/compare/17-ea-2...17-ea
 
 [17-ea-2]: https://github.com/sormuras/bach/compare/17-ea-1...17-ea-2
 
-[17-ea-1]: https://github.com/sormuras/bach/compare/17-ea-1...main
+[17-ea-1]: https://github.com/sormuras/bach/releases/tag/17-ea-1
 
 [#208]: https://github.com/sormuras/bach/issues/208
 
