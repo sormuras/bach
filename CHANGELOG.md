@@ -12,7 +12,7 @@ _In progress..._
 
 ### Fixed
 
-- Download of Google Java Formatter tool fixed by upgrading it to version `1.10.0`. [#223]
+- Download of [Google Java Formatter](https://github.com/google/google-java-format) tool fixed by upgrading it to version `1.10.0`. [#223]
 
 ## Version [17-ea-2] released 2021-03-31
 
@@ -64,3 +64,5 @@ Initial Early-Access release.
 [#219]: https://github.com/sormuras/bach/issues/219
 
 [#220]: https://github.com/sormuras/bach/issues/220
+
+[#223]: https://github.com/sormuras/bach/issues/223
