@@ -8,9 +8,9 @@ import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleMetadata;
 import com.github.sormuras.bach.project.Flag;
 import com.github.sormuras.bach.project.Libraries;
+import com.github.sormuras.bach.project.LocalModule;
+import com.github.sormuras.bach.project.LocalModules;
 import com.github.sormuras.bach.project.MainSpace;
-import com.github.sormuras.bach.project.ModuleDeclaration;
-import com.github.sormuras.bach.project.ModuleDeclarations;
 import com.github.sormuras.bach.project.ModuleInfoReference;
 import com.github.sormuras.bach.project.ModuleLauncher;
 import com.github.sormuras.bach.project.ModulePaths;
@@ -158,8 +158,8 @@ public interface ProjectComputerAPI extends API {
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
     log("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");
 
-    var mainDeclarations = new TreeMap<String, ModuleDeclaration>();
-    var testDeclarations = new TreeMap<String, ModuleDeclaration>();
+    var mainModules = new TreeMap<String, LocalModule>();
+    var testModules = new TreeMap<String, LocalModule>();
 
     var mainMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.modules());
     var testMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.testModules());
@@ -171,13 +171,13 @@ public interface ProjectComputerAPI extends API {
         continue;
       }
       if (testMatcher.anyMatch(path)) {
-        var declaration = computeProjectModuleDeclaration(root, path, treatSourcesAsResources);
-        testDeclarations.put(declaration.name(), declaration);
+        var local = computeProjectLocalModule(root, path, treatSourcesAsResources);
+        testModules.put(local.name(), local);
         continue;
       }
       if (mainMatcher.anyMatch(path)) {
-        var declaration = computeProjectModuleDeclaration(root, path, treatSourcesAsResources);
-        mainDeclarations.put(declaration.name(), declaration);
+        var local = computeProjectLocalModule(root, path, treatSourcesAsResources);
+        mainModules.put(local.name(), local);
         continue;
       }
       log("Skip module %s - no match for main nor test space", path);
@@ -185,14 +185,14 @@ public interface ProjectComputerAPI extends API {
 
     var main =
         new MainSpace(
-            new ModuleDeclarations(mainDeclarations),
+            new LocalModules(mainModules),
             computeProjectModulePaths(root, info.modulePaths()),
             computeProjectTargetsJava(info),
-            computeProjectModuleLauncher(info, settings, mainDeclarations.values().stream()),
+            computeProjectModuleLauncher(info, settings, mainModules.values().stream()),
             computeProjectTweaks(info.tweaks()));
     var test =
         new TestSpace(
-            new ModuleDeclarations(testDeclarations),
+            new LocalModules(testModules),
             computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
     return new Spaces(info.formatSourceFilesWithCodeStyle(), main, test);
@@ -214,7 +214,7 @@ public interface ProjectComputerAPI extends API {
     return new SourceFolders(list);
   }
 
-  default ModuleDeclaration computeProjectModuleDeclaration(
+  default LocalModule computeProjectLocalModule(
       Path root, Path path, boolean treatSourcesAsResources) {
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     var reference = ModuleInfoReference.of(info);
@@ -224,7 +224,7 @@ public interface ProjectComputerAPI extends API {
     if (root.relativize(info).getNameCount() == 1) {
       var sources = new SourceFolders(List.of());
       var resources = new SourceFolders(List.of());
-      return new ModuleDeclaration(root, reference, sources, resources);
+      return new LocalModule(root, reference, sources, resources);
     }
 
     // assume single source folder, directory and module names are equal
@@ -234,7 +234,7 @@ public interface ProjectComputerAPI extends API {
       var folder = computeProjectSourceFolder(parent);
       var sources = new SourceFolders(List.of(folder));
       var resources = new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of());
-      return new ModuleDeclaration(parent, reference, sources, resources);
+      return new LocalModule(parent, reference, sources, resources);
     }
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
     // resources = "resources", or targeted "resource.*?(\d+)$"
@@ -243,7 +243,7 @@ public interface ProjectComputerAPI extends API {
     var content = Paths.findNameOrElse(info, reference.name(), space.getParent());
     var sources = computeProjectSourceFolders(space, "java");
     var resources = computeProjectSourceFolders(space, treatSourcesAsResources ? "" : "resource");
-    return new ModuleDeclaration(content, reference, sources, resources);
+    return new LocalModule(content, reference, sources, resources);
   }
 
   default ModulePaths computeProjectModulePaths(Path root, String... paths) {
@@ -251,7 +251,7 @@ public interface ProjectComputerAPI extends API {
   }
 
   default Optional<ModuleLauncher> computeProjectModuleLauncher(
-      ProjectInfo info, Settings settings, Stream<ModuleDeclaration> declarations) {
+      ProjectInfo info, Settings settings, Stream<LocalModule> declarations) {
     var launcher = info.launcher();
     var command = launcher.command().equals("*") ? settings.name() : launcher.command();
     if (!launcher.module().equals("*")) {

@@ -15,6 +15,7 @@ _In progress..._
 - Generator methods in class `Command` are now called `with()` and `withAll()` instead of `.add()` `addAll()`.
   This also affects all implementations, like `Javac`, `Javadoc`. [#205]
 - `CodeStyle` renamed from `JavaStyle`. [#205]
+- `LocalModule(s)` renamed from `ModuleDeclaration(s)`. [#205]
 
 ### Fixed
 

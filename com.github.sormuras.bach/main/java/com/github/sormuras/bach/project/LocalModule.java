@@ -3,19 +3,20 @@ package com.github.sormuras.bach.project;
 import java.nio.file.Path;
 
 /**
- * A module declaration connects a module compilation unit with source folders and resource folders.
+ * A project-local module record connects a module compilation unit with source folders and resource
+ * folders.
  *
  * @param root the content root directory
  * @param reference the module info reference
  * @param sources the source folders
  * @param resources the resource folders
  */
-public record ModuleDeclaration(
+public record LocalModule(
     Path root, ModuleInfoReference reference, SourceFolders sources, SourceFolders resources)
-    implements Comparable<ModuleDeclaration> {
+    implements Comparable<LocalModule> {
 
   @Override
-  public int compareTo(ModuleDeclaration other) {
+  public int compareTo(LocalModule other) {
     return name().compareTo(other.name());
   }
 

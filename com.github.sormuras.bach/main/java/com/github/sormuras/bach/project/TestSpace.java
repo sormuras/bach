@@ -7,7 +7,7 @@ package com.github.sormuras.bach.project;
  * @param modulePaths the list of module paths
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
-public record TestSpace(ModuleDeclarations declarations, ModulePaths modulePaths, Tweaks tweaks)
+public record TestSpace(LocalModules declarations, ModulePaths modulePaths, Tweaks tweaks)
     implements Space {
   @Override
   public String name() {

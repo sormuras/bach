@@ -3,8 +3,8 @@ package com.github.sormuras.bach.api;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.ModuleDeclaration;
-import com.github.sormuras.bach.project.ModuleDeclarations;
+import com.github.sormuras.bach.project.LocalModule;
+import com.github.sormuras.bach.project.LocalModules;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
@@ -76,7 +76,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
     return module + '@' + bach().project().versionNumberAndPreRelease() + "+test.jar";
   }
 
-  default Jar buildProjectTestJar(Path testModules, ModuleDeclaration declaration, Path classes) {
+  default Jar buildProjectTestJar(Path testModules, LocalModule declaration, Path classes) {
     var name = declaration.name();
     var project = bach().project();
     var test = project.spaces().test();
@@ -105,7 +105,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
     return jar;
   }
 
-  default void buildProjectTestRuns(Path testModules, ModuleDeclarations modules) {
+  default void buildProjectTestRuns(Path testModules, LocalModules modules) {
     var tools = bach().project().settings().tools();
     var testsEnabled = tools.enabled("test");
     var junitEnabled = tools.enabled("junit");

@@ -17,23 +17,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A map of module declarations using their names as keys.
+ * A map of local modules using their names as keys.
  *
- * @param map the map of module declarations
+ * @param map the map of local modules
  */
-public record ModuleDeclarations(Map<String, ModuleDeclaration> map) implements ModuleFinder {
+public record LocalModules(Map<String, LocalModule> map) implements ModuleFinder {
 
   @Override
   public Optional<ModuleReference> find(String name) {
-    return findDeclaration(name).map(ModuleDeclaration::reference);
+    return findDeclaration(name).map(LocalModule::reference);
   }
 
   @Override
   public Set<ModuleReference> findAll() {
-    return map.values().stream().map(ModuleDeclaration::reference).collect(Collectors.toSet());
+    return map.values().stream().map(LocalModule::reference).collect(Collectors.toSet());
   }
 
-  Optional<ModuleDeclaration> findDeclaration(String name) {
+  Optional<LocalModule> findDeclaration(String name) {
     return Optional.ofNullable(map.get(name));
   }
 
@@ -99,7 +99,7 @@ public record ModuleDeclarations(Map<String, ModuleDeclaration> map) implements 
    * @param upstream the upstream module declarations
    * @return a map of module-paths entries each usable as a {@code --patch-module} value
    */
-  public Map<String, String> toModulePatches(ModuleDeclarations upstream) {
+  public Map<String, String> toModulePatches(LocalModules upstream) {
     if (map.isEmpty() || upstream.isEmpty()) return Map.of();
     var patches = new TreeMap<String, String>();
     for (var declaration : map.values()) {

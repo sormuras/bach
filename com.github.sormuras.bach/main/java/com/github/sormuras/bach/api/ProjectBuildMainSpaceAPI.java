@@ -2,7 +2,7 @@ package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.LocalModule;
 import com.github.sormuras.bach.project.SourceFolder;
 import com.github.sormuras.bach.tool.JDeps;
 import com.github.sormuras.bach.tool.JLink;
@@ -169,8 +169,8 @@ public interface ProjectBuildMainSpaceAPI extends API {
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
   default Javac buildProjectMainJavac(
-      ModuleDeclaration declaration, SourceFolder folder, Path classes) {
-    var name = declaration.name();
+      LocalModule local, SourceFolder folder, Path classes) {
+    var name = local.name();
     var project = bach().project();
     var main = project.spaces().main();
     var release = folder.release();
@@ -193,12 +193,12 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return bach().folders().workspace("classes-mr-" + release, module);
   }
 
-  default Jar buildProjectMainJar(ModuleDeclaration declaration, Path classes) {
+  default Jar buildProjectMainJar(LocalModule local, Path classes) {
     var project = bach().project();
     var main = project.spaces().main();
-    var name = declaration.name();
+    var name = local.name();
     var file = bach().folders().workspace("modules", buildProjectMainJarFileName(name));
-    var mainClass = declaration.reference().descriptor().mainClass();
+    var mainClass = local.reference().descriptor().mainClass();
     var jar =
         Command.jar()
             .ifTrue(bach().is(Flag.VERBOSE), command -> command.with("--verbose"))
@@ -210,16 +210,16 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var baseClasses = classes.resolve(name);
     if (Files.isDirectory(baseClasses)) jar = jar.with("-C", baseClasses, ".");
     // include base resources
-    for (var folder : declaration.resources().list()) {
+    for (var folder : local.resources().list()) {
       if (folder.isTargeted()) continue; // handled later
       jar = jar.with("-C", folder.path(), ".");
     }
     // add (future) targeted classes and targeted resources in ascending order
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
-      var isSourceTargeted = declaration.sources().stream(release).findAny().isPresent();
+      var isSourceTargeted = local.sources().stream(release).findAny().isPresent();
       if (isSourceTargeted) paths.add(buildProjectMultiReleaseClassesDirectory(name, release));
-      declaration.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
+      local.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
       if (paths.isEmpty()) continue;
       jar = jar.with("--release", release);
       for (var path : paths) jar = jar.with("-C", path, ".");
@@ -231,10 +231,10 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 
-  default JDeps buildProjectMainJDeps(ModuleDeclaration declaration) {
+  default JDeps buildProjectMainJDeps(LocalModule local) {
     var folders = bach().folders();
     return Command.jdeps()
-        .with("--check", declaration.name())
+        .with("--check", local.name())
         .with("--multi-release", "BASE")
         .with("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
   }

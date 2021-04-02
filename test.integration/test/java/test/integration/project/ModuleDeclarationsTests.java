@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.project.ModuleDeclaration;
-import com.github.sormuras.bach.project.ModuleDeclarations;
+import com.github.sormuras.bach.project.LocalModule;
+import com.github.sormuras.bach.project.LocalModules;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -17,12 +17,12 @@ class ModuleDeclarationsTests {
 
   private static final Bach BACH = new Bach(Options.of());
 
-  private static ModuleDeclaration newModuleDeclaration(Path path) {
+  private static LocalModule newModuleDeclaration(Path path) {
     return newModuleDeclaration(Path.of(""), path);
   }
 
-  private static ModuleDeclaration newModuleDeclaration(Path root, Path path) {
-    return BACH.computeProjectModuleDeclaration(root, path, false);
+  private static LocalModule newModuleDeclaration(Path root, Path path) {
+    return BACH.computeProjectLocalModule(root, path, false);
   }
 
   @Nested
@@ -31,10 +31,10 @@ class ModuleDeclarationsTests {
     void checkModulePatches() {
       var module = "com.github.sormuras.bach";
       var main =
-          new ModuleDeclarations(
+          new LocalModules(
               Map.of(module, newModuleDeclaration(Path.of(module, "main", "java"))));
       var test =
-          new ModuleDeclarations(
+          new LocalModules(
               Map.of(module, newModuleDeclaration(Path.of(module, "test", "java-module"))));
 
       var expected = Map.of(module, Path.of(module, "main", "java").toString());
@@ -46,8 +46,8 @@ class ModuleDeclarationsTests {
   class TestProjectJigsawQuickStartWorld {
 
     static Path root = Path.of("test.projects", "JigsawQuickStartWorld");
-    static ModuleDeclarations declarations =
-        new ModuleDeclarations(
+    static LocalModules declarations =
+        new LocalModules(
             Map.of(
                 "com.greetings",
                 newModuleDeclaration(root, root.resolve("com.greetings")),

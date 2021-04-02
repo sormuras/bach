@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.LocalModule;
 import com.github.sormuras.bach.project.ModuleInfoReference;
 import com.github.sormuras.bach.project.SourceFolders;
 import java.nio.file.Files;
@@ -19,8 +19,8 @@ class ModuleDeclarationTests {
 
   private static final Bach BACH = new Bach(Options.of());
 
-  private static ModuleDeclaration newModuleDeclaration(Path root, Path path) {
-    return BACH.computeProjectModuleDeclaration(root, path, false);
+  private static LocalModule newModuleDeclaration(Path root, Path path) {
+    return BACH.computeProjectLocalModule(root, path, false);
   }
 
   @Test
@@ -29,7 +29,7 @@ class ModuleDeclarationTests {
     var reference = ModuleInfoReference.of(info);
     var sources = new SourceFolders(List.of());
     var resources = new SourceFolders(List.of());
-    var declaration = new ModuleDeclaration(temp, reference, sources, resources);
+    var declaration = new LocalModule(temp, reference, sources, resources);
 
     assertEquals("empty", declaration.name());
     assertEquals(info, declaration.reference().info());

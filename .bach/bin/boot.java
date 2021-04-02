@@ -4,7 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.ProjectInfo;
-import com.github.sormuras.bach.project.ModuleDeclaration;
+import com.github.sormuras.bach.project.LocalModule;
 import com.github.sormuras.bach.project.Property;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -167,7 +167,7 @@ public class boot {
           """);
     }
 
-    private static void ideaModule(Path idea, ModuleDeclaration module, boolean isTestSource)
+    private static void ideaModule(Path idea, LocalModule module, boolean isTestSource)
         throws Exception {
       var content = new StringJoiner(System.lineSeparator());
       for (var source : module.sources().list()) {

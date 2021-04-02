@@ -12,7 +12,7 @@ import java.util.Optional;
  * @param tweaks the additional arguments to be passed on a per-tool basis
  */
 public record MainSpace(
-    ModuleDeclarations declarations,
+    LocalModules declarations,
     ModulePaths modulePaths,
     int release,
     Optional<ModuleLauncher> launcher,
