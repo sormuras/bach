@@ -7,12 +7,12 @@ import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Metadata.Checksum;
 import com.github.sormuras.bach.ProjectInfo.Tools;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
-import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.CodeStyle;
 
 @ProjectInfo(
     name = "bach",
     version = "17-ea",
-    format = JavaStyle.GOOGLE,
+    formatSourceFilesWithCodeStyle = CodeStyle.GOOGLE,
     compileModulesForJavaRelease = 16,
     includeSourceFilesIntoModules = true,
     tools = @Tools(skip = "jlink"),

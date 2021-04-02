@@ -1,7 +1,7 @@
 package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.CodeStyle;
 import com.github.sormuras.bach.tool.GoogleJavaFormat;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,10 +22,10 @@ public interface JavaFormatterAPI extends API {
   }
 
   default Command<?> computeJavaSourceFilesFormatCommand(
-      List<Path> files, Mode mode, JavaStyle style) {
-    if (style == JavaStyle.ANDROID || style == JavaStyle.GOOGLE) {
+      List<Path> files, Mode mode, CodeStyle style) {
+    if (style == CodeStyle.ANDROID || style == CodeStyle.GOOGLE) {
       var format = GoogleJavaFormat.install(bach());
-      if (style == JavaStyle.ANDROID) format.with("--aosp");
+      if (style == CodeStyle.ANDROID) format.with("--aosp");
       switch (mode) {
         case APPLY -> format = format.with("--replace");
         case VERIFY -> format = format.with("--dry-run").with("--set-exit-if-changed");
@@ -41,7 +41,7 @@ public interface JavaFormatterAPI extends API {
 
   default void formatJavaSourceFiles(Mode mode) {
     var style = bach().project().spaces().style();
-    if (style == JavaStyle.FREE) return;
+    if (style == CodeStyle.FREE) return;
     var files = computeJavaSourceFilesToFormat();
     if (files.isEmpty()) return;
     log("Format %s .java file%s: %s", files.size(), files.size() == 1 ? "" : "s", mode);

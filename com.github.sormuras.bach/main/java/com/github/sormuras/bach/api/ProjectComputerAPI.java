@@ -195,7 +195,7 @@ public interface ProjectComputerAPI extends API {
             new ModuleDeclarations(testDeclarations),
             computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
-    return new Spaces(info.format(), main, test);
+    return new Spaces(info.formatSourceFilesWithCodeStyle(), main, test);
   }
 
   default SourceFolder computeProjectSourceFolder(Path path) {

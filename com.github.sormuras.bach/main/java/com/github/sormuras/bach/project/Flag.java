@@ -56,7 +56,7 @@ public enum Flag {
    *   <li>All external modular JAR files are verified to conform with expected metadata.
    * </ul>
    *
-   * @see ProjectInfo#format()
+   * @see ProjectInfo#formatSourceFilesWithCodeStyle()
    * @see ProjectInfo#metadata()
    */
   STRICT("Activate all verification measures available."),

@@ -3,7 +3,7 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.api.ProjectComputerAPI;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
-import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.CodeStyle;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Settings;
 import java.lang.annotation.ElementType;
@@ -60,12 +60,12 @@ public @interface ProjectInfo {
   String version() default "0";
 
   /**
-   * {@return the style to format Java source-code files with, defaults to {@link JavaStyle#FREE}}
+   * {@return the style to format Java source-code files with, defaults to {@link CodeStyle#FREE}}
    *
    * @see Bach#computeProjectSpaces(ProjectInfo, Settings, Libraries)
    * @see Project#spaces()
    */
-  JavaStyle format() default JavaStyle.FREE;
+  CodeStyle formatSourceFilesWithCodeStyle() default CodeStyle.FREE;
 
   /**
    * {@return an array of path matcher patterns for finding main module declarations}

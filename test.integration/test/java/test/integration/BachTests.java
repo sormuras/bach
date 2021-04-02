@@ -10,7 +10,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.lookup.LookupException;
-import com.github.sormuras.bach.project.JavaStyle;
+import com.github.sormuras.bach.project.CodeStyle;
 import com.github.sormuras.bach.project.Libraries;
 import com.github.sormuras.bach.project.Tweak;
 import java.util.List;
@@ -35,7 +35,7 @@ class BachTests {
     assertEquals("bach", project.name());
     assertEquals("0", project.version());
     assertEquals(Libraries.of(), project.libraries());
-    assertEquals(JavaStyle.FREE, project.spaces().style());
+    assertEquals(CodeStyle.FREE, project.spaces().style());
     assertEquals("main", project.spaces().main().name());
     assertLinesMatch(
         """
