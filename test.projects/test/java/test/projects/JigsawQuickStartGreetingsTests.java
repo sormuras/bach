@@ -15,11 +15,11 @@ class JigsawQuickStartGreetingsTests {
     var out =
         cli.start(
             Command.of("bach")
-                .add("--verbose")
-                .add("--strict")
-                .add("--limit-tools", "javac,jar")
-                .add("--jar-with-sources")
-                .add("build"));
+                .with("--verbose")
+                .with("--strict")
+                .with("--limit-tools", "javac,jar")
+                .with("--jar-with-sources")
+                .with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -45,6 +45,6 @@ class JigsawQuickStartGreetingsTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", greetings)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", greetings)).lines().sorted());
   }
 }

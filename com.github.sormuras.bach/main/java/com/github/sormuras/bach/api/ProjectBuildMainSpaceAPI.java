@@ -125,12 +125,12 @@ public interface ProjectBuildMainSpaceAPI extends API {
       if (java8Files.isEmpty()) continue; // skip aggregator module
       var compileSources =
           Command.javac()
-              .add("--release", main.release()) // 8
-              .add("--class-path", classPaths)
-              .ifTrue(bach().is(Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
-              .addAll(main.tweaks().arguments("javac"))
-              .add("-d", classes.resolve(name))
-              .addAll(java8Files);
+              .with("--release", main.release()) // 8
+              .with("--class-path", classPaths)
+              .ifTrue(bach().is(Flag.STRICT), javac -> javac.with("-Xlint").with("-Werror"))
+              .withAll(main.tweaks().arguments("javac"))
+              .with("-d", classes.resolve(name))
+              .withAll(java8Files);
       javacs.add(compileSources);
     }
     if (javacs.isEmpty()) return; // no javac command collected
@@ -155,16 +155,16 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var project = bach().project();
     var main = project.spaces().main();
     return Command.javac()
-        .ifTrue(release != 0, javac -> javac.add("--release", release))
-        .add("--module", main.declarations().toNames(","))
-        .add("--module-version", project.version())
+        .ifTrue(release != 0, javac -> javac.with("--release", release))
+        .with("--module", main.declarations().toNames(","))
+        .with("--module-version", project.version())
         .forEach(
             main.declarations().toModuleSourcePaths(false),
-            (javac, path) -> javac.add("--module-source-path", path))
-        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
-        .ifTrue(bach().is(Flag.STRICT), javac -> javac.add("-Xlint").add("-Werror"))
-        .addAll(main.tweaks().arguments("javac"))
-        .add("-d", classes);
+            (javac, path) -> javac.with("--module-source-path", path))
+        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
+        .ifTrue(bach().is(Flag.STRICT), javac -> javac.with("-Xlint").with("-Werror"))
+        .withAll(main.tweaks().arguments("javac"))
+        .with("-d", classes);
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
@@ -176,17 +176,17 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var release = folder.release();
     var javaSourceFiles = Paths.find(folder.path(), 99, Paths::isJavaFile);
     return Command.javac()
-        .add("--release", release)
-        .add("--module-version", project.version())
-        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.add("--module-path", paths))
-        .add("--class-path", classes.resolve(name))
-        .add("-implicit:none") // generate classes for explicitly referenced source files
-        .addAll(main.tweaks().arguments("javac"))
-        .addAll(main.tweaks().arguments("javac(" + name + ")"))
-        .addAll(main.tweaks().arguments("javac(" + release + ")"))
-        .addAll(main.tweaks().arguments("javac(" + name + "@" + release + ")"))
-        .add("-d", buildProjectMultiReleaseClassesDirectory(name, release))
-        .addAll(javaSourceFiles);
+        .with("--release", release)
+        .with("--module-version", project.version())
+        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
+        .with("--class-path", classes.resolve(name))
+        .with("-implicit:none") // generate classes for explicitly referenced source files
+        .withAll(main.tweaks().arguments("javac"))
+        .withAll(main.tweaks().arguments("javac(" + name + ")"))
+        .withAll(main.tweaks().arguments("javac(" + release + ")"))
+        .withAll(main.tweaks().arguments("javac(" + name + "@" + release + ")"))
+        .with("-d", buildProjectMultiReleaseClassesDirectory(name, release))
+        .withAll(javaSourceFiles);
   }
 
   private Path buildProjectMultiReleaseClassesDirectory(String module, int release) {
@@ -201,18 +201,18 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var mainClass = declaration.reference().descriptor().mainClass();
     var jar =
         Command.jar()
-            .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
-            .add("--create")
-            .add("--file", file)
-            .ifPresent(mainClass, (args, value) -> args.add("--main-class", value))
-            .addAll(main.tweaks().arguments("jar"))
-            .addAll(main.tweaks().arguments("jar(" + name + ")"));
+            .ifTrue(bach().is(Flag.VERBOSE), command -> command.with("--verbose"))
+            .with("--create")
+            .with("--file", file)
+            .ifPresent(mainClass, (args, value) -> args.with("--main-class", value))
+            .withAll(main.tweaks().arguments("jar"))
+            .withAll(main.tweaks().arguments("jar(" + name + ")"));
     var baseClasses = classes.resolve(name);
-    if (Files.isDirectory(baseClasses)) jar = jar.add("-C", baseClasses, ".");
+    if (Files.isDirectory(baseClasses)) jar = jar.with("-C", baseClasses, ".");
     // include base resources
     for (var folder : declaration.resources().list()) {
       if (folder.isTargeted()) continue; // handled later
-      jar = jar.add("-C", folder.path(), ".");
+      jar = jar.with("-C", folder.path(), ".");
     }
     // add (future) targeted classes and targeted resources in ascending order
     for (int release = 9; release <= Runtime.version().feature(); release++) {
@@ -221,8 +221,8 @@ public interface ProjectBuildMainSpaceAPI extends API {
       if (isSourceTargeted) paths.add(buildProjectMultiReleaseClassesDirectory(name, release));
       declaration.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
       if (paths.isEmpty()) continue;
-      jar = jar.add("--release", release);
-      for (var path : paths) jar = jar.add("-C", path, ".");
+      jar = jar.with("--release", release);
+      for (var path : paths) jar = jar.with("-C", path, ".");
     }
     return jar;
   }
@@ -234,24 +234,25 @@ public interface ProjectBuildMainSpaceAPI extends API {
   default JDeps buildProjectMainJDeps(ModuleDeclaration declaration) {
     var folders = bach().folders();
     return Command.jdeps()
-        .add("--check", declaration.name())
-        .add("--multi-release", "BASE")
-        .add("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
+        .with("--check", declaration.name())
+        .with("--multi-release", "BASE")
+        .with("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
   }
 
   default Javadoc buildProjectMainJavadoc(Path destination) {
     var project = bach().project();
     var main = project.spaces().main();
     return Command.javadoc()
-        .add("--module", main.declarations().toNames(","))
+        .with("--module", main.declarations().toNames(","))
         .forEach(
             main.declarations().toModuleSourcePaths(false),
-            (javac, path) -> javac.add("--module-source-path", path))
+            (javadoc, path) -> javadoc.with("--module-source-path", path))
         .ifPresent(
-            main.modulePaths().pruned(), (javadoc, paths) -> javadoc.add("--module-path", paths))
-        .ifTrue(bach().is(Flag.STRICT), javadoc -> javadoc.add("-Xdoclint").add("-Werror"))
-        .addAll(main.tweaks().arguments("javadoc"))
-        .add("-d", destination);
+            main.modulePaths().pruned(),
+            (javadoc, paths) -> javadoc.with("--module-path", paths))
+        .ifTrue(bach().is(Flag.STRICT), javadoc -> javadoc.with("-Xdoclint").with("-Werror"))
+        .withAll(main.tweaks().arguments("javadoc"))
+        .with("-d", destination);
   }
 
   /** {@return the jar call generating the API documentation archive} */
@@ -259,10 +260,10 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var project = bach().project();
     var file = project.name() + "-api-" + project.version() + ".zip";
     return Command.jar()
-        .add("--create")
-        .add("--file", api.getParent().resolve(file))
-        .add("--no-manifest")
-        .add("-C", api, ".");
+        .with("--create")
+        .with("--file", api.getParent().resolve(file))
+        .with("--no-manifest")
+        .with("-C", api, ".");
   }
 
   default JLink buildProjectMainJLink(Path image) {
@@ -270,10 +271,10 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var main = project.spaces().main();
     var test = project.spaces().test();
     return Command.jlink()
-        .ifPresent(main.launcher(), (jlink, launcher) -> jlink.add("--launcher", launcher.value()))
-        .add("--add-modules", main.declarations().toNames(","))
-        .ifPresent(test.modulePaths().pruned(), (jlink, paths) -> jlink.add("--module-path", paths))
-        .addAll(main.tweaks().arguments("jlink"))
-        .add("--output", image);
+        .ifPresent(main.launcher(), (jlink, launcher) -> jlink.with("--launcher", launcher.value()))
+        .with("--add-modules", main.declarations().toNames(","))
+        .ifPresent(test.modulePaths().pruned(), (jlink, paths) -> jlink.with("--module-path", paths))
+        .withAll(main.tweaks().arguments("jlink"))
+        .with("--output", image);
   }
 }

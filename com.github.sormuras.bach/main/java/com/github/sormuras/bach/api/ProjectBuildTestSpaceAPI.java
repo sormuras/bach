@@ -60,16 +60,16 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var test = bach().project().spaces().test();
     var tests = test.declarations();
     return Command.javac()
-        .add("--module", tests.toNames(","))
+        .with("--module", tests.toNames(","))
         .forEach(
             tests.toModuleSourcePaths(false),
-            (javac, path) -> javac.add("--module-source-path", path))
-        .add("--module-path", List.of(mainModules, bach().folders().externalModules()))
+            (javac, path) -> javac.with("--module-source-path", path))
+        .with("--module-path", List.of(mainModules, bach().folders().externalModules()))
         .forEach(
             tests.toModulePatches(main.declarations()).entrySet(),
-            (javac, patch) -> javac.add("--patch-module", patch.getKey() + '=' + patch.getValue()))
-        .addAll(test.tweaks().arguments("javac"))
-        .add("-d", classes);
+            (javac, patch) -> javac.with("--patch-module", patch.getKey() + '=' + patch.getValue()))
+        .withAll(test.tweaks().arguments("javac"))
+        .with("-d", classes);
   }
 
   default String buildProjectTestJarFileName(String module) {
@@ -82,25 +82,25 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var test = project.spaces().test();
     var jar =
         Command.jar()
-            .ifTrue(bach().is(Flag.VERBOSE), command -> command.add("--verbose"))
-            .add("--create")
-            .add("--file", testModules.resolve(buildProjectTestJarFileName(name)))
-            .addAll(test.tweaks().arguments("jar"))
-            .addAll(test.tweaks().arguments("jar(" + name + ")"));
+            .ifTrue(bach().is(Flag.VERBOSE), command -> command.with("--verbose"))
+            .with("--create")
+            .with("--file", testModules.resolve(buildProjectTestJarFileName(name)))
+            .withAll(test.tweaks().arguments("jar"))
+            .withAll(test.tweaks().arguments("jar(" + name + ")"));
     var baseClasses = classes.resolve(name);
-    jar = jar.add("-C", baseClasses, ".");
+    jar = jar.with("-C", baseClasses, ".");
     // include base test resources
     for (var folder : declaration.resources().list()) {
       if (folder.isTargeted()) continue; // handled later
-      jar = jar.add("-C", folder.path(), ".");
+      jar = jar.with("-C", folder.path(), ".");
     }
     // include targeted test resources in ascending order
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
       declaration.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
       if (paths.isEmpty()) continue;
-      jar = jar.add("--release", release);
-      for (var path : paths) jar = jar.add("-C", path, ".");
+      jar = jar.with("--release", release);
+      for (var path : paths) jar = jar.with("-C", path, ".");
     }
     return jar;
   }
@@ -154,10 +154,10 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var finder = buildProjectTestModuleFinder(testModules, module);
     var junit =
         Command.of("junit")
-            .add("--select-module", module)
-            .addAll(bach().project().spaces().test().tweaks().arguments("junit"))
-            .addAll(bach().project().spaces().test().tweaks().arguments("junit(" + module + ")"))
-            .add("--reports-dir", bach().folders().workspace("reports", "junit", module));
+            .with("--select-module", module)
+            .withAll(bach().project().spaces().test().tweaks().arguments("junit"))
+            .withAll(bach().project().spaces().test().tweaks().arguments("junit(" + module + ")"))
+            .with("--reports-dir", bach().folders().workspace("reports", "junit", module));
 
     return bach().run(junit, finder, module);
   }

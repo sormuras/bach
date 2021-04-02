@@ -14,7 +14,7 @@ class MultiReleaseMultiModuleTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiReleaseMultiModule", temp);
-    var out = cli.start(Command.of("bach").add("--verbose").add("--jar-with-sources").add("build"));
+    var out = cli.start(Command.of("bach").with("--verbose").with("--jar-with-sources").with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -40,7 +40,7 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", api)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", api)).lines().sorted());
 
     var engine = cli.workspace("modules", "engine@0.jar");
     assertTrue(Files.exists(engine));
@@ -64,6 +64,6 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", engine)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", engine)).lines().sorted());
   }
 }

@@ -15,11 +15,11 @@ class ProcessingCodeTests {
     var out =
         cli.start(
             Command.of("bach")
-                .add("--verbose")
-                .add("--strict")
-                .add("--limit-tools", "javac,jar,javadoc")
-                .add("clean") // force re-compilation
-                .add("build"));
+                .with("--verbose")
+                .with("--strict")
+                .with("--limit-tools", "javac,jar,javadoc")
+                .with("clean") // force re-compilation
+                .with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>

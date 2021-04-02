@@ -33,10 +33,10 @@ public record GoogleJavaFormat(Path jar, List<String> arguments)
   @Override
   public Java java() {
     return new Java()
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
-        .add("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED");
+        .with("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
+        .with("--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
+        .with("--add-exports", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
+        .with("--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
+        .with("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED");
   }
 }

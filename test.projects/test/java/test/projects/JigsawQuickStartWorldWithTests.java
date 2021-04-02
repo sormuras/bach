@@ -15,11 +15,11 @@ class JigsawQuickStartWorldWithTests {
     var out =
         cli.start(
             Command.of("bach")
-                .add("--verbose")
-                .add("--strict")
-                .add("--limit-tools", "javac,jar,test")
-                .add("--jar-with-sources")
-                .add("build"));
+                .with("--verbose")
+                .with("--strict")
+                .with("--limit-tools", "javac,jar,test")
+                .with("--jar-with-sources")
+                .with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -45,7 +45,7 @@ class JigsawQuickStartWorldWithTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", greetings)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", greetings)).lines().sorted());
     var world = cli.workspace("modules", "org.astro@0.jar");
     assertLinesMatch(
         """
@@ -60,7 +60,7 @@ class JigsawQuickStartWorldWithTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", world)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", world)).lines().sorted());
     var testModules = cli.workspace("modules-test", "test.modules@0+test.jar");
     assertLinesMatch(
         """
@@ -75,6 +75,6 @@ class JigsawQuickStartWorldWithTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", testModules)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", testModules)).lines().sorted());
   }
 }

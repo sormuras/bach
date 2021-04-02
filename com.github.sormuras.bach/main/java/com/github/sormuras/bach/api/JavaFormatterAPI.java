@@ -25,12 +25,12 @@ public interface JavaFormatterAPI extends API {
       List<Path> files, Mode mode, JavaStyle style) {
     if (style == JavaStyle.ANDROID || style == JavaStyle.GOOGLE) {
       var format = GoogleJavaFormat.install(bach());
-      if (style == JavaStyle.ANDROID) format.add("--aosp");
+      if (style == JavaStyle.ANDROID) format.with("--aosp");
       switch (mode) {
-        case APPLY -> format = format.add("--replace");
-        case VERIFY -> format = format.add("--dry-run").add("--set-exit-if-changed");
+        case APPLY -> format = format.with("--replace");
+        case VERIFY -> format = format.with("--dry-run").with("--set-exit-if-changed");
       }
-      return format.addAll(files);
+      return format.withAll(files);
     }
     throw new UnsupportedOperationException("Unknown style: " + style);
   }

@@ -21,6 +21,6 @@ public record Java(List<String> arguments) implements Command<Java> {
   }
 
   public Java executeJar(Path jar, String... args) {
-    return add("-jar", jar).addAll(args);
+    return with("-jar", jar).withAll(args);
   }
 }

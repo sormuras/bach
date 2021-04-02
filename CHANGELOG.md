@@ -10,6 +10,11 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 _In progress..._
 
+### Breaking Change
+
+- Generator methods in class `Command` are now called `with()` and `withAll()` instead of `.add()` `addAll()`.
+  This also affects all implementations, like `Javac`, `Javadoc`. [#205]
+
 ### Fixed
 
 - Download of [Google Java Formatter](https://github.com/google/google-java-format) tool fixed by upgrading it to version `1.10.0`. [#223]
@@ -44,6 +49,8 @@ Initial Early-Access release.
 [17-ea-2]: https://github.com/sormuras/bach/compare/17-ea-1...17-ea-2
 
 [17-ea-1]: https://github.com/sormuras/bach/releases/tag/17-ea-1
+
+[#205]: https://github.com/sormuras/bach/issues/205
 
 [#208]: https://github.com/sormuras/bach/issues/208
 

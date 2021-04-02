@@ -29,11 +29,11 @@ public class ModuleLayerBuilder {
     var destination = Paths.createTempDirectory("bach-");
     var args =
         Command.of("javac")
-            .add("--module", module)
-            .add("--module-source-path", dotBach)
-            .add("--module-path", bin)
-            .add("-encoding", "UTF-8")
-            .add("-d", destination)
+            .with("--module", module)
+            .with("--module-source-path", dotBach)
+            .with("--module-path", bin)
+            .with("-encoding", "UTF-8")
+            .with("-d", destination)
             .arguments()
             .toArray(String[]::new);
     var result = ToolProvider.findFirst("javac").orElseThrow().run(System.out, System.err, args);

@@ -635,7 +635,7 @@ public class boot {
     }
 
     static void run(String tool, Object... args) {
-      var command = Command.of(tool).addAll(args);
+      var command = Command.of(tool).withAll(args);
       var recording = bach().run(command);
       if (!recording.errors().isEmpty()) out.accept(recording.errors());
       if (!recording.output().isEmpty()) out.accept(recording.output());

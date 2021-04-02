@@ -41,7 +41,7 @@ class CLI {
   }
 
   String build(String... args) throws Exception {
-    return start(Command.of("java", args).add("build"));
+    return start(Command.of("java", args).with("build"));
   }
 
   String start(Command<?> options) throws Exception {

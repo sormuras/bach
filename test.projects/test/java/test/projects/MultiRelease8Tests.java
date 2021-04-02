@@ -17,11 +17,11 @@ class MultiRelease8Tests {
     var out =
         cli.start(
             Command.of("bach")
-                .add("--verbose")
-                .add("--project-targets-java", "8")
-                .add("--limit-tools", "javac,jar")
-                .add("--jar-with-sources")
-                .add("build"));
+                .with("--verbose")
+                .with("--project-targets-java", "8")
+                .with("--limit-tools", "javac,jar")
+                .with("--jar-with-sources")
+                .with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -55,6 +55,6 @@ class MultiRelease8Tests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", foo)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", foo)).lines().sorted());
   }
 }

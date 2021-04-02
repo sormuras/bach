@@ -19,7 +19,7 @@ class CommandTests {
 
   @Test
   void withArguments() {
-    var command = Command.of("name").add("1").add("2", 3).add("4", '5', 0x6);
+    var command = Command.of("name").with("1").with("2", 3).with("4", '5', 0x6);
     assertEquals("name", command.name());
     assertEquals("name 1 2 3 4 5 6", command.toLine());
   }

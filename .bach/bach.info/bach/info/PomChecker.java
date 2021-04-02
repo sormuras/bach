@@ -35,6 +35,6 @@ public record PomChecker(Path jar, List<String> arguments) implements Executable
   }
 
   public PomChecker checkMavenCentral(Path pom) {
-    return add("check-maven-central").add("--file", pom);
+    return with("check-maven-central").with("--file", pom);
   }
 }

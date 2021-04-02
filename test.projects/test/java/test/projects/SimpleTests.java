@@ -15,11 +15,11 @@ class SimpleTests {
     var out =
         cli.start(
             Command.of("bach")
-                .add("--verbose")
-                .add("--strict")
-                .add("--limit-tools", "javac,jar")
-                .add("--jar-with-sources") // has no effect, yet
-                .add("build"));
+                .with("--verbose")
+                .with("--strict")
+                .with("--limit-tools", "javac,jar")
+                .with("--jar-with-sources") // has no effect, yet
+                .with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -44,6 +44,6 @@ class SimpleTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().add("--list").add("--file", jar)).lines().sorted());
+        CLI.run(Command.jar().with("--list").with("--file", jar)).lines().sorted());
   }
 }

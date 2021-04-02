@@ -48,20 +48,20 @@ public interface Command<C extends Command<C>> {
 
   C arguments(List<String> arguments);
 
-  default C add(String argument) {
+  default C with(String argument) {
     var copy = new ArrayList<>(arguments());
     copy.add(argument);
     return arguments(List.copyOf(copy));
   }
 
-  default C add(String option, Object value) {
+  default C with(String option, Object value) {
     var copy = new ArrayList<>(arguments());
     copy.add(option);
     copy.add(value.toString());
     return arguments(List.copyOf(copy));
   }
 
-  default C add(String option, Object value, Object... more) {
+  default C with(String option, Object value, Object... more) {
     var copy = new ArrayList<>(arguments());
     copy.add(option);
     copy.add(value.toString());
@@ -69,22 +69,22 @@ public interface Command<C extends Command<C>> {
     return arguments(List.copyOf(copy));
   }
 
-  default C add(String option, Collection<Path> paths) {
+  default C with(String option, Collection<Path> paths) {
     var strings = paths.stream().map(Path::toString).toList();
-    return add(option, String.join(File.pathSeparator, strings));
+    return with(option, String.join(File.pathSeparator, strings));
   }
 
-  default C addAll(String... arguments) {
+  default C withAll(String... arguments) {
     var copy = new ArrayList<>(arguments());
     copy.addAll(List.of(arguments));
     return arguments(List.copyOf(copy));
   }
 
-  default C addAll(Object... arguments) {
-    return addAll(List.of(arguments));
+  default C withAll(Object... arguments) {
+    return withAll(List.of(arguments));
   }
 
-  default C addAll(Collection<?> collection) {
+  default C withAll(Collection<?> collection) {
     var copy = new ArrayList<>(arguments());
     collection.stream().map(Object::toString).forEach(copy::add);
     return arguments(List.copyOf(copy));
