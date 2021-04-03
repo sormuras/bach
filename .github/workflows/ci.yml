@@ -137,7 +137,7 @@ jobs:
           echo 'package air;'                                >> air/Main.java
           echo 'class Main {'                                >> air/Main.java
           echo '  public static void main(String... args) {' >> air/Main.java
-          echo '     System.out.println();'                  >> air/Main.java
+          echo '     System.out.println("Aria");'            >> air/Main.java
           echo '  }'                                         >> air/Main.java
           echo '}'                                           >> air/Main.java
       - name: 'Build with Bach'
