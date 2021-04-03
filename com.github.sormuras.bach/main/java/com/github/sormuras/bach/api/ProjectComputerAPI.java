@@ -46,7 +46,7 @@ public interface ProjectComputerAPI extends API {
     var info = computeProjectInfo();
     var settings = computeProjectSettings(info);
     var libraries = computeProjectLibraries(info, settings);
-    var spaces = computeProjectSpaces(info, settings, libraries);
+    var spaces = computeProjectSpaces(info, settings);
     return new Project(settings, libraries, spaces);
   }
 
@@ -103,11 +103,12 @@ public interface ProjectComputerAPI extends API {
   }
 
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
-    var requires = Set.of(info.requires());
+    var libraries = info.libraries();
+    var requires = Set.of(libraries.requires());
     log("Computed additionally required modules: %d", requires.size());
     var lookups = new ArrayList<ModuleLookup>();
-    for (var external : info.lookupExternal()) lookups.add(computeProjectModuleLookup(external));
-    for (var externals : info.lookupExternals()) lookups.add(computeProjectModuleLookup(externals));
+    for (var mod : libraries.externalModules()) lookups.add(computeProjectModuleLookup(mod));
+    for (var lib : libraries.externalLibraries()) lookups.add(computeProjectModuleLookup(lib));
     if (bach().is(Flag.GUESS)) {
       say("Guess external modules by looking them up from GitHub Releases");
       lookups.add(ModuleLookup.ofGitHubReleases(bach()));
@@ -116,15 +117,15 @@ public interface ProjectComputerAPI extends API {
     }
     log("Computed module lookup functions: %s", lookups.size());
     var metamap =
-        Arrays.stream(info.metadata())
+        Arrays.stream(libraries.metadata())
             .map(this::computeProjectModuleMetadata)
             .collect(Collectors.toMap(ModuleMetadata::name, Function.identity()));
     log("External modules directory present: %s", settings.folders().externalModules());
     return new Libraries(requires, List.copyOf(lookups), Map.copyOf(metamap));
   }
 
-  default ModuleLookup computeProjectModuleLookup(ProjectInfo.External external) {
-    var module = external.module();
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Libraries.ExternalModule external) {
+    var module = external.named();
     var target = external.via();
     return switch (external.type()) {
       case AUTO -> ModuleLookup.external(module).via(target);
@@ -133,9 +134,9 @@ public interface ProjectComputerAPI extends API {
     };
   }
 
-  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Externals externals) {
-    var version = externals.version();
-    return switch (externals.name()) {
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Libraries.ExternalLibrary library) {
+    var version = library.version();
+    return switch (library.named()) {
       case FXGL -> ModuleLookup.ofFXGL(bach(), version);
       case GITHUB_RELEASES -> ModuleLookup.ofGitHubReleases(bach());
       case JAVAFX -> ModuleLookup.ofJavaFX(version);
@@ -145,7 +146,7 @@ public interface ProjectComputerAPI extends API {
     };
   }
 
-  default ModuleMetadata computeProjectModuleMetadata(ProjectInfo.Metadata metadata) {
+  default ModuleMetadata computeProjectModuleMetadata(ProjectInfo.Libraries.Metadata metadata) {
     var checksums =
         Arrays.stream(metadata.checksums())
             .map(md -> new ModuleMetadata.Checksum(md.algorithm(), md.value()))
@@ -153,7 +154,7 @@ public interface ProjectComputerAPI extends API {
     return new ModuleMetadata(metadata.module(), metadata.size(), checksums);
   }
 
-  default Spaces computeProjectSpaces(ProjectInfo info, Settings settings, Libraries libraries) {
+  default Spaces computeProjectSpaces(ProjectInfo info, Settings settings) {
     var root = settings.folders().root();
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
     log("Compute spaces out of %d module%s", paths.size(), paths.size() == 1 ? "" : "s");

@@ -1,17 +1,13 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.ProjectComputerAPI;
 import com.github.sormuras.bach.lookup.ExternalModuleLookup;
 import com.github.sormuras.bach.lookup.ModuleLookup;
 import com.github.sormuras.bach.project.CodeStyle;
-import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Settings;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.module.ModuleDescriptor;
-import java.util.stream.Stream;
 
 /**
  * Indicates that the annotated module is a project declaration.
@@ -62,7 +58,6 @@ public @interface ProjectInfo {
   /**
    * {@return the style to format Java source-code files with, defaults to {@link CodeStyle#FREE}}
    *
-   * @see Bach#computeProjectSpaces(ProjectInfo, Settings, Libraries)
    * @see Project#spaces()
    */
   CodeStyle formatSourceFilesWithCodeStyle() default CodeStyle.FREE;
@@ -98,8 +93,6 @@ public @interface ProjectInfo {
    *
    * <p>Defaults to {@code "*"} which triggers auto-detection of the value based on this project's
    * name and a unique main module providing a main class.
-   *
-   * @see ProjectComputerAPI#computeProjectModuleLauncher(ProjectInfo, Settings, Stream)
    */
   Launcher launcher() default @Launcher(module = "*");
 
@@ -118,110 +111,117 @@ public @interface ProjectInfo {
     String mainClass() default "";
   }
 
-  /**
-   * {@return an array of external modules on which the project has a dependence}
-   *
-   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
-   * @see Libraries#requires()
-   * @see ModuleDescriptor.Requires
-   */
-  String[] requires() default {};
+  /** {@return libraries configuration} */
+  Libraries libraries() default @Libraries;
 
   /**
-   * {@return an array of external module lookup annotations}
+   * Libraries configuration.
    *
-   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
-   * @see Libraries#find(String)
-   * @see ModuleLookup#lookupUri(String)
-   */
-  External[] lookupExternal() default {};
-
-  /**
-   * An external module name to URI pair annotation.
-   *
-   * @see Bach#computeProjectModuleLookup(External)
-   * @see ExternalModuleLookup
+   * @see com.github.sormuras.bach.project.Libraries
    */
   @Target({})
-  @interface External {
-    /** {@return the module name} */
-    String module();
+  @interface Libraries {
 
-    /** {@return the target of the lookup, usually resolvable to a remote JAR file} */
-    String via();
+    /**
+     * {@return an array of external modules on which the project has a dependence}
+     *
+     * @see Libraries#requires()
+     * @see ModuleDescriptor.Requires
+     */
+    String[] requires() default {};
 
-    /** {@return the type of the {@link #via()} target string, defaults to {@link Type#AUTO}} */
-    Type type() default Type.AUTO;
+    /**
+     * {@return an array of external module lookup annotations}
+     *
+     * @see ModuleLookup#lookupUri(String)
+     */
+    ExternalModule[] externalModules() default {};
 
-    /** {@return the base URI of the repository for Maven-based target coordinates} */
-    String mavenRepository() default "https://repo.maven.apache.org/maven2";
-
-    /** Lookup target type. */
-    enum Type {
-      /** Detect type of the lookup target automatically. */
-      AUTO,
-      /** Uniform Resource Identifier ({@link java.net.URI URI}) reference as-is. */
-      URI,
-      /** Maven-based coordinates. */
-      MAVEN
-    }
-  }
-
-  /**
-   * {@return the version constant of the }
-   *
-   * @see Bach#computeProjectLibraries(ProjectInfo, Settings)
-   * @see ModuleLookup
-   */
-  Externals[] lookupExternals() default {};
-
-  /** An external source of modules that lookup by a built-in module lookup implementation. */
-  @Target({})
-  @interface Externals {
-
-    /** The name of the module lookup, usually a name of a modular library or a framework. */
-    Name name();
-
-    /** The version of the library or framework to lookup. */
-    String version();
-
-    /** The name of the module lookup, usually a name of a modular library or a framework. */
-    enum Name {
-      /** Java/JavaFX/Kotlin Game Library, requires a version argument like {@code "11.14"}. */
-      FXGL,
-      /** Look up module URIs for modules uploaded to their GitHub Releases environment. */
-      GITHUB_RELEASES,
-      /** Open JavaFX, requires a version argument like {@code "15.0.1"}. */
-      JAVAFX,
-      /** JUnit 5 and related modules, requires a version like {@code "5.7.1"}. */
-      JUNIT,
-      /** Lightweight Java Gaming Library, requires a version like {@code "3.2.3"}. */
-      LWJGL,
-      /**
-       * Look up unique modules published at Maven Central.
-       *
-       * @see <a href="https://github.com/sormuras/modules">sormuras/modules</a>
-       */
-      SORMURAS_MODULES
-    }
-  }
-
-  Metadata[] metadata() default {};
-
-  /** An external module metadata configuration annotation. */
-  @Target({})
-  @interface Metadata {
-    String module();
-
-    long size();
-
-    Checksum[] checksums() default {};
-
+    /**
+     * An external module name to URI pair annotation.
+     *
+     * @see ExternalModuleLookup
+     */
     @Target({})
-    @interface Checksum {
-      String algorithm() default "MD5";
+    @interface ExternalModule {
+      /** {@return the module name} */
+      String named();
 
-      String value();
+      /** {@return the target of the lookup, usually resolvable to a remote JAR file} */
+      String via();
+
+      /** {@return the type of the {@link #via()} target string, defaults to {@link Type#AUTO}} */
+      Type type() default Type.AUTO;
+
+      /** {@return the base URI of the repository for Maven-based target coordinates} */
+      String mavenRepository() default "https://repo.maven.apache.org/maven2";
+
+      /** Lookup target type. */
+      enum Type {
+        /** Detect type of the lookup target automatically. */
+        AUTO,
+        /** Uniform Resource Identifier ({@link java.net.URI URI}) reference as-is. */
+        URI,
+        /** Maven-based coordinates. */
+        MAVEN
+      }
+    }
+
+    /**
+     * {@return the version constant of the }
+     *
+     * @see ModuleLookup
+     */
+    ExternalLibrary[] externalLibraries() default {};
+
+    /** An external source of modules that lookup by a built-in module lookup implementation. */
+    @Target({})
+    @interface ExternalLibrary {
+
+      /** The name of the module lookup, usually a name of a modular library or a framework. */
+      Name named();
+
+      /** The version of the library or framework to lookup. */
+      String version();
+
+      /** The name of the module lookup, usually a name of a modular library or a framework. */
+      enum Name {
+        /** Java/JavaFX/Kotlin Game Library, requires a version argument like {@code "11.14"}. */
+        FXGL,
+        /** Look up module URIs for modules uploaded to their GitHub Releases environment. */
+        GITHUB_RELEASES,
+        /** Open JavaFX, requires a version argument like {@code "15.0.1"}. */
+        JAVAFX,
+        /** JUnit 5 and related modules, requires a version like {@code "5.7.1"}. */
+        JUNIT,
+        /** Lightweight Java Gaming Library, requires a version like {@code "3.2.3"}. */
+        LWJGL,
+        /**
+         * Look up unique modules published at Maven Central.
+         *
+         * @see <a href="https://github.com/sormuras/modules">sormuras/modules</a>
+         */
+        SORMURAS_MODULES
+      }
+    }
+
+    Metadata[] metadata() default {};
+
+    /** An external module metadata configuration annotation. */
+    @Target({})
+    @interface Metadata {
+      String module();
+
+      long size();
+
+      Checksum[] checksums() default {};
+
+      @Target({})
+      @interface Checksum {
+        String algorithm() default "MD5";
+
+        String value();
+      }
     }
   }
 

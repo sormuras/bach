@@ -57,7 +57,7 @@ public enum Flag {
    * </ul>
    *
    * @see ProjectInfo#formatSourceFilesWithCodeStyle()
-   * @see ProjectInfo#metadata()
+   * @see ProjectInfo.Libraries#metadata()
    */
   STRICT("Activate all verification measures available."),
 

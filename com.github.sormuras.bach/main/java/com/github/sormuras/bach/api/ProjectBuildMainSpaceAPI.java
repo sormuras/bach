@@ -161,15 +161,15 @@ public interface ProjectBuildMainSpaceAPI extends API {
         .forEach(
             main.declarations().toModuleSourcePaths(false),
             (javac, path) -> javac.with("--module-source-path", path))
-        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
+        .ifPresent(
+            main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
         .ifTrue(bach().is(Flag.STRICT), javac -> javac.with("-Xlint").with("-Werror"))
         .withAll(main.tweaks().arguments("javac"))
         .with("-d", classes);
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
-  default Javac buildProjectMainJavac(
-      LocalModule local, SourceFolder folder, Path classes) {
+  default Javac buildProjectMainJavac(LocalModule local, SourceFolder folder, Path classes) {
     var name = local.name();
     var project = bach().project();
     var main = project.spaces().main();
@@ -178,7 +178,8 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return Command.javac()
         .with("--release", release)
         .with("--module-version", project.version())
-        .ifPresent(main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
+        .ifPresent(
+            main.modulePaths().pruned(), (javac, paths) -> javac.with("--module-path", paths))
         .with("--class-path", classes.resolve(name))
         .with("-implicit:none") // generate classes for explicitly referenced source files
         .withAll(main.tweaks().arguments("javac"))
@@ -248,8 +249,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
             main.declarations().toModuleSourcePaths(false),
             (javadoc, path) -> javadoc.with("--module-source-path", path))
         .ifPresent(
-            main.modulePaths().pruned(),
-            (javadoc, paths) -> javadoc.with("--module-path", paths))
+            main.modulePaths().pruned(), (javadoc, paths) -> javadoc.with("--module-path", paths))
         .ifTrue(bach().is(Flag.STRICT), javadoc -> javadoc.with("-Xdoclint").with("-Werror"))
         .withAll(main.tweaks().arguments("javadoc"))
         .with("-d", destination);
@@ -273,7 +273,8 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return Command.jlink()
         .ifPresent(main.launcher(), (jlink, launcher) -> jlink.with("--launcher", launcher.value()))
         .with("--add-modules", main.declarations().toNames(","))
-        .ifPresent(test.modulePaths().pruned(), (jlink, paths) -> jlink.with("--module-path", paths))
+        .ifPresent(
+            test.modulePaths().pruned(), (jlink, paths) -> jlink.with("--module-path", paths))
         .withAll(main.tweaks().arguments("jlink"))
         .with("--output", image);
   }

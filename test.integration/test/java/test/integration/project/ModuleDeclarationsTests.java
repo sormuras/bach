@@ -31,8 +31,7 @@ class ModuleDeclarationsTests {
     void checkModulePatches() {
       var module = "com.github.sormuras.bach";
       var main =
-          new LocalModules(
-              Map.of(module, newModuleDeclaration(Path.of(module, "main", "java"))));
+          new LocalModules(Map.of(module, newModuleDeclaration(Path.of(module, "main", "java"))));
       var test =
           new LocalModules(
               Map.of(module, newModuleDeclaration(Path.of(module, "test", "java-module"))));

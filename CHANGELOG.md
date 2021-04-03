@@ -10,16 +10,20 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 _In progress..._
 
-### Breaking Change
+### Changed
 
-- Generator methods in class `Command` are now called `with()` and `withAll()` instead of `.add()` `addAll()`.
-  This also affects all implementations, like `Javac`, `Javadoc`. [#205]
-- `CodeStyle` renamed from `JavaStyle`. [#205]
-- `LocalModule(s)` renamed from `ModuleDeclaration(s)`. [#205]
+- Generator methods of the `Command` interface are now called `with()` and `withAll()` instead of `.add()`
+  and `addAll()`. This also affects all implementations, like `Javac`, `Javadoc`. [#205]
+- Type `CodeStyle` renamed from `JavaStyle`. [#205]
+- Type `LocalModule(s)` renamed from `ModuleDeclaration(s)`. The new names fit better into the scheme of system modules,
+  external modules, and local modules. [#205]
+- Nested annotation type `ProjectInfo.Libraries` now contains libraries-related elements. Like `requires`
+  , `externalModules`, and `externalLibraries`. [#205]
 
 ### Fixed
 
-- Download of [Google Java Formatter](https://github.com/google/google-java-format) tool fixed by upgrading it to version `1.10.0`. [#223]
+- Download of [Google Java Formatter](https://github.com/google/google-java-format) tool fixed by upgrading it to
+  version `1.10.0`. [#223]
 
 ## Version [17-ea-2] released 2021-03-31
 

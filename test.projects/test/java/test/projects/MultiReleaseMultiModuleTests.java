@@ -14,7 +14,8 @@ class MultiReleaseMultiModuleTests {
   @Test
   void build(@TempDir Path temp) throws Exception {
     var cli = new CLI("MultiReleaseMultiModule", temp);
-    var out = cli.start(Command.of("bach").with("--verbose").with("--jar-with-sources").with("build"));
+    var out =
+        cli.start(Command.of("bach").with("--verbose").with("--jar-with-sources").with("build"));
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
