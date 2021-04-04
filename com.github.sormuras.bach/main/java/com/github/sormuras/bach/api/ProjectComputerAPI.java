@@ -124,7 +124,7 @@ public interface ProjectComputerAPI extends API {
     return new Libraries(requires, List.copyOf(lookups), Map.copyOf(metamap));
   }
 
-  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Libraries.ExternalModule external) {
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.ExternalModule external) {
     var module = external.named();
     var target = external.via();
     return switch (external.type()) {
@@ -134,7 +134,7 @@ public interface ProjectComputerAPI extends API {
     };
   }
 
-  default ModuleLookup computeProjectModuleLookup(ProjectInfo.Libraries.ExternalLibrary library) {
+  default ModuleLookup computeProjectModuleLookup(ProjectInfo.ExternalLibrary library) {
     var version = library.version();
     return switch (library.named()) {
       case FXGL -> ModuleLookup.ofFXGL(bach(), version);
@@ -146,7 +146,7 @@ public interface ProjectComputerAPI extends API {
     };
   }
 
-  default ModuleMetadata computeProjectModuleMetadata(ProjectInfo.Libraries.Metadata metadata) {
+  default ModuleMetadata computeProjectModuleMetadata(ProjectInfo.Metadata metadata) {
     var checksums =
         Arrays.stream(metadata.checksums())
             .map(md -> new ModuleMetadata.Checksum(md.algorithm(), md.value()))

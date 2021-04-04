@@ -1,11 +1,10 @@
-import static com.github.sormuras.bach.ProjectInfo.Libraries.ExternalLibrary.Name.*;
-
 import com.github.sormuras.bach.ProjectInfo;
+import com.github.sormuras.bach.ProjectInfo.Checksum;
+import com.github.sormuras.bach.ProjectInfo.ExternalLibrary;
+import com.github.sormuras.bach.ProjectInfo.ExternalModule;
 import com.github.sormuras.bach.ProjectInfo.Libraries;
-import com.github.sormuras.bach.ProjectInfo.Libraries.ExternalLibrary;
-import com.github.sormuras.bach.ProjectInfo.Libraries.ExternalModule;
-import com.github.sormuras.bach.ProjectInfo.Libraries.Metadata;
-import com.github.sormuras.bach.ProjectInfo.Libraries.Metadata.Checksum;
+import com.github.sormuras.bach.ProjectInfo.LibraryName;
+import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Tools;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 import com.github.sormuras.bach.project.CodeStyle;
@@ -58,11 +57,11 @@ import com.github.sormuras.bach.project.CodeStyle;
               @ExternalModule(named = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
             },
             externalLibraries = {
-              @ExternalLibrary(named = JAVAFX, version = "16"),
-              @ExternalLibrary(named = JUNIT, version = "5.8.0-M1"),
-              @ExternalLibrary(named = LWJGL, version = "3.2.3"),
-              @ExternalLibrary(named = SORMURAS_MODULES, version = "2021.04.01"),
-              @ExternalLibrary(named = GITHUB_RELEASES, version = "*"),
+              @ExternalLibrary(named = LibraryName.JAVAFX, version = "16"),
+              @ExternalLibrary(named = LibraryName.JUNIT, version = "5.8.0-M1"),
+              @ExternalLibrary(named = LibraryName.LWJGL, version = "3.2.3"),
+              @ExternalLibrary(named = LibraryName.SORMURAS_MODULES, version = "2021.04.01"),
+              @ExternalLibrary(named = LibraryName.GITHUB_RELEASES, version = "*"),
             },
             // </editor-fold>
             // <editor-fold desc="Libraries - Metadata">
