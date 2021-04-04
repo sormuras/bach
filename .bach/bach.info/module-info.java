@@ -5,6 +5,7 @@ import com.github.sormuras.bach.ProjectInfo.ExternalModule;
 import com.github.sormuras.bach.ProjectInfo.Libraries;
 import com.github.sormuras.bach.ProjectInfo.LibraryName;
 import com.github.sormuras.bach.ProjectInfo.Metadata;
+import com.github.sormuras.bach.ProjectInfo.Options;
 import com.github.sormuras.bach.ProjectInfo.Tools;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 import com.github.sormuras.bach.project.CodeStyle;
@@ -13,10 +14,12 @@ import com.github.sormuras.bach.project.CodeStyle;
     name = "bach",
     version = "17-ea",
     // <editor-fold desc="Options">
-    formatSourceFilesWithCodeStyle = CodeStyle.GOOGLE,
-    compileModulesForJavaRelease = 16,
-    includeSourceFilesIntoModules = true,
-    tools = @Tools(skip = "jlink"),
+    options =
+        @Options(
+            formatSourceFilesWithCodeStyle = CodeStyle.GOOGLE,
+            compileModulesForJavaRelease = 16,
+            includeSourceFilesIntoModules = true,
+            tools = @Tools(skip = "jlink")),
     // </editor-fold>
     // <editor-fold desc="Main Space">
     modules = "*/main/java",

@@ -79,11 +79,11 @@ public interface ProjectComputerAPI extends API {
         .options()
         .find(Property.PROJECT_TARGETS_JAVA)
         .map(Integer::parseInt)
-        .orElseGet(info::compileModulesForJavaRelease);
+        .orElseGet(info.options()::compileModulesForJavaRelease);
   }
 
   default boolean computeProjectJarWithSources(ProjectInfo info) {
-    return bach().is(Flag.JAR_WITH_SOURCES) || info.includeSourceFilesIntoModules();
+    return bach().is(Flag.JAR_WITH_SOURCES) || info.options().includeSourceFilesIntoModules();
   }
 
   default Set<String> computeProjectToolsLimit(ProjectInfo info) {
@@ -91,7 +91,7 @@ public interface ProjectComputerAPI extends API {
         bach()
             .options()
             .findRepeatable(Property.LIMIT_TOOLS)
-            .orElseGet(() -> List.of(info.tools().limit())));
+            .orElseGet(() -> List.of(info.options().tools().limit())));
   }
 
   default Set<String> computeProjectToolsSkip(ProjectInfo info) {
@@ -99,7 +99,7 @@ public interface ProjectComputerAPI extends API {
         bach()
             .options()
             .findRepeatable(Property.SKIP_TOOLS)
-            .orElseGet(() -> List.of(info.tools().skip())));
+            .orElseGet(() -> List.of(info.options().tools().skip())));
   }
 
   default Libraries computeProjectLibraries(ProjectInfo info, Settings settings) {
@@ -196,7 +196,7 @@ public interface ProjectComputerAPI extends API {
             new LocalModules(testModules),
             computeProjectModulePaths(root, info.testModulePaths()),
             computeProjectTweaks(info.testTweaks()));
-    return new Spaces(info.formatSourceFilesWithCodeStyle(), main, test);
+    return new Spaces(info.options().formatSourceFilesWithCodeStyle(), main, test);
   }
 
   default SourceFolder computeProjectSourceFolder(Path path) {
@@ -253,7 +253,7 @@ public interface ProjectComputerAPI extends API {
 
   default Optional<ModuleLauncher> computeProjectModuleLauncher(
       ProjectInfo info, Settings settings, Stream<LocalModule> declarations) {
-    var launcher = info.launcher();
+    var launcher = info.options().launcher();
     var command = launcher.command().equals("*") ? settings.name() : launcher.command();
     if (!launcher.module().equals("*")) {
       return Optional.of(new ModuleLauncher(command, launcher.module(), launcher.mainClass()));
