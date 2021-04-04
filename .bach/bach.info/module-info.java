@@ -4,6 +4,7 @@ import com.github.sormuras.bach.ProjectInfo.ExternalLibrary;
 import com.github.sormuras.bach.ProjectInfo.ExternalModule;
 import com.github.sormuras.bach.ProjectInfo.Libraries;
 import com.github.sormuras.bach.ProjectInfo.LibraryName;
+import com.github.sormuras.bach.ProjectInfo.MainSpace;
 import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Options;
 import com.github.sormuras.bach.ProjectInfo.TestSpace;
@@ -24,7 +25,7 @@ import com.github.sormuras.bach.project.CodeStyle;
     // </editor-fold>
     // <editor-fold desc="Main Space">
     main =
-        @ProjectInfo.MainSpace(
+        @MainSpace(
             modules = "*/main/java",
             tweaks = {
               @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
