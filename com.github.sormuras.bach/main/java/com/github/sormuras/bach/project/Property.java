@@ -24,7 +24,7 @@ public enum Property {
   /**
    * Compile main modules for specified Java release.
    *
-   * @see ProjectInfo#compileModulesForJavaRelease()
+   * @see ProjectInfo.Options#compileModulesForJavaRelease()
    */
   PROJECT_TARGETS_JAVA("Compile main modules for specified Java release."),
 

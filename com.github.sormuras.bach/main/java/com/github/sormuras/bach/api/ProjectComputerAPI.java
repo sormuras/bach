@@ -162,8 +162,8 @@ public interface ProjectComputerAPI extends API {
     var mainModules = new TreeMap<String, LocalModule>();
     var testModules = new TreeMap<String, LocalModule>();
 
-    var mainMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.modules());
-    var testMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.testModules());
+    var mainMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.main().modules());
+    var testMatcher = ComposedPathMatcher.of("glob", "module-info.java", info.test().modules());
 
     var treatSourcesAsResources = computeProjectJarWithSources(info);
     for (var path : paths) {
@@ -187,15 +187,15 @@ public interface ProjectComputerAPI extends API {
     var main =
         new MainSpace(
             new LocalModules(mainModules),
-            computeProjectModulePaths(root, info.modulePaths()),
+            computeProjectModulePaths(root, info.main().modulePaths()),
             computeProjectTargetsJava(info),
             computeProjectModuleLauncher(info, settings, mainModules.values().stream()),
-            computeProjectTweaks(info.tweaks()));
+            computeProjectTweaks(info.main().tweaks()));
     var test =
         new TestSpace(
             new LocalModules(testModules),
-            computeProjectModulePaths(root, info.testModulePaths()),
-            computeProjectTweaks(info.testTweaks()));
+            computeProjectModulePaths(root, info.test().modulePaths()),
+            computeProjectTweaks(info.test().tweaks()));
     return new Spaces(info.options().formatSourceFilesWithCodeStyle(), main, test);
   }
 

@@ -56,7 +56,7 @@ public enum Flag {
    *   <li>All external modular JAR files are verified to conform with expected metadata.
    * </ul>
    *
-   * @see ProjectInfo#formatSourceFilesWithCodeStyle()
+   * @see ProjectInfo.Options#formatSourceFilesWithCodeStyle()
    * @see ProjectInfo.Libraries#metadata()
    */
   STRICT("Activate all verification measures available."),
@@ -64,7 +64,7 @@ public enum Flag {
   /**
    * Include all files found in source folders into their modular JAR files.
    *
-   * @see ProjectInfo#includeSourceFilesIntoModules()
+   * @see ProjectInfo.Options#includeSourceFilesIntoModules()
    */
   JAR_WITH_SOURCES("Include all files found in source folders into their modular JAR files."),
 

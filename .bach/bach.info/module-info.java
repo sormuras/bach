@@ -6,6 +6,7 @@ import com.github.sormuras.bach.ProjectInfo.Libraries;
 import com.github.sormuras.bach.ProjectInfo.LibraryName;
 import com.github.sormuras.bach.ProjectInfo.Metadata;
 import com.github.sormuras.bach.ProjectInfo.Options;
+import com.github.sormuras.bach.ProjectInfo.TestSpace;
 import com.github.sormuras.bach.ProjectInfo.Tools;
 import com.github.sormuras.bach.ProjectInfo.Tweak;
 import com.github.sormuras.bach.project.CodeStyle;
@@ -22,33 +23,37 @@ import com.github.sormuras.bach.project.CodeStyle;
             tools = @Tools(skip = "jlink")),
     // </editor-fold>
     // <editor-fold desc="Main Space">
-    modules = "*/main/java",
-    tweaks = {
-      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "javac", option = "-g"),
-      @Tweak(tool = "javac", option = "-parameters"),
-      @Tweak(tool = "javac", option = "-Xlint"),
-      @Tweak(tool = "javac", option = "-Werror"),
-      @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "javadoc", option = "-notimestamp"),
-      @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
-      @Tweak(tool = "javadoc", option = "-Werror"),
-    },
+    main =
+        @ProjectInfo.MainSpace(
+            modules = "*/main/java",
+            tweaks = {
+              @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+              @Tweak(tool = "javac", option = "-g"),
+              @Tweak(tool = "javac", option = "-parameters"),
+              @Tweak(tool = "javac", option = "-Xlint"),
+              @Tweak(tool = "javac", option = "-Werror"),
+              @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
+              @Tweak(tool = "javadoc", option = "-notimestamp"),
+              @Tweak(tool = "javadoc", option = "-Xdoclint:-missing"),
+              @Tweak(tool = "javadoc", option = "-Werror"),
+            }),
     // </editor-fold>
     // <editor-fold desc="Test Space">
-    testModules = "*/test/{java,java-module}",
-    testTweaks = {
-      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-      @Tweak(tool = "junit", option = "--fail-if-no-tests"),
-      @Tweak(
-          tool = "junit(test.projects)",
-          option = "--config",
-          value = "junit.jupiter.execution.parallel.enabled=true"),
-      @Tweak(
-          tool = "junit(test.projects)",
-          option = "--config",
-          value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
-    },
+    test =
+        @TestSpace(
+            modules = "*/test/{java,java-module}",
+            tweaks = {
+              @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+              @Tweak(tool = "junit", option = "--fail-if-no-tests"),
+              @Tweak(
+                  tool = "junit(test.projects)",
+                  option = "--config",
+                  value = "junit.jupiter.execution.parallel.enabled=true"),
+              @Tweak(
+                  tool = "junit(test.projects)",
+                  option = "--config",
+                  value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
+            }),
     // </editor-fold>
     // <editor-fold desc="Libraries">
     libraries =

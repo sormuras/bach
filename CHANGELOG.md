@@ -19,6 +19,9 @@ _In progress..._
   external modules, and local modules. [#205]
 - Nested annotation type `ProjectInfo.Libraries` now contains libraries-related elements. Like `requires`
   , `externalModules`, and `externalLibraries`. [#205]
+- Moved all nested annotation types directly into `ProjectInfo`'s body. [#205]
+- Introduced global options annotation in `ProjectInfo`. [#205]
+- Introduced main space and test space annotations in `ProjectInfo`. [#205]
 
 ### Fixed
 

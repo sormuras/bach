@@ -52,48 +52,19 @@ public @interface ProjectInfo {
    */
   String version() default "0";
 
-  /**
-   * {@return an array of path matcher patterns for finding main module declarations}
-   *
-   * @see java.nio.file.FileSystem#getPathMatcher(String)
-   */
-  String[] modules() default "**module-info.java";
-
-  /** {@return the module path elements for main modules} */
-  String[] modulePaths() default {EXTERNAL_MODULES};
-
   /** {@return libraries configuration} */
   Libraries libraries() default @Libraries;
+
+  /** {@return main code space configuration} */
+  MainSpace main() default @MainSpace;
 
   /** {@return options configuration} */
   Options options() default @Options;
 
-  /** {@return the additional main space arguments to be passed on a per-tool basis} */
-  Tweak[] tweaks() default {
-    @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-    @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
-    @Tweak(tool = "jlink", option = "--compress", value = "2"),
-    @Tweak(tool = "jlink", option = "--no-header-files"),
-    @Tweak(tool = "jlink", option = "--no-man-pages"),
-    @Tweak(tool = "jlink", option = "--strip-debug"),
-  };
+  /** {@return test code space configuration} */
+  TestSpace test() default @TestSpace;
 
-  /**
-   * {@return an array of path matcher patterns for finding test module declarations}
-   *
-   * @see java.nio.file.FileSystem#getPathMatcher(String)
-   */
-  String[] testModules() default "**/test/**";
-
-  /** {@return the module path elements for compiling and running test modules} */
-  String[] testModulePaths() default {MAIN_MODULES, EXTERNAL_MODULES};
-
-  /** {@return the additional test space arguments to be passed on a per-tool basis} */
-  Tweak[] testTweaks() default {
-    @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
-  };
-
-
+  /** A checksum configuration. */
   @Target({})
   @interface Checksum {
     String algorithm() default "MD5";
@@ -210,6 +181,31 @@ public @interface ProjectInfo {
     Metadata[] metadata() default {};
   }
 
+  /** Main space configuration. */
+  @Target({})
+  @interface MainSpace {
+
+    /**
+     * {@return an array of path matcher patterns for finding main module declarations}
+     *
+     * @see java.nio.file.FileSystem#getPathMatcher(String)
+     */
+    String[] modules() default "**module-info.java";
+
+    /** {@return the module path elements for main modules} */
+    String[] modulePaths() default {EXTERNAL_MODULES};
+
+    /** {@return the additional main space arguments to be passed on a per-tool basis} */
+    Tweak[] tweaks() default {
+      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "javadoc", option = "-encoding", value = "UTF-8"),
+      @Tweak(tool = "jlink", option = "--compress", value = "2"),
+      @Tweak(tool = "jlink", option = "--no-header-files"),
+      @Tweak(tool = "jlink", option = "--no-man-pages"),
+      @Tweak(tool = "jlink", option = "--strip-debug"),
+    };
+  }
+
   /** An external module metadata configuration annotation. */
   @Target({})
   @interface Metadata {
@@ -220,7 +216,7 @@ public @interface ProjectInfo {
     Checksum[] checksums() default {};
   }
 
-  /** An external module metadata configuration annotation. */
+  /** An options configuration. */
   @Target({})
   @interface Options {
     /**
@@ -240,7 +236,8 @@ public @interface ProjectInfo {
     CodeStyle formatSourceFilesWithCodeStyle() default CodeStyle.FREE;
 
     /**
-     * {@return {@code true} in order to include all files found in source folders into their modules}
+     * {@return {@code true} in order to include all files found in source folders into their
+     * modules}
      *
      * @see com.github.sormuras.bach.project.Flag#JAR_WITH_SOURCES
      */
@@ -256,6 +253,26 @@ public @interface ProjectInfo {
 
     /** {@return the tools-releated settings} */
     Tools tools() default @Tools;
+  }
+
+  /** Test space configuration. */
+  @Target({})
+  @interface TestSpace {
+
+    /**
+     * {@return an array of path matcher patterns for finding test module declarations}
+     *
+     * @see java.nio.file.FileSystem#getPathMatcher(String)
+     */
+    String[] modules() default "**/test/**";
+
+    /** {@return the module path elements for compiling and running test modules} */
+    String[] modulePaths() default {MAIN_MODULES, EXTERNAL_MODULES};
+
+    /** {@return the additional test space arguments to be passed on a per-tool basis} */
+    Tweak[] tweaks() default {
+      @Tweak(tool = "javac", option = "-encoding", value = "UTF-8"),
+    };
   }
 
   /** Tools-related settings. */
