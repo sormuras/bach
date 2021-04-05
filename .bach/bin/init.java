@@ -11,6 +11,8 @@ class init {
 
   public static Path BIN = Path.of(".bach/bin");
 
+  public static String DEFAULT_VERSION = "17-ea-2";
+
   public static void main(String... args) throws Exception {
     var update = Files.isDirectory(BIN);
     if (update) {
@@ -21,7 +23,7 @@ class init {
     }
 
     System.out.println(""); // Load scripts and modules...
-    var version = args.length == 0 ? "17-ea" : args[0];
+    var version = args.length == 0 ? DEFAULT_VERSION : args[0];
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
     loadScript("boot.java");
