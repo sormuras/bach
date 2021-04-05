@@ -138,7 +138,8 @@ values such as a short name, a version that is applied to all modules of the pro
 find modules, and a lot more. Most of these project-specific values have pre-defined default values; some of these
 values provide an auto-configuration feature.
 
-Here's an excerpt of [.bach/bach.info/module-info.java](.bach/bach.info/module-info.java) module declaration:
+Here's an excerpt of [.bach/bach.info/module-info.java](.bach/bach.info/module-info.java) module declaration
+(using Bach's `17-ea-2` syntax):
 
 ```java
 import com.github.sormuras.bach.ProjectInfo;
@@ -203,7 +204,7 @@ Bach...
 - builds modular Java projects.
 - is a lightweight wrapper for existing and future tools, mainly foundation tools provided by the JDK.
 - supports running modularized tools registered via the `ToolProvider` SPI.
-- supports running tools packaged in executable JAR files (via Java's `Process` API).  
+- supports running tools packaged in executable JAR files (via Java's `Process` API).
 - can be invoked directly from the command line, or programmatically via its modular API (in a JShell session).
 - infers basic project information from `module-info.java` files.
 - uses standard Java syntax for extra configuration purposes (via `@ProjectInfo`).
@@ -228,9 +229,10 @@ Bach will **not**...
 ## Configuration And Customization
 
 - Declare `module-info.java` files.
-- Use Bach's CLI arguments to configure a specific build run.
-  Consult the message produced by `bach --help` for available flags and options.
-- Use `@ProjectInfo` on module `bach.info` (locacted at `.bach/bach.info/module-info.java`) to declare static configuration.
+- Use Bach's CLI arguments to configure a specific build run. Consult the message produced by `bach --help` for
+  available flags and options.
+- Use `@ProjectInfo` on module `bach.info` (locacted at `.bach/bach.info/module-info.java`) to declare static
+  configuration.
 - Extend `Bach` to augment and alter the default behaviour or even write your own build program.
 
 # be free - have fun

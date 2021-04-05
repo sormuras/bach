@@ -12,16 +12,17 @@ _In progress..._
 
 ### Changed
 
+- Tentative final API polishing and renaming pass applied to `ProjectInfo` annotation. [#205] Including:
+    - Moved all nested annotation types directly into `ProjectInfo`'s body.
+    - Introduced `options = @Options` element and annotation.
+    - Introduced `main = @MainSpace` element and annotation.
+    - Introduced `test = @TestSpace` element and annotation.
+    - Introduced `libraries = @Libraries` element and annotation.
 - Generator methods of the `Command` interface are now called `with()` and `withAll()` instead of `.add()`
-  and `addAll()`. This also affects all implementations, like `Javac`, `Javadoc`. [#205]
-- Type `CodeStyle` renamed from `JavaStyle`. [#205]
-- Type `LocalModule(s)` renamed from `ModuleDeclaration(s)`. The new names fit better into the scheme of system modules,
-  external modules, and local modules. [#205]
-- Nested annotation type `ProjectInfo.Libraries` now contains libraries-related elements. Like `requires`
-  , `externalModules`, and `externalLibraries`. [#205]
-- Moved all nested annotation types directly into `ProjectInfo`'s body. [#205]
-- Introduced global options annotation in `ProjectInfo`. [#205]
-- Introduced main space and test space annotations in `ProjectInfo`. [#205]
+  and `addAll()`. This also affects all implementations, like `Javac`, `Javadoc`, and others. [#205]
+- Enum `CodeStyle` renamed from `JavaStyle`. [#205]
+- Records `LocalModule(s)` renamed from `ModuleDeclaration(s)`. The new names fit better into the scheme of system
+  modules, external modules, and local modules. [#205]
 
 ### Fixed
 
