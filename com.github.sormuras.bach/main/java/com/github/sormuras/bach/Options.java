@@ -21,14 +21,17 @@ import java.util.stream.Stream;
 /**
  * An options descriptor.
  *
+ * @param layer the module layer to use at runtime
  * @param info an optional project declaration instance, may be {@code null}
  * @param out a stream to which "expected" output should be written
  * @param err a stream to which any error messages should be written
  * @param flags a set of feature toggles passed individually like {@code --verbose --help ...}
+ * @param properties a map of key-value pairs passed nominally like {@code --project-targets-java 8}
  * @param actions the list of actions to execute passed individually like {@code info build ...}
  * @param tool an optional command to execute passed via {@code tool NAME [ARGS...]}
  */
 public record Options(
+    ModuleLayer layer,
     Optional<ProjectInfo> info,
     PrintWriter out,
     PrintWriter err,
@@ -37,8 +40,13 @@ public record Options(
     List<String> actions,
     Optional<Tool> tool) {
 
+  public Options with(ModuleLayer layer) {
+    return new Options(layer, info, out, err, flags, properties, actions, tool);
+  }
+
   public Options with(ProjectInfo info) {
-    return new Options(Optional.ofNullable(info), out, err, flags, properties, actions, tool);
+    return new Options(
+        layer, Optional.ofNullable(info), out, err, flags, properties, actions, tool);
   }
 
   /**
@@ -51,7 +59,7 @@ public record Options(
     var flags = new HashSet<>(this.flags);
     flags.add(flag);
     flags.addAll(Set.of(more));
-    return new Options(info, out, err, flags, properties, actions, tool);
+    return new Options(layer, info, out, err, flags, properties, actions, tool);
   }
 
   public List<String> list(Property property) {
@@ -142,6 +150,7 @@ public record Options(
     }
 
     return new Options(
+        Options.class.getModule().getLayer(),
         Optional.empty(),
         flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
         err,

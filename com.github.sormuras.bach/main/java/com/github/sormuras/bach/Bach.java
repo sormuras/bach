@@ -18,6 +18,20 @@ import java.util.ServiceLoader;
 /** Java Shell Builder. */
 public class Bach implements AutoCloseable, BachAPI {
 
+  public interface OnTestsFailed {
+
+    record Event(Bach bach, Throwable throwable) {}
+
+    void onTestsFailed(Event event);
+  }
+
+  public interface OnTestsSuccessful {
+
+    record Event(Bach bach) {}
+
+    void onTestsSuccessful(Event event);
+  }
+
   /** A {@code Bach}-creating service. */
   public interface Provider<B extends Bach> {
     /**
@@ -38,11 +52,11 @@ public class Bach implements AutoCloseable, BachAPI {
     var name = options.get(Property.BACH_INFO, ProjectInfo.MODULE);
     var layer = ModuleLayerBuilder.build(bach, name, Bach.bin());
     var module = layer.findModule(name);
-    if (module.isEmpty()) return new Bach(options);
+    if (module.isEmpty()) return new Bach(options.with(layer));
     var info = module.get().getAnnotation(ProjectInfo.class);
     return ServiceLoader.load(layer, Provider.class)
         .findFirst()
-        .map(factory -> factory.newBach(options.with(info)))
+        .map(factory -> factory.newBach(options.with(layer).with(info)))
         .orElse(new Bach(options.with(info)));
   }
 
@@ -127,7 +141,12 @@ public class Bach implements AutoCloseable, BachAPI {
     loadMissingExternalModules();
     verifyExternalModules();
     buildProjectMainSpace();
-    buildProjectTestSpace();
+    try {
+      buildProjectTestSpace();
+      onTestsSuccessful();
+    } catch (Throwable throwable) {
+      onTestsFailed(throwable);
+    }
     say("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
 
@@ -166,5 +185,17 @@ public class Bach implements AutoCloseable, BachAPI {
   public final void format() {
     log("Format...");
     formatJavaSourceFiles();
+  }
+
+  public void onTestsFailed(Throwable throwable) {
+    var event = new OnTestsFailed.Event(this, throwable);
+    ServiceLoader.load(bach().options().layer(), OnTestsFailed.class)
+        .forEach(service -> service.onTestsFailed(event));
+  }
+
+  public void onTestsSuccessful() {
+    var event = new OnTestsSuccessful.Event(this);
+    ServiceLoader.load(bach().options().layer(), OnTestsSuccessful.class)
+        .forEach(service -> service.onTestsSuccessful(event));
   }
 }

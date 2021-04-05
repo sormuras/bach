@@ -10,6 +10,10 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 _In progress..._
 
+### Added
+
+- Support of `OnTestsFailed` and `OnTestsSuccessful` events added. [#227]
+
 ### Changed
 
 - Tentative final API polishing and renaming pass applied to `ProjectInfo` annotation. [#205] Including:
@@ -83,3 +87,5 @@ Initial Early-Access release.
 [#220]: https://github.com/sormuras/bach/issues/220
 
 [#223]: https://github.com/sormuras/bach/issues/223
+
+[#227]: https://github.com/sormuras/bach/issues/227

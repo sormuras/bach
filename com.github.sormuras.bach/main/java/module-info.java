@@ -30,6 +30,8 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
+  uses com.github.sormuras.bach.Bach.OnTestsFailed;
+  uses com.github.sormuras.bach.Bach.OnTestsSuccessful;
   uses com.github.sormuras.bach.Bach.Provider;
   uses java.util.spi.ToolProvider;
 

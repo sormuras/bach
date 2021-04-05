@@ -126,7 +126,11 @@ import com.github.sormuras.bach.project.CodeStyle;
     )
 module bach.info {
   requires com.github.sormuras.bach;
+  requires java.desktop;
 
   provides com.github.sormuras.bach.Bach.Provider with
       bach.info.CustomBach;
+  provides com.github.sormuras.bach.Bach.OnTestsSuccessful with
+      bach.info.Teal,
+      bach.info.Green;
 }
