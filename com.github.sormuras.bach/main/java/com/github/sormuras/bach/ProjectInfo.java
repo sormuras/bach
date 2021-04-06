@@ -67,8 +67,10 @@ public @interface ProjectInfo {
   /** A checksum configuration. */
   @Target({})
   @interface Checksum {
+    /** {@return the name of the message digest algorithm, defaults to {@code MD5}} */
     String algorithm() default "MD5";
 
+    /** {@return the expected checksum} */
     String value();
   }
 
@@ -77,7 +79,7 @@ public @interface ProjectInfo {
   @interface ExternalLibrary {
 
     /** The name of the module lookup, usually a name of a modular library or a framework. */
-    LibraryName named();
+    LibraryName name();
 
     /** The version of the library or framework to lookup. */
     String version();
@@ -111,26 +113,26 @@ public @interface ProjectInfo {
   @Target({})
   @interface ExternalModule {
     /** {@return the module name} */
-    String named();
+    String name();
 
     /** {@return the target of the lookup, usually resolvable to a remote JAR file} */
-    String via();
+    String link();
 
-    /** {@return the type of the {@link #via()} target string, defaults to {@link Type#AUTO}} */
-    Type type() default Type.AUTO;
+    /** {@return the type of the {@link #link()} target string, defaults to {@link LinkType#AUTO}} */
+    LinkType type() default LinkType.AUTO;
 
     /** {@return the base URI of the repository for Maven-based target coordinates} */
     String mavenRepository() default "https://repo.maven.apache.org/maven2";
+  }
 
-    /** Lookup target type. */
-    enum Type {
-      /** Detect type of the lookup target automatically. */
-      AUTO,
-      /** Uniform Resource Identifier ({@link java.net.URI URI}) reference as-is. */
-      URI,
-      /** Maven-based coordinates. */
-      MAVEN
-    }
+  /** An external module link target type. */
+  enum LinkType {
+    /** Detect type of the lookup target automatically. */
+    AUTO,
+    /** Uniform Resource Identifier ({@link java.net.URI URI}) reference as-is. */
+    URI,
+    /** Maven-based coordinates. */
+    MAVEN
   }
 
   /**
@@ -209,10 +211,13 @@ public @interface ProjectInfo {
   /** An external module metadata configuration annotation. */
   @Target({})
   @interface Metadata {
+    /** {@return the name of the module} */
     String module();
 
+    /** {@return the size of the modular JAR file in bytes} */
     long size();
 
+    /** {@return an array of checksums} */
     Checksum[] checksums() default {};
   }
 

@@ -62,15 +62,15 @@ import com.github.sormuras.bach.project.CodeStyle;
             requires = "org.junit.platform.console",
             // <editor-fold desc="Libraries - Module Lookup">
             externalModules = {
-              @ExternalModule(named = "junit", via = "junit:junit:4.13.2"),
-              @ExternalModule(named = "org.hamcrest", via = "org.hamcrest:hamcrest:2.2"),
+              @ExternalModule(name = "junit", link = "junit:junit:4.13.2"),
+              @ExternalModule(name = "org.hamcrest", link = "org.hamcrest:hamcrest:2.2"),
             },
             externalLibraries = {
-              @ExternalLibrary(named = LibraryName.JAVAFX, version = "16"),
-              @ExternalLibrary(named = LibraryName.JUNIT, version = "5.8.0-M1"),
-              @ExternalLibrary(named = LibraryName.LWJGL, version = "3.2.3"),
-              @ExternalLibrary(named = LibraryName.SORMURAS_MODULES, version = "2021.04.01"),
-              @ExternalLibrary(named = LibraryName.GITHUB_RELEASES, version = "*"),
+              @ExternalLibrary(name = LibraryName.JAVAFX, version = "16"),
+              @ExternalLibrary(name = LibraryName.JUNIT, version = "5.8.0-M1"),
+              @ExternalLibrary(name = LibraryName.LWJGL, version = "3.2.3"),
+              @ExternalLibrary(name = LibraryName.SORMURAS_MODULES, version = "2021.04.01"),
+              @ExternalLibrary(name = LibraryName.GITHUB_RELEASES, version = "*"),
             },
             // </editor-fold>
             // <editor-fold desc="Libraries - Metadata">

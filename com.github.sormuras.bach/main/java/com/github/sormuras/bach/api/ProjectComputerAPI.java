@@ -125,8 +125,8 @@ public interface ProjectComputerAPI extends API {
   }
 
   default ModuleLookup computeProjectModuleLookup(ProjectInfo.ExternalModule external) {
-    var module = external.named();
-    var target = external.via();
+    var module = external.name();
+    var target = external.link();
     return switch (external.type()) {
       case AUTO -> ModuleLookup.external(module).via(target);
       case URI -> ModuleLookup.external(module).viaUri(target);
@@ -136,7 +136,7 @@ public interface ProjectComputerAPI extends API {
 
   default ModuleLookup computeProjectModuleLookup(ProjectInfo.ExternalLibrary library) {
     var version = library.version();
-    return switch (library.named()) {
+    return switch (library.name()) {
       case FXGL -> ModuleLookup.ofFXGL(bach(), version);
       case GITHUB_RELEASES -> ModuleLookup.ofGitHubReleases(bach());
       case JAVAFX -> ModuleLookup.ofJavaFX(version);
