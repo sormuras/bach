@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Methods related to building projects. */
-public interface ProjectBuildMainSpaceAPI extends API {
+public interface BuildMainSpaceAPI extends API {
 
   /**
    * Build all assets of the main code space.
@@ -28,20 +28,20 @@ public interface ProjectBuildMainSpaceAPI extends API {
    *   <li>Generate custom runtime image
    * </ul>
    *
-   * @see #buildProjectMainBuildModules()
-   * @see #buildProjectMainCheckModules()
-   * @see #buildProjectMainGenerateAPIDocumentation()
-   * @see #buildProjectMainGenerateCustomRuntimeImage()
+   * @see #buildMainBuildModules()
+   * @see #buildMainCheckModules()
+   * @see #buildMainGenerateAPIDocumentation()
+   * @see #buildMainGenerateCustomRuntimeImage()
    */
-  default void buildProjectMainSpace() throws Exception {
-    buildProjectMainBuildModules();
-    buildProjectMainCheckModules();
-    buildProjectMainGenerateAPIDocumentation();
-    buildProjectMainGenerateCustomRuntimeImage();
+  default void buildMainSpace() throws Exception {
+    buildMainBuildModules();
+    buildMainCheckModules();
+    buildMainGenerateAPIDocumentation();
+    buildMainGenerateCustomRuntimeImage();
   }
 
   /** Compile and jar main modules. */
-  default void buildProjectMainBuildModules() {
+  default void buildMainBuildModules() {
     var main = bach().project().spaces().main();
     var modules = main.declarations();
     if (modules.isEmpty()) {
@@ -58,10 +58,10 @@ public interface ProjectBuildMainSpaceAPI extends API {
     var workspaceModules = bach().folders().workspace("modules");
     Paths.deleteDirectories(workspaceModules);
     if (feature == 8) {
-      bach().run(buildProjectMainJavac(9, classes)).requireSuccessful();
-      buildProjectMainSpaceClassesForJava8(classes);
+      bach().run(buildMainJavac(9, classes)).requireSuccessful();
+      buildMainSpaceClassesForJava8(classes);
     } else {
-      bach().run(buildProjectMainJavac(release, classes)).requireSuccessful();
+      bach().run(buildMainJavac(release, classes)).requireSuccessful();
     }
 
     Paths.createDirectories(workspaceModules);
@@ -70,46 +70,46 @@ public interface ProjectBuildMainSpaceAPI extends API {
     for (var declaration : modules.map().values()) {
       for (var folder : declaration.sources().list()) {
         if (!folder.isTargeted()) continue;
-        javacs.add(buildProjectMainJavac(declaration, folder, classes));
+        javacs.add(buildMainJavac(declaration, folder, classes));
       }
-      jars.add(buildProjectMainJar(declaration, classes));
+      jars.add(buildMainJar(declaration, classes));
     }
     if (!javacs.isEmpty()) bach().run(javacs.stream()).requireSuccessful();
     bach().run(jars.stream()).requireSuccessful();
   }
 
   /** Check main modules. */
-  default void buildProjectMainCheckModules() {
+  default void buildMainCheckModules() {
     if (!bach().project().settings().tools().enabled("jdeps")) return;
     say("Check main modules");
     var main = bach().project().spaces().main();
     var modules = main.declarations();
     var jdeps = new ArrayList<JDeps>();
     for (var declaration : modules.map().values()) {
-      jdeps.add(buildProjectMainJDeps(declaration));
+      jdeps.add(buildMainJDeps(declaration));
     }
     bach().run(jdeps.stream()).requireSuccessful();
   }
 
   /** Generate HTML pages of API documentation from main modules' source files. */
-  default void buildProjectMainGenerateAPIDocumentation() {
+  default void buildMainGenerateAPIDocumentation() {
     if (!bach().project().settings().tools().enabled("javadoc")) return;
     say("Generate API documentation");
     var api = bach().folders().workspace("documentation", "api");
-    bach().run(buildProjectMainJavadoc(api)).requireSuccessful();
-    bach().run(buildProjectMainJavadocJar(api)).requireSuccessful();
+    bach().run(buildMainJavadoc(api)).requireSuccessful();
+    bach().run(buildMainJavadocJar(api)).requireSuccessful();
   }
 
   /** Assemble and optimize main modules and their dependencies into a custom runtime image. */
-  default void buildProjectMainGenerateCustomRuntimeImage() {
+  default void buildMainGenerateCustomRuntimeImage() {
     if (!bach().project().settings().tools().enabled("jlink")) return;
     say("Assemble custom runtime image");
     var image = bach().folders().workspace("image");
     Paths.deleteDirectories(image);
-    bach().run(buildProjectMainJLink(image));
+    bach().run(buildMainJLink(image));
   }
 
-  default void buildProjectMainSpaceClassesForJava8(Path classes) {
+  default void buildMainSpaceClassesForJava8(Path classes) {
     var project = bach().project();
     var folders = project.settings().folders();
     var main = project.spaces().main();
@@ -121,7 +121,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
       var name = declaration.name();
       var sources = declaration.sources();
       var root = sources.list().isEmpty() ? folders.root() : sources.first().path();
-      var java8Files = Paths.find(root, 99, ProjectBuildMainSpaceAPI::isJava8File);
+      var java8Files = Paths.find(root, 99, BuildMainSpaceAPI::isJava8File);
       if (java8Files.isEmpty()) continue; // skip aggregator module
       var compileSources =
           Command.javac()
@@ -151,7 +151,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
    *
    * @param release the Java feature release number to compile modules for
    */
-  default Javac buildProjectMainJavac(int release, Path classes) {
+  default Javac buildMainJavac(int release, Path classes) {
     var project = bach().project();
     var main = project.spaces().main();
     return Command.javac()
@@ -169,7 +169,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
   }
 
   /** {@return the {@code javac} call to compile a specific version of a multi-release module} */
-  default Javac buildProjectMainJavac(LocalModule local, SourceFolder folder, Path classes) {
+  default Javac buildMainJavac(LocalModule local, SourceFolder folder, Path classes) {
     var name = local.name();
     var project = bach().project();
     var main = project.spaces().main();
@@ -186,19 +186,19 @@ public interface ProjectBuildMainSpaceAPI extends API {
         .withAll(main.tweaks().arguments("javac(" + name + ")"))
         .withAll(main.tweaks().arguments("javac(" + release + ")"))
         .withAll(main.tweaks().arguments("javac(" + name + "@" + release + ")"))
-        .with("-d", buildProjectMultiReleaseClassesDirectory(name, release))
+        .with("-d", buildMultiReleaseClassesDirectory(name, release))
         .withAll(javaSourceFiles);
   }
 
-  private Path buildProjectMultiReleaseClassesDirectory(String module, int release) {
+  private Path buildMultiReleaseClassesDirectory(String module, int release) {
     return bach().folders().workspace("classes-mr-" + release, module);
   }
 
-  default Jar buildProjectMainJar(LocalModule local, Path classes) {
+  default Jar buildMainJar(LocalModule local, Path classes) {
     var project = bach().project();
     var main = project.spaces().main();
     var name = local.name();
-    var file = bach().folders().workspace("modules", buildProjectMainJarFileName(name));
+    var file = bach().folders().workspace("modules", buildMainJarFileName(name));
     var mainClass = local.reference().descriptor().mainClass();
     var jar =
         Command.jar()
@@ -219,7 +219,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
     for (int release = 9; release <= Runtime.version().feature(); release++) {
       var paths = new ArrayList<Path>();
       var isSourceTargeted = local.sources().stream(release).findAny().isPresent();
-      if (isSourceTargeted) paths.add(buildProjectMultiReleaseClassesDirectory(name, release));
+      if (isSourceTargeted) paths.add(buildMultiReleaseClassesDirectory(name, release));
       local.resources().stream(release).map(SourceFolder::path).forEach(paths::add);
       if (paths.isEmpty()) continue;
       jar = jar.with("--release", release);
@@ -228,11 +228,11 @@ public interface ProjectBuildMainSpaceAPI extends API {
     return jar;
   }
 
-  default String buildProjectMainJarFileName(String module) {
+  default String buildMainJarFileName(String module) {
     return module + '@' + bach().project().versionNumberAndPreRelease() + ".jar";
   }
 
-  default JDeps buildProjectMainJDeps(LocalModule local) {
+  default JDeps buildMainJDeps(LocalModule local) {
     var folders = bach().folders();
     return Command.jdeps()
         .with("--check", local.name())
@@ -240,7 +240,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
         .with("--module-path", List.of(folders.workspace("modules"), folders.externalModules()));
   }
 
-  default Javadoc buildProjectMainJavadoc(Path destination) {
+  default Javadoc buildMainJavadoc(Path destination) {
     var project = bach().project();
     var main = project.spaces().main();
     return Command.javadoc()
@@ -256,7 +256,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
   }
 
   /** {@return the jar call generating the API documentation archive} */
-  default Jar buildProjectMainJavadocJar(Path api) {
+  default Jar buildMainJavadocJar(Path api) {
     var project = bach().project();
     var file = project.name() + "-api-" + project.version() + ".zip";
     return Command.jar()
@@ -266,7 +266,7 @@ public interface ProjectBuildMainSpaceAPI extends API {
         .with("-C", api, ".");
   }
 
-  default JLink buildProjectMainJLink(Path image) {
+  default JLink buildMainJLink(Path image) {
     var project = bach().project();
     var main = project.spaces().main();
     var test = project.spaces().test();

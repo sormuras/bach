@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** Methods for writing logbooks in markdown format. */
-public interface LogbookWriterAPI extends API {
+public interface WriteLogbookAPI extends API {
 
   default Path writeLogbook() throws Exception {
     var now = LocalDateTime.now(ZoneOffset.UTC);

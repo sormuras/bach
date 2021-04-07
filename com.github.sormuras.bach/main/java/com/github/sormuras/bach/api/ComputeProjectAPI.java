@@ -39,8 +39,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** Methods related to building projects. */
-public interface ProjectComputerAPI extends API {
+/** A {@link ProjectInfo} to {@link Project} factory. */
+public interface ComputeProjectAPI extends API {
 
   default Project computeProject() {
     var info = computeProjectInfo();

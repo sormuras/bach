@@ -1,20 +1,20 @@
 package bach.info;
 
-import com.github.sormuras.bach.api.ProjectBuildMainSpaceAPI;
+import com.github.sormuras.bach.api.BuildMainSpaceAPI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.StringJoiner;
 
-public interface MainSpaceBuilder extends ProjectBuildMainSpaceAPI {
+public interface MainSpaceBuilder extends BuildMainSpaceAPI {
 
   @Override
-  default void buildProjectMainSpace() throws Exception {
-    ProjectBuildMainSpaceAPI.super.buildProjectMainSpace();
+  default void buildMainSpace() throws Exception {
+    BuildMainSpaceAPI.super.buildMainSpace();
 
     var module = "com.github.sormuras.bach";
     var version = bach().project().versionNumberAndPreRelease();
     var modules = bach().folders().workspace("modules");
-    var file = modules.resolve(bach().buildProjectMainJarFileName(module));
+    var file = modules.resolve(bach().buildMainJarFileName(module));
 
     say("Generate and check Maven consumer POM file");
     var pom = generateMavenConsumerPom(module, version, file);

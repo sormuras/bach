@@ -4,11 +4,11 @@ package com.github.sormuras.bach.api;
 public interface BachAPI
     extends JavaFormatterAPI,
         ExternalModuleAPI,
-        ProjectComputerAPI,
-        ProjectBuildMainSpaceAPI,
-        ProjectBuildTestSpaceAPI,
+        ComputeProjectAPI,
+        BuildMainSpaceAPI,
+        BuildTestSpaceAPI,
         ToolProviderAPI,
-        LogbookWriterAPI {
+        WriteLogbookAPI {
 
   /** Build the current project. */
   void build() throws Exception;

@@ -27,6 +27,7 @@ _In progress..._
 - Enum `CodeStyle` renamed from `JavaStyle`. [#205]
 - Records `LocalModule(s)` renamed from `ModuleDeclaration(s)`. The new names fit better into the scheme of system
   modules, external modules, and local modules. [#205]
+- Types in package `com.github.sormuras.bach.api` renamed to match their method name patterns. [#205]
 
 ### Fixed
 

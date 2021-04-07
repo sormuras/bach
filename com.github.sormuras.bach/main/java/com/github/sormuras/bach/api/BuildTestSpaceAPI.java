@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.spi.ToolProvider;
 
 /** Methods related to building and running test modules. */
-public interface ProjectBuildTestSpaceAPI extends API {
+public interface BuildTestSpaceAPI extends API {
 
   /**
    * Build modules of the test code space and launch JUnit Platform for each of them.
@@ -28,7 +28,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
    *   <li>{@code junit}
    * </ul>
    */
-  default void buildProjectTestSpace() {
+  default void buildTestSpace() {
     var test = bach().project().spaces().test();
     var modules = test.declarations();
     if (modules.isEmpty()) {
@@ -43,18 +43,18 @@ public interface ProjectBuildTestSpaceAPI extends API {
     var testModules = bach().folders().workspace("modules-test");
 
     Paths.deleteDirectories(testModules);
-    bach().run(buildProjectTestJavac(testClasses)).requireSuccessful();
+    bach().run(buildTestJavac(testClasses)).requireSuccessful();
 
     Paths.createDirectories(testModules);
     var jars =
         modules.map().values().stream()
-            .map(module -> buildProjectTestJar(testModules, module, testClasses));
+            .map(module -> buildTestJar(testModules, module, testClasses));
     bach().run(jars).requireSuccessful();
 
-    buildProjectTestRuns(testModules, modules);
+    buildTestRuns(testModules, modules);
   }
 
-  default Javac buildProjectTestJavac(Path classes) {
+  default Javac buildTestJavac(Path classes) {
     var main = bach().project().spaces().main();
     var mainModules = bach().folders().workspace("modules");
     var test = bach().project().spaces().test();
@@ -72,11 +72,11 @@ public interface ProjectBuildTestSpaceAPI extends API {
         .with("-d", classes);
   }
 
-  default String buildProjectTestJarFileName(String module) {
+  default String buildTestJarFileName(String module) {
     return module + '@' + bach().project().versionNumberAndPreRelease() + "+test.jar";
   }
 
-  default Jar buildProjectTestJar(Path testModules, LocalModule declaration, Path classes) {
+  default Jar buildTestJar(Path testModules, LocalModule declaration, Path classes) {
     var name = declaration.name();
     var project = bach().project();
     var test = project.spaces().test();
@@ -84,7 +84,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
         Command.jar()
             .ifTrue(bach().is(Flag.VERBOSE), command -> command.with("--verbose"))
             .with("--create")
-            .with("--file", testModules.resolve(buildProjectTestJarFileName(name)))
+            .with("--file", testModules.resolve(buildTestJarFileName(name)))
             .withAll(test.tweaks().arguments("jar"))
             .withAll(test.tweaks().arguments("jar(" + name + ")"));
     var baseClasses = classes.resolve(name);
@@ -105,7 +105,7 @@ public interface ProjectBuildTestSpaceAPI extends API {
     return jar;
   }
 
-  default void buildProjectTestRuns(Path testModules, LocalModules modules) {
+  default void buildTestRuns(Path testModules, LocalModules modules) {
     var tools = bach().project().settings().tools();
     var testsEnabled = tools.enabled("test");
     var junitEnabled = tools.enabled("junit");
@@ -121,37 +121,37 @@ public interface ProjectBuildTestSpaceAPI extends API {
     for (var name : modules.toNames().toList()) {
       log("Test module %s", name);
       // "test"
-      var finder = buildProjectTestModuleFinder(testModules, name);
+      var finder = buildTestModuleFinder(testModules, name);
       if (testsEnabled)
         bach()
             .computeToolProviders(finder, true, name)
             .filter(provider -> provider.getClass().getModule().getName().equals(name))
             .filter(provider -> provider.name().equals("test"))
-            .map(this::buildProjectTestRun)
+            .map(this::buildTestRun)
             .forEach(runs::add);
       // "junit"
-      if (junitEnabled && junitPresent) runs.add(buildProjectTestJUnitRun(testModules, name));
+      if (junitEnabled && junitPresent) runs.add(buildTestJUnitRun(testModules, name));
     }
 
     new Logbook.Runs(runs).requireSuccessful();
   }
 
-  default ModuleFinder buildProjectTestModuleFinder(Path testModules, String module) {
+  default ModuleFinder buildTestModuleFinder(Path testModules, String module) {
     return ModuleFinder.of(
-        testModules.resolve(buildProjectTestJarFileName(module)), // module under test
+        testModules.resolve(buildTestJarFileName(module)), // module under test
         bach().folders().workspace("modules"), // main modules
         testModules, // (more) test modules
         bach().folders().externalModules());
   }
 
-  private Logbook.Run buildProjectTestRun(ToolProvider provider, String... args) {
+  private Logbook.Run buildTestRun(ToolProvider provider, String... args) {
     var providerClass = provider.getClass();
     var description = providerClass.getModule().getName() + "/" + providerClass.getName();
     return bach().run(provider, List.of(args), description);
   }
 
-  default Logbook.Run buildProjectTestJUnitRun(Path testModules, String module) {
-    var finder = buildProjectTestModuleFinder(testModules, module);
+  default Logbook.Run buildTestJUnitRun(Path testModules, String module) {
+    var finder = buildTestModuleFinder(testModules, module);
     var junit =
         Command.of("junit")
             .with("--select-module", module)

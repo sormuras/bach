@@ -140,9 +140,9 @@ public class Bach implements AutoCloseable, BachAPI {
     if (is(Flag.STRICT)) formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
     loadMissingExternalModules();
     verifyExternalModules();
-    buildProjectMainSpace();
+    buildMainSpace();
     try {
-      buildProjectTestSpace();
+      buildTestSpace();
       onTestsSuccessful();
     } catch (Throwable throwable) {
       onTestsFailed(throwable);
