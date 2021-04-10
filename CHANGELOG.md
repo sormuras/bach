@@ -10,13 +10,17 @@ This project adheres to [JEP 223: New Version-String Scheme](https://openjdk.jav
 
 _In progress..._
 
+## Version [17-ea-3] released 2021-04-10
+
+Preliminary Polishing Pass.
+
 ### Added
 
 - Support of `OnTestsFailed` and `OnTestsSuccessful` events added. [#227]
 
 ### Changed
 
-- Tentative final API polishing and renaming pass applied to `ProjectInfo` annotation. [#205] Including:
+- API polishing and renaming pass applied to `ProjectInfo` annotation. [#205] Including:
     - Moved all nested annotation types directly into `ProjectInfo`'s body.
     - Introduced `options = @Options` element and annotation.
     - Introduced `main = @MainSpace` element and annotation.
@@ -59,7 +63,9 @@ Bug fixes and minor features.
 
 Initial Early-Access release.
 
-[17-ea]: https://github.com/sormuras/bach/compare/17-ea-2...17-ea
+[17-ea]: https://github.com/sormuras/bach/compare/17-ea-3...17-ea
+
+[17-ea-3]: https://github.com/sormuras/bach/compare/17-ea-2...17-ea-3
 
 [17-ea-2]: https://github.com/sormuras/bach/compare/17-ea-1...17-ea-2
 
