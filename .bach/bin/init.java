@@ -11,7 +11,7 @@ class init {
 
   public static Path BIN = Path.of(".bach/bin");
 
-  public static String DEFAULT_VERSION = "17-ea-2";
+  public static String DEFAULT_VERSION = "17-ea-3";
 
   public static void main(String... args) throws Exception {
     var update = Files.isDirectory(BIN);
