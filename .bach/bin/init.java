@@ -26,7 +26,7 @@ class init {
     var version = args.length == 0 ? DEFAULT_VERSION : args[0];
     loadScript("bach").toFile().setExecutable(true);
     loadScript("bach.bat");
-    loadScript("boot.java");
+    loadScript("boot.java", version);
     loadScript("boot.jsh");
     loadScript("init.java");
     loadModule("com.github.sormuras.bach", version);
@@ -71,7 +71,11 @@ class init {
   }
 
   static Path loadScript(String name) throws Exception {
-    var uri = "https://github.com/sormuras/bach/raw/main/.bach/bin/" + name;
+    return loadScript(name, "main");
+  }
+
+  static Path loadScript(String name, String version) throws Exception {
+    var uri = "https://github.com/sormuras/bach/raw/" + version + "/.bach/bin/" + name;
     return copy(uri, name);
   }
 
