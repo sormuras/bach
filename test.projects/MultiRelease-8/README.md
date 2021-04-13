@@ -1,4 +1,5 @@
-# Project `MultiRelease-7`
+# Project `MultiRelease-8`
 
-- release: 7
-- module: 9
+- Base `main/java` release: **8**
+- Module `main/java-module` release: **9**
+- Maximum release: `Runtime.version().feature()`

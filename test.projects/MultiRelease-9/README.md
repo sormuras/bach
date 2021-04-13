@@ -1,6 +1,6 @@
 # Project `MultiRelease9`
 
-- Base release: **9** (using JDK 16-ea+24)
+- Base release: **9**
 - Maximum release: `Runtime.version().feature()`
 
 Copied from `javac --help`:
