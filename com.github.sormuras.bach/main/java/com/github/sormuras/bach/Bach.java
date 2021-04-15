@@ -146,6 +146,7 @@ public class Bach implements AutoCloseable, BachAPI {
       onTestsSuccessful();
     } catch (Throwable throwable) {
       onTestsFailed(throwable);
+      throw throwable;
     }
     say("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
   }
