@@ -1,8 +1,7 @@
 @ECHO OFF
 
 IF "%~1" == "boot" (
-  javac --module-path .bach\bin --add-modules com.github.sormuras.bach -d .bach\workspace\.bach .bach\bin\boot.java
-  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach --class-path .bach\workspace\.bach .bach\bin\boot.jsh
+  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach
   EXIT /B %ERRORLEVEL%
 )
 
@@ -11,7 +10,7 @@ IF "%~1" == "init" (
     ECHO "Usage: bach init VERSION"
     EXIT /B 1
   )
-  java .bach\bin\init.java %2
+  jshell -R-Dbach-version=%2 https://git.io/bach-init
   EXIT /B %ERRORLEVEL%
 )
 

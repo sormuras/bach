@@ -10,11 +10,6 @@ The `.bach/bin` directory contains scripts and modules used to build modular Jav
 
 - `bach`: Launch script for Linux and MacOS
 - `bach.bat`: Launch script for Windows
-- `boot.java`: Bach's boot API and JShell overlay used in `boot.jsh`
-- `boot.jsh`: Bach's boot script usable as a JShell load-file
-- `bootstrap.java`: Bach's platform-agnostic build program used by GitHub Actions workflows
-- `init.java`: Bach's init program used by launcher scripts and in `init.jsh`
-- `init.jsh`: Bach's init script usable as a JShell load-file
 
 ### Modules
 
