@@ -8,6 +8,5 @@
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />
-    <orderEntry type="module" module-name="com.github.sormuras.bach" />
   </component>
 </module>

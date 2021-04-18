@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="bootstrap" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="bootstrap" />
-    <module name="project-bach" />
+    <module name="bach" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
