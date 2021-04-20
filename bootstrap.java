@@ -39,7 +39,11 @@ class bootstrap {
         "--main-class=" + module + ".Main",
         "-C",
         classes.resolve(module).toString(),
+        ".",
+        "-C",
+        Path.of(module).resolve("main/java").toString(),
         ".");
+    System.out.println("<< " + Files.size(jar));
   }
 
   static void delete(Path directory, String glob) throws Exception {
