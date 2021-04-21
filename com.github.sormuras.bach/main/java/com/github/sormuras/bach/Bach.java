@@ -1,70 +1,80 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.BachAPI;
-import com.github.sormuras.bach.api.JavaFormatterAPI;
-import com.github.sormuras.bach.internal.ModuleLayerBuilder;
+import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Option;
+import com.github.sormuras.bach.api.Project;
+import com.github.sormuras.bach.api.ProjectInfo;
+import com.github.sormuras.bach.api.UnsupportedActionException;
+import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
+import com.github.sormuras.bach.internal.HelpMessageBuilder;
 import com.github.sormuras.bach.internal.Strings;
-import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.Folders;
-import com.github.sormuras.bach.project.Property;
-import com.github.sormuras.bach.util.Records;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.spi.ToolProvider;
 
-/** Java Shell Builder. */
-public class Bach implements AutoCloseable, BachAPI {
+public record Bach(Logbook logbook, Options options, Plugins plugins, Project project) {
 
-  public interface OnTestsFailed {
-
-    record Event(Bach bach, Throwable throwable) {}
-
-    void onTestsFailed(Event event);
+  public static Bach of(String... args) {
+    return Bach.of(Printer.ofSystem(), args);
   }
 
-  public interface OnTestsSuccessful {
-
-    record Event(Bach bach) {}
-
-    void onTestsSuccessful(Event event);
+  public static Bach of(Printer printer, String... args) {
+    return Bach.of(printer, Options.ofCommandLineArguments(args));
   }
 
-  /** A {@code Bach}-creating service. */
-  public interface Provider<B extends Bach> {
-    /**
-     * {@return a new instance of service-provider that extends {@code Bach}}
-     *
-     * @param options the options object to be passed on
-     */
-    B newBach(Options options);
+  public static Bach of(Printer printer, Options initialOptions) {
+    var defaultOptions = Options.ofDefaultValues();
+    var interimOptions = Options.compose(initialOptions, defaultOptions);
+    var module = new BachInfoModuleBuilder(printer, interimOptions).build();
+    var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
+    var info = Optional.ofNullable(module.getAnnotation(ProjectInfo.class)).orElse(defaultInfo);
+    var options =
+        Options.compose(
+            initialOptions,
+            Options.ofCommandLineArguments(info.arguments()),
+            Options.ofProjectInfoOptions(info.options()),
+            Options.ofProjectInfoElements(info),
+            defaultOptions);
+    var logbook = Logbook.of(printer, options.is(Option.VERBOSE));
+    var service = ServiceLoader.load(module.getLayer(), Plugins.class);
+    var plugins = service.findFirst().orElseGet(Plugins::new);
+    var project = plugins.newProjectBuilder(logbook, options).build();
+    return new Bach(logbook, options, plugins, project);
   }
 
-  public static void main(String... args) {
-    System.exit(new Main().run(args));
+  static String banner() {
+    var location = location();
+    var type = Files.isDirectory(location) ? "directory" : "modular JAR file";
+    var directory = Path.of("").toAbsolutePath();
+    return """
+           Bach %s
+             Loaded from %s %s in directory: %s
+             Launched by Java %s running on %s.
+             The current working directory is: %s
+           """
+        .formatted(
+            version(),
+            type,
+            location.getFileName(),
+            directory.relativize(location).getParent().toUri(),
+            Runtime.version(),
+            System.getProperty("os.name"),
+            directory.toUri())
+        .strip();
   }
 
-  public static Bach of(Options options) {
-    var root = Path.of("");
-    var bach = root.resolve(".bach");
-    var name = options.get(Property.BACH_INFO, ProjectInfo.MODULE);
-    var layer = ModuleLayerBuilder.build(bach, name, Bach.bin());
-    var module = layer.findModule(name);
-    if (module.isEmpty()) return new Bach(options.with(layer));
-    var info = module.get().getAnnotation(ProjectInfo.class);
-    return ServiceLoader.load(layer, Provider.class)
-        .findFirst()
-        .map(factory -> factory.newBach(options.with(layer).with(info)))
-        .orElse(new Bach(options.with(info)));
+  static String version() {
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
   }
 
-  public static Path bin() {
-    return jar().getParent();
-  }
-
-  public static Path jar() {
+  public static Path location() {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
     var resolved = module.getLayer().configuration().findModule(module.getName()).orElseThrow();
@@ -72,131 +82,94 @@ public class Bach implements AutoCloseable, BachAPI {
     return Path.of(uri);
   }
 
-  public static String version() {
-    var module = Bach.class.getModule();
-    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
+  public boolean is(Option option) {
+    return options().is(option);
   }
 
-  private final Options options;
-  private final Logbook logbook;
-  private /*-*/ Browser browser;
-  private final Project project;
-
-  public Bach(Options options) {
-    this.options = options;
-    this.logbook = new Logbook(options);
-    this.browser = null; // defered creation in its accessor
-    this.project = newProject();
+  public void say(String message) {
+    logbook().log(System.Logger.Level.INFO, message);
   }
 
-  /** {@return an instance of {@code HttpClient} that is memoized by this Bach object} */
-  protected HttpClient newHttpClient() {
-    return HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+  public void log(String message) {
+    logbook().log(System.Logger.Level.DEBUG, message);
   }
 
-  /** {@return an instance of {@code Project} that is used as a component of this Bach object} */
-  protected Project newProject() {
-    return computeProject();
-  }
+  public int run() {
+    var out = logbook().printer().out();
+    if (is(Option.VERSION)) {
+      out.println(version());
+      return 0;
+    }
+    say(banner());
+    if (is(Option.SHOW_CONFIGURATION)) {
+      say("Configuration");
+      options().lines(Option::isStandard).forEach(this::say);
+    }
+    if (is(Option.HELP)) {
+      out.println(new HelpMessageBuilder(Option::isStandard).build());
+      return 0;
+    }
+    if (is(Option.HELP_EXTRA)) {
+      out.println(new HelpMessageBuilder(Option::isExtra).build());
+      return 0;
+    }
+    var tool = options().value(Option.TOOL);
+    if (tool != null) {
+      var line = tool.strings()[0];
+      var name = line[0];
+      var args = Arrays.copyOfRange(line, 1, line.length);
+      var err = logbook().printer().err();
+      say(name + ' ' + String.join(" ", args));
+      return ToolProvider.findFirst(name).orElseThrow().run(out, err, args);
+    }
 
-  /** {@return this} */
-  @Override
-  public final Bach bach() {
-    return this;
-  }
-
-  /** {@return the options instance passed to the constructor of this Bach object} */
-  public final Options options() {
-    return options;
-  }
-
-  public final Folders folders() {
-    return project.settings().folders();
-  }
-
-  public final synchronized Browser browser() {
-    if (browser == null) browser = new Browser(this);
-    return browser;
-  }
-
-  public final Project project() {
-    return project;
-  }
-
-  public final Logbook logbook() {
-    return logbook;
-  }
-
-  public final boolean is(Flag flag) {
-    return options.is(flag);
-  }
-
-  @Override
-  public final void build() throws Exception {
-    say("Build %s %s", project().name(), project().version());
-    if (is(Flag.VERBOSE)) info();
+    say(project.name() + " 0");
     var start = Instant.now();
-    if (is(Flag.STRICT)) formatJavaSourceFiles(JavaFormatterAPI.Mode.VERIFY);
-    loadMissingExternalModules();
-    verifyExternalModules();
-    buildMainSpace();
     try {
-      buildTestSpace();
-      onTestsSuccessful();
-    } catch (Throwable throwable) {
-      onTestsFailed(throwable);
-      throw throwable;
-    }
-    say("Build took %s", Strings.toString(Duration.between(start, Instant.now())));
-  }
-
-  public final void clean() throws Exception {
-    log("Clean...");
-
-    var workspace = folders().workspace();
-    if (Files.notExists(workspace)) return;
-    try (var walk = Files.walk(workspace)) {
-      var paths = walk.sorted((p, q) -> -p.compareTo(q)).toArray(Path[]::new);
-      log("Delete %s paths", paths.length);
-      for (var path : paths) Files.deleteIfExists(path);
-    }
-  }
-
-  @Override
-  public void close() {
-    if (logbook.runs().isEmpty()) return;
-    try {
-      var logbook = writeLogbook();
-      say("Logbook written to %s", logbook.toUri());
+      options().actions().forEach(this::run);
     } catch (Exception exception) {
-      say("Write logbook failed: %s", exception.getMessage());
+      logbook().log(exception);
+      return 1;
+    } finally {
+      say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
+      writeLogbook();
+    }
+    return 0;
+  }
+
+  void run(Action action) {
+    log(String.format("Run %s action", action));
+    switch (action) {
+      case BUILD -> build();
+      case CLEAN -> clean();
+      case COMPILE_MAIN -> compileMainCodeSpace();
+      case COMPILE_TEST -> compileTestCodeSpace();
+      case EXECUTE_TESTS -> executeTests();
+      default -> throw new UnsupportedActionException(action.toString());
     }
   }
 
-  public final void info() {
-    say("bin: %s", bin());
-    say("bach: %s/%s", getClass().getModule().getName(), getClass().getName());
-    say("project.name: %s", project.name());
-    say("project.version: %s", project.version());
-    say("%s", Records.toLines(project));
+  public void build() {
+    plugins.newBuildAction(this).build();
   }
 
-  @Override
-  public final void format() {
-    log("Format...");
-    formatJavaSourceFiles();
+  public void clean() {
+    plugins.newCleanAction(this).clean();
   }
 
-  public void onTestsFailed(Throwable throwable) {
-    var event = new OnTestsFailed.Event(this, throwable);
-    ServiceLoader.load(bach().options().layer(), OnTestsFailed.class)
-        .forEach(service -> service.onTestsFailed(event));
+  public void compileMainCodeSpace() {
+    plugins.newCompileMainCodeSpaceAction(this).compile();
   }
 
-  public void onTestsSuccessful() {
-    var event = new OnTestsSuccessful.Event(this);
-    ServiceLoader.load(bach().options().layer(), OnTestsSuccessful.class)
-        .forEach(service -> service.onTestsSuccessful(event));
+  public void compileTestCodeSpace() {
+    plugins.newCompileTestCodeSpaceAction(this).compile();
+  }
+
+  public void executeTests() {
+    plugins.newExecuteTestsAction(this).execute();
+  }
+
+  public void writeLogbook() {
+    plugins.newWriteLogbookAction(this).write();
   }
 }

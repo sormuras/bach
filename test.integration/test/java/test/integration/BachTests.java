@@ -1,94 +1,36 @@
 package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.lookup.LookupException;
-import com.github.sormuras.bach.project.CodeStyle;
-import com.github.sormuras.bach.project.Libraries;
-import com.github.sormuras.bach.project.Tweak;
-import java.util.List;
-import java.util.spi.ToolProvider;
+import com.github.sormuras.bach.Plugins;
+import com.github.sormuras.bach.Printer;
+import com.github.sormuras.bach.api.CodeSpaceMain;
+import com.github.sormuras.bach.api.CodeSpaceTest;
+import com.github.sormuras.bach.api.Folders;
+import com.github.sormuras.bach.api.Project;
+import com.github.sormuras.bach.api.Spaces;
+import java.io.PrintWriter;
+import java.io.Writer;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
-  private static Tweak newTweak(String trigger, String... arguments) {
-    return new Tweak(trigger, List.of(arguments));
-  }
-
   @Test
-  void defaults() {
-    var bach = new Bach(Options.of());
-    // top-level "components"
-    assertTrue(bach.logbook().runs().isEmpty());
-    assertNotNull(bach.project());
-    assertNotNull(bach.browser());
-    // default properties
-    var project = bach.project();
-    assertEquals("bach", project.name());
-    assertEquals("0", project.version());
-    assertEquals(Libraries.of(), project.libraries());
-    assertEquals(CodeStyle.FREE, project.spaces().style());
-    assertEquals("main", project.spaces().main().name());
-    assertLinesMatch(
-        """
-        >> default pattern "**module-info.java" matches many modules... >>
-        com.github.sormuras.bach
-        >> default pattern "**module-info.java" matches more modules... >>
-        simplicissimus
-        """
-            .lines(),
-        project.spaces().main().declarations().toNames());
-    assertEquals(
-        List.of(
-            newTweak("javac", "-encoding", "UTF-8"),
-            newTweak("javadoc", "-encoding", "UTF-8"),
-            newTweak("jlink", "--compress", "2"),
-            newTweak("jlink", "--no-header-files"),
-            newTweak("jlink", "--no-man-pages"),
-            newTweak("jlink", "--strip-debug")),
-        project.spaces().main().tweaks().values());
-    assertEquals("test", project.spaces().test().name());
-    assertLinesMatch(
-        """
-        com.github.sormuras.bach
-        test.base
-        test.integration
-        test.modules
-        test.projects
-        tests
-        """
-            .lines(),
-        project.spaces().test().declarations().toNames());
-    assertEquals(
-        List.of(newTweak("javac", "-encoding", "UTF-8")),
-        project.spaces().test().tweaks().values());
-    // computations
-    assertThrows(LookupException.class, () -> bach.computeExternalModuleUri("java.base"));
-    assertEquals("foo@0.jar", bach.buildMainJarFileName("foo"));
-    var tools = List.of("jar", "javac", "javadoc", "javap", "jdeps", "jlink", "jmod", "jpackage");
-    assertTrue(bach.computeToolProviders().map(ToolProvider::name).toList().containsAll(tools));
-  }
+  void explicit() {
+    var out = new PrintWriter(Writer.nullWriter());
+    var err = new PrintWriter(System.err, true);
+    var printer = new Printer(out, err);
+    var logbook = Logbook.of(printer, true);
+    var plugins = new Plugins();
+    var options = Options.ofDefaultValues();
+    var folders = Folders.of("");
+    var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
+    var project = new Project("explicit", folders, spaces);
+    var bach = new Bach(logbook, options, plugins, project);
 
-  @Test
-  void print() {
-    var bach = new Bach(Options.of("--silent"));
-
-    bach.run(new PrintToolProvider("10 PRINT 'HELLO WORLD'"));
-    bach.run(new PrintToolProvider(true, "20 GOTO 10", 0));
-
-    assertLinesMatch(
-        """
-        10 PRINT 'HELLO WORLD'
-        20 GOTO 10
-        """.lines(),
-        bach.logbook().runs().stream().map(Logbook.Run::output));
+    assertEquals("explicit", bach.project().name());
   }
 }

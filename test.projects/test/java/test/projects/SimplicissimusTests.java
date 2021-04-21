@@ -1,37 +1,59 @@
 package test.projects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.CodeSpace;
+import com.github.sormuras.bach.api.Option;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class SimplicissimusTests {
 
   @Test
-  void build(@TempDir Path temp) throws Exception {
-    var cli = new CLI("Simplicissimus", temp);
-    var out =
-        cli.start(
-            Command.of("bach")
-                .with("--verbose")
-                .with("--strict")
-                .with("--limit-tools", "javac,jar")
-                .with("--jar-with-sources") // has no effect, yet
-                .with("build"));
+  void build() throws Exception {
+    var root = Path.of("test.projects", "Simplicissimus");
+    var bach =
+        Bach.of(
+            BachHelper.errorPrinter(),
+            Options.of(Option.CHROOT, root)
+                // "--strict"
+                // "--limit-tools", "javac,jar"
+                // "--jar-with-sources"
+                .with(Option.VERBOSE)
+                .with(Option.PROJECT_NAME, "Simplicissimus") // TODO Use directory name
+                .with(Action.BUILD));
+
+    assertTrue(bach.options().is(Option.VERBOSE));
+    assertEquals(root, bach.project().folders().root());
+    assertEquals("Simplicissimus", bach.project().name());
+    assertEquals(0, bach.run(), bach.logbook().toString());
+
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        Perform main action: `build`
-        Build Simplicissimus 0
-        >> INFO + BUILD >>
-        Build took .+
+        Simplicissimus 0
+        Run BUILD action
+        >> BUILD >>
+        Bach run took .+
         Logbook written to .+
         """
             .lines(),
-        out.lines());
-    var jar = cli.workspace("modules", "simplicissimus@0.jar");
+        bach.logbook().lines());
+
+    var folders = bach.project().folders();
+    var jar = folders.modules(CodeSpace.MAIN, "simplicissimus@0.jar");
+
+    var classes = folders.workspace("classes");
+    BachHelper.run("javac", folders.root("module-info.java"), "-d", classes);
+    Files.createDirectories(jar.getParent());
+    BachHelper.run("jar", "--create", "--file", jar, "-C", classes, ".");
+
     assertLinesMatch(
         """
         META-INF/
@@ -40,6 +62,6 @@ class SimplicissimusTests {
         """
             .lines()
             .sorted(),
-        CLI.run(Command.jar().with("--list").with("--file", jar)).lines().sorted());
+        BachHelper.run("jar", "--list", "--file", jar).lines().sorted());
   }
 }

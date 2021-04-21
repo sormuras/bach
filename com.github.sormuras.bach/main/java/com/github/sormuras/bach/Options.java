@@ -1,181 +1,215 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.project.Flag;
-import com.github.sormuras.bach.project.Property;
-import com.github.sormuras.bach.tool.Tool;
-import java.io.PrintWriter;
-import java.io.Writer;
+import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Option;
+import com.github.sormuras.bach.api.Option.Value;
+import com.github.sormuras.bach.api.ProjectInfo;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * An options descriptor.
- *
- * @param layer the module layer to use at runtime
- * @param info an optional project declaration instance, may be {@code null}
- * @param out a stream to which "expected" output should be written
- * @param err a stream to which any error messages should be written
- * @param flags a set of feature toggles passed individually like {@code --verbose --help ...}
- * @param properties a map of key-value pairs passed nominally like {@code --project-targets-java 8}
- * @param actions the list of actions to execute passed individually like {@code info build ...}
- * @param tool an optional command to execute passed via {@code tool NAME [ARGS...]}
- */
-public record Options(
-    ModuleLayer layer,
-    Optional<ProjectInfo> info,
-    PrintWriter out,
-    PrintWriter err,
-    Set<Flag> flags,
-    Map<Property, List<String>> properties,
-    List<String> actions,
-    Optional<Tool> tool) {
+public final class Options {
 
-  public Options with(ModuleLayer layer) {
-    return new Options(layer, info, out, err, flags, properties, actions, tool);
+  public static Options of() {
+    return new Options(new EnumMap<>(Option.class));
   }
 
-  public Options with(ProjectInfo info) {
-    return new Options(
-        layer, Optional.ofNullable(info), out, err, flags, properties, actions, tool);
+  public static Options of(Option option, Object... objects) {
+    return of().with(option, objects);
   }
 
-  /**
-   * {@return new {@code Options} instance with the given flags added}
-   *
-   * @param flag a flag constant to add to the set of flags of this options object
-   * @param more more flags to add
-   */
-  public Options with(Flag flag, Flag... more) {
-    var flags = new HashSet<>(this.flags);
-    flags.add(flag);
-    flags.addAll(Set.of(more));
-    return new Options(layer, info, out, err, flags, properties, actions, tool);
+  public static Options ofDefaultValues() {
+    var map = new EnumMap<Option, Value>(Option.class);
+    for (var option : Option.values()) {
+      var value = option.defaultValue();
+      if (value == Value.EMPTY) continue;
+      map.put(option, value);
+    }
+    return new Options(map);
   }
 
-  public List<String> list(Property property) {
-    return properties.getOrDefault(property, List.of());
+  public static Options ofCommandLineArguments(String... arguments) {
+    return ofCommandLineArguments(List.of(arguments));
   }
 
-  public String get(Property property, String defaultValue) {
-    var values = list(property);
-    return values.isEmpty() ? defaultValue : values.get(0);
-  }
-
-  /**
-   * {@return {@code true} if the given flag is present within the set of flags, else {@code false}}
-   *
-   * @param flag a binary option to check for being present
-   */
-  public boolean is(Flag flag) {
-    return flags.contains(flag);
-  }
-
-  public final Optional<String> find(Property property) {
-    return Optional.ofNullable(get(property, null));
-  }
-
-  public final Optional<List<String>> findRepeatable(Property property) {
-    return Optional.ofNullable(properties.get(property));
-  }
-
-  /**
-   * {@return an instance of {@code Options} parsed from the given command-line arguments}
-   *
-   * <p>This convenient overload wraps the {@link System#out} and {@link System#err} streams into
-   * automatically flushing {@link PrintWriter} objects and delegates to {@link #of(PrintWriter,
-   * PrintWriter, String...)}.
-   *
-   * @param args the command-line arguments to parse
-   */
-  public static Options of(String... args) {
-    return of(new PrintWriter(System.out, true), new PrintWriter(System.err, true), args);
-  }
-
-  /**
-   * {@return an instance of {@code Options} parsed from the given command-line arguments}
-   *
-   * @param out a stream to which "expected" output should be written
-   * @param err a stream to which any error messages should be written
-   * @param args the command-line arguments to parse
-   */
-  public static Options of(PrintWriter out, PrintWriter err, String... args) {
-    var deque = new ArrayDeque<>(List.of(args));
-    var mapOfFlagArguments = map(Flag.class);
-    var flags = new TreeSet<Flag>();
-    var mapOfPropertyArguments = map(Property.class);
-    var properties = new TreeMap<Property, List<String>>();
-    var actions = new ArrayList<String>();
-    var tool = new AtomicReference<Tool>(null);
-
+  public static Options ofCommandLineArguments(List<String> arguments) {
+    var options = of();
+    if (arguments.isEmpty()) return options;
+    var deque = new ArrayDeque<String>();
+    arguments.stream().flatMap(String::lines).map(String::strip).forEach(deque::add);
     while (!deque.isEmpty()) {
       var argument = deque.removeFirst();
-      if (argument.isBlank()) throw new IllegalArgumentException("An argument must not be blank");
-
-      if (argument.startsWith("--")) { // handle flags and properties
-        var flag = mapOfFlagArguments.get(argument);
-        if (flag != null) {
-          flags.add(flag);
-          continue;
-        }
-        var property = mapOfPropertyArguments.get(argument);
-        if (property != null) {
-          var value = next(deque, property.name());
-          var values = property.repeatable ? List.of(value.split(",")) : List.of(value);
-          properties.merge(property, values, Options::merge);
-          continue;
-        }
-        throw new IllegalArgumentException("No flag, no property: " + argument);
-      }
-
-      if ("tool".equals(argument)) {
-        var name = next(deque, "No tool name given: bach <OPTIONS...> tool NAME <ARGS...>");
-        tool.set(Command.of(name, deque.toArray(String[]::new)));
+      if (!argument.startsWith("--")) {
+        options = options.with(Action.ofCli(argument));
+        for (var remaining : deque) options = options.with(Action.ofCli(remaining));
         deque.clear();
+        break;
+      }
+      var option = Option.ofCli(argument);
+      if (option.isFlag()) { // no value-representing argument available
+        options = options.with(option, Value.TRUE);
         continue;
       }
-
-      actions.add(argument);
-      actions.addAll(deque);
-      deque.clear();
+      var needs = Math.abs(option.cardinality());
+      var remaining = deque.size();
+      if (deque.size() < needs) {
+        var mode = option.cardinality() >= 0 ? "exactly" : "at least";
+        var format = "Too few arguments for option %s: need %s %d, but only %d remaining";
+        throw new IllegalArgumentException(String.format(format, option, needs, mode, remaining));
+      }
+      if (option.isTerminal()) { // drain all remaining arguments
+        var value = Value.of(deque.toArray(String[]::new));
+        options = options.with(option, value);
+        deque.clear();
+        break;
+      }
+      var line = new String[needs]; // get exact number of arguments
+      for (int i = 0; i < needs; i++) line[i] = deque.removeFirst();
+      var value = Value.of(line);
+      options = options.with(option, value);
     }
-
-    return new Options(
-        Options.class.getModule().getLayer(),
-        Optional.empty(),
-        flags.contains(Flag.SILENT) ? new PrintWriter(Writer.nullWriter()) : out,
-        err,
-        flags,
-        properties,
-        actions,
-        Optional.ofNullable(tool.get()));
+    return options;
   }
 
-  private static String next(ArrayDeque<String> deque, String message) {
-    if (deque.isEmpty()) throw new IllegalArgumentException(message);
-    return deque.removeFirst();
+  public static Options ofProjectInfoElements(ProjectInfo info) {
+    return Options.of()
+        .with(Option.PROJECT_NAME, info.name())
+        //.with(Option.PROJECT_VERSION, info.version())
+        ;
   }
 
-  public static <E extends Enum<E>> String key(E constant) {
-    return "--" + constant.name().toLowerCase(Locale.ROOT).replace('_', '-');
+  public static Options ofProjectInfoOptions(ProjectInfo.Options options) {
+    var arguments = new ArrayList<String>();
+    for (var flag : options.flags()) {
+      arguments.add(flag.cli()); // "--verbose"
+    }
+    for (var info : options.properties()) {
+      var option = info.option();
+      arguments.add(option.cli()); // "--project-name"
+      if (option.isFlag()) continue; // "--verbose"
+      for (var value : info.value()) {
+        arguments.add(value.strip()); // "NAME"
+      }
+    }
+    for (var action : options.actions()) {
+      arguments.add(Option.ACTION.cli()); // "--action"
+      arguments.add(action.name()); // "ACTION"
+    }
+    return ofCommandLineArguments(arguments);
   }
 
-  private static <E extends Enum<E>> TreeMap<String, E> map(Class<? extends E> enums) {
-    var map = new TreeMap<String, E>();
-    for (var constant : enums.getEnumConstants()) map.put(key(constant), constant);
-    return map;
+  public static Options compose(Options... options) {
+    var map = new EnumMap<Option, Value>(Option.class);
+    option:
+    for (var option : Option.values()) {
+      for (var next : options) {
+        var value = next.value(option);
+        if (value != null) {
+          map.put(option, value);
+          continue option;
+        }
+      }
+    }
+    return new Options(map);
   }
 
-  private static <E> List<E> merge(List<E> head, List<E> tail) {
-    return Stream.concat(head.stream(), tail.stream()).toList();
+  private final EnumMap<Option, Value> map;
+
+  private Options(Map<Option, Value> map) {
+    this.map = map.isEmpty() ? new EnumMap<>(Option.class) : new EnumMap<>(map);
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    return this == that || that instanceof Options other && map.equals(other.map);
+  }
+
+  @Override
+  public int hashCode() {
+    return map.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "Options{" + map + '}';
+  }
+
+  public boolean isEmpty() {
+    return map.isEmpty();
+  }
+
+  public Value value(Option option) {
+    return map.get(option);
+  }
+
+  public boolean is(Option option) {
+    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag: " + option);
+    return value(option) == Value.TRUE;
+  }
+
+  public String get(Option option) {
+    return value(option).origin();
+  }
+
+  public Options with(Action action) {
+    return with(Option.ACTION, action.toCli());
+  }
+
+  public Options with(Option option, Object... objects) {
+    // trivial cases
+    if (objects instanceof Value[] value) return with(option, value[0]);
+    if (objects instanceof String[][] strings) return with(option, new Value(strings));
+    // flag case
+    if (option.isFlag()) return with(option, Value.ofBoolean(objects));
+    // convert to strings and wrap 'em up
+    var strings = Arrays.stream(objects).map(Object::toString).toArray(String[]::new);
+    return with(option, new Value(new String[][] {strings}));
+  }
+
+  public Options with(Option option) {
+    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag option: " + option);
+    return with(option, Value.TRUE);
+  }
+
+  public Options with(Option option, Value value) {
+    var copy = new EnumMap<>(map);
+    copy.merge(option, value, option.isRepeatable() ? Value::concat : (o, n) -> value);
+    return new Options(copy);
+  }
+
+  public Stream<Action> actions() {
+    var action = value(Option.ACTION);
+    if (action == null) return Stream.empty();
+    return action.stream().map(String::toUpperCase).map(Action::ofCli);
+  }
+
+  public Stream<String> lines() {
+    return lines(__ -> true);
+  }
+
+  public Stream<String> lines(Predicate<Option> filter) {
+    var lines = new ArrayList<String>();
+    for (var entry : map.entrySet()) {
+      var option = entry.getKey();
+      if (!filter.test(option)) continue;
+      if (option.isFlag()) {
+        if (is(option)) lines.add(option.cli());
+        continue;
+      }
+      var value = entry.getValue();
+      if (value == Value.EMPTY) continue;
+      for (var strings : entry.getValue().strings()) {
+        lines.add(option.cli());
+        for (var line : strings) {
+          lines.add("  " + line);
+        }
+      }
+    }
+    return lines.stream();
   }
 }

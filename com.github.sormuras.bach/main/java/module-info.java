@@ -10,17 +10,14 @@
  *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
- * @uses com.github.sormuras.bach.Bach.Provider
+ * @uses com.github.sormuras.bach.Plugins
  * @uses java.util.spi.ToolProvider
  */
-@com.github.sormuras.bach.ProjectInfo
+@com.github.sormuras.bach.api.ProjectInfo
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.api;
-  exports com.github.sormuras.bach.lookup;
-  exports com.github.sormuras.bach.project;
-  exports com.github.sormuras.bach.tool;
-  exports com.github.sormuras.bach.util;
+  exports com.github.sormuras.bach.core;
 
   requires transitive java.net.http;
   requires jdk.compiler;
@@ -30,11 +27,10 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Bach.OnTestsFailed;
-  uses com.github.sormuras.bach.Bach.OnTestsSuccessful;
-  uses com.github.sormuras.bach.Bach.Provider;
+  uses com.github.sormuras.bach.Plugins;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.Main;
+      com.github.sormuras.bach.internal.BachToolProvider,
+      com.github.sormuras.bach.internal.CopyToolProvider;
 }

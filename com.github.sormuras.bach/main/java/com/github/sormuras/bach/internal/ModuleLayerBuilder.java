@@ -1,57 +1,14 @@
 package com.github.sormuras.bach.internal;
 
-import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.util.Paths;
 import java.lang.ModuleLayer.Controller;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.spi.ToolProvider;
 
-/** A builder for building module layers. */
 public class ModuleLayerBuilder {
-
-  public static ModuleLayer build(String module) {
-    var bach = Path.of(".bach");
-    return build(bach, module, bach.resolve("bin"));
-  }
-
-  public static ModuleLayer build(Path dotBach, String module, Path bin) {
-    var modulePath = dotBach.resolve(module);
-    var moduleInfo = modulePath.resolve("module-info.java");
-    if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
-
-    var destination = Paths.createTempDirectory("bach-");
-    var args =
-        Command.of("javac")
-            .with("--module", module)
-            .with("--module-source-path", dotBach)
-            .with("--module-path", bin)
-            .with("-encoding", "UTF-8")
-            .with("-d", destination)
-            .arguments()
-            .toArray(String[]::new);
-    var result = ToolProvider.findFirst("javac").orElseThrow().run(System.out, System.err, args);
-    if (result != 0) throw new RuntimeException("Non-zero exit code: " + result);
-
-    var boot = ModuleLayer.boot();
-    return new ModuleLayerBuilder()
-        .bindServices(true)
-        .oneLoader(true)
-        .parentConfigurations(List.of(boot.configuration()))
-        .before(ModuleFinder.of())
-        .after(ModuleFinder.of(destination.resolve(module), bin))
-        .roots(Set.of(module))
-        .parentLayers(List.of(boot))
-        .parentLoader(ClassLoader.getPlatformClassLoader())
-        .controllerConsumer(controller -> {})
-        .build();
-  }
 
   private boolean bindServices = true;
   private boolean oneLoader = true;
