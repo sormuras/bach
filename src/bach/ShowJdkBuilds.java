@@ -34,8 +34,8 @@ public class ShowJdkBuilds {
 
   public static void main(String... args) {
     var builds = new TreeMap<>(parseArchive());
-    builds.put(15, parse(15)); // GA
-    builds.put(16, parse(16)); // EA
+    builds.put(15, parse(15)); // Archived...
+    builds.put(16, parse(16)); // GA
     builds.put(17, parse(17)); // EA
 
     var features = new ArrayList<>(builds.keySet());
@@ -98,9 +98,19 @@ public class ShowJdkBuilds {
   }
 
   static String substring(String string, String beginTag, String endTag) {
-    int beginIndex = string.indexOf(beginTag) + beginTag.length();
-    int endIndex = string.indexOf(endTag, beginIndex);
-    return string.substring(beginIndex, endIndex).trim();
+    int beginIndex = string.indexOf(beginTag);
+    if (beginIndex < 0) {
+      System.err.println("beginTag not found: " + beginTag);
+      System.err.println("string: " + string);
+      return "";
+    }
+    int endIndex = string.indexOf(endTag, beginIndex + beginTag.length());
+    if (endIndex < 0) {
+      System.err.println("endTag not found: " + endTag);
+      System.err.println("string: " + string);
+      return "";
+    }
+    return string.substring(beginIndex + beginTag.length(), endIndex).trim();
   }
 
   static List<String> lines(String table) {
