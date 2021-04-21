@@ -51,7 +51,7 @@ public class ShowJdkBuilds {
   /** Parse {@code https://jdk.java.net/${feature}} page. */
   static Map<String, String> parse(int feature) {
     var html = read("https://jdk.java.net/" + feature);
-    var table = substring(html, "<table class=\"builds\" summary=\"builds\">", "</table>");
+    var table = substring(html, "<table class=\"builds\"", "</table>");
     var map = new TreeMap<String, String>();
     for (var line : lines(table)) {
       var name = Path.of(URI.create(line).getPath()).getFileName().toString();
@@ -64,7 +64,7 @@ public class ShowJdkBuilds {
   /** Parse {@code https://jdk.java.net/archive} page. */
   static Map<Integer, Map<String, String>> parseArchive() {
     var html = read("https://jdk.java.net/archive");
-    var table = substring(html, "<table class=\"builds\" summary=\"builds\">", "</table>");
+    var table = substring(html, "<table class=\"builds\"", "</table>");
     var builds = new TreeMap<String, String>();
     for (var line : lines(table)) {
       var name = Path.of(URI.create(line).getPath()).getFileName().toString();
