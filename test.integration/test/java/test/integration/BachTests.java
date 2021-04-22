@@ -12,18 +12,13 @@ import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.Spaces;
-import java.io.PrintWriter;
-import java.io.Writer;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
 
   @Test
   void explicit() {
-    var out = new PrintWriter(Writer.nullWriter());
-    var err = new PrintWriter(System.err, true);
-    var printer = new Printer(out, err);
-    var logbook = Logbook.of(printer, true);
+    var logbook = Logbook.of(Printer.ofErrors(), true);
     var plugins = new Plugins();
     var options = Options.ofDefaultValues();
     var folders = Folders.of("");
