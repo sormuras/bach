@@ -1,44 +1,46 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Option.Value;
 import com.github.sormuras.bach.api.ProjectInfo;
+import java.lang.System.Logger.Level;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public final class Options {
+public record Options(String title, EnumMap<Option, Value> map) {
 
   public static Options of() {
-    return new Options(new EnumMap<>(Option.class));
+    var frame = StackWalker.getInstance().walk(frames -> frames.skip(1).findFirst()).orElseThrow();
+    return Options.of(frame.getMethodName() + '@' + frame.getByteCodeIndex());
   }
 
-  public static Options of(Option option, Object... objects) {
-    return of().with(option, objects);
+  public static Options of(String title) {
+    return new Options(title, new EnumMap<>(Option.class));
   }
 
   public static Options ofDefaultValues() {
     var map = new EnumMap<Option, Value>(Option.class);
-    for (var option : Option.values()) {
-      var value = option.defaultValue();
-      if (value == Value.EMPTY) continue;
-      map.put(option, value);
-    }
-    return new Options(map);
+    for (var option : Option.values())
+      option.defaultValue().ifPresent(defaultValue -> map.put(option, defaultValue));
+    return new Options("default values", map);
   }
 
-  public static Options ofCommandLineArguments(String... arguments) {
-    return ofCommandLineArguments(List.of(arguments));
+  public static Options ofCommandLineArguments(String title, String... arguments) {
+    if (arguments.length == 0) return Options.of(title);
+    return Options.ofCommandLineArguments(title, List.of(arguments));
   }
 
-  public static Options ofCommandLineArguments(List<String> arguments) {
-    var options = of();
+  public static Options ofCommandLineArguments(String title, List<String> arguments) {
+    var options = Options.of(title);
     if (arguments.isEmpty()) return options;
     var deque = new ArrayDeque<String>();
     arguments.stream().flatMap(String::lines).map(String::strip).forEach(deque::add);
@@ -52,35 +54,32 @@ public final class Options {
       }
       var option = Option.ofCli(argument);
       if (option.isFlag()) { // no value-representing argument available
-        options = options.with(option, Value.TRUE);
+        options = options.with(option, Value.of("true"));
         continue;
       }
       var needs = Math.abs(option.cardinality());
       var remaining = deque.size();
       if (deque.size() < needs) {
         var mode = option.cardinality() >= 0 ? "exactly" : "at least";
-        var format = "Too few arguments for option %s: need %s %d, but only %d remaining";
-        throw new IllegalArgumentException(String.format(format, option, needs, mode, remaining));
+        var message = "Too few arguments for option %s: need %s %d, but only %d remaining";
+        throw new BachException(message, option, needs, mode, remaining);
       }
-      if (option.isTerminal()) { // drain all remaining arguments
-        var value = Value.of(deque.toArray(String[]::new));
-        options = options.with(option, value);
+      if (option.isTerminal()) { // get all remaining arguments
+        options = options.with(option, new Value(List.copyOf(deque)));
         deque.clear();
         break;
       }
-      var line = new String[needs]; // get exact number of arguments
-      for (int i = 0; i < needs; i++) line[i] = deque.removeFirst();
-      var value = Value.of(line);
-      options = options.with(option, value);
+      var exact = deque.stream().limit(needs).toList(); // get exact number of arguments
+      for (var ignored : exact) deque.removeFirst(); // remove those elements from the deque (...)
+      options = options.with(option, new Value(exact));
     }
     return options;
   }
 
   public static Options ofProjectInfoElements(ProjectInfo info) {
-    return Options.of()
-        .with(Option.PROJECT_NAME, info.name())
-        //.with(Option.PROJECT_VERSION, info.version())
-        ;
+    var options = Options.of("@ProjectInfo elements");
+    options = options.withIfDifferent(Option.PROJECT_NAME, Value.of(info.name()));
+    return options;
   }
 
   public static Options ofProjectInfoOptions(ProjectInfo.Options options) {
@@ -100,92 +99,99 @@ public final class Options {
       arguments.add(Option.ACTION.cli()); // "--action"
       arguments.add(action.name()); // "ACTION"
     }
-    return ofCommandLineArguments(arguments);
+    return ofCommandLineArguments("@ProjectInfo.options()", arguments);
   }
 
-  public static Options compose(Options... options) {
+  public static Options ofDirectory(Path directory) {
+    var title = "directory options (" + directory + ")";
+    if (!Files.isDirectory(directory)) return Options.of(title);
+    var name = directory.toAbsolutePath().normalize().getFileName();
+    if (name == null) return Options.of(title);
+    return Options.of(title).with(Option.PROJECT_NAME, name);
+  }
+
+  public static Options ofFile(Path file) {
+    var title = "file options (" + file + ")";
+    if (!Files.isRegularFile(file)) return Options.of(title);
+    try {
+      var lines = Files.readAllLines(file);
+      return Options.ofCommandLineArguments(title, lines);
+    } catch (Exception exception) {
+      throw new BachException("Read all lines failed for: " + file, exception);
+    }
+  }
+
+  public static Options compose(String title, Logbook logbook, Options... options) {
+    /* DEBUG */ {
+      logbook.log(Level.DEBUG, "Compose options from " + options.length + " components");
+      for (int i = 0; i < options.length; i++) {
+        var next = options[i];
+        var size = next.map.size();
+        var s = size == 1 ? "" : "s";
+        logbook.log(Level.TRACE, "[" + i + "] = " + next.title + " with " + size + " element" + s);
+      }
+      logbook.log(Level.DEBUG, "[component] --<option> <value...>");
+    }
     var map = new EnumMap<Option, Value>(Option.class);
     option:
     for (var option : Option.values()) {
-      for (var next : options) {
+      for (int i = 0; i < options.length; i++) {
+        var next = options[i];
         var value = next.value(option);
-        if (value != null) {
-          map.put(option, value);
-          continue option;
+        if (value == null) continue;
+        map.put(option, value);
+        /* DEBUG */ {
+          var source = "[" + i + "] ";
+          var target = " " + value.join();
+          logbook.log(Level.DEBUG, source + option.cli() + target);
         }
+        continue option;
       }
     }
-    return new Options(map);
-  }
-
-  private final EnumMap<Option, Value> map;
-
-  private Options(Map<Option, Value> map) {
-    this.map = map.isEmpty() ? new EnumMap<>(Option.class) : new EnumMap<>(map);
-  }
-
-  @Override
-  public boolean equals(Object that) {
-    return this == that || that instanceof Options other && map.equals(other.map);
-  }
-
-  @Override
-  public int hashCode() {
-    return map.hashCode();
-  }
-
-  @Override
-  public String toString() {
-    return "Options{" + map + '}';
-  }
-
-  public boolean isEmpty() {
-    return map.isEmpty();
+    return new Options(title, map);
   }
 
   public Value value(Option option) {
     return map.get(option);
   }
 
-  public boolean is(Option option) {
-    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag: " + option);
-    return value(option) == Value.TRUE;
+  public String get(Option option) {
+    return value(option).elements().get(0);
   }
 
-  public String get(Option option) {
-    return value(option).origin();
+  public boolean is(Option option) {
+    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag: " + option);
+    return Value.of("true").equals(value(option));
   }
 
   public Options with(Action action) {
     return with(Option.ACTION, action.toCli());
   }
 
-  public Options with(Option option, Object... objects) {
-    // trivial cases
-    if (objects instanceof Value[] value) return with(option, value[0]);
-    if (objects instanceof String[][] strings) return with(option, new Value(strings));
-    // flag case
-    if (option.isFlag()) return with(option, Value.ofBoolean(objects));
-    // convert to strings and wrap 'em up
-    var strings = Arrays.stream(objects).map(Object::toString).toArray(String[]::new);
-    return with(option, new Value(new String[][] {strings}));
-  }
-
   public Options with(Option option) {
     if (!option.isFlag()) throw new IllegalArgumentException("Not a flag option: " + option);
-    return with(option, Value.TRUE);
+    return with(option, Value.of("true"));
+  }
+
+  public Options with(Option option, Object... objects) {
+    return with(option, option.toValue(objects));
+  }
+
+  public Options withIfDifferent(Option option, Value value) {
+    if (Objects.equals(value, option.defaultValue().orElse(null))) return this;
+    return with(option, value);
   }
 
   public Options with(Option option, Value value) {
     var copy = new EnumMap<>(map);
     copy.merge(option, value, option.isRepeatable() ? Value::concat : (o, n) -> value);
-    return new Options(copy);
+    return new Options(title, copy);
   }
 
   public Stream<Action> actions() {
-    var action = value(Option.ACTION);
-    if (action == null) return Stream.empty();
-    return action.stream().map(String::toUpperCase).map(Action::ofCli);
+    var value = value(Option.ACTION);
+    if (value == null) return Stream.empty();
+    return value.elements().stream().map(String::toUpperCase).map(Action::ofCli);
   }
 
   public Stream<String> lines() {
@@ -197,17 +203,21 @@ public final class Options {
     for (var entry : map.entrySet()) {
       var option = entry.getKey();
       if (!filter.test(option)) continue;
+      var cli = option.cli();
       if (option.isFlag()) {
-        if (is(option)) lines.add(option.cli());
+        if (is(option)) lines.add(cli);
         continue;
       }
-      var value = entry.getValue();
-      if (value == Value.EMPTY) continue;
-      for (var strings : entry.getValue().strings()) {
-        lines.add(option.cli());
-        for (var line : strings) {
-          lines.add("  " + line);
-        }
+      var elements = entry.getValue().elements();
+      if (option.isTerminal()) {
+        lines.add(cli);
+        lines.add(String.join(" ", elements));
+        continue;
+      }
+      var deque = new ArrayDeque<>(elements);
+      while (!deque.isEmpty()) {
+        lines.add(cli);
+        for (int i = 0; i < option.cardinality(); i++) lines.add("  " + deque.removeFirst());
       }
     }
     return lines.stream();

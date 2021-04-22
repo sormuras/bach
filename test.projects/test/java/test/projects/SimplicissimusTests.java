@@ -5,13 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.Option;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import test.base.ToolProviders;
 
 class SimplicissimusTests {
 
@@ -20,13 +23,13 @@ class SimplicissimusTests {
     var root = Path.of("test.projects", "Simplicissimus");
     var bach =
         Bach.of(
-            BachHelper.errorPrinter(),
-            Options.of(Option.CHROOT, root)
+            Logbook.of(Printer.ofErrors(), true),
+            Options.of("Simplicissimus Options")
+                .with(Option.CHROOT, root)
                 // "--strict"
                 // "--limit-tools", "javac,jar"
                 // "--jar-with-sources"
                 .with(Option.VERBOSE)
-                .with(Option.PROJECT_NAME, "Simplicissimus") // TODO Use directory name
                 .with(Action.BUILD));
 
     assertTrue(bach.options().is(Option.VERBOSE));
@@ -50,9 +53,9 @@ class SimplicissimusTests {
     var jar = folders.modules(CodeSpace.MAIN, "simplicissimus@0.jar");
 
     var classes = folders.workspace("classes");
-    BachHelper.run("javac", folders.root("module-info.java"), "-d", classes);
+    ToolProviders.run("javac", folders.root("module-info.java"), "-d", classes);
     Files.createDirectories(jar.getParent());
-    BachHelper.run("jar", "--create", "--file", jar, "-C", classes, ".");
+    ToolProviders.run("jar", "--create", "--file", jar, "-C", classes, ".");
 
     assertLinesMatch(
         """
@@ -62,6 +65,6 @@ class SimplicissimusTests {
         """
             .lines()
             .sorted(),
-        BachHelper.run("jar", "--list", "--file", jar).lines().sorted());
+        ToolProviders.run("jar", "--list", "--file", jar).lines().sorted());
   }
 }

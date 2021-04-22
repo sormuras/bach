@@ -7,6 +7,10 @@ import java.util.stream.Stream;
 
 public record Logbook(Printer printer, boolean verbose, Queue<Message> messages) {
 
+  public static Logbook ofNullPrinter() {
+    return Logbook.of(Printer.ofNullWriter(), false);
+  }
+
   public static Logbook of(Printer printer, boolean verbose) {
     return new Logbook(printer, verbose, new ConcurrentLinkedQueue<>());
   }

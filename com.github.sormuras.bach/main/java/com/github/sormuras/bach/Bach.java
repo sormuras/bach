@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
@@ -24,23 +23,33 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
   }
 
   public static Bach of(Printer printer, String... args) {
-    return Bach.of(printer, Options.ofCommandLineArguments(args));
+    var initialOptions = Options.ofCommandLineArguments("Initial Options", args);
+    var initialLogbook = Logbook.of(printer, initialOptions.is(Option.VERBOSE));
+    return Bach.of(initialLogbook, initialOptions);
   }
 
-  public static Bach of(Printer printer, Options initialOptions) {
+  public static Bach of(Logbook initialLogbook, Options initialOptions) {
     var defaultOptions = Options.ofDefaultValues();
-    var interimOptions = Options.compose(initialOptions, defaultOptions);
-    var module = new BachInfoModuleBuilder(printer, interimOptions).build();
+    var interimOptions =
+        Options.compose("Interim Options", Logbook.ofNullPrinter(), initialOptions, defaultOptions);
+    var root = Path.of(interimOptions.get(Option.CHROOT));
+    var module = new BachInfoModuleBuilder(initialLogbook, interimOptions).build();
     var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
     var info = Optional.ofNullable(module.getAnnotation(ProjectInfo.class)).orElse(defaultInfo);
     var options =
         Options.compose(
+            "Options",
+            initialLogbook,
             initialOptions,
-            Options.ofCommandLineArguments(info.arguments()),
+            Options.ofCommandLineArguments("ProjectInfo Arguments", info.arguments()),
             Options.ofProjectInfoOptions(info.options()),
             Options.ofProjectInfoElements(info),
+            Options.ofFile(root.resolve("bach.args")),
+            Options.ofDirectory(root),
             defaultOptions);
-    var logbook = Logbook.of(printer, options.is(Option.VERBOSE));
+
+    var verbose = options.is(Option.VERBOSE);
+    var logbook = new Logbook(initialLogbook.printer(), verbose, initialLogbook.messages());
     var service = ServiceLoader.load(module.getLayer(), Plugins.class);
     var plugins = service.findFirst().orElseGet(Plugins::new);
     var project = plugins.newProjectBuilder(logbook, options).build();
@@ -115,9 +124,9 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
     }
     var tool = options().value(Option.TOOL);
     if (tool != null) {
-      var line = tool.strings()[0];
-      var name = line[0];
-      var args = Arrays.copyOfRange(line, 1, line.length);
+      var line = tool.elements();
+      var name = line.get(0);
+      var args = line.subList(1, line.size()).toArray(String[]::new);
       var err = logbook().printer().err();
       say(name + ' ' + String.join(" ", args));
       return ToolProvider.findFirst(name).orElseThrow().run(out, err, args);

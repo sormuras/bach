@@ -3,6 +3,7 @@ package test.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.Option;
@@ -18,18 +19,38 @@ import org.junit.jupiter.api.io.TempDir;
 
 class SetProjectNameTests {
   @Test
-  void viaDefaultConstant(@TempDir Path temp) {
+  void viaDefaultConstant() {
     var name = ProjectInfo.DEFAULT_PROJECT_NAME;
 
-    var bach = Bach.of(errorPrinter(), chroot(temp));
+    var bach = Bach.of(errorLogbook(), Options.ofDefaultValues());
     assertEquals(name, bach.project().name());
+  }
+
+  @Test
+  void viaDirectoryName(@TempDir Path temp) throws Exception {
+    var name = "demo";
+    var demo = Files.createDirectories(temp.resolve(name));
+
+    var bach = Bach.of(errorLogbook(), chrootOptions(demo));
+    assertEquals(name, bach.project().name());
+  }
+
+  @Test
+  void viaFile(@TempDir Path temp) throws Exception {
+    scaffold(temp, Map.of("bach.args", """
+        --project-name
+          demo
+        """));
+
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp));
+    assertEquals("demo", bach.project().name());
   }
 
   @Test
   void viaOption(@TempDir Path temp) {
     var name = "demo";
 
-    var bach = Bach.of(errorPrinter(), chroot(temp).with(Option.PROJECT_NAME, name));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp).with(Option.PROJECT_NAME, name));
     assertEquals(name, bach.project().name());
   }
 
@@ -55,7 +76,7 @@ class SetProjectNameTests {
         """;
     scaffold(temp, Map.of(".bach/bach.info/module-info.java", info));
 
-    var bach = Bach.of(errorPrinter(), chroot(temp));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp));
     assertEquals("demo", bach.project().name());
   }
 
@@ -72,7 +93,7 @@ class SetProjectNameTests {
         """;
     scaffold(temp, Map.of(".bach/bach.info/module-info.java", info));
 
-    var bach = Bach.of(errorPrinter(), chroot(temp));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp));
     assertEquals("demo", bach.project().name());
   }
 
@@ -93,7 +114,7 @@ class SetProjectNameTests {
         """;
     scaffold(temp, Map.of(".bach/bach.info/module-info.java", info));
 
-    var bach = Bach.of(errorPrinter(), chroot(temp));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp));
     assertEquals("demo", bach.project().name());
   }
 
@@ -111,7 +132,7 @@ class SetProjectNameTests {
         """;
     scaffold(temp, Map.of(".bach/bach.info/module-info.java", info));
 
-    var bach = Bach.of(errorPrinter(), chroot(temp));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp));
     assertEquals("demo", bach.project().name());
   }
 
@@ -121,8 +142,12 @@ class SetProjectNameTests {
     return new Printer(out, err);
   }
 
-  static Options chroot(Path path) {
-    return Options.of(Option.CHROOT, path);
+  static Logbook errorLogbook() {
+    return Logbook.of(errorPrinter(), true);
+  }
+
+  static Options chrootOptions(Path path) {
+    return Options.of("Test Options").with(Option.CHROOT, path);
   }
 
   static void scaffold(Path root, Map<String, String> files) throws Exception {

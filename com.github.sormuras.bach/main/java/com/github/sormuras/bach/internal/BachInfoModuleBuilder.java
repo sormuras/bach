@@ -1,8 +1,8 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.Option;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -12,7 +12,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 
-public record BachInfoModuleBuilder(Printer printer, Options options) {
+public record BachInfoModuleBuilder(Logbook logbook, Options options) {
   public Module build() {
     var root = Path.of(options.get(Option.CHROOT)).normalize();
     var infoFolder = root.resolve(".bach").normalize();
@@ -40,7 +40,9 @@ public record BachInfoModuleBuilder(Printer printer, Options options) {
             "-d",
             destination.toString());
     var javac = ToolProvider.findFirst("javac").orElseThrow();
-    var result = javac.run(printer.out(), printer.err(), args.toArray(String[]::new));
+    var out = logbook.printer().out();
+    var err = logbook.printer().err();
+    var result = javac.run(out, err, args.toArray(String[]::new));
     if (result != 0) throw new RuntimeException("Non-zero exit code: " + result + " with: " + args);
     var boot = ModuleLayer.boot();
     return new ModuleLayerBuilder()

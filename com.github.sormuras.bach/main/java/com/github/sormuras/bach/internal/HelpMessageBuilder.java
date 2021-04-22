@@ -29,7 +29,7 @@ public record HelpMessageBuilder(Predicate<Option> optionFilter) {
     for (var option : Option.values()) {
       if (!filter.test(option)) continue;
       options.add(option.cli() + " [" + option.cardinality() + "]");
-      options.add(option.helpMessage().indent(4).stripTrailing());
+      options.add(option.description().indent(4).stripTrailing());
     }
     return options.toString();
   }

@@ -21,7 +21,7 @@ class OptionTests {
     assertFalse(option.isFlag());
     assertTrue(option.is(EXTRA));
     assertFalse(option.is(REPEATABLE));
-    assertEquals(".", option.defaultValue().origin());
+    assertEquals(".", option.defaultValue().orElseThrow().elements().get(0));
   }
 
   @Test
@@ -33,7 +33,7 @@ class OptionTests {
     assertTrue(option.isFlag());
     assertFalse(option.is(EXTRA));
     assertFalse(option.is(REPEATABLE));
-    assertSame(Option.Value.FALSE, option.defaultValue());
+    assertEquals(Option.Value.of("false"), option.defaultValue().orElseThrow());
   }
 
   @Test
@@ -45,7 +45,7 @@ class OptionTests {
     assertFalse(option.isFlag());
     assertFalse(option.is(EXTRA));
     assertTrue(option.is(REPEATABLE));
-    assertSame(Option.Value.EMPTY, option.defaultValue());
+    assertTrue(option.defaultValue().isEmpty());
   }
 
   @Test
@@ -57,6 +57,6 @@ class OptionTests {
     assertFalse(option.isFlag());
     assertFalse(option.is(EXTRA));
     assertTrue(option.is(REPEATABLE));
-    assertSame(Option.Value.EMPTY, option.defaultValue());
+    assertTrue(option.defaultValue().isEmpty());
   }
 }

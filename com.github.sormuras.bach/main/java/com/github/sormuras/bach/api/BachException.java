@@ -6,11 +6,11 @@ public class BachException extends RuntimeException {
   @Serial
   private static final long serialVersionUID = 210026486670031111L;
 
-  public BachException(String message) {
-    super(message);
+  public BachException(String message, Object... args) {
+    super(args.length == 0 ? message : String.format(message, args));
   }
 
-  public BachException(String message, Throwable cause) {
-    super(message, cause);
+  public BachException(String message, Throwable cause, Object... args) {
+    super(args.length == 0 ? message : String.format(message, args), cause);
   }
 }
