@@ -17,14 +17,16 @@ class OptionsTests {
   @Test
   void empty() {
     assertTrue(Options.of().map().isEmpty());
-    assertTrue(Options.of("<empty>").map().isEmpty());
+    var empty = Options.of("empty");
+    assertTrue(empty.map().isEmpty());
+    assertEquals("empty", empty.title());
   }
 
   @Test
-  void title() {
+  void titleStartsMethodName() {
     var options = Options.of();
-    assertEquals("title@0", options.title());
-    assertNotEquals("title@0", Options.of().title());
+    assertTrue(options.title().startsWith("titleStartsMethodName@"));
+    assertNotEquals(options.title(), Options.of().title());
   }
 
   @Test
@@ -58,7 +60,6 @@ class OptionsTests {
   @Test
   void overrideNonRepeatableOption() {
     var a = Options.of().with(Option.CHROOT, "a");
-    assertEquals("overrideNonRepeatableOption@0", a.title());
     var b = a.with(Option.CHROOT, "b");
     assertEquals("a", a.get(Option.CHROOT));
     assertEquals("b", b.get(Option.CHROOT));
