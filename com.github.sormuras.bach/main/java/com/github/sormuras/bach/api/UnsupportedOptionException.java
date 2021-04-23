@@ -7,6 +7,6 @@ public class UnsupportedOptionException extends BachException {
   private static final long serialVersionUID = 2673989659261329413L;
 
   public UnsupportedOptionException(String option) {
-    super("Unsupported opzion: " + option);
+    super("Unsupported option: " + option);
   }
 }
