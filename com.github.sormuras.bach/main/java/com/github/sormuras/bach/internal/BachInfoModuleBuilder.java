@@ -13,6 +13,15 @@ import java.util.Set;
 import java.util.spi.ToolProvider;
 
 public record BachInfoModuleBuilder(Logbook logbook, Options options) {
+
+  static Path location() {
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    var resolved = module.getLayer().configuration().findModule(module.getName()).orElseThrow();
+    var uri = resolved.reference().location().orElseThrow();
+    return Path.of(uri);
+  }
+
   public Module build() {
     var root = Path.of(options.get(Option.CHROOT)).normalize();
     var infoFolder = root.resolve(".bach").normalize();
@@ -24,7 +33,6 @@ public record BachInfoModuleBuilder(Logbook logbook, Options options) {
   ModuleLayer newModuleLayer(String module, Path source) {
     var moduleInfo = source.resolve(module).resolve("module-info.java");
     if (Files.notExists(moduleInfo)) return ModuleLayer.empty();
-    var bach = Bach.location();
     var directory = String.format("bach-%s-%08x", module, new Random().nextInt());
     var destination = Path.of(System.getProperty("java.io.tmpdir"), directory);
     var args =
@@ -34,7 +42,7 @@ public record BachInfoModuleBuilder(Logbook logbook, Options options) {
             "--module-source-path",
             source.toString(),
             "--module-path",
-            bach.toString(),
+            location().toString(),
             "-encoding",
             "UTF-8",
             "-d",

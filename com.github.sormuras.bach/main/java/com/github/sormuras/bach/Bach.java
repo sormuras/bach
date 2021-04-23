@@ -12,7 +12,6 @@ import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.HelpMessageBuilder;
 import com.github.sormuras.bach.internal.Strings;
 import java.lang.module.ModuleFinder;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,41 +58,6 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     return new Bach(logbook, options, factory, project);
   }
 
-  static String banner() {
-    var location = location();
-    var type = Files.isDirectory(location) ? "directory" : "modular JAR file";
-    var directory = Path.of("").toAbsolutePath();
-    return """
-           Bach %s
-             Loaded from %s %s in directory: %s
-             Launched by Java %s running on %s.
-             The current working directory is: %s
-           """
-        .formatted(
-            version(),
-            type,
-            location.getFileName(),
-            directory.relativize(location).getParent().toUri(),
-            Runtime.version(),
-            System.getProperty("os.name"),
-            directory.toUri())
-        .strip();
-  }
-
-  static String version() {
-    var module = Bach.class.getModule();
-    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
-  }
-
-  public static Path location() {
-    var module = Bach.class.getModule();
-    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    var resolved = module.getLayer().configuration().findModule(module.getName()).orElseThrow();
-    var uri = resolved.reference().location().orElseThrow();
-    return Path.of(uri);
-  }
-
   public Bach bach() {
     return this;
   }
@@ -113,10 +77,10 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   public int run() {
     var out = logbook().printer().out();
     if (is(Option.VERSION)) {
-      out.println(version());
+      out.println(Strings.version());
       return 0;
     }
-    say(banner());
+    say(Strings.banner());
     if (is(Option.SHOW_CONFIGURATION)) {
       say("Configuration");
       options().lines(Option::isStandard).forEach(this::say);

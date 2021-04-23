@@ -1,8 +1,10 @@
 package com.github.sormuras.bach.internal;
 
+import com.github.sormuras.bach.Bach;
 import java.io.File;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
@@ -12,6 +14,33 @@ import java.util.stream.Collectors;
 
 /** String-related helpers. */
 public class Strings {
+
+  public static String banner() {
+    var location = BachInfoModuleBuilder.location();
+    var type = Files.isDirectory(location) ? "directory" : "modular JAR file";
+    var directory = Path.of("").toAbsolutePath();
+    return """
+           Bach %s
+             Loaded from %s %s in directory: %s
+             Launched by Java %s running on %s.
+             The current working directory is: %s
+           """
+        .formatted(
+            version(),
+            type,
+            location.getFileName(),
+            directory.relativize(location).getParent().toUri(),
+            Runtime.version(),
+            System.getProperty("os.name"),
+            directory.toUri())
+        .strip();
+  }
+
+  public static String version() {
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
+  }
 
   /** {@return a human-readable representation of the given duration} */
   public static String toString(Duration duration) {
