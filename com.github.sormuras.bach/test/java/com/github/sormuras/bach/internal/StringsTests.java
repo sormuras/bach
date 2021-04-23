@@ -8,6 +8,7 @@ import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,6 +34,26 @@ class StringsTests {
     assertEquals("1-ea", Strings.toNumberAndPreRelease(Version.parse("1-ea")));
     assertEquals("1-ea", Strings.toNumberAndPreRelease(Version.parse("1-ea+2")));
     assertEquals("1+ea", Strings.toNumberAndPreRelease(Version.parse("1+ea+3")));
+  }
+
+  @Nested
+  class Join {
+    @Test
+    void joinEmptyCollection() {
+      assertEquals("", Strings.join(List.of()));
+    }
+
+    @Test
+    void joinSinglePath() {
+      var paths = List.of(Path.of("a"));
+      assertEquals("a", Strings.join(paths));
+    }
+
+    @Test
+    void joinMultiplePaths() {
+      var paths = List.of(Path.of("a"), Path.of("b"), Path.of("c"));
+      assertEquals("a|b|c", Strings.join(paths, "|"));
+    }
   }
 
   @Nested

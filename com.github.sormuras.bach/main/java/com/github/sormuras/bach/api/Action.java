@@ -19,7 +19,11 @@ public enum Action {
     }
   }
 
-  public String toCli() {
-    return name().toLowerCase(Locale.ROOT).replace('_', '-');
+  public static String toCli(Action action) {
+    return action.name().toLowerCase(Locale.ROOT).replace('_', '-');
+  }
+
+  public String cli() {
+    return toCli(this);
   }
 }

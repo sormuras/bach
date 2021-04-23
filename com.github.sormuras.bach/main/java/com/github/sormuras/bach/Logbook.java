@@ -1,5 +1,7 @@
 package com.github.sormuras.bach;
 
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
@@ -7,12 +9,18 @@ import java.util.stream.Stream;
 
 public record Logbook(Printer printer, boolean verbose, Queue<Message> messages) {
 
-  public static Logbook ofNullPrinter() {
-    return Logbook.of(Printer.ofNullWriter(), false);
+  public static Logbook of() {
+    return Logbook.of(Printer.of(), false);
   }
 
   public static Logbook of(Printer printer, boolean verbose) {
     return new Logbook(printer, verbose, new ConcurrentLinkedQueue<>());
+  }
+
+  public static Logbook ofErrorPrinter() {
+    var out = new PrintWriter(Writer.nullWriter());
+    var err = new PrintWriter(System.err, true);
+    return Logbook.of(Printer.of(out, err), true);
   }
 
   public void log(System.Logger.Level level, String text) {

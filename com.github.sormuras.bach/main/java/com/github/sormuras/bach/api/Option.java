@@ -39,9 +39,14 @@ public enum Option {
 
   ACTION("The name of the action to be executed.", null, 1, Modifier.REPEATABLE);
 
-  public static Option ofCli(String cli) {
-    var name = cli.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
-    return valueOf(name);
+  public static Option ofCli(String string) {
+    if (!string.startsWith("--")) throw new UnsupportedOptionException(string);
+    var name = string.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
+    try {
+      return valueOf(name);
+    } catch (IllegalArgumentException exception) {
+      throw new UnsupportedOptionException(string);
+    }
   }
 
   public static String toCli(Option option) {

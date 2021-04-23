@@ -6,20 +6,16 @@ import java.io.Writer;
 /** A printer prints formatted representations of objects to text-output streams. */
 public record Printer(PrintWriter out, PrintWriter err) {
 
+  public static Printer of() {
+    return Printer.of(new PrintWriter(Writer.nullWriter()));
+  }
+
+  public static Printer of(PrintWriter writer) {
+    return Printer.of(writer, writer);
+  }
+
   public static Printer of(PrintWriter out, PrintWriter err) {
     return new Printer(out, err);
-  }
-
-  public static Printer ofNullWriter() {
-    var out = new PrintWriter(Writer.nullWriter());
-    var err = new PrintWriter(Writer.nullWriter());
-    return Printer.of(out, err);
-  }
-
-  public static Printer ofErrors() {
-    var out = new PrintWriter(Writer.nullWriter());
-    var err = new PrintWriter(System.err, true);
-    return Printer.of(out, err);
   }
 
   public static Printer ofSystem() {

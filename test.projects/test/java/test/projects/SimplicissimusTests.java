@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.Option;
@@ -23,7 +22,7 @@ class SimplicissimusTests {
     var root = Path.of("test.projects", "Simplicissimus");
     var bach =
         Bach.of(
-            Logbook.of(Printer.ofErrors(), true),
+            Logbook.ofErrorPrinter(),
             Options.of("Simplicissimus Options")
                 .with(Option.CHROOT, root)
                 // "--strict"

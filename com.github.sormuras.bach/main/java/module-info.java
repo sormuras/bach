@@ -31,6 +31,5 @@ module com.github.sormuras.bach {
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.internal.BachToolProvider,
-      com.github.sormuras.bach.internal.CopyToolProvider;
+      com.github.sormuras.bach.internal.BachToolProvider;
 }

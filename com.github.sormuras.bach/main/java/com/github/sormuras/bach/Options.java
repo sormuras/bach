@@ -5,6 +5,7 @@ import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Option.Value;
 import com.github.sormuras.bach.api.ProjectInfo;
+import java.io.IOException;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +63,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
       if (deque.size() < needs) {
         var mode = option.cardinality() >= 0 ? "exactly" : "at least";
         var message = "Too few arguments for option %s: need %s %d, but only %d remaining";
-        throw new BachException(message, option, needs, mode, remaining);
+        throw new BachException(message, option, mode, needs, remaining);
       }
       if (option.isTerminal()) { // get all remaining arguments
         options = options.with(option, new Value(List.copyOf(deque)));
@@ -112,11 +113,11 @@ public record Options(String title, EnumMap<Option, Value> map) {
 
   public static Options ofFile(Path file) {
     var title = "file options (" + file + ")";
-    if (!Files.isRegularFile(file)) return Options.of(title);
+    if (Files.notExists(file)) return Options.of(title);
     try {
       var lines = Files.readAllLines(file);
       return Options.ofCommandLineArguments(title, lines);
-    } catch (Exception exception) {
+    } catch (IOException exception) {
       throw new BachException("Read all lines failed for: " + file, exception);
     }
   }
@@ -165,7 +166,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
   }
 
   public Options with(Action action) {
-    return with(Option.ACTION, action.toCli());
+    return with(Option.ACTION, action.cli());
   }
 
   public Options with(Option option) {

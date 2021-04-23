@@ -4,12 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.Option;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OptionsTests {
@@ -31,7 +36,7 @@ class OptionsTests {
 
   @Test
   void compose() {
-    var logbook = Logbook.ofNullPrinter();
+    var logbook = Logbook.of();
     var defaultValues = Options.ofDefaultValues();
     var options =
         Options.compose(
@@ -155,5 +160,40 @@ class OptionsTests {
         """
             .lines(),
         options.lines());
+  }
+
+  @Nested
+  class CommandLineArguments {
+    @Test
+    void trailingActionNames() {
+      var options = Options.ofCommandLineArguments("-", "clean", "build");
+      assertEquals(List.of(Action.CLEAN, Action.BUILD), options.actions().toList());
+    }
+
+    @Test
+    void tooFewArgumentsForActionOption() {
+      var options = List.of("--action");
+      var e = assertThrows(BachException.class, () -> Options.ofCommandLineArguments("-", options));
+      assertEquals(
+          "Too few arguments for option ACTION: need exactly 1, but only 0 remaining",
+          e.getMessage());
+    }
+
+    @Test
+    void tooFewArgumentsForToolOption() {
+      var options = List.of("--tool");
+      var e = assertThrows(BachException.class, () -> Options.ofCommandLineArguments("-", options));
+      assertEquals(
+          "Too few arguments for option TOOL: need at least 1, but only 0 remaining",
+          e.getMessage());
+    }
+  }
+
+  @Nested
+  class FactoryFailures {
+    @Test
+    void ofFileThrowsWhenReadingFromDirectory() {
+      assertThrows(BachException.class, () -> Options.ofFile(Path.of("")));
+    }
   }
 }

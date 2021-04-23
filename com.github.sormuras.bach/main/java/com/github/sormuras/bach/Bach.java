@@ -30,8 +30,7 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
 
   public static Bach of(Logbook initialLogbook, Options initialOptions) {
     var defaultOptions = Options.ofDefaultValues();
-    var interimOptions =
-        Options.compose("Interim Options", Logbook.ofNullPrinter(), initialOptions, defaultOptions);
+    var interimOptions = Options.compose("Interims", Logbook.of(), initialOptions, defaultOptions);
     var root = Path.of(interimOptions.get(Option.CHROOT));
     var module = new BachInfoModuleBuilder(initialLogbook, interimOptions).build();
     var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
@@ -154,6 +153,7 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
       case COMPILE_MAIN -> compileMainCodeSpace();
       case COMPILE_TEST -> compileTestCodeSpace();
       case EXECUTE_TESTS -> executeTests();
+      case WRITE_LOGBOOK -> writeLogbook();
       default -> throw new UnsupportedActionException(action.toString());
     }
   }
