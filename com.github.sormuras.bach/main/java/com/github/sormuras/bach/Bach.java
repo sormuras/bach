@@ -5,18 +5,22 @@ import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
+import com.github.sormuras.bach.core.CoreTrait;
+import com.github.sormuras.bach.core.ListTrait;
+import com.github.sormuras.bach.core.ToolProviders;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.HelpMessageBuilder;
 import com.github.sormuras.bach.internal.Strings;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.spi.ToolProvider;
 
-public record Bach(Logbook logbook, Options options, Plugins plugins, Project project) {
+public record Bach(Logbook logbook, Options options, Plugins plugins, Project project)
+    implements CoreTrait, ListTrait {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
@@ -90,6 +94,10 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
     return Path.of(uri);
   }
 
+  public Bach bach() {
+    return this;
+  }
+
   public boolean is(Option option) {
     return options().is(option);
   }
@@ -121,6 +129,10 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
       out.println(new HelpMessageBuilder(Option::isExtra).build());
       return 0;
     }
+    if (is(Option.LIST_TOOLS)) {
+      listTools();
+      return 0;
+    }
     var tool = options().value(Option.TOOL);
     if (tool != null) {
       var line = tool.elements();
@@ -128,7 +140,9 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
       var args = line.subList(1, line.size()).toArray(String[]::new);
       var err = logbook().printer().err();
       say(name + ' ' + String.join(" ", args));
-      return ToolProvider.findFirst(name).orElseThrow().run(out, err, args);
+      var finder = ModuleFinder.of(project.folders().externals());
+      var provider = ToolProviders.of(finder).find(name).orElseThrow();
+      return provider.run(out, err, args);
     }
 
     say(project.name() + " 0");
@@ -145,7 +159,7 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
     return 0;
   }
 
-  void run(Action action) {
+  private void run(Action action) {
     log(String.format("Run %s action", action));
     switch (action) {
       case BUILD -> build();
@@ -156,29 +170,5 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
       case WRITE_LOGBOOK -> writeLogbook();
       default -> throw new UnsupportedActionException(action.toString());
     }
-  }
-
-  public void build() {
-    plugins.newBuildAction(this).build();
-  }
-
-  public void clean() {
-    plugins.newCleanAction(this).clean();
-  }
-
-  public void compileMainCodeSpace() {
-    plugins.newCompileMainCodeSpaceAction(this).compile();
-  }
-
-  public void compileTestCodeSpace() {
-    plugins.newCompileTestCodeSpaceAction(this).compile();
-  }
-
-  public void executeTests() {
-    plugins.newExecuteTestsAction(this).execute();
-  }
-
-  public void writeLogbook() {
-    plugins.newWriteLogbookAction(this).write();
   }
 }

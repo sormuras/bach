@@ -22,6 +22,8 @@ public enum Option {
 
   SHOW_CONFIGURATION("Print effective configuration and continue."),
 
+  LIST_TOOLS("List provided tools and exit."),
+
   PROJECT_NAME("The name of project.", ProjectInfo.DEFAULT_PROJECT_NAME),
 
   EXTERNAL_MODULE_LOCATION(

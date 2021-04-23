@@ -84,6 +84,18 @@ class BachTests {
   }
 
   @Test
+  void listTools(@TempDir Path temp) {
+    var out =
+        """
+        Bach .+
+        >> BANNER + TOOLS >>
+        javac .+
+        >> TOOLS >>
+        """;
+    bach(0, out, Option.CHROOT, temp, Option.LIST_TOOLS);
+  }
+
+  @Test
   void tool() {
     var out =
         """
