@@ -8,9 +8,9 @@ import com.github.sormuras.bach.core.ExecuteTestsAction;
 import com.github.sormuras.bach.core.ProjectBuilder;
 import com.github.sormuras.bach.core.WriteLogbookAction;
 
-public class Plugins {
+public class Factory {
 
-  public Plugins() {}
+  public Factory() {}
 
   public ProjectBuilder newProjectBuilder(Logbook logbook, Options options) {
     return new ProjectBuilder(logbook, options);

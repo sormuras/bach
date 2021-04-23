@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Plugins;
+import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -26,12 +26,12 @@ class BachTests {
   @Test
   void explicit() {
     var logbook = Logbook.ofErrorPrinter();
-    var plugins = new Plugins();
+    var factory = new Factory();
     var options = Options.ofDefaultValues();
     var folders = Folders.of("");
     var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
     var project = new Project("explicit", folders, spaces);
-    var bach = new Bach(logbook, options, plugins, project);
+    var bach = new Bach(logbook, options, factory, project);
 
     assertEquals("explicit", bach.project().name());
   }

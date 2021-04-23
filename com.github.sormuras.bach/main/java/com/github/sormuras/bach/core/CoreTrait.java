@@ -2,26 +2,26 @@ package com.github.sormuras.bach.core;
 
 public interface CoreTrait extends BachTrait {
   default void build() {
-    bach().plugins().newBuildAction(bach()).build();
+    bach().factory().newBuildAction(bach()).build();
   }
 
   default void clean() {
-    bach().plugins().newCleanAction(bach()).clean();
+    bach().factory().newCleanAction(bach()).clean();
   }
 
   default void compileMainCodeSpace() {
-    bach().plugins().newCompileMainCodeSpaceAction(bach()).compile();
+    bach().factory().newCompileMainCodeSpaceAction(bach()).compile();
   }
 
   default void compileTestCodeSpace() {
-    bach().plugins().newCompileTestCodeSpaceAction(bach()).compile();
+    bach().factory().newCompileTestCodeSpaceAction(bach()).compile();
   }
 
   default void executeTests() {
-    bach().plugins().newExecuteTestsAction(bach()).execute();
+    bach().factory().newExecuteTestsAction(bach()).execute();
   }
 
   default void writeLogbook() {
-    bach().plugins().newWriteLogbookAction(bach()).write();
+    bach().factory().newWriteLogbookAction(bach()).write();
   }
 }

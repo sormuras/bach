@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.ServiceLoader;
 
-public record Bach(Logbook logbook, Options options, Plugins plugins, Project project)
+public record Bach(Logbook logbook, Options options, Factory factory, Project project)
     implements CoreTrait, ListTrait {
 
   public static Bach of(String... args) {
@@ -53,10 +53,10 @@ public record Bach(Logbook logbook, Options options, Plugins plugins, Project pr
 
     var verbose = options.is(Option.VERBOSE);
     var logbook = new Logbook(initialLogbook.printer(), verbose, initialLogbook.messages());
-    var service = ServiceLoader.load(module.getLayer(), Plugins.class);
-    var plugins = service.findFirst().orElseGet(Plugins::new);
-    var project = plugins.newProjectBuilder(logbook, options).build();
-    return new Bach(logbook, options, plugins, project);
+    var service = ServiceLoader.load(module.getLayer(), Factory.class);
+    var factory = service.findFirst().orElseGet(Factory::new);
+    var project = factory.newProjectBuilder(logbook, options).build();
+    return new Bach(logbook, options, factory, project);
   }
 
   static String banner() {

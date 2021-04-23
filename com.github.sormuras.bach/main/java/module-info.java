@@ -10,7 +10,7 @@
  *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
- * @uses com.github.sormuras.bach.Plugins
+ * @uses com.github.sormuras.bach.Factory
  * @uses java.util.spi.ToolProvider
  */
 @com.github.sormuras.bach.api.ProjectInfo
@@ -27,7 +27,7 @@ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Plugins;
+  uses com.github.sormuras.bach.Factory;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
