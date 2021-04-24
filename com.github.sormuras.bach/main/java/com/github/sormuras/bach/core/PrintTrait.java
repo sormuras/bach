@@ -4,19 +4,19 @@ import java.lang.module.ModuleFinder;
 
 public interface PrintTrait extends BachTrait {
   default void printToolListing() {
-    var finder = ModuleFinder.of(bach().project().folders().externals());
-    var providers = ToolProviders.of(finder);
     var out = bach().logbook().printer().out();
-    providers.stream().map(ToolProviders::nameAndModule).sorted().forEach(out::println);
+    providers().stream().map(ToolProviders::nameAndModule).sorted().forEach(out::println);
   }
 
   default void printToolDescription(String name) {
-    var finder = ModuleFinder.of(bach().project().folders().externals());
-    var providers = ToolProviders.of(finder);
     var out = bach().logbook().printer().out();
-    providers
+    providers()
         .find(name)
         .map(ToolProviders::describe)
         .ifPresentOrElse(out::println, () -> out.println(name + " not found"));
+  }
+
+  private ToolProviders providers() {
+    return ToolProviders.of(ModuleFinder.of(bach().project().folders().externals()));
   }
 }
