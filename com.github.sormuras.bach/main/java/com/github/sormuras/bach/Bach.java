@@ -7,7 +7,7 @@ import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
 import com.github.sormuras.bach.api.UnsupportedOptionException;
 import com.github.sormuras.bach.core.CoreTrait;
-import com.github.sormuras.bach.core.ListTrait;
+import com.github.sormuras.bach.core.PrintTrait;
 import com.github.sormuras.bach.core.ToolProviders;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.HelpMessageBuilder;
@@ -21,7 +21,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements CoreTrait, ListTrait {
+    implements CoreTrait, PrintTrait {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
@@ -90,7 +90,8 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       case VERSION -> out.println(Strings.version());
       case HELP -> out.println(new HelpMessageBuilder(Option::isVisible).build());
       case HELP_EXTRA -> out.println(new HelpMessageBuilder(Option::isHidden).build());
-      case LIST_TOOLS -> listTools();
+      case LIST_TOOLS -> printToolListing();
+      case DESCRIBE_TOOL -> printToolDescription(exit.value().elements().get(0));
       case TOOL -> {
         var line = exit.value().elements();
         var name = line.get(0);

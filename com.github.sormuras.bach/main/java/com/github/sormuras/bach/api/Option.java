@@ -24,6 +24,8 @@ public enum Option {
 
   LIST_TOOLS("List provided tools and exit.", Modifier.EXIT),
 
+  DESCRIBE_TOOL("Describe a tool and exit.", 1, Modifier.EXIT),
+
   PROJECT_NAME("The name of project.", ProjectInfo.DEFAULT_PROJECT_NAME),
 
   EXTERNAL_MODULE_LOCATION(
@@ -37,9 +39,9 @@ public enum Option {
       2,
       Modifier.REPEATABLE),
 
-  TOOL("Run the specified tool and exit with its return value.", null, -1, Modifier.EXIT),
+  TOOL("Run the specified tool and exit with its return value.", -1, Modifier.EXIT),
 
-  ACTION("The name of the action to be executed.", null, 1, Modifier.REPEATABLE);
+  ACTION("The name of the action to be executed.", 1, Modifier.REPEATABLE);
 
   public static Option ofCli(String string) {
     if (!string.startsWith("--")) throw new UnsupportedOptionException(string);
@@ -63,6 +65,7 @@ public enum Option {
   /**
    * Flag option constructor.
    *
+   * @param description the help message of this option
    * @param modifiers the modifiers of this option
    */
   Option(String description, Modifier... modifiers) {
@@ -70,8 +73,20 @@ public enum Option {
   }
 
   /**
-   * Key-value option constructor.
+   * Key-value(s) option constructor with no default value.
    *
+   * @param description the help message of this option
+   * @param cardinality the number of command-line arguments read by this option
+   * @param modifiers the modifiers of this option
+   */
+  Option(String description, int cardinality, Modifier... modifiers) {
+    this(description, null, cardinality, modifiers);
+  }
+
+  /**
+   * Key-value option constructor with an explicit default value.
+   *
+   * @param description the help message of this option
    * @param defaultValue the single default value of this option
    * @param modifiers the modifiers of this option
    */
@@ -82,6 +97,7 @@ public enum Option {
   /**
    * Canonical option constructor.
    *
+   * @param description the help message of this option
    * @param defaultValue the default value of this option
    * @param cardinality the number of command-line arguments read by this option
    * @param modifiers the modifiers of this option

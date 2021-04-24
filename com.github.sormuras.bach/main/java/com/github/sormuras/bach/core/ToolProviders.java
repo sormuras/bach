@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -15,16 +14,20 @@ public record ToolProviders(ModuleFinder finder) {
     return new ToolProviders(finder);
   }
 
+  public static String nameAndModule(ToolProvider provider) {
+    var module = provider.getClass().getModule();
+    var descriptor = module.getDescriptor();
+    var container = descriptor == null ? module : descriptor.toNameAndVersion();
+    return "%-20s (%s)".formatted(provider.name(), container);
+  }
+
   public static String describe(ToolProvider provider) {
     var name = provider.name();
-    var module = provider.getClass().getModule();
-    var by =
-        Optional.ofNullable(module.getDescriptor())
-            .map(ModuleDescriptor::toNameAndVersion)
-            .orElse(module.toString());
     var info =
         switch (name) {
-          case "bach" -> "Build modular Java projects";
+          case "bach" -> """
+                Builds (on(ly)) Java Modules
+                https://github.com/sormuras/bach""";
           case "google-java-format" -> "Reformat Java sources to comply with Google Java Style";
           case "jar" -> "Create an archive for classes and resources, and update or restore them";
           case "javac" -> "Read Java compilation units (*.java) and compile them into classes";
@@ -38,8 +41,8 @@ public record ToolProviders(ModuleFinder finder) {
           default -> provider.toString();
         };
     return """
-       %s (%s)
-         %s""".formatted(name, by, info);
+       %s
+       %s""".formatted(nameAndModule(provider), info.indent(4).stripTrailing());
   }
 
   public Optional<ToolProvider> find(String name) {
@@ -47,7 +50,7 @@ public record ToolProviders(ModuleFinder finder) {
   }
 
   public Stream<ToolProvider> stream(String... roots) {
-    return stream(false);
+    return stream(false,roots);
   }
 
   public Stream<ToolProvider> stream(boolean assertions, String... roots) {
