@@ -86,7 +86,7 @@ class OptionsTests {
         --list-tools
         """
             .lines(),
-        flags.lines());
+        flags.lines(__ -> true));
   }
 
   @Test
@@ -100,7 +100,7 @@ class OptionsTests {
           bach.info
         """
             .lines(),
-        options.lines(Option::isExtra));
+        options.lines(Option::isHidden));
   }
 
   @Test
@@ -137,7 +137,6 @@ class OptionsTests {
             .with(Action.BUILD);
 
     assertFalse(options.is(Option.VERSION));
-    assertEquals("false", options.get(Option.VERSION));
 
     assertLinesMatch(
         """
@@ -160,7 +159,7 @@ class OptionsTests {
           build
         """
             .lines(),
-        options.lines());
+        options.lines(__ -> true));
   }
 
   @Nested

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -65,7 +66,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
         var message = "Too few arguments for option %s: need %s %d, but only %d remaining";
         throw new BachException(message, option, mode, needs, remaining);
       }
-      if (option.isTerminal()) { // get all remaining arguments
+      if (option.isGreedy()) { // get all remaining arguments
         options = options.with(option, new Value(List.copyOf(deque)));
         deque.clear();
         break;
@@ -189,14 +190,14 @@ public record Options(String title, EnumMap<Option, Value> map) {
     return new Options(title, copy);
   }
 
+  public Optional<Entry> findFirstEntry(Predicate<Option> filter) {
+    return map.entrySet().stream().filter(e -> filter.test(e.getKey())).findFirst().map(Entry::new);
+  }
+
   public Stream<Action> actions() {
     var value = value(Option.ACTION);
     if (value == null) return Stream.empty();
     return value.elements().stream().map(String::toUpperCase).map(Action::ofCli);
-  }
-
-  public Stream<String> lines() {
-    return lines(__ -> true);
   }
 
   public Stream<String> lines(Predicate<Option> filter) {
@@ -210,9 +211,9 @@ public record Options(String title, EnumMap<Option, Value> map) {
         continue;
       }
       var elements = entry.getValue().elements();
-      if (option.isTerminal()) {
+      if (option.isGreedy()) {
         lines.add(cli);
-        lines.add(String.join(" ", elements));
+        lines.add("  " + String.join(" ", elements));
         continue;
       }
       var deque = new ArrayDeque<>(elements);
@@ -222,5 +223,11 @@ public record Options(String title, EnumMap<Option, Value> map) {
       }
     }
     return lines.stream();
+  }
+
+  public record Entry(Option option, Value value) {
+    public Entry(EnumMap.Entry<Option, Value> entry) {
+      this(entry.getKey(), entry.getValue());
+    }
   }
 }

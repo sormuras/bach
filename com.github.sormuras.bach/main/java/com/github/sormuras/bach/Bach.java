@@ -5,6 +5,7 @@ import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
+import com.github.sormuras.bach.api.UnsupportedOptionException;
 import com.github.sormuras.bach.core.CoreTrait;
 import com.github.sormuras.bach.core.ListTrait;
 import com.github.sormuras.bach.core.ToolProviders;
@@ -17,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.stream.Stream;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
     implements CoreTrait, ListTrait {
@@ -63,58 +65,57 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   public boolean is(Option option) {
-    return options().is(option);
+    return options.is(option);
   }
 
   public void say(String message) {
-    logbook().log(System.Logger.Level.INFO, message);
+    logbook.log(System.Logger.Level.INFO, message);
   }
 
   public void log(String message) {
-    logbook().log(System.Logger.Level.DEBUG, message);
+    logbook.log(System.Logger.Level.DEBUG, message);
   }
 
   public int run() {
-    var out = logbook().printer().out();
-    if (is(Option.VERSION)) {
-      out.println(Strings.version());
-      return 0;
-    }
+    var exit = options.findFirstEntry(Option::isExit);
+    if (exit.isPresent()) return run(exit.get());
+
     say(Strings.banner());
+    return run(options.actions());
+  }
+
+  private int run(Options.Entry exit) {
+    var out = logbook.printer().out();
+    switch (exit.option()) {
+      case VERSION -> out.println(Strings.version());
+      case HELP -> out.println(new HelpMessageBuilder(Option::isVisible).build());
+      case HELP_EXTRA -> out.println(new HelpMessageBuilder(Option::isHidden).build());
+      case LIST_TOOLS -> listTools();
+      case TOOL -> {
+        var line = exit.value().elements();
+        var name = line.get(0);
+        var args = line.subList(1, line.size()).toArray(String[]::new);
+        var finder = ModuleFinder.of(project.folders().externals());
+        var provider = ToolProviders.of(finder).find(name).orElseThrow();
+        return provider.run(out, logbook.printer().err(), args);
+      }
+      default -> throw new UnsupportedOptionException(exit.option().name());
+    }
+    return 0;
+  }
+
+  private int run(Stream<Action> actions) {
     if (is(Option.SHOW_CONFIGURATION)) {
       say("Configuration");
-      options().lines(Option::isStandard).forEach(this::say);
-    }
-    if (is(Option.HELP)) {
-      out.println(new HelpMessageBuilder(Option::isStandard).build());
-      return 0;
-    }
-    if (is(Option.HELP_EXTRA)) {
-      out.println(new HelpMessageBuilder(Option::isExtra).build());
-      return 0;
-    }
-    if (is(Option.LIST_TOOLS)) {
-      listTools();
-      return 0;
-    }
-    var tool = options().value(Option.TOOL);
-    if (tool != null) {
-      var line = tool.elements();
-      var name = line.get(0);
-      var args = line.subList(1, line.size()).toArray(String[]::new);
-      var err = logbook().printer().err();
-      say(name + ' ' + String.join(" ", args));
-      var finder = ModuleFinder.of(project.folders().externals());
-      var provider = ToolProviders.of(finder).find(name).orElseThrow();
-      return provider.run(out, err, args);
+      options.lines(Option::isVisible).forEach(this::say);
     }
 
     say(project.name() + " 0");
     var start = Instant.now();
     try {
-      options().actions().forEach(this::run);
+      actions.forEach(this::run);
     } catch (Exception exception) {
-      logbook().log(exception);
+      logbook.log(exception);
       return 1;
     } finally {
       say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
@@ -124,7 +125,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   private void run(Action action) {
-    log(String.format("Run %s action", action));
+    log("run(%s)".formatted(action));
     switch (action) {
       case BUILD -> build();
       case CLEAN -> clean();

@@ -46,8 +46,6 @@ class BachTests {
   void help() {
     var out =
         """
-        Bach .+
-        >> BANNER >>
         Usage: bach [OPTIONS] [ACTIONS...]
         >> MESSAGE >>
         """;
@@ -58,8 +56,6 @@ class BachTests {
   void helpExtra() {
     var out =
         """
-        Bach .+
-        >> BANNER >>
         Usage: bach [OPTIONS] [ACTIONS...]
         >> MESSAGE >>
           --chroot.*
@@ -87,9 +83,6 @@ class BachTests {
   void listTools(@TempDir Path temp) {
     var out =
         """
-        Bach .+
-        >> BANNER + TOOLS >>
-        javac .+
         >> TOOLS >>
         """;
     bach(0, out, Option.CHROOT, temp, Option.LIST_TOOLS);
@@ -99,9 +92,6 @@ class BachTests {
   void tool() {
     var out =
         """
-        Bach .+
-        >> BANNER >>
-        javac --version
         javac .+
         """;
     bach(0, out, Option.TOOL, "javac", "--version");
@@ -111,9 +101,6 @@ class BachTests {
   void toolBach() {
     var out =
         """
-        Bach .+
-        >> BANNER >>
-        bach --version
         .+
         """;
     bach(0, out, Option.TOOL, "bach", "--version");

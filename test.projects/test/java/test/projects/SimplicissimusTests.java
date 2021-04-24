@@ -40,7 +40,7 @@ class SimplicissimusTests {
         """
         >> BACH'S INITIALIZATION >>
         Simplicissimus 0
-        Run BUILD action
+        run(BUILD)
         >> BUILD >>
         Bach run took .+
         Logbook written to .+

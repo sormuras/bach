@@ -8,21 +8,21 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public enum Option {
-  CHROOT("Change into the specified directory.", ".", Modifier.EXTRA),
+  CHROOT("Change into the specified directory.", ".", Modifier.HIDDEN),
 
-  BACH_INFO_MODULE("Name of the `bach.info` module", "bach.info", Modifier.EXTRA),
+  BACH_INFO_MODULE("Name of the `bach.info` module", "bach.info", Modifier.HIDDEN),
 
   VERBOSE("Output messages about what Bach is doing"),
 
-  VERSION("Print version and exit."),
+  VERSION("Print version and exit.", Modifier.EXIT),
 
-  HELP("Print this help message and exit."),
+  HELP("Print this help message and exit.", Modifier.EXIT),
 
-  HELP_EXTRA("Print help on extra options and exit."),
+  HELP_EXTRA("Print help on extra options and exit.", Modifier.EXIT),
 
   SHOW_CONFIGURATION("Print effective configuration and continue."),
 
-  LIST_TOOLS("List provided tools and exit."),
+  LIST_TOOLS("List provided tools and exit.", Modifier.EXIT),
 
   PROJECT_NAME("The name of project.", ProjectInfo.DEFAULT_PROJECT_NAME),
 
@@ -37,7 +37,7 @@ public enum Option {
       2,
       Modifier.REPEATABLE),
 
-  TOOL("Run the specified tool.", null, -1, Modifier.EXTRA),
+  TOOL("Run the specified tool and exit with its return value.", null, -1, Modifier.EXIT),
 
   ACTION("The name of the action to be executed.", null, 1, Modifier.REPEATABLE);
 
@@ -66,7 +66,7 @@ public enum Option {
    * @param modifiers the modifiers of this option
    */
   Option(String description, Modifier... modifiers) {
-    this(description, Value.of("false"), 0, modifiers);
+    this(description, null, 0, modifiers);
   }
 
   /**
@@ -114,24 +114,24 @@ public enum Option {
     return cardinality == 0;
   }
 
-  public boolean isTerminal() {
+  public boolean isGreedy() {
     return cardinality < 0;
   }
 
+  public boolean isExit() {
+    return modifiers.contains(Modifier.EXIT);
+  }
+
+  public boolean isHidden() {
+    return modifiers.contains(Modifier.HIDDEN);
+  }
+
   public boolean isRepeatable() {
-    return is(Modifier.REPEATABLE);
+    return modifiers.contains(Modifier.REPEATABLE);
   }
 
-  public boolean isExtra() {
-    return is(Modifier.EXTRA);
-  }
-
-  public boolean isStandard() {
-    return !isExtra();
-  }
-
-  public boolean is(Modifier modifier) {
-    return modifiers.contains(modifier);
+  public boolean isVisible() {
+    return !isHidden();
   }
 
   public Value toValue(Object... objects) {
@@ -148,8 +148,9 @@ public enum Option {
     return new Value(Stream.of(objects).map(Object::toString).toList());
   }
 
-  public enum Modifier {
-    EXTRA,
+  enum Modifier {
+    EXIT,
+    HIDDEN,
     REPEATABLE
   }
 

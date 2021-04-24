@@ -1,7 +1,5 @@
 package test.integration.api;
 
-import static com.github.sormuras.bach.api.Option.Modifier.EXTRA;
-import static com.github.sormuras.bach.api.Option.Modifier.REPEATABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -23,8 +21,8 @@ class OptionTests {
     assertEquals("--chroot", option.cli());
     assertEquals(1, option.cardinality());
     assertFalse(option.isFlag());
-    assertTrue(option.is(EXTRA));
-    assertFalse(option.is(REPEATABLE));
+    assertTrue(option.isHidden());
+    assertFalse(option.isRepeatable());
     assertEquals(".", option.defaultValue().orElseThrow().elements().get(0));
   }
 
@@ -35,9 +33,7 @@ class OptionTests {
     assertEquals("--version", option.cli());
     assertEquals(0, option.cardinality());
     assertTrue(option.isFlag());
-    assertFalse(option.is(EXTRA));
-    assertFalse(option.is(REPEATABLE));
-    assertEquals(Option.Value.of("false"), option.defaultValue().orElseThrow());
+    assertFalse(option.defaultValue().isPresent());
   }
 
   @Test
@@ -47,8 +43,6 @@ class OptionTests {
     assertEquals("--external-module-location", option.cli());
     assertEquals(2, option.cardinality());
     assertFalse(option.isFlag());
-    assertFalse(option.is(EXTRA));
-    assertTrue(option.is(REPEATABLE));
     assertTrue(option.defaultValue().isEmpty());
   }
 
@@ -59,8 +53,6 @@ class OptionTests {
     assertEquals("--action", option.cli());
     assertEquals(1, option.cardinality());
     assertFalse(option.isFlag());
-    assertFalse(option.is(EXTRA));
-    assertTrue(option.is(REPEATABLE));
     assertTrue(option.defaultValue().isEmpty());
   }
 
