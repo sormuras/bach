@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.core;
 
-public interface CoreTrait extends BachTrait {
+public /*sealed*/ interface CoreTrait extends BachTrait {
   default void build() {
     bach().factory().newBuildAction(bach()).build();
   }

@@ -10,8 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 
-public interface PrintTrait extends BachTrait {
-
+public /*sealed*/ interface PrintTrait extends BachTrait {
   default void printModules() {
     printModules(EnumSet.allOf(ModuleRealm.class));
   }
