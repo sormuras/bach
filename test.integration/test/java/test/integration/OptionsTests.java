@@ -83,6 +83,7 @@ class OptionsTests {
         --help
         --help-extra
         --show-configuration
+        --list-modules
         --list-tools
         """
             .lines(),

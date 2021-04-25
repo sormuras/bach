@@ -22,6 +22,8 @@ public enum Option {
 
   SHOW_CONFIGURATION("Print effective configuration and continue."),
 
+  LIST_MODULES("List modules and exit.", Modifier.EXIT),
+
   LIST_TOOLS("List provided tools and exit.", Modifier.EXIT),
 
   DESCRIBE_TOOL("Describe a tool and exit.", 1, Modifier.EXIT),
