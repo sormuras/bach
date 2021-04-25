@@ -13,8 +13,10 @@ class ToolProvidersTests {
     var bach = ToolProvider.findFirst("bach").orElseThrow();
     assertLinesMatch(
         """
-          bach \\(com\\.github\\.sormuras\\.bach.*\\)
-            Build modular Java projects""".lines(),
+          bach                 \\(EXTERNAL, com\\.github\\.sormuras\\.bach.*\\)
+              Builds (on(ly)) Java Modules
+              https://github.com/sormuras/bach"""
+            .lines(),
         ToolProviders.describe(bach).lines());
   }
 }

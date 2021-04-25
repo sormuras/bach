@@ -8,17 +8,18 @@ import java.util.Set;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-public record ToolProviders(ModuleFinder finder) {
+public record ToolProviders(ModuleFinder before, ModuleFinder after) {
 
   public static ToolProviders of(ModuleFinder finder) {
-    return new ToolProviders(finder);
+    return new ToolProviders(finder, ModuleFinder.ofSystem());
   }
 
   public static String nameAndModule(ToolProvider provider) {
     var module = provider.getClass().getModule();
+    var realm = ModuleRealm.of(module);
     var descriptor = module.getDescriptor();
     var container = descriptor == null ? module : descriptor.toNameAndVersion();
-    return "%-20s (%s)".formatted(provider.name(), container);
+    return "%-20s (%s, %s)".formatted(provider.name(), realm, container);
   }
 
   public static String describe(ToolProvider provider) {
@@ -56,8 +57,8 @@ public record ToolProviders(ModuleFinder finder) {
   public Stream<ToolProvider> stream(boolean assertions, String... roots) {
     var layer =
         new ModuleLayerBuilder()
-            .before(finder)
-            .after(ModuleFinder.ofSystem()) // resolve modules that are not in the module graph
+            .before(before)
+            .after(after)
             .roots(Set.of(roots))
             .build();
     Stream.of(roots).map(layer::findLoader).forEach(l -> l.setDefaultAssertionStatus(assertions));

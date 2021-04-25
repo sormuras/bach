@@ -90,7 +90,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       case VERSION -> out.println(Strings.version());
       case HELP -> out.println(new HelpMessageBuilder(Option::isVisible).build());
       case HELP_EXTRA -> out.println(new HelpMessageBuilder(Option::isHidden).build());
-      case LIST_TOOLS -> printToolListing();
+      case LIST_TOOLS -> printTools();
       case DESCRIBE_TOOL -> printToolDescription(exit.value().elements().get(0));
       case TOOL -> {
         var line = exit.value().elements();
