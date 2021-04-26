@@ -2,12 +2,10 @@ package test.integration.core;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Printer;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import test.integration.Auxiliary;
 
 class PrintTraitTests {
 
@@ -17,7 +15,7 @@ class PrintTraitTests {
     @Test
     void printModules() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printModules();
+      Auxiliary.newEmptyBach(actual).printModules();
       assertLinesMatch(
           """
           >>>>
@@ -34,7 +32,7 @@ class PrintTraitTests {
     @Test
     void printDeclaredModules() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printDeclaredModules();
+      Auxiliary.newEmptyBach(actual).printDeclaredModules();
       assertLinesMatch(
           """
           TODO DECLARED
@@ -46,7 +44,7 @@ class PrintTraitTests {
     @Test
     void printExternalModules() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printExternalModules();
+      Auxiliary.newEmptyBach(actual).printExternalModules();
       assertLinesMatch(
           """
           >>>>
@@ -58,7 +56,7 @@ class PrintTraitTests {
     @Test
     void printSystemModules() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printSystemModules();
+      Auxiliary.newEmptyBach(actual).printSystemModules();
       assertLinesMatch(
           """
           >>>>
@@ -67,14 +65,15 @@ class PrintTraitTests {
           jdk\\.net.*
           >>>>
             \\d+ modules
-          """.lines(),
+          """
+              .lines(),
           actual.toString().lines());
     }
 
     @Test
     void printLayerModules() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printLayerModules();
+      Auxiliary.newEmptyBach(actual).printLayerModules();
       assertLinesMatch(
           """
           >>>>
@@ -83,7 +82,8 @@ class PrintTraitTests {
           jdk\\.net.*
           >>>>
             \\d+ modules
-          """.lines(),
+          """
+              .lines(),
           actual.toString().lines());
     }
   }
@@ -94,7 +94,7 @@ class PrintTraitTests {
     @Test
     void printTools() {
       var actual = new StringWriter();
-      Bach.of(Printer.of(new PrintWriter(actual, true))).printTools();
+      Auxiliary.newEmptyBach(actual).printTools();
       assertLinesMatch(
           """
           >>>>
@@ -108,6 +108,28 @@ class PrintTraitTests {
           """
               .lines(),
           actual.toString().lines());
+    }
+
+    @Test
+    void printToolDescriptionFor123() {
+      var actual = new StringWriter();
+      Auxiliary.newEmptyBach(actual).printToolDescription("123");
+      assertLinesMatch(
+          """
+          123 not found
+          """.lines(), actual.toString().lines());
+    }
+
+    @Test
+    void printToolDescriptionForBach() {
+      var actual = new StringWriter();
+      Auxiliary.newEmptyBach(actual).printToolDescription("bach");
+      assertLinesMatch(
+          """
+          bach                 (EXTERNAL, com.github.sormuras.bach)
+              Builds (on(ly)) Java Modules
+              https://github.com/sormuras/bach
+          """.lines(), actual.toString().lines());
     }
   }
 }

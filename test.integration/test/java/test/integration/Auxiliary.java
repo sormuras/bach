@@ -4,21 +4,35 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
+import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.Spaces;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.Set;
 
 public class Auxiliary {
 
   public static Bach newEmptyBach() {
-    var logbook = Logbook.ofErrorPrinter();
+    return newEmptyBach(Logbook.ofErrorPrinter());
+  }
+
+  public static Bach newEmptyBach(StringWriter writer) {
+    return newEmptyBach(Logbook.of(Printer.of(new PrintWriter(writer, true)), true));
+  }
+
+  public static Bach newEmptyBach(Logbook logbook) {
     var factory = new Factory();
     var options = Options.ofDefaultValues();
     var folders = Folders.of("");
     var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
-    var project = new Project("empty", folders, spaces);
+    var externals = new Externals(Set.of(), List.of());
+    var project = new Project("empty", folders, spaces, externals);
     return new Bach(logbook, options, factory, project);
   }
 
