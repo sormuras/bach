@@ -1,6 +1,8 @@
 open /*test*/ module test.base {
   exports test.base;
+  exports test.base.resource;
 
+  requires jdk.httpserver;
   requires jdk.xml.dom; // #217
   requires transitive org.junit.jupiter;
 
