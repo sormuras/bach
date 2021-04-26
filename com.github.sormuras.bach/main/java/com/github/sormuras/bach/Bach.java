@@ -7,6 +7,7 @@ import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
 import com.github.sormuras.bach.api.UnsupportedOptionException;
 import com.github.sormuras.bach.core.CoreTrait;
+import com.github.sormuras.bach.core.HttpTrait;
 import com.github.sormuras.bach.core.PrintTrait;
 import com.github.sormuras.bach.core.ToolProviders;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
@@ -21,7 +22,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements CoreTrait, PrintTrait {
+    implements CoreTrait, HttpTrait, PrintTrait {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
