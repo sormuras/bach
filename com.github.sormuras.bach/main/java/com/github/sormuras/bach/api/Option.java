@@ -30,6 +30,8 @@ public enum Option {
 
   PROJECT_NAME("The name of project.", ProjectInfo.DEFAULT_PROJECT_NAME),
 
+  PROJECT_REQUIRES("A name of a module required by this project.", 1, Modifier.REPEATABLE),
+
   EXTERNAL_MODULE_LOCATION(
       """
       An external module-location mapping.
