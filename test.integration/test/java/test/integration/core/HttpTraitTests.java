@@ -3,15 +3,6 @@ package test.integration.core;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Factory;
-import com.github.sormuras.bach.Logbook;
-import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.CodeSpaceMain;
-import com.github.sormuras.bach.api.CodeSpaceTest;
-import com.github.sormuras.bach.api.Folders;
-import com.github.sormuras.bach.api.Project;
-import com.github.sormuras.bach.api.Spaces;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -21,6 +12,7 @@ import test.base.resource.ResourceManager;
 import test.base.resource.ResourceManager.Singleton;
 import test.base.resource.TempDir;
 import test.base.resource.WebServer;
+import test.integration.Auxiliary;
 
 @ExtendWith(ResourceManager.class)
 class HttpTraitTests {
@@ -34,24 +26,13 @@ class HttpTraitTests {
           "/index.html", Asset.ofText("Hello World!"),
           "/123.bytes", Asset.of(new byte[] {1, 2, 3}),
           "/456.bytes", Asset.of(new byte[] {4, 5, 6}),
-          "/789.bytes", Asset.of(new byte[] {7, 8, 9})
-      );
+          "/789.bytes", Asset.of(new byte[] {7, 8, 9}));
     }
-  }
-
-  static Bach newBach() {
-    var logbook = Logbook.ofErrorPrinter();
-    var factory = new Factory();
-    var options = Options.ofDefaultValues();
-    var folders = Folders.of("");
-    var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
-    var project = new Project("explicit", folders, spaces);
-    return new Bach(logbook, options, factory, project);
   }
 
   @Test
   void read(@Singleton(TestServer.class) WebServer server) {
-    var bach = newBach();
+    var bach = Auxiliary.newEmptyBach();
     var actual = bach.httpRead(server.uri("index.html").toString());
     assertLinesMatch("""
         Hello World!
@@ -67,7 +48,7 @@ class HttpTraitTests {
 
   @Test
   void load1(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
-    var bach = newBach();
+    var bach = Auxiliary.newEmptyBach();
     var file = temp.resolve("target");
     bach.httpLoad(server.uri("123.bytes").toString(), file);
     assertLinesMatch(
@@ -83,7 +64,7 @@ class HttpTraitTests {
 
   @Test
   void load3(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
-    var bach = newBach();
+    var bach = Auxiliary.newEmptyBach();
     var file123 = temp.resolve("file123");
     var file456 = temp.resolve("file456");
     var file789 = temp.resolve("file789");

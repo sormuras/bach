@@ -4,16 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Logbook;
-import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.api.CodeSpaceMain;
-import com.github.sormuras.bach.api.CodeSpaceTest;
-import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.Option;
-import com.github.sormuras.bach.api.Project;
-import com.github.sormuras.bach.api.Spaces;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -24,16 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 class BachTests {
 
   @Test
-  void explicit() {
-    var logbook = Logbook.ofErrorPrinter();
-    var factory = new Factory();
-    var options = Options.ofDefaultValues();
-    var folders = Folders.of("");
-    var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
-    var project = new Project("explicit", folders, spaces);
-    var bach = new Bach(logbook, options, factory, project);
-
-    assertEquals("explicit", bach.project().name());
+  void empty() {
+    assertEquals("empty", Auxiliary.newEmptyBach().project().name());
   }
 
   @Test
@@ -44,8 +28,7 @@ class BachTests {
 
   @Test
   void help() {
-    var out =
-        """
+    var out = """
         Usage: bach [OPTIONS] [ACTIONS...]
         >> MESSAGE >>
         """;
@@ -81,8 +64,7 @@ class BachTests {
 
   @Test
   void listTools(@TempDir Path temp) {
-    var out =
-        """
+    var out = """
         >> TOOLS >>
         """;
     bach(0, out, Option.CHROOT, temp, Option.LIST_TOOLS);
@@ -90,8 +72,7 @@ class BachTests {
 
   @Test
   void tool() {
-    var out =
-        """
+    var out = """
         javac .+
         """;
     bach(0, out, Option.TOOL, "javac", "--version");
@@ -99,8 +80,7 @@ class BachTests {
 
   @Test
   void toolBach() {
-    var out =
-        """
+    var out = """
         .+
         """;
     bach(0, out, Option.TOOL, "bach", "--version");
