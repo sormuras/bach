@@ -161,6 +161,11 @@ public record Options(String title, EnumMap<Option, Value> map) {
     return value(option).elements().get(0);
   }
 
+  public List<String> list(Option option) {
+    var value = value(option);
+    return value == null ? List.of() : value.elements();
+  }
+
   public boolean is(Option option) {
     if (!option.isFlag()) throw new IllegalArgumentException("Not a flag: " + option);
     return Value.of("true").equals(value(option));
@@ -195,9 +200,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
   }
 
   public Stream<Action> actions() {
-    var value = value(Option.ACTION);
-    if (value == null) return Stream.empty();
-    return value.elements().stream().map(String::toUpperCase).map(Action::ofCli);
+    return list(Option.ACTION).stream().map(String::toUpperCase).map(Action::ofCli);
   }
 
   public Stream<String> lines(Predicate<Option> filter) {
