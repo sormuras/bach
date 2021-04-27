@@ -85,6 +85,7 @@ class OptionsTests {
         --show-configuration
         --list-modules
         --list-tools
+        --load-missing-external-modules
         """
             .lines(),
         flags.lines(__ -> true));

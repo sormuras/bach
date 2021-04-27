@@ -7,6 +7,7 @@ import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
 import com.github.sormuras.bach.api.UnsupportedOptionException;
 import com.github.sormuras.bach.core.CoreTrait;
+import com.github.sormuras.bach.core.ExternalModuleTrait;
 import com.github.sormuras.bach.core.HttpTrait;
 import com.github.sormuras.bach.core.PrintTrait;
 import com.github.sormuras.bach.core.ToolProviders;
@@ -22,7 +23,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements CoreTrait, HttpTrait, PrintTrait {
+    implements CoreTrait, HttpTrait, PrintTrait, ExternalModuleTrait {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
@@ -94,6 +95,8 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       case LIST_MODULES -> printModules();
       case LIST_TOOLS -> printTools();
       case DESCRIBE_TOOL -> printToolDescription(exit.value().elements().get(0));
+      case LOAD_EXTERNAL_MODULE -> loadExternalModules(exit.value().elements().get(0));
+      case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
       case TOOL -> {
         var line = exit.value().elements();
         var name = line.get(0);

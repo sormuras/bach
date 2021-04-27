@@ -43,6 +43,10 @@ public enum Option {
       2,
       Modifier.REPEATABLE),
 
+  LOAD_EXTERNAL_MODULE("Load an external module.", 1, Modifier.EXIT),
+
+  LOAD_MISSING_EXTERNAL_MODULES("Load all missing external modules.", Modifier.EXIT),
+
   TOOL("Run the specified tool and exit with its return value.", -1, Modifier.EXIT),
 
   ACTION("The name of the action to be executed.", 1, Modifier.REPEATABLE);
