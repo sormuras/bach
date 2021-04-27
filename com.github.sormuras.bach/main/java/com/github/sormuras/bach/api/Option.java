@@ -43,6 +43,17 @@ public enum Option {
       2,
       Modifier.REPEATABLE),
 
+  EXTERNAL_LIBRARY_VERSION(
+      """
+      An external library name and version, providing a set of module-location mappings.
+      Example:
+        --external-library-version
+          JUnit
+          5.7.1""",
+      null,
+      2,
+      Modifier.REPEATABLE),
+
   LOAD_EXTERNAL_MODULE("Load an external module.", 1, Modifier.EXIT),
 
   LOAD_MISSING_EXTERNAL_MODULES("Load all missing external modules.", Modifier.EXIT),

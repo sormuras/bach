@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
+import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ExternalModuleLocations;
 import com.github.sormuras.bach.api.ExternalModuleLocator;
@@ -12,6 +13,7 @@ import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.Spaces;
+import com.github.sormuras.bach.api.external.JUnit;
 import java.lang.System.Logger.Level;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,17 +41,26 @@ public class ProjectBuilder {
 
   public Externals buildExternals() {
     var requires = Set.copyOf(options.list(Option.PROJECT_REQUIRES));
-    var map = new TreeMap<String, ExternalModuleLocation>();
-    var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
-    while (!deque.isEmpty()) {
-      var module = deque.removeFirst();
-      var uri = deque.removeFirst();
-      var old = map.put(module, new ExternalModuleLocation(module, uri));
+
+    var locators = new ArrayList<ExternalModuleLocator>();
+    var locationMap = new TreeMap<String, ExternalModuleLocation>();
+    var locationDeque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
+    while (!locationDeque.isEmpty()) {
+      var module = locationDeque.removeFirst();
+      var uri = locationDeque.removeFirst();
+      var old = locationMap.put(module, new ExternalModuleLocation(module, uri));
       if (old != null) logbook.log(Level.WARNING, "Replaced %s with -> %s".formatted(old, uri));
     }
-    var locators = new ArrayList<ExternalModuleLocator>();
-    locators.add(new ExternalModuleLocations(Map.copyOf(map)));
-    // TODO Add pre-configured libraries
+    locators.add(new ExternalModuleLocations(Map.copyOf(locationMap)));
+    var libraryDeque = new ArrayDeque<>(options.list(Option.EXTERNAL_LIBRARY_VERSION));
+    while (!libraryDeque.isEmpty()) {
+      var name = libraryDeque.removeFirst();
+      var version = libraryDeque.removeFirst();
+      //noinspection SwitchStatementWithTooFewBranches
+      switch (ExternalLibraryName.ofCli(name)) {
+        case JUNIT -> locators.add(JUnit.of(version));
+      }
+    }
     return new Externals(requires, locators);
   }
 }

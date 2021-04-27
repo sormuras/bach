@@ -2,6 +2,8 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.BachException;
+import com.github.sormuras.bach.api.ExternalLibraryName;
+import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Option.Value;
 import com.github.sormuras.bach.api.ProjectInfo;
@@ -81,6 +83,16 @@ public record Options(String title, EnumMap<Option, Value> map) {
   public static Options ofProjectInfoElements(ProjectInfo info) {
     var options = Options.of("@ProjectInfo elements");
     options = options.withIfDifferent(Option.PROJECT_NAME, Value.of(info.name()));
+    // TODO options = options.withIfDifferent(Option.PROJECT_VERSION, Value.of(info.version()));
+    for (var module : info.requires()) options = options.with(Option.PROJECT_REQUIRES, module);
+    for (var module : info.external().externalModules()) {
+      var location = ExternalModuleLocation.of(module);
+      options = options.with(Option.EXTERNAL_MODULE_LOCATION, location.module(), location.uri());
+    }
+    for (var library : info.external().externalLibraries()) {
+      var name = ExternalLibraryName.ofCli(library.name().cli());
+      options = options.with(Option.EXTERNAL_LIBRARY_VERSION, name.cli(), library.version());
+    }
     return options;
   }
 

@@ -20,6 +20,10 @@ public @interface ProjectInfo {
 
   Options options() default @Options;
 
+  String[] requires() default {};
+
+  External external() default @External;
+
   // ---
 
   String DEFAULT_PROJECT_NAME = "noname";
@@ -44,5 +48,31 @@ public @interface ProjectInfo {
     Option option();
 
     String[] value();
+  }
+
+  @Target({})
+  @interface External {
+    ExternalModule[] externalModules() default {};
+    ExternalLibrary[] externalLibraries() default {};
+  }
+
+  @Target({})
+  @interface ExternalLibrary {
+    ExternalLibraryName name();
+    String version();
+  }
+
+  @Target({})
+  @interface ExternalModule {
+    String name();
+    String link();
+    LinkType type() default LinkType.AUTO;
+    String mavenRepository() default "https://repo.maven.apache.org/maven2";
+  }
+
+  enum LinkType {
+    AUTO,
+    URI,
+    MAVEN
   }
 }
