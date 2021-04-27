@@ -17,21 +17,8 @@ import test.integration.Auxiliary;
 @ExtendWith(ResourceManager.class)
 class HttpTraitTests {
 
-  static class TestServer extends WebServer {
-
-    @Override
-    protected Map<String, Asset> createAssets() {
-      return Map.of(
-          "/", Asset.ofText("<root>"),
-          "/index.html", Asset.ofText("Hello World!"),
-          "/123.bytes", Asset.of(new byte[] {1, 2, 3}),
-          "/456.bytes", Asset.of(new byte[] {4, 5, 6}),
-          "/789.bytes", Asset.of(new byte[] {7, 8, 9}));
-    }
-  }
-
   @Test
-  void read(@Singleton(TestServer.class) WebServer server) {
+  void read(@Singleton(VolatileServer.class) WebServer server) {
     var bach = Auxiliary.newEmptyBach();
     var actual = bach.httpRead(server.uri("index.html").toString());
     assertLinesMatch("""
@@ -47,7 +34,8 @@ class HttpTraitTests {
   }
 
   @Test
-  void load1(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
+  void load1(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
+      throws Exception {
     var bach = Auxiliary.newEmptyBach();
     var file = temp.resolve("target");
     bach.httpLoad(server.uri("123.bytes").toString(), file);
@@ -63,7 +51,8 @@ class HttpTraitTests {
   }
 
   @Test
-  void load3(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
+  void load3(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
+      throws Exception {
     var bach = Auxiliary.newEmptyBach();
     var file123 = temp.resolve("file123");
     var file456 = temp.resolve("file456");
@@ -89,7 +78,8 @@ class HttpTraitTests {
   }
 
   @Test
-  void copy(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
+  void copy(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
+      throws Exception {
     var uri = server.uri();
     var root = temp.resolve("root.txt");
     try (var stream = uri.toURL().openStream()) {
@@ -102,7 +92,8 @@ class HttpTraitTests {
   }
 
   @Test
-  void bytes(@TempDir Path temp, @Singleton(TestServer.class) WebServer server) throws Exception {
+  void bytes(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
+      throws Exception {
     var uri = server.uri("123.bytes");
     var root = temp.resolve("123.bytes");
     try (var stream = uri.toURL().openStream()) {
