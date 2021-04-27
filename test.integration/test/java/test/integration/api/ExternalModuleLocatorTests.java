@@ -1,5 +1,6 @@
 package test.integration.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -13,6 +14,7 @@ class ExternalModuleLocatorTests {
   void broken() {
     var broken = new BrokenLocator();
     assertSame(ExternalModuleLocator.Stability.UNKNOWN, broken.stability());
+    assertEquals(BrokenLocator.class.getSimpleName(), broken.title());
     assertThrows(Exception.class, () -> broken.locate("m"));
   }
 

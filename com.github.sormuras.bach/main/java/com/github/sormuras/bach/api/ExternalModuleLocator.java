@@ -11,6 +11,10 @@ public interface ExternalModuleLocator {
     return Stability.UNKNOWN;
   }
 
+  default String title() {
+    return getClass().getSimpleName();
+  }
+
   enum Stability {
     UNKNOWN,
     DYNAMIC,
