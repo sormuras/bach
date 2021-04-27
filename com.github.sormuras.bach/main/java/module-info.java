@@ -17,6 +17,7 @@
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.api;
+  exports com.github.sormuras.bach.api.external;
   exports com.github.sormuras.bach.core;
 
   requires transitive java.net.http;
