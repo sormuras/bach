@@ -20,7 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DeclaredModuleFinderTests {
   @Test
   void empty() {
-    var finder = new DeclaredModuleFinder(Map.of());
+    var finder = DeclaredModuleFinder.of();
 
     assertTrue(finder.find("one").isEmpty());
     assertEquals(0, finder.findAll().size());
@@ -40,7 +40,7 @@ class DeclaredModuleFinderTests {
     var sources = new SourceFolders(List.of());
     var resources = new SourceFolders(List.of());
     var module = new DeclaredModule(temp, reference, sources, resources);
-    var finder = new DeclaredModuleFinder(Map.of(module.name(), module));
+    var finder = DeclaredModuleFinder.of(module);
 
     assertTrue(finder.find("one").isPresent());
     assertEquals(1, finder.findAll().size());

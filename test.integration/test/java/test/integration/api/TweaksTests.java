@@ -11,15 +11,14 @@ import org.junit.jupiter.api.Test;
 class TweaksTests {
   @Test
   void empty() {
-    var tweaks = new Tweaks(List.of());
+    var tweaks = Tweaks.of();
     assertTrue(tweaks.list().isEmpty());
     assertTrue(tweaks.arguments("*").isEmpty());
   }
 
   @Test
   void withOneTweak() {
-    var one = new Tweak("*", List.of("1"));
-    var tweaks = new Tweaks(List.of(one));
+    var tweaks = Tweaks.of(new Tweak("*", List.of("1")));
     assertEquals(1, tweaks.list().size());
     assertEquals(List.of("1"), tweaks.arguments("*"));
   }
@@ -28,7 +27,7 @@ class TweaksTests {
   void withTwoTweak() {
     var one = new Tweak("*", List.of("1"));
     var two = new Tweak("*", List.of("2"));
-    var tweaks = new Tweaks(List.of(one, two));
+    var tweaks = Tweaks.of(one, two);
     assertEquals(2, tweaks.list().size());
     assertEquals(List.of("1", "2"), tweaks.arguments("*"));
   }

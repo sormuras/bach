@@ -14,10 +14,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record DeclaredModuleFinder(Map<String, DeclaredModule> map) implements ModuleFinder {
+
+  public static DeclaredModuleFinder of(DeclaredModule... modules) {
+    var map = Stream.of(modules).collect(Collectors.toMap(DeclaredModule::name, Function.identity()));
+    return new DeclaredModuleFinder(map);
+  }
 
   private Optional<DeclaredModule> findDeclaredModule(String name) {
     return Optional.ofNullable(map.get(name));
