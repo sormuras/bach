@@ -30,7 +30,7 @@ public class Auxiliary {
     var factory = new Factory();
     var options = Options.ofDefaultValues();
     var folders = Folders.of("");
-    var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
+    var spaces = new Spaces(CodeSpaceMain.empty(), CodeSpaceTest.empty());
     var externals = new Externals(Set.of(), List.of());
     var project = new Project("empty", folders, spaces, externals);
     return new Bach(logbook, options, factory, project);

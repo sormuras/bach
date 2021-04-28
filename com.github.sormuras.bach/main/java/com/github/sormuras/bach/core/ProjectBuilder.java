@@ -49,7 +49,9 @@ public class ProjectBuilder {
   }
 
   public Spaces buildSpaces() {
-    return new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
+    var main = CodeSpaceMain.empty();
+    var test = CodeSpaceTest.empty();
+    return new Spaces(main, test);
   }
 
   public Externals buildExternals() {
