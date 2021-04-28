@@ -17,6 +17,7 @@ import com.github.sormuras.bach.api.external.JUnit;
 import java.lang.System.Logger.Level;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,35 +33,63 @@ public class ProjectBuilder {
   }
 
   public Project build() {
-    var name = options.get(Option.PROJECT_NAME);
-    var folders = Folders.of(options.get(Option.CHROOT));
-    var spaces = new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
+    var name = buildProjectName();
+    var folders = buildFolders();
+    var spaces = buildSpaces();
     var externals = buildExternals();
     return new Project(name, folders, spaces, externals);
   }
 
-  public Externals buildExternals() {
-    var requires = Set.copyOf(options.list(Option.PROJECT_REQUIRES));
+  public String buildProjectName() {
+    return options.get(Option.PROJECT_NAME);
+  }
 
+  public Folders buildFolders() {
+    return Folders.of(options.get(Option.CHROOT));
+  }
+
+  public Spaces buildSpaces() {
+    return new Spaces(new CodeSpaceMain(), new CodeSpaceTest());
+  }
+
+  public Externals buildExternals() {
+    var requires = buildExternalsRequires();
+    var locators = buildExternalsLocators();
+    return new Externals(requires, locators);
+  }
+
+  public Set<String> buildExternalsRequires() {
+    return Set.copyOf(options.list(Option.PROJECT_REQUIRES));
+  }
+
+  public List<ExternalModuleLocator> buildExternalsLocators() {
     var locators = new ArrayList<ExternalModuleLocator>();
+    fillExternalsLocatorsFromOptionModuleLocation(locators);
+    fillExternalsLocatorsFromOptionLibraryVersion(locators);
+    return List.copyOf(locators);
+  }
+
+  public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
+    var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
     var locationMap = new TreeMap<String, ExternalModuleLocation>();
-    var locationDeque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
-    while (!locationDeque.isEmpty()) {
-      var module = locationDeque.removeFirst();
-      var uri = locationDeque.removeFirst();
+    while (!deque.isEmpty()) {
+      var module = deque.removeFirst();
+      var uri = deque.removeFirst();
       var old = locationMap.put(module, new ExternalModuleLocation(module, uri));
       if (old != null) logbook.log(Level.WARNING, "Replaced %s with -> %s".formatted(old, uri));
     }
     locators.add(new ExternalModuleLocations(Map.copyOf(locationMap)));
-    var libraryDeque = new ArrayDeque<>(options.list(Option.EXTERNAL_LIBRARY_VERSION));
-    while (!libraryDeque.isEmpty()) {
-      var name = libraryDeque.removeFirst();
-      var version = libraryDeque.removeFirst();
+  }
+
+  public void fillExternalsLocatorsFromOptionLibraryVersion(List<ExternalModuleLocator> locators) {
+    var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_LIBRARY_VERSION));
+    while (!deque.isEmpty()) {
+      var name = deque.removeFirst();
+      var version = deque.removeFirst();
       //noinspection SwitchStatementWithTooFewBranches
       switch (ExternalLibraryName.ofCli(name)) {
         case JUNIT -> locators.add(JUnit.of(version));
       }
     }
-    return new Externals(requires, locators);
   }
 }
