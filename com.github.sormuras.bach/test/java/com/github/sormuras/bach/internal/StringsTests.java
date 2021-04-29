@@ -1,16 +1,21 @@
 package com.github.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -37,7 +42,36 @@ class StringsTests {
   }
 
   @Nested
-  class Join {
+  class NameOfPath {
+    @TestFactory
+    List<DynamicTest> nameRootDirectories() {
+      return StreamSupport.stream(FileSystems.getDefault().getRootDirectories().spliterator(), true)
+          .map(root -> DynamicTest.dynamicTest(root.toString(), () -> nameOfRootPath(root)))
+          .toList();
+    }
+
+    private static void nameOfRootPath(Path path) {
+      assertEquals(0, path.getNameCount());
+      assertNull(Strings.name(path));
+      assertNull(Strings.nameOrElse(path, null));
+      assertEquals("b", Strings.nameOrElse(path, "b"));
+    }
+
+    @Test
+    void nameOfPathWithOneElement() {
+      assertEquals("a", Strings.name(Path.of("a")));
+      assertEquals("a", Strings.nameOrElse(Path.of("a"), "b"));
+    }
+
+    @Test
+    void nameOfPathWithMoreElements() {
+      assertEquals("a", Strings.name(Path.of("x/y/z/a")));
+      assertEquals("a", Strings.nameOrElse(Path.of("x/y/z/a"), "b"));
+    }
+  }
+
+  @Nested
+  class JoinPaths {
     @Test
     void joinEmptyCollection() {
       assertEquals("", Strings.join(List.of()));
