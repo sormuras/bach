@@ -149,6 +149,10 @@ class OptionsTests {
           bach.info
         --project-name
           noname
+        --project-version
+          0
+        --main-java-release
+          0
         --external-module-location
           m1
           l1
