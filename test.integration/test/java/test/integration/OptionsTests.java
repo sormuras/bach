@@ -86,6 +86,7 @@ class OptionsTests {
         --list-configuration
         --list-modules
         --list-tools
+        --main-jar-with-sources
         --load-missing-external-modules
         """
             .lines(),

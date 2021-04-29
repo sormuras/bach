@@ -40,6 +40,8 @@ public enum Option {
       "Compile main modules for the specified Java SE release.",
       String.valueOf(ProjectInfo.Main.DEFAULT_JAVA_RELEASE)),
 
+  MAIN_JAR_WITH_SOURCES("Include all files found in source folders into their modular JAR files."),
+
   EXTERNAL_MODULE_LOCATION(
       """
       An external module-location mapping.

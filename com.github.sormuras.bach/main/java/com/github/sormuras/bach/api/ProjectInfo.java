@@ -92,5 +92,7 @@ public @interface ProjectInfo {
     int DEFAULT_JAVA_RELEASE = 0;
 
     int javaRelease() default DEFAULT_JAVA_RELEASE;
+
+    boolean jarWithSources() default false;
   }
 }

@@ -87,19 +87,19 @@ public class ProjectBuilder {
     // TODO Option.TEST_MODULES_PATTERN
     var testMatcher = ComposedPathMatcher.ofGlobModules(ProjectInfo.DEFAULT_TEST_MODULES_PATTERNS);
 
-    var treatSourcesAsResources = true; // TODO computeProjectJarWithSources(info);
+    var jarWithSources = options.is(Option.MAIN_JAR_WITH_SOURCES);
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
         logbook.log(Level.DEBUG, "Skip module %s - its path contains `.bach`".formatted(path));
         continue;
       }
       if (testMatcher.anyMatch(path)) {
-        var local = buildDeclaredModule(root, path, treatSourcesAsResources);
+        var local = buildDeclaredModule(root, path, jarWithSources);
         testModules.put(local.name(), local);
         continue;
       }
       if (mainMatcher.anyMatch(path)) {
-        var local = buildDeclaredModule(root, path, treatSourcesAsResources);
+        var local = buildDeclaredModule(root, path, jarWithSources);
         mainModules.put(local.name(), local);
         continue;
       }
@@ -121,7 +121,7 @@ public class ProjectBuilder {
     return new Spaces(main, test);
   }
 
-  public DeclaredModule buildDeclaredModule(Path root, Path path, boolean treatSourcesAsResources) {
+  public DeclaredModule buildDeclaredModule(Path root, Path path, boolean jarWithSources) {
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     var reference = DeclaredModuleReference.of(info);
 
@@ -139,7 +139,7 @@ public class ProjectBuilder {
     if (Strings.name(parent).equals(reference.name())) {
       var folder = buildDeclaredSourceFolder(parent);
       var sources = new SourceFolders(List.of(folder));
-      var resources = new SourceFolders(treatSourcesAsResources ? List.of(folder) : List.of());
+      var resources = new SourceFolders(jarWithSources ? List.of(folder) : List.of());
       return new DeclaredModule(parent, reference, sources, resources);
     }
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
@@ -148,7 +148,7 @@ public class ProjectBuilder {
     if (space == null) throw new AssertionError("No parents' parent? info -> " + info);
     var content = Paths.findNameOrElse(info, reference.name(), space.getParent());
     var sources = buildDeclaredSourceFolders(space, "java");
-    var resources = buildDeclaredSourceFolders(space, treatSourcesAsResources ? "" : "resource");
+    var resources = buildDeclaredSourceFolders(space, jarWithSources ? "" : "resource");
     return new DeclaredModule(content, reference, sources, resources);
   }
 
