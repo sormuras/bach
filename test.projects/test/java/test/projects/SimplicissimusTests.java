@@ -2,20 +2,57 @@ package test.projects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.CodeSpace;
+import com.github.sormuras.bach.api.CodeSpaceMain;
+import com.github.sormuras.bach.api.CodeSpaceTest;
+import com.github.sormuras.bach.api.DeclaredModule;
+import com.github.sormuras.bach.api.DeclaredModuleFinder;
+import com.github.sormuras.bach.api.DeclaredModuleReference;
+import com.github.sormuras.bach.api.Externals;
+import com.github.sormuras.bach.api.Folders;
+import com.github.sormuras.bach.api.ModulePaths;
 import com.github.sormuras.bach.api.Option;
+import com.github.sormuras.bach.api.Project;
+import com.github.sormuras.bach.api.SourceFolders;
+import com.github.sormuras.bach.api.Spaces;
+import com.github.sormuras.bach.api.Tweaks;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
 class SimplicissimusTests {
+
+  private static Project expectedProject() {
+    var name = "Simplicissimus";
+    var version = ModuleDescriptor.Version.parse("123");
+    var folders = Folders.of(Path.of("test.projects", name));
+    var main =
+        new CodeSpaceMain(
+            DeclaredModuleFinder.of(
+                new DeclaredModule(
+                    folders.root(),
+                    DeclaredModuleReference.of(folders.root("module-info.java")),
+                    SourceFolders.of(),
+                    SourceFolders.of())),
+            ModulePaths.of(folders.externals()),
+            9,
+            Tweaks.of());
+    var test =
+        new CodeSpaceTest(
+            DeclaredModuleFinder.of(),
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()),
+            Tweaks.of());
+    var spaces = Spaces.of(main, test);
+    var externals = Externals.of();
+    return new Project(name, version, folders, spaces, externals);
+  }
 
   @Test
   void build() throws Exception {
@@ -26,26 +63,13 @@ class SimplicissimusTests {
             Logbook.ofErrorPrinter(),
             Options.of(name + " Options")
                 .with(Option.CHROOT, root)
-                // "--strict"
-                // "--limit-tools", "javac,jar"
                 .with(Option.VERBOSE)
                 .with(Option.PROJECT_VERSION, "123")
                 .with(Option.MAIN_JAVA_RELEASE, 9)
                 .with(Option.MAIN_JAR_WITH_SOURCES)
                 .with(Action.BUILD));
 
-    assertTrue(bach.options().is(Option.VERBOSE));
-    assertTrue(bach.options().is(Option.MAIN_JAR_WITH_SOURCES));
-    assertEquals(root, bach.project().folders().root());
-    assertEquals(name, bach.project().name());
-    assertEquals("123", bach.project().version().toString());
-
-    var main = bach.project().spaces().main();
-    assertEquals(9, main.release());
-    assertEquals(1, main.modules().size());
-    assertEquals("simplicissimus", main.modules().toNames(","));
-    var test = bach.project().spaces().test();
-    assertEquals(0, test.modules().size());
+    assertEquals(expectedProject(), bach.project());
 
     assertEquals(0, bach.run(), bach.logbook().toString());
     assertLinesMatch(
