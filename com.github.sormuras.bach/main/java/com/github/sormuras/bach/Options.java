@@ -82,16 +82,35 @@ public record Options(String title, EnumMap<Option, Value> map) {
 
   public static Options ofProjectInfoElements(ProjectInfo info) {
     var options = Options.of("@ProjectInfo elements");
+    // project
     options = options.withIfDifferent(Option.PROJECT_NAME, Value.of(info.name()));
     options = options.withIfDifferent(Option.PROJECT_VERSION, Value.of(info.version()));
-    options = options.withIfDifferent(Option.MAIN_JAVA_RELEASE, Value.of(info.main().javaRelease() + ""));
-    if (info.main().jarWithSources()) options = options.with(Option.MAIN_JAR_WITH_SOURCES);
+    // main
+    var main = info.main();
+    options = options.withIfDifferent(Option.MAIN_JAVA_RELEASE, Value.of(main.javaRelease() + ""));
+    for (var pattern : main.modulesPatterns().lines().toList()) {
+      options = options.with(Option.MAIN_MODULES_PATTERN, pattern);
+    }
+    for (var path : main.modulePaths().lines().toList()) {
+      options = options.with(Option.MAIN_MODULE_PATH, path);
+    }
+    if (main.jarWithSources()) options = options.with(Option.MAIN_JAR_WITH_SOURCES);
+    // test
+    var test = info.test();
+    for (var pattern : test.modulesPatterns().lines().toList()) {
+      options = options.with(Option.TEST_MODULES_PATTERN, pattern);
+    }
+    for (var path : test.modulePaths().lines().toList()) {
+      options = options.with(Option.TEST_MODULE_PATH, path);
+    }
+    // externals
+    var external = info.external();
     for (var module : info.requires()) options = options.with(Option.PROJECT_REQUIRES, module);
-    for (var module : info.external().externalModules()) {
+    for (var module : external.externalModules()) {
       var location = ExternalModuleLocation.of(module);
       options = options.with(Option.EXTERNAL_MODULE_LOCATION, location.module(), location.uri());
     }
-    for (var library : info.external().externalLibraries()) {
+    for (var library : external.externalLibraries()) {
       var name = ExternalLibraryName.ofCli(library.name().cli());
       options = options.with(Option.EXTERNAL_LIBRARY_VERSION, name.cli(), library.version());
     }

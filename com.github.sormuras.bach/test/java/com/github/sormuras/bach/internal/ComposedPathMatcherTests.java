@@ -58,7 +58,8 @@ class ComposedPathMatcherTests {
         "m/main/java-module/module-info.java"
       })
   void globMatchesMainPatterns(String string) {
-    var matcher = ComposedPathMatcher.ofGlobModules(ProjectInfo.DEFAULT_MAIN_MODULES_PATTERNS);
+    var patterns = ProjectInfo.Main.DEFAULT_MODULES_PATTERNS.lines().toList();
+    var matcher = ComposedPathMatcher.ofGlobModules(patterns);
     assertTrue(matcher.matches(Path.of(string)));
   }
 
@@ -71,7 +72,8 @@ class ComposedPathMatcherTests {
         "m/test/java-module/module-info.java"
       })
   void globMatchesTestPatterns(String string) {
-    var matcher = ComposedPathMatcher.ofGlobModules(ProjectInfo.DEFAULT_TEST_MODULES_PATTERNS);
+    var patterns = ProjectInfo.Test.DEFAULT_MODULES_PATTERNS.lines().toList();
+    var matcher = ComposedPathMatcher.ofGlobModules(patterns);
     assertTrue(matcher.matches(Path.of(string)));
   }
 }

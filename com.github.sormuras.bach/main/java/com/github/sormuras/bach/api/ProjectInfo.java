@@ -16,7 +16,11 @@ public @interface ProjectInfo {
    */
   String name() default DEFAULT_PROJECT_NAME;
 
+  String DEFAULT_PROJECT_NAME = "noname";
+
   String version() default DEFAULT_PROJECT_VERSION;
+
+  String DEFAULT_PROJECT_VERSION = "0";
 
   String[] arguments() default {};
 
@@ -28,16 +32,7 @@ public @interface ProjectInfo {
 
   Main main() default @Main;
 
-  // ---
-
-  String DEFAULT_PROJECT_NAME = "noname";
-  String DEFAULT_PROJECT_VERSION = "0";
-
-  String[] DEFAULT_MAIN_MODULES_PATTERNS = {"module-info.java", "*", "**"};
-  String[] DEFAULT_MAIN_MODULE_PATH = {".bach/external-modules"};
-
-  String[] DEFAULT_TEST_MODULES_PATTERNS = {"test", "**/test", "**/test/**"};
-  String[] DEFAULT_TEST_MODULE_PATH = {".bach/workspace/modules",".bach/external-modules"};
+  Test test() default @Test;
 
   // ---
 
@@ -63,20 +58,25 @@ public @interface ProjectInfo {
   @Target({})
   @interface External {
     ExternalModule[] externalModules() default {};
+
     ExternalLibrary[] externalLibraries() default {};
   }
 
   @Target({})
   @interface ExternalLibrary {
     ExternalLibraryName name();
+
     String version();
   }
 
   @Target({})
   @interface ExternalModule {
     String name();
+
     String link();
+
     LinkType type() default LinkType.AUTO;
+
     String mavenRepository() default "https://repo.maven.apache.org/maven2";
   }
 
@@ -89,10 +89,43 @@ public @interface ProjectInfo {
   @Target({})
   @interface Main {
 
-    int DEFAULT_JAVA_RELEASE = 0;
-
     int javaRelease() default DEFAULT_JAVA_RELEASE;
 
+    int DEFAULT_JAVA_RELEASE = 0;
+
+    String modulesPatterns() default DEFAULT_MODULES_PATTERNS;
+
+    String DEFAULT_MODULES_PATTERNS =
+        """
+        module-info.java
+        *
+        **
+        """;
+
+    String modulePaths() default DEFAULT_MODULE_PATHS;
+
+    String DEFAULT_MODULE_PATHS = ".bach/external-modules";
+
     boolean jarWithSources() default false;
+  }
+
+  @Target({})
+  @interface Test {
+
+    String modulesPatterns() default DEFAULT_MODULES_PATTERNS;
+
+    String DEFAULT_MODULES_PATTERNS =
+        """
+        test
+        **/test
+        **/test/**
+        """;
+
+    String modulePaths() default DEFAULT_MODULE_PATHS;
+
+    String DEFAULT_MODULE_PATHS =
+        """
+        .bach/workspace/modules
+        """ + Main.DEFAULT_MODULE_PATHS;
   }
 }

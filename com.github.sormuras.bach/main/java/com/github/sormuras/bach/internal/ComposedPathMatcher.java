@@ -21,8 +21,8 @@ public record ComposedPathMatcher(List<PathMatcher> matchers) implements PathMat
     return new ComposedPathMatcher(matchers);
   }
 
-  public static ComposedPathMatcher ofGlobModules(String... patterns) {
-    return ComposedPathMatcher.of("glob", "module-info.java", patterns);
+  public static ComposedPathMatcher ofGlobModules(List<String> patterns) {
+    return ComposedPathMatcher.of("glob", "module-info.java", patterns.toArray(String[]::new));
   }
 
   public static Stream<String> stream(String syntax, String suffix, String... patterns) {

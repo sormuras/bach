@@ -36,11 +36,39 @@ public enum Option {
 
   PROJECT_REQUIRES("A name of a module required by this project.", null, 1, Modifier.REPEATABLE),
 
+  MAIN_MODULES_PATTERN(
+      "Specify where to find module-info.java files for the main code space.",
+      Value.of(ProjectInfo.Main.DEFAULT_MODULES_PATTERNS.lines().toList()),
+      1,
+      Modifier.REPEATABLE
+  ),
+
   MAIN_JAVA_RELEASE(
       "Compile main modules for the specified Java SE release.",
       String.valueOf(ProjectInfo.Main.DEFAULT_JAVA_RELEASE)),
 
+  MAIN_MODULE_PATH(
+      "Specify where to find modules for compiling main modules.",
+      Value.of(ProjectInfo.Main.DEFAULT_MODULE_PATHS.lines().toList()),
+      1,
+      Modifier.HIDDEN,
+      Modifier.REPEATABLE),
+
   MAIN_JAR_WITH_SOURCES("Include all files found in source folders into their modular JAR files."),
+
+  TEST_MODULES_PATTERN(
+      "Specify where to find module-info.java files for the test code space.",
+      Value.of(ProjectInfo.Test.DEFAULT_MODULES_PATTERNS.lines().toList()),
+      1,
+      Modifier.REPEATABLE
+  ),
+
+  TEST_MODULE_PATH(
+      "Specify where to find modules for compiling and running test modules.",
+      Value.of(ProjectInfo.Test.DEFAULT_MODULE_PATHS.lines().toList()),
+      1,
+      Modifier.HIDDEN,
+      Modifier.REPEATABLE),
 
   EXTERNAL_MODULE_LOCATION(
       """
@@ -189,6 +217,10 @@ public enum Option {
   }
 
   public record Value(List<String> elements) {
+
+    public static Value of(List<String> strings) {
+      return new Value(List.copyOf(strings));
+    }
 
     public static Value of(String... elements) {
       return new Value(List.of(elements));

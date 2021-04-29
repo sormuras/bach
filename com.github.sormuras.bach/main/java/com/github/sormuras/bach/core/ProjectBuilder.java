@@ -17,7 +17,6 @@ import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
 import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
-import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
@@ -38,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 public class ProjectBuilder {
 
@@ -82,10 +80,8 @@ public class ProjectBuilder {
     var mainModules = new TreeMap<String, DeclaredModule>();
     var testModules = new TreeMap<String, DeclaredModule>();
 
-    // TODO Option.MAIN_MODULES_PATTERN
-    var mainMatcher = ComposedPathMatcher.ofGlobModules(ProjectInfo.DEFAULT_MAIN_MODULES_PATTERNS);
-    // TODO Option.TEST_MODULES_PATTERN
-    var testMatcher = ComposedPathMatcher.ofGlobModules(ProjectInfo.DEFAULT_TEST_MODULES_PATTERNS);
+    var mainMatcher = ComposedPathMatcher.ofGlobModules(options.list(Option.MAIN_MODULES_PATTERN));
+    var testMatcher = ComposedPathMatcher.ofGlobModules(options.list(Option.TEST_MODULES_PATTERN));
 
     var jarWithSources = options.is(Option.MAIN_JAR_WITH_SOURCES);
     for (var path : paths) {
@@ -106,16 +102,19 @@ public class ProjectBuilder {
       logbook.log(Level.DEBUG, "Skip module %s - no match for main nor test space".formatted(path));
     }
 
+    var mainModulePaths = options.list(Option.MAIN_MODULE_PATH);
+    var testModulePaths = options.list(Option.TEST_MODULE_PATH);
+
     var main =
         new CodeSpaceMain(
             new DeclaredModuleFinder(mainModules),
-            buildDeclaredModulePaths(root, ProjectInfo.DEFAULT_MAIN_MODULE_PATH), // TODO Option...
+            buildDeclaredModulePaths(root, mainModulePaths),
             Integer.parseInt(options.get(Option.MAIN_JAVA_RELEASE)),
             buildTweaks(CodeSpace.MAIN));
     var test =
         new CodeSpaceTest(
             new DeclaredModuleFinder(testModules),
-            buildDeclaredModulePaths(root, ProjectInfo.DEFAULT_TEST_MODULE_PATH), // TODO Option...
+            buildDeclaredModulePaths(root, testModulePaths),
             buildTweaks(CodeSpace.TEST));
 
     return new Spaces(main, test);
@@ -152,8 +151,8 @@ public class ProjectBuilder {
     return new DeclaredModule(content, reference, sources, resources);
   }
 
-  public ModulePaths buildDeclaredModulePaths(Path root, String... paths) {
-    return new ModulePaths(Stream.of(paths).map(root::resolve).toList());
+  public ModulePaths buildDeclaredModulePaths(Path root, List<String> paths) {
+    return new ModulePaths(paths.stream().map(root::resolve).toList());
   }
 
   public SourceFolder buildDeclaredSourceFolder(Path path) {

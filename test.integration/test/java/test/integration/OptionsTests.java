@@ -102,6 +102,12 @@ class OptionsTests {
           .
         --bach-info-module
           bach.info
+        --main-module-path
+          .bach/external-modules
+        --test-module-path
+          .bach/workspace/modules
+        --test-module-path
+          .bach/external-modules
         """
             .lines(),
         options.lines(Option::isHidden));
@@ -152,8 +158,26 @@ class OptionsTests {
           noname
         --project-version
           0
+        --main-modules-pattern
+          module-info.java
+        --main-modules-pattern
+          *
+        --main-modules-pattern
+          **
         --main-java-release
           0
+        --main-module-path
+          .bach/external-modules
+        --test-modules-pattern
+          test
+        --test-modules-pattern
+          **/test
+        --test-modules-pattern
+          **/test/**
+        --test-module-path
+          .bach/workspace/modules
+        --test-module-path
+          .bach/external-modules
         --external-module-location
           m1
           l1
