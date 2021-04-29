@@ -195,6 +195,7 @@ public class ProjectBuilder {
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
     var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
+    if (deque.isEmpty()) return;
     var locationMap = new TreeMap<String, ExternalModuleLocation>();
     while (!deque.isEmpty()) {
       var module = deque.removeFirst();
@@ -207,6 +208,7 @@ public class ProjectBuilder {
 
   public void fillExternalsLocatorsFromOptionLibraryVersion(List<ExternalModuleLocator> locators) {
     var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_LIBRARY_VERSION));
+    if (deque.isEmpty()) return;
     while (!deque.isEmpty()) {
       var name = deque.removeFirst();
       var version = deque.removeFirst();
