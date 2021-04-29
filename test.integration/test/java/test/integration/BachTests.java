@@ -27,16 +27,16 @@ class BachTests {
   }
 
   @Test
-  void help() {
+  void help(@TempDir Path temp) {
     var out = """
         Usage: bach [OPTIONS] [ACTIONS...]
         >> MESSAGE >>
         """;
-    bach(0, out, Option.HELP);
+    bach(0, out, Option.CHROOT, temp, Option.HELP);
   }
 
   @Test
-  void helpExtra() {
+  void helpExtra(@TempDir Path temp) {
     var out =
         """
         Usage: bach [OPTIONS] [ACTIONS...]
@@ -44,7 +44,7 @@ class BachTests {
           --chroot.*
         >> MESSAGE >>
         """;
-    bach(0, out, Option.HELP_EXTRA);
+    bach(0, out, Option.CHROOT, temp, Option.HELP_EXTRA);
   }
 
   @Test
@@ -71,24 +71,24 @@ class BachTests {
   }
 
   @Test
-  void tool() {
+  void tool(@TempDir Path temp) {
     var out = """
         javac .+
         """;
-    bach(0, out, Option.TOOL, "javac", "--version");
+    bach(0, out, Option.CHROOT, temp, Option.TOOL, "javac", "--version");
   }
 
   @Test
-  void toolBach() {
+  void toolBach(@TempDir Path temp) {
     var out = """
         .+
         """;
-    bach(0, out, Option.TOOL, "bach", "--version");
+    bach(0, out, Option.CHROOT, temp, Option.TOOL, "bach", Option.CHROOT, temp, "--version");
   }
 
   @Test
-  void version() {
-    bach(0, ".+", Option.VERSION);
+  void version(@TempDir Path temp) {
+    bach(0, ".+", Option.CHROOT, temp, Option.VERSION);
   }
 
   private static void bach(int expectedStatus, String expectedOutput, Object... objects) {
