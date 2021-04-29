@@ -29,6 +29,13 @@ public @interface ProjectInfo {
   String DEFAULT_PROJECT_NAME = "noname";
   String DEFAULT_PROJECT_VERSION = "0";
 
+  String[] DEFAULT_MAIN_MODULES_PATTERNS = {"module-info.java", "*", "**"};
+  String[] DEFAULT_MAIN_MODULE_PATH = {".bach/external-modules"};
+  int DEFAULT_MAIN_MODULES_TARGET_JAVA_RELEASE = 0;
+
+  String[] DEFAULT_TEST_MODULES_PATTERNS = {"test", "**/test", "**/test/**"};
+  String[] DEFAULT_TEST_MODULE_PATH = {".bach/workspace/modules",".bach/external-modules"};
+
   // ---
 
   @Target({})
