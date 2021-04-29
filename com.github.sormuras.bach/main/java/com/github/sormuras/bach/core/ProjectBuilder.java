@@ -28,6 +28,7 @@ import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.internal.Strings;
 import java.lang.System.Logger.Level;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -53,14 +54,19 @@ public class ProjectBuilder {
     logbook.log(Level.DEBUG, "Project object being built by " + getClass());
     logbook.log(Level.DEBUG, "Read values from options titled: " + options.title());
     var name = buildProjectName();
+    var version = buildProjectVersion();
     var folders = buildFolders();
     var spaces = buildSpaces(folders);
     var externals = buildExternals();
-    return new Project(name, folders, spaces, externals);
+    return new Project(name, version, folders, spaces, externals);
   }
 
   public String buildProjectName() {
     return options.get(Option.PROJECT_NAME);
+  }
+
+  public Version buildProjectVersion() {
+    return Version.parse(options.get(Option.PROJECT_VERSION));
   }
 
   public Folders buildFolders() {

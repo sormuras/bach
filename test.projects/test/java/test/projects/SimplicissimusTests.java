@@ -30,12 +30,14 @@ class SimplicissimusTests {
                 // "--limit-tools", "javac,jar"
                 // "--jar-with-sources"
                 .with(Option.VERBOSE)
+                .with(Option.PROJECT_VERSION, "123")
                 .with(Option.MAIN_JAVA_RELEASE, 9)
                 .with(Action.BUILD));
 
     assertTrue(bach.options().is(Option.VERBOSE));
     assertEquals(root, bach.project().folders().root());
     assertEquals(name, bach.project().name());
+    assertEquals("123", bach.project().version().toString());
 
     var main = bach.project().spaces().main();
     assertEquals(9, main.release());

@@ -16,6 +16,8 @@ public @interface ProjectInfo {
    */
   String name() default DEFAULT_PROJECT_NAME;
 
+  String version() default DEFAULT_PROJECT_VERSION;
+
   String[] arguments() default {};
 
   Options options() default @Options;

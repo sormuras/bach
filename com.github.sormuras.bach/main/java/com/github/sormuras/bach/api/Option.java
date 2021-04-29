@@ -30,7 +30,9 @@ public enum Option {
 
   DESCRIBE_TOOL("Describe a tool and exit.", 1, Modifier.EXIT),
 
-  PROJECT_NAME("The name of project.", ProjectInfo.DEFAULT_PROJECT_NAME),
+  PROJECT_NAME("The name of the project.", ProjectInfo.DEFAULT_PROJECT_NAME),
+
+  PROJECT_VERSION("The version of the project.", ProjectInfo.DEFAULT_PROJECT_VERSION),
 
   PROJECT_REQUIRES("A name of a module required by this project.", 1, Modifier.REPEATABLE),
 
