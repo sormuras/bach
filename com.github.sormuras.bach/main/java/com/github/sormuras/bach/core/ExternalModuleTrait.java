@@ -34,19 +34,18 @@ public /*sealed*/ interface ExternalModuleTrait extends BachTrait {
   private Set<String> computeMissingExternalModules(boolean includeRequiresOfExternalModules) {
     // Populate a set with all module names being in a "requires MODULE;" directive
     var project = bach().project();
-    var requires = new TreeSet<>(project.externals().requires()); // project-info
-    // TODO requires.addAll(required(project.spaces().main().declarations())); // main module-info
-    // TODO requires.addAll(required(project.spaces().test().declarations())); // test module-info
+    var requires = new TreeSet<>(project.externals().requires()); // project-requires
+    requires.addAll(required(project.spaces().main().modules())); // main module-info
+    requires.addAll(required(project.spaces().test().modules())); // test module-info
     var externalModulesFinder = ModuleFinder.of(project.folders().externals());
     if (includeRequiresOfExternalModules) requires.addAll(required(externalModulesFinder));
 
     bach().log("Computed %d required modules: %s".formatted(requires.size(), requires));
     // Remove names of locatable modules from various module realms
     requires.removeAll(declared(ModuleFinder.ofSystem()));
-    // TODO requires.removeAll(declared(project.spaces().main().declarations()));
-    // TODO requires.removeAll(declared(project.spaces().test().declarations()));
+    requires.removeAll(declared(project.spaces().main().modules()));
+    requires.removeAll(declared(project.spaces().test().modules()));
     requires.removeAll(declared(externalModulesFinder));
-    // TODO requires.removeAll(declared(ModuleFinder.of(Bach.bin())));
     // Still here? Return names of missing modules
     bach().log("Computed %d missing external modules: %s".formatted(requires.size(), requires));
     return Set.copyOf(requires);
