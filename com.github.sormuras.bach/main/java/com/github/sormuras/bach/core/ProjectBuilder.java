@@ -157,8 +157,7 @@ public class ProjectBuilder {
 
   public SourceFolder buildDeclaredSourceFolder(Path path) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    var release = SourceFolder.parseReleaseNumber(Strings.name(path));
-    return new SourceFolder(path, release);
+    return SourceFolder.of(path);
   }
 
   public SourceFolders buildDeclaredSourceFolders(Path path, String namePrefix) {

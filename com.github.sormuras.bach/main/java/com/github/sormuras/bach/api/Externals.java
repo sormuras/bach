@@ -6,6 +6,10 @@ import java.util.Set;
 
 public record Externals(Set<String> requires, List<ExternalModuleLocator> locators) {
 
+  public static Externals of(ExternalModuleLocator... locators) {
+    return new Externals(Set.of(), List.of(locators));
+  }
+
   public Optional<External> findExternal(String module) {
     for (var locator : locators) {
       var location = locator.locate(module);

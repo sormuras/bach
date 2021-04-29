@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class SourceFolderTests {
   @Test
   void empty() {
-    var empty = new SourceFolder(Path.of(""), 0);
+    var empty = SourceFolder.of(Path.of(""));
     assertEquals("", empty.path().toString());
     assertEquals(0, empty.release());
     assertFalse(empty.isTargeted());

@@ -7,6 +7,10 @@ import java.util.stream.Stream;
 
 public record SourceFolders(List<SourceFolder> list) {
 
+  public static SourceFolders of(SourceFolder... folders) {
+    return new SourceFolders(List.of(folders));
+  }
+
   public SourceFolder first() {
     if (list.isEmpty()) throw new IllegalStateException("No source folder in list");
     return list.get(0);
