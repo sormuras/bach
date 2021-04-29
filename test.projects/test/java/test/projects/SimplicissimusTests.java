@@ -71,6 +71,25 @@ class SimplicissimusTests {
 
     assertEquals(expectedProject(), bach.project());
 
+    var cli =
+        Bach.of(
+            Logbook.ofErrorPrinter(),
+            Options.ofCommandLineArguments(
+                name + " Options",
+                """
+                --chroot
+                  %s
+                --verbose
+                --project-version
+                  123
+                --main-java-release
+                  9
+                --main-jar-with-sources
+                build
+                """.formatted(root)));
+
+    assertEquals(expectedProject(), cli.project());
+
     assertEquals(0, bach.run(), bach.logbook().toString());
     assertLinesMatch(
         """
