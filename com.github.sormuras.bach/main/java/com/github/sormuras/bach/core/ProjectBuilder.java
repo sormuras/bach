@@ -104,7 +104,7 @@ public class ProjectBuilder {
         new CodeSpaceMain(
             new DeclaredModuleFinder(mainModules),
             buildDeclaredModulePaths(root, ProjectInfo.DEFAULT_MAIN_MODULE_PATH), // TODO Option...
-            ProjectInfo.DEFAULT_MAIN_MODULES_TARGET_JAVA_RELEASE, // TODO Option...
+            Integer.parseInt(options.get(Option.MAIN_JAVA_RELEASE)),
             buildTweaks(CodeSpace.MAIN));
     var test =
         new CodeSpaceTest(

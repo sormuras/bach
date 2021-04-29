@@ -84,6 +84,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
     var options = Options.of("@ProjectInfo elements");
     options = options.withIfDifferent(Option.PROJECT_NAME, Value.of(info.name()));
     // TODO options = options.withIfDifferent(Option.PROJECT_VERSION, Value.of(info.version()));
+    options = options.withIfDifferent(Option.MAIN_JAVA_RELEASE, Value.of(info.main().javaRelease() + ""));
     for (var module : info.requires()) options = options.with(Option.PROJECT_REQUIRES, module);
     for (var module : info.external().externalModules()) {
       var location = ExternalModuleLocation.of(module);

@@ -34,6 +34,10 @@ public enum Option {
 
   PROJECT_REQUIRES("A name of a module required by this project.", 1, Modifier.REPEATABLE),
 
+  MAIN_JAVA_RELEASE(
+      "Compile main modules for the specified Java SE release.",
+      ProjectInfo.Main.DEFAULT_JAVA_RELEASE),
+
   EXTERNAL_MODULE_LOCATION(
       """
       An external module-location mapping.
