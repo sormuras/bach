@@ -78,6 +78,16 @@ public final class DeclaredModuleReference extends ModuleReference {
     this.info = info;
   }
 
+  @Override
+  public boolean equals(Object object) {
+    return this == object || object instanceof DeclaredModuleReference ref && info.equals(ref.info);
+  }
+
+  @Override
+  public int hashCode() {
+    return info.hashCode();
+  }
+
   public Path info() {
     return info;
   }
