@@ -29,7 +29,7 @@ public class RunActionInEmptyDirectoryTests {
     bach(1, """
         Bach .+
         >>>>
-        com.github.sormuras.bach.api.UnsupportedActionException: Unsupported action: XYZ
+        Exception: com.github.sormuras.bach.api.UnsupportedActionException: Unsupported action: XYZ
         >>>>
         """, Option.CHROOT, temp, Option.ACTION, "XYZ");
   }

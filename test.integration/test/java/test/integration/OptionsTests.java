@@ -79,6 +79,8 @@ class OptionsTests {
     assertLinesMatch(
         """
         --verbose
+        --dry-run
+        --run-commands-sequentially
         --version
         --help
         --help-extra

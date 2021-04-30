@@ -64,10 +64,6 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     return this;
   }
 
-  public boolean is(Option option) {
-    return options.is(option);
-  }
-
   public void say(String message) {
     logbook.log(System.Logger.Level.INFO, message);
   }
@@ -109,7 +105,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   private int runActions(Stream<Action> actions) {
-    if (is(Option.SHOW_CONFIGURATION)) {
+    if (options.is(Option.SHOW_CONFIGURATION)) {
       say("Configuration");
       options.lines(Option::isVisible).forEach(this::say);
     }

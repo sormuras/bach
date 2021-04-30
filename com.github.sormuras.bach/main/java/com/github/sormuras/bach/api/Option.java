@@ -14,6 +14,10 @@ public enum Option {
 
   VERBOSE("Output messages about what Bach is doing"),
 
+  DRY_RUN("Create project model and call actions but do not run any tools", Modifier.HIDDEN),
+
+  RUN_COMMANDS_SEQUENTIALLY("Prevent parallel execution of command streams.", Modifier.HIDDEN),
+
   VERSION("Print version and exit.", Modifier.EXIT),
 
   HELP("Print this help message and exit.", Modifier.EXIT),

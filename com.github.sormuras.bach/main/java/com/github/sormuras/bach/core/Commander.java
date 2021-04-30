@@ -3,6 +3,7 @@ package com.github.sormuras.bach.core;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.CommandResult;
 import com.github.sormuras.bach.CommandResults;
+import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.internal.ModuleLayerBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -58,16 +59,15 @@ public /*sealed*/ interface Commander extends BachTrait {
   }
 
   default CommandResults run(Command<?> command, Command<?>... commands) {
-    var sequentially = false; // TODO bach().options().is(Option.RUN_COMMANDS_SEQUENTIALLY);
-    var concat = Stream.concat(Stream.of(command), Stream.of(commands));
-    var stream = sequentially ? concat.sequential() : concat.parallel();
-    return run(stream);
+    return run(Stream.concat(Stream.of(command), Stream.of(commands)));
   }
 
   default CommandResults run(Stream<? extends Command<?>> commands) {
-    var parallel = commands.isParallel();
+    var sequentially = bach().options().is(Option.RUN_COMMANDS_SEQUENTIALLY);
+    var stream = sequentially ? commands.sequential() : commands;
+    var parallel = stream.isParallel();
     bach().log("Stream commands %s".formatted(parallel ? "in parallel" : "sequentially"));
-    var results = commands.map(this::run).toList();
+    var results = stream.map(this::run).toList();
     var s = results.size() == 1 ? "" : "s";
     bach().log("Collected %d command result%s".formatted(results.size(), s));
     return new CommandResults(results);
@@ -93,7 +93,8 @@ public /*sealed*/ interface Commander extends BachTrait {
     var start = Instant.now();
     int code;
     try {
-      var enabled = true; // TODO bach()....tools().enabled(name);
+      var dry = bach().options().is(Option.DRY_RUN);
+      var enabled = !dry; // TODO bach()....tools().enabled(name);
       if (enabled) bach().say("  %-8s %s".formatted(name, description));
       else bach().log("Skip " + name);
       code = enabled ? provider.run(new PrintWriter(out), new PrintWriter(err), args) : 0;
