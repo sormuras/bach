@@ -10,11 +10,10 @@ import com.github.sormuras.bach.core.CoreTrait;
 import com.github.sormuras.bach.core.ExternalModuleTrait;
 import com.github.sormuras.bach.core.HttpTrait;
 import com.github.sormuras.bach.core.PrintTrait;
-import com.github.sormuras.bach.core.ToolProviders;
+import com.github.sormuras.bach.core.Commander;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.HelpMessageBuilder;
 import com.github.sormuras.bach.internal.Strings;
-import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -23,7 +22,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements CoreTrait, HttpTrait, PrintTrait, ExternalModuleTrait {
+    implements CoreTrait, HttpTrait, PrintTrait, ExternalModuleTrait, Commander {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
@@ -54,8 +53,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
             Options.ofDirectory(root),
             defaultOptions);
 
-    var verbose = options.is(Option.VERBOSE);
-    var logbook = new Logbook(initialLogbook.printer(), verbose, initialLogbook.messages());
+    var logbook = initialLogbook.verbose(options.is(Option.VERBOSE));
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
     var project = factory.newProjectBuilder(logbook, options).build();
@@ -80,13 +78,13 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
 
   public int run() {
     var exit = options.findFirstEntry(Option::isExit);
-    if (exit.isPresent()) return run(exit.get());
+    if (exit.isPresent()) return runExit(exit.get());
 
     say(Strings.banner());
-    return run(options.actions());
+    return runActions(options.actions());
   }
 
-  private int run(Options.Entry exit) {
+  private int runExit(Options.Entry exit) {
     var out = logbook.printer().out();
     switch (exit.option()) {
       case VERSION -> out.println(Strings.version());
@@ -102,8 +100,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
         var line = exit.value().elements();
         var name = line.get(0);
         var args = line.subList(1, line.size()).toArray(String[]::new);
-        var finder = ModuleFinder.of(project.folders().externals());
-        var provider = ToolProviders.of(finder).find(name).orElseThrow();
+        var provider = findToolProvider(name).orElseThrow();
         return provider.run(out, logbook.printer().err(), args);
       }
       default -> throw new UnsupportedOptionException(exit.option().name());
@@ -111,7 +108,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     return 0;
   }
 
-  private int run(Stream<Action> actions) {
+  private int runActions(Stream<Action> actions) {
     if (is(Option.SHOW_CONFIGURATION)) {
       say("Configuration");
       options.lines(Option::isVisible).forEach(this::say);
@@ -120,7 +117,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     say(project.name() + " 0");
     var start = Instant.now();
     try {
-      actions.forEach(this::run);
+      actions.forEach(this::runAction);
     } catch (Exception exception) {
       logbook.log(exception);
       return 1;
@@ -131,7 +128,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     return 0;
   }
 
-  private void run(Action action) {
+  private void runAction(Action action) {
     log("run(%s)".formatted(action));
     switch (action) {
       case BUILD -> build();
