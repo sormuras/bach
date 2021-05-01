@@ -34,6 +34,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -171,7 +172,17 @@ public class ProjectBuilder {
   }
 
   public Tweaks buildTweaks(CodeSpace space) {
+    var deque = new ArrayDeque<>(options.list(Option.TWEAK));
+    if (deque.isEmpty()) return Tweaks.of();
     var tweaks = new ArrayList<Tweak>();
+    while (!deque.isEmpty()) {
+      var codespace = CodeSpace.valueOf(deque.removeFirst().toUpperCase(Locale.ROOT));
+      var trigger = deque.removeFirst();
+      var count = Integer.parseInt(deque.removeFirst());
+      var arguments = new ArrayList<String>();
+      for (int i = 0; i < count; i++) arguments.add(deque.removeFirst());
+      if (space == codespace) tweaks.add(new Tweak(trigger, arguments));
+    }
     return new Tweaks(List.copyOf(tweaks));
   }
 

@@ -73,6 +73,17 @@ public record Options(String title, EnumMap<Option, Value> map) {
         deque.clear();
         break;
       }
+      if (option == Option.TWEAK) {
+        var strings = new ArrayList<String>();
+        strings.add(deque.removeFirst()); // CODESPACE
+        strings.add(deque.removeFirst()); // TRIGGER
+        var count = deque.removeFirst();
+        strings.add(count); // COUNT
+        System.out.println(strings);
+        for (int i = 0; i < Integer.parseInt(count); i++) strings.add(deque.removeFirst()); // ARGS
+        options = options.with(Option.TWEAK, Value.of(strings));
+        continue;
+      }
       var exact = deque.stream().limit(needs).toList(); // get exact number of arguments
       for (var ignored : exact) deque.removeFirst(); // remove those elements from the deque (...)
       options = options.with(option, new Value(exact));
@@ -247,7 +258,7 @@ public record Options(String title, EnumMap<Option, Value> map) {
         continue;
       }
       var elements = entry.getValue().elements();
-      if (option.isGreedy()) {
+      if (option.isGreedy() || option == Option.TWEAK) {
         lines.add(cli);
         lines.add("  " + String.join(" ", elements));
         continue;
@@ -255,7 +266,8 @@ public record Options(String title, EnumMap<Option, Value> map) {
       var deque = new ArrayDeque<>(elements);
       while (!deque.isEmpty()) {
         lines.add(cli);
-        for (int i = 0; i < option.cardinality(); i++) lines.add("  " + deque.removeFirst());
+        var max = Math.abs(option.cardinality());
+        for (int i = 0; i < max; i++) lines.add("  " + deque.removeFirst());
       }
     }
     return lines.stream();

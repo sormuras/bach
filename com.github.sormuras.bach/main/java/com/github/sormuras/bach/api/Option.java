@@ -44,8 +44,7 @@ public enum Option {
       "Specify where to find module-info.java files for the main code space.",
       Value.of(ProjectInfo.Main.DEFAULT_MODULES_PATTERNS.lines().toList()),
       1,
-      Modifier.REPEATABLE
-  ),
+      Modifier.REPEATABLE),
 
   MAIN_JAVA_RELEASE(
       "Compile main modules for the specified Java SE release.",
@@ -64,8 +63,7 @@ public enum Option {
       "Specify where to find module-info.java files for the test code space.",
       Value.of(ProjectInfo.Test.DEFAULT_MODULES_PATTERNS.lines().toList()),
       1,
-      Modifier.REPEATABLE
-  ),
+      Modifier.REPEATABLE),
 
   TEST_MODULE_PATH(
       "Specify where to find modules for compiling and running test modules.",
@@ -100,7 +98,25 @@ public enum Option {
 
   LOAD_MISSING_EXTERNAL_MODULES("Load all missing external modules.", Modifier.EXIT),
 
-  TOOL("Run the specified tool and exit with its return value.", null, -1, Modifier.EXIT),
+  TWEAK(
+      """
+      Additional command-line arguments passed to tool runs matching the specified trigger.
+      Synopsis:
+        --tweak CODESPACE TRIGGER COUNT ARG [ARGS...]
+      Example:
+        --tweak main javac 1 -parameters
+        --tweak main javac 2 -encoding UTF-8
+      """,
+      null,
+      -3, /* + COUNT, with COUNT >= 1 */
+      Modifier.REPEATABLE),
+
+  TOOL(
+      "Run the specified tool and exit with its return value.",
+      null,
+      -1,
+      Modifier.EXIT,
+      Modifier.GREEDY),
 
   ACTION("The name of the action to be executed.", null, 1, Modifier.REPEATABLE);
 
@@ -180,12 +196,12 @@ public enum Option {
     return cardinality == 0;
   }
 
-  public boolean isGreedy() {
-    return cardinality < 0;
-  }
-
   public boolean isExit() {
     return modifiers.contains(Modifier.EXIT);
+  }
+
+  public boolean isGreedy() {
+    return modifiers.contains(Modifier.GREEDY);
   }
 
   public boolean isHidden() {
@@ -216,6 +232,7 @@ public enum Option {
 
   enum Modifier {
     EXIT,
+    GREEDY,
     HIDDEN,
     REPEATABLE
   }

@@ -146,6 +146,8 @@ class OptionsTests {
             .with(Option.EXTERNAL_MODULE_LOCATION, "m1", "l1")
             .with(Option.EXTERNAL_MODULE_LOCATION, "m2", "l2")
             .with(Option.EXTERNAL_MODULE_LOCATION, "m3", "l3")
+            .with(Option.TWEAK, "main", "t", "1", "a")
+            .with(Option.TWEAK, "test", "t", "2", "a", "b")
             .with(Action.BUILD);
 
     assertFalse(options.is(Option.VERSION));
@@ -189,6 +191,8 @@ class OptionsTests {
         --external-module-location
           m3
           l3
+        --tweak
+          main t 1 a test t 2 a b
         --action
           build
         """
