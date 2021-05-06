@@ -3,7 +3,6 @@ package com.github.sormuras.bach.internal;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Option;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,9 +22,9 @@ public record BachInfoModuleBuilder(Logbook logbook, Options options) {
   }
 
   public Module build() {
-    var root = Path.of(options.get(Option.CHROOT)).normalize();
+    var root = options.chrootOrDefault();
     var infoFolder = root.resolve(".bach").normalize();
-    var infoModule = options.get(Option.BACH_INFO_MODULE);
+    var infoModule = options.bachInfoOrDefault();
     var layer = newModuleLayer(infoModule, infoFolder);
     return layer.findModule(infoModule).orElse(Bach.class.getModule());
   }

@@ -2,280 +2,522 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.BachException;
-import com.github.sormuras.bach.api.ExternalLibraryName;
+import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
-import com.github.sormuras.bach.api.Option;
-import com.github.sormuras.bach.api.Option.Value;
 import com.github.sormuras.bach.api.ProjectInfo;
-import java.io.IOException;
+import com.github.sormuras.bach.api.Tools;
+import com.github.sormuras.bach.api.Tweak;
 import java.lang.System.Logger.Level;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.module.ModuleDescriptor.Version;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.RecordComponent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record Options(String title, EnumMap<Option, Value> map) {
+/**
+ * @param id an internal identifier for this options instance
+ * @param verbose output messages about what Bach is doing
+ * @param actions a list of actions to execute
+ */
+public record Options(
+    Optional<String> id,
+
+    // <editor-fold desc="Runtime Modifying Options">
+    @Help("""
+        --verbose
+          Output messages about what Bach is doing.""")
+        boolean verbose,
+    @Help("""
+        --dry-run
+          Prevent command execution.
+        """) boolean dryRun,
+    @Help("""
+        --run-commands-sequentially
+        """) boolean runCommandsSequentially,
+    // </editor-fold>
+
+    // <editor-fold desc="Run'N Exit Command Options">
+    @Help("""
+        --version
+          Print version information and exit.""") boolean version,
+    @Help("""
+        --help
+          Print this help message and exit.""") boolean help,
+    @Help("""
+        --help-extra
+          Print help on extra options and exit.""")
+        boolean helpExtra,
+    @Help("""
+        --list-configuration
+          Print effective configuration and exit.""")
+        boolean listConfiguration,
+    @Help("""
+        --list-modules
+          List modules and exit.""") boolean listModules,
+    @Help("""
+        --list-tools
+          List tools and exit.""") boolean listTools,
+    @Help("""
+        --describe-tool TOOL
+          Describe tool and exit.""")
+        Optional<String> describeTool,
+    @Help("""
+        --load-external-module MODULE
+          Load an external module.""")
+        Optional<String> loadExternalModule,
+    @Help(
+            """
+        --load-missing-external-modules
+          Load all missing external modules.""")
+        boolean loadMissingExternalModules,
+    @Help(
+            """
+        --tool NAME [ARGS...]
+          Run the specified tool and exit with its return value.""")
+        Optional<Command<?>> tool,
+    // </editor-fold>
+
+    // <editor-fold desc="Primordal Options">
+    @Extra
+        @Help(
+            """
+                --chroot PATH
+                  Change virtually into the specified directory by resolving all generated
+                  paths against the given PATH before passing them as arguments to tools.
+                """)
+        Optional<Path> chroot,
+    @Extra
+        @Help(
+            """
+                --bach-info MODULE
+                  Defaults to: bach.info
+                """)
+        Optional<String> bachInfo,
+    // </editor-fold>
+
+    // <editor-fold desc="Project Options">
+    @Help("""
+          --project-name NAME
+          """) Optional<String> projectName,
+    @Help("""
+          --project-version VERSION
+          """) Optional<Version> projectVersion,
+    @Help(
+            """
+          --project-requires MODULE
+            This option is repeatable.
+          """)
+        List<String> projectRequires,
+    // </editor-fold>
+
+    // <editor-fold desc="Main Code Space Options">
+    @Help(
+            """
+          --main-module-pattern NAME
+            Specify where to find module-info.java files for the main code space.
+            This option is repeatable.
+          """)
+        List<String> mainModulePatterns,
+    @Help(
+            """
+          --main-module-path PATH
+            Specify where to find modules for compiling main modules.
+            This option is repeatable.
+          """)
+        List<String> mainModulePaths,
+    @Help(
+            """
+          --main-java-release RELEASE
+            Compile main modules for the specified Java SE release.
+          """)
+        Optional<Integer> mainJavaRelease,
+    @Help(
+            """
+        --main-jar-with-sources
+          Include all files found in source folders into their modular JAR files.
+        """)
+        boolean mainJarWithSources,
+    // </editor-fold>
+
+    // <editor-fold desc="Test Code Space Options">
+    @Help(
+            """
+          --test-module-pattern NAME
+            Specify where to find module-info.java files for the test code space.
+            This option is repeatable.
+          """)
+        List<String> testModulePatterns,
+    @Help(
+            """
+          --test-module-path PATH
+            Specify where to find modules for compiling and running test modules.
+            This option is repeatable.
+          """)
+        List<String> testModulePaths,
+    // </editor-fold>
+
+    // <editor-fold desc="Tools & Tweaks">
+    @Help("""
+        --limit-tools TOOL(,TOOL)*
+        """) Optional<String> limitTools,
+    @Help("""
+        --skip-tools TOOL(,TOOL)*
+        """) Optional<String> skipTools,
+    @Help(
+            """
+          --tweak SPACE(,SPACE)* TRIGGER COUNT ARG [ARGS...]
+            Additional command-line arguments passed to tool runs matching the specified trigger.
+            Examples:
+              --tweak main javac 1 -parameters
+              --tweak main javac 2 -encoding UTF-8
+            This option is repeatable.
+          """)
+        List<Tweak> tweaks,
+    // </editor-fold>
+
+    // <editor-fold desc="External Modules and Libraries">
+    @Help(
+            """
+          --external-module-location MODULE LOCATION
+            Specify an external module-location mapping.
+            Example:
+              --external-module-location
+                org.junit.jupiter
+                org.junit.jupiter:junit-jupiter:5.7.1
+            This option is repeatable.
+          """)
+        List<ExternalModuleLocation> externalModuleLocations,
+    @Help(
+            """
+          --external-library-version NAME VERSION
+            An external library name and version, providing a set of module-location mappings.
+            Example:
+              --external-library-version
+                JUnit
+                5.7.1
+            This option is repeatable.
+          """)
+        List<ExternalLibraryVersion> externalLibraryVersions,
+    // </editor-fold>
+
+    // <editor-fold desc="...and ACTION!">
+    @Help(
+            """
+        --action ACTION
+          Execute the specified action.
+          This option is repeatable.""")
+        List<Action> actions
+    // </editor-fold>
+    ) {
+
+  public static String generateHelpMessage(Predicate<RecordComponent> filter) {
+    var options =
+        Stream.of(canonicalComponents)
+            .filter(filter)
+            .sorted(Comparator.comparing(RecordComponent::getName))
+            .map(component -> component.getAnnotation(Help.class).value().strip())
+            .collect(Collectors.joining(System.lineSeparator()));
+
+    return """
+        Usage: bach [OPTIONS] [ACTIONS...]
+                 to execute one or more actions in sequence
+
+        Actions may either be passed via their --action <ACTION> option at a random
+        location or by their <ACTION> name at the end of the command-line arguments.
+
+        OPTIONS include:
+
+        {{OPTIONS}}
+        """
+        .replace("{{OPTIONS}}", options.indent(2).stripTrailing())
+        .stripTrailing();
+  }
 
   public static Options of() {
-    var frame = StackWalker.getInstance().walk(frames -> frames.skip(1).findFirst()).orElseThrow();
-    return Options.of(frame.getMethodName() + '@' + frame.getByteCodeIndex());
+    return emptyOptions;
   }
 
-  public static Options of(String title) {
-    return new Options(title, new EnumMap<>(Option.class));
+  public static Options ofCommandLineArguments(String... args) {
+    return Options.ofCommandLineArguments(List.of(args));
   }
 
-  public static Options ofDefaultValues() {
-    var map = new EnumMap<Option, Value>(Option.class);
-    for (var option : Option.values())
-      option.defaultValue().ifPresent(defaultValue -> map.put(option, defaultValue));
-    return new Options("default values", map);
-  }
-
-  public static Options ofCommandLineArguments(String title, String... arguments) {
-    if (arguments.length == 0) return Options.of(title);
-    return Options.ofCommandLineArguments(title, List.of(arguments));
-  }
-
-  public static Options ofCommandLineArguments(String title, List<String> arguments) {
-    var options = Options.of(title);
+  public static Options ofCommandLineArguments(List<String> arguments) {
+    var options = Options.of();
     if (arguments.isEmpty()) return options;
     var deque = new ArrayDeque<String>();
     arguments.stream().flatMap(String::lines).map(String::strip).forEach(deque::add);
+    Supplier<String> pop = () -> deque.removeFirst().strip();
     while (!deque.isEmpty()) {
-      var argument = deque.removeFirst();
-      if (!argument.startsWith("--")) {
-        options = options.with(Action.ofCli(argument));
-        for (var remaining : deque) options = options.with(Action.ofCli(remaining));
-        deque.clear();
-        break;
-      }
-      var option = Option.ofCli(argument);
-      if (option.isFlag()) { // no value-representing argument available
-        options = options.with(option, Value.of("true"));
-        continue;
-      }
-      var needs = Math.abs(option.cardinality());
-      var remaining = deque.size();
-      if (deque.size() < needs) {
-        var mode = option.cardinality() >= 0 ? "exactly" : "at least";
-        var message = "Too few arguments for option %s: need %s %d, but only %d remaining";
-        throw new BachException(message, option, mode, needs, remaining);
-      }
-      if (option.isGreedy()) { // get all remaining arguments
-        options = options.with(option, new Value(List.copyOf(deque)));
-        deque.clear();
-        break;
-      }
-      if (option == Option.TWEAK) {
-        var strings = new ArrayList<String>();
-        strings.add(deque.removeFirst()); // CODESPACE
-        strings.add(deque.removeFirst()); // TRIGGER
-        var count = deque.removeFirst();
-        strings.add(count); // COUNT
-        System.out.println(strings);
-        for (int i = 0; i < Integer.parseInt(count); i++) strings.add(deque.removeFirst()); // ARGS
-        options = options.with(Option.TWEAK, Value.of(strings));
-        continue;
-      }
-      var exact = deque.stream().limit(needs).toList(); // get exact number of arguments
-      for (var ignored : exact) deque.removeFirst(); // remove those elements from the deque (...)
-      options = options.with(option, new Value(exact));
+      var argument = pop.get();
+      options =
+          switch (argument) {
+            case "--id" -> options.id(pop.get());
+            case "--verbose" -> options.with("--verbose", true);
+            case "--dry-run" -> options.with("--dry-run", true);
+            case "--run-commands-sequentially" -> options.with("--run-commands-sequentially", true);
+            case "--chroot" -> options.with("--chroot", Path.of(pop.get()));
+            case "--bach-info" -> options.with("--bach-info", pop.get());
+            case "--version" -> options.with("--version", true);
+            case "--help" -> options.with("--help", true);
+            case "--help-extra" -> options.with("--help-extra", true);
+            case "--list-configuration" -> options.with("--list-configuration", true);
+            case "--list-modules" -> options.with("--list-modules", true);
+            case "--list-tools" -> options.with("--list-tools", true);
+            case "--describe-tool" -> options.with("--describe-tool", pop.get());
+            case "--load-external-module" -> options.with("--load-external-module", pop.get());
+            case "--load-missing-external-modules" -> options.with(
+                "--load-missing-external-modules", true);
+            case "--project-name" -> options.with("--project-name", pop.get());
+            case "--project-version" -> options.with("--project-version", Version.parse(pop.get()));
+            case "--project-requires" -> options.with("--project-requires", pop.get());
+            case "--main-module-path", "--main-module-paths" -> options.with(
+                "--main-module-paths", pop.get());
+            case "--main-module-pattern", "--main-module-patterns" -> options.with(
+                "--main-module-patterns", pop.get());
+            case "--main-java-release" -> options.with(
+                "--main-java-release", Integer.parseInt(pop.get()));
+            case "--main-jar-with-sources" -> options.with("--main-jar-with-sources", true);
+            case "--test-module-path", "--test-module-paths" -> options.with(
+                "--test-module-paths", pop.get());
+            case "--test-module-pattern", "--test-module-patterns" -> options.with(
+                "--test-module-patterns", pop.get());
+            case "--limit-tools" -> options.with("--limit-tools", pop.get());
+            case "--skip-tools" -> options.with("--skip-tools", pop.get());
+            case "--tweak", "--tweaks" -> options.with("--tweaks", Tweak.ofCommandLine(deque));
+            case "--external-module-location", "--external-module-locations" -> options.with(
+                "--external-module-locations", ExternalModuleLocation.ofCommandLine(pop));
+            case "--external-library-version", "--external-library-versions" -> options.with(
+                "--external-library-versions", ExternalLibraryVersion.ofCommandLine(pop));
+            case "--tool" -> {
+              var name = pop.get();
+              var args = deque.toArray(String[]::new);
+              deque.clear();
+              yield options.with("--tool", Command.of(name, args));
+            }
+            case "--action", "--actions" -> options.with("--actions", Action.ofCli(pop.get()));
+            default -> options.with("--actions", Action.ofCli(argument));
+          };
     }
     return options;
-  }
-
-  public static Options ofProjectInfoElements(ProjectInfo info) {
-    var options = Options.of("@ProjectInfo elements");
-    // project
-    options = options.withIfDifferent(Option.PROJECT_NAME, Value.of(info.name()));
-    options = options.withIfDifferent(Option.PROJECT_VERSION, Value.of(info.version()));
-    // main
-    var main = info.main();
-    options = options.withIfDifferent(Option.MAIN_JAVA_RELEASE, Value.of(main.javaRelease() + ""));
-    for (var pattern : main.modulesPatterns().lines().toList()) {
-      options = options.with(Option.MAIN_MODULES_PATTERN, pattern);
-    }
-    for (var path : main.modulePaths().lines().toList()) {
-      options = options.with(Option.MAIN_MODULE_PATH, path);
-    }
-    if (main.jarWithSources()) options = options.with(Option.MAIN_JAR_WITH_SOURCES);
-    // test
-    var test = info.test();
-    for (var pattern : test.modulesPatterns().lines().toList()) {
-      options = options.with(Option.TEST_MODULES_PATTERN, pattern);
-    }
-    for (var path : test.modulePaths().lines().toList()) {
-      options = options.with(Option.TEST_MODULE_PATH, path);
-    }
-    // externals
-    var external = info.external();
-    for (var module : info.requires()) options = options.with(Option.PROJECT_REQUIRES, module);
-    for (var module : external.externalModules()) {
-      var location = ExternalModuleLocation.of(module);
-      options = options.with(Option.EXTERNAL_MODULE_LOCATION, location.module(), location.uri());
-    }
-    for (var library : external.externalLibraries()) {
-      var name = ExternalLibraryName.ofCli(library.name().cli());
-      options = options.with(Option.EXTERNAL_LIBRARY_VERSION, name.cli(), library.version());
-    }
-    return options;
-  }
-
-  public static Options ofProjectInfoOptions(ProjectInfo.Options options) {
-    var arguments = new ArrayList<String>();
-    for (var flag : options.flags()) {
-      arguments.add(flag.cli()); // "--verbose"
-    }
-    for (var info : options.properties()) {
-      var option = info.option();
-      arguments.add(option.cli()); // "--project-name"
-      if (option.isFlag()) continue; // "--verbose"
-      for (var value : info.value()) {
-        arguments.add(value.strip()); // "NAME"
-      }
-    }
-    for (var action : options.actions()) {
-      arguments.add(Option.ACTION.cli()); // "--action"
-      arguments.add(action.name()); // "ACTION"
-    }
-    return ofCommandLineArguments("@ProjectInfo.options()", arguments);
-  }
-
-  public static Options ofDirectory(Path directory) {
-    var title = "directory options (" + directory + ")";
-    if (!Files.isDirectory(directory)) return Options.of(title);
-    var name = directory.toAbsolutePath().normalize().getFileName();
-    if (name == null) return Options.of(title);
-    return Options.of(title).with(Option.PROJECT_NAME, name);
   }
 
   public static Options ofFile(Path file) {
-    var title = "file options (" + file + ")";
-    if (Files.notExists(file)) return Options.of(title);
+    var id = "file options (" + file + ")";
+    if (Files.notExists(file)) return Options.of().id(id);
     try {
       var lines = Files.readAllLines(file);
-      return Options.ofCommandLineArguments(title, lines);
-    } catch (IOException exception) {
+      return Options.ofCommandLineArguments(lines).id(id);
+    } catch (Exception exception) {
       throw new BachException("Read all lines failed for: " + file, exception);
     }
   }
 
-  public static Options compose(String title, Logbook logbook, Options... options) {
+  public static Options ofProjectInfoElements(ProjectInfo info) {
+    var options = Options.of().id("@ProjectInfo Options");
+    // project
+    options = options.with("projectName", info.name());
+    options = options.with("projectVersion", Version.parse(info.version()));
+    options = options.with("projectRequires", List.of(info.requires()));
+    // main
+    var main = info.main();
+    options = options.with("mainJavaRelease", main.javaRelease());
+    options = options.with("mainModulePatterns", List.of(main.modulesPatterns()));
+    options = options.with("mainModulePaths", List.of(main.modulePaths()));
+    options = options.with("mainJarWithSources", main.jarWithSources());
+    // test
+    var test = info.test();
+    options = options.with("testModulePatterns", List.of(test.modulesPatterns()));
+    options = options.with("testModulePaths", List.of(test.modulePaths()));
+    // tools & tweaks
+    var tools = Tools.of(info);
+    if (!tools.limits().isEmpty())
+      options = options.with("limitTools", String.join(",", tools.limits()));
+    if (!tools.skips().isEmpty())
+      options = options.with("skipTools", String.join(",", tools.skips()));
+    options = options.with("tweaks", tools.tweaks().list());
+    // externals
+    var external = info.external();
+    options =
+        options.with(
+            "externalModuleLocations",
+            Stream.of(external.modules()).map(ExternalModuleLocation::ofInfo).toList());
+    options =
+        options.with(
+            "externalLibraryVersions",
+            Stream.of(external.libraries()).map(ExternalLibraryVersion::ofInfo).toList());
+    return options;
+  }
+
+  public static Options compose(String id, Logbook logbook, Options... options) {
     /* DEBUG */ {
-      logbook.log(Level.DEBUG, "Compose options from " + options.length + " components");
+      logbook.log(Level.DEBUG, "Compose options from " + options.length + " layers");
       for (int i = 0; i < options.length; i++) {
-        var next = options[i];
-        var size = next.map.size();
-        var s = size == 1 ? "" : "s";
-        logbook.log(Level.TRACE, "[" + i + "] = " + next.title + " with " + size + " element" + s);
+        logbook.log(Level.TRACE, "[" + i + "] = " + options[i].id.orElse("-"));
       }
       logbook.log(Level.DEBUG, "[component] --<option> <value...>");
     }
-    var map = new EnumMap<Option, Value>(Option.class);
-    option:
-    for (var option : Option.values()) {
+    var composite = Options.of().id(id);
+    component:
+    for (var component : canonicalComponents) {
+      var name = component.getName();
+      if (name.equals("id")) continue; // skip
       for (int i = 0; i < options.length; i++) {
-        var next = options[i];
-        var value = next.value(option);
-        if (value == null) continue;
-        map.put(option, value);
-        /* DEBUG */ {
-          var source = "[" + i + "] ";
-          var target = " " + value.join();
-          logbook.log(Level.DEBUG, source + option.cli() + target);
+        var layer = options[i];
+        var value = access(layer, component);
+        if (value instanceof Boolean flag && flag
+            || value instanceof Optional<?> optional && optional.isPresent()
+            || value instanceof List<?> list && !list.isEmpty()) {
+          composite = composite.with(name, value);
+          logbook.log(Level.DEBUG, "[%d] %s -> %s".formatted(i, name, value));
+          continue component;
         }
-        continue option;
       }
     }
-    return new Options(title, map);
+    return composite;
   }
 
-  public Value value(Option option) {
-    return map.get(option);
+  // ---
+
+  public Path chrootOrDefault() {
+    return chroot.map(Path::normalize).orElse(Path.of("."));
   }
 
-  public String get(Option option) {
-    return value(option).elements().get(0);
+  public String bachInfoOrDefault() {
+    return bachInfo.orElse("bach.info");
   }
 
-  public List<String> list(Option option) {
-    var value = value(option);
-    return value == null ? List.of() : value.elements();
+  // ---
+
+  public Options id(String id) {
+    return with("id", Optional.ofNullable(id));
   }
 
-  public boolean is(Option option) {
-    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag: " + option);
-    return Value.of("true").equals(value(option));
+  public Options with(String option, Object newValue) {
+    var name = option.startsWith("--") ? toComponentName(option) : option;
+    if (!canonicalNames.contains(name)) throw new IllegalArgumentException(option);
+    var values = new ArrayList<>();
+    for (var component : canonicalComponents) {
+      var oldValue = access(this, component);
+      var concatValue = concat(oldValue, wrap(component, newValue));
+      values.add(component.getName().equals(name) ? concatValue : oldValue);
+    }
+    return create(values);
   }
 
-  public Options with(Action action) {
-    return with(Option.ACTION, action.cli());
+  private Object wrap(RecordComponent component, Object newValue) {
+    if (component.getType() == Optional.class) {
+      return newValue instanceof Optional ? newValue : Optional.ofNullable(newValue);
+    }
+    if (component.getType() == List.class) {
+      return newValue instanceof List ? newValue : List.of(newValue);
+    }
+    return newValue;
   }
 
-  public Options with(Option option) {
-    if (!option.isFlag()) throw new IllegalArgumentException("Not a flag option: " + option);
-    return with(option, Value.of("true"));
-  }
-
-  public Options with(Option option, Object... objects) {
-    return with(option, option.toValue(objects));
-  }
-
-  public Options withIfDifferent(Option option, Value value) {
-    if (Objects.equals(value, option.defaultValue().orElse(null))) return this;
-    return with(option, value);
-  }
-
-  public Options with(Option option, Value value) {
-    var copy = new EnumMap<>(map);
-    copy.merge(option, value, option.isRepeatable() ? Value::concat : (o, n) -> value);
-    return new Options(title, copy);
-  }
-
-  public Optional<Entry> findFirstEntry(Predicate<Option> filter) {
-    return map.entrySet().stream().filter(e -> filter.test(e.getKey())).findFirst().map(Entry::new);
-  }
-
-  public Stream<Action> actions() {
-    return list(Option.ACTION).stream().map(String::toUpperCase).map(Action::ofCli);
-  }
-
-  public Stream<String> lines(Predicate<Option> filter) {
-    var lines = new ArrayList<String>();
-    for (var entry : map.entrySet()) {
-      var option = entry.getKey();
-      if (!filter.test(option)) continue;
-      var cli = option.cli();
-      if (option.isFlag()) {
-        if (is(option)) lines.add(cli);
-        continue;
-      }
-      var elements = entry.getValue().elements();
-      if (option.isGreedy() || option == Option.TWEAK) {
-        lines.add(cli);
-        lines.add("  " + String.join(" ", elements));
-        continue;
-      }
-      var deque = new ArrayDeque<>(elements);
-      while (!deque.isEmpty()) {
-        lines.add(cli);
-        var max = Math.abs(option.cardinality());
-        for (int i = 0; i < max; i++) lines.add("  " + deque.removeFirst());
+  private Object concat(Object oldValue, Object newValue) {
+    if (oldValue instanceof List<?> oldList) {
+      if (newValue instanceof List<?> newList) {
+        return Stream.concat(oldList.stream(), newList.stream()).toList();
       }
     }
-    return lines.stream();
+    return newValue;
   }
 
-  public record Entry(Option option, Value value) {
-    public Entry(EnumMap.Entry<Option, Value> entry) {
-      this(entry.getKey(), entry.getValue());
+  // ---
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.RECORD_COMPONENT)
+  @interface Help {
+    String value();
+  }
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.RECORD_COMPONENT)
+  @interface Extra {}
+
+  public static boolean isHelp(RecordComponent component) {
+    return component.isAnnotationPresent(Help.class) && !component.isAnnotationPresent(Extra.class);
+  }
+
+  public static boolean isHelpExtra(RecordComponent component) {
+    return component.isAnnotationPresent(Help.class) && component.isAnnotationPresent(Extra.class);
+  }
+
+  public static String toComponentName(String cli) {
+    var codes = cli.substring(2).codePoints().toArray();
+    var builder = new StringBuilder(codes.length * 2);
+    for (int i = 0; i < codes.length; i++) {
+      int point = codes[i];
+      if (point == "-".codePointAt(0)) {
+        builder.append(Character.toChars(Character.toUpperCase(codes[++i])));
+        continue;
+      }
+      builder.append(Character.toChars(point));
+    }
+    return builder.toString();
+  }
+
+  private static final RecordComponent[] canonicalComponents = Options.class.getRecordComponents();
+  private static final Constructor<Options> canonicalConstructor = canonicalConstructor();
+  private static final Set<String> canonicalNames = canonicalNames();
+  private static final Options emptyOptions = emptyOptions();
+
+  @SuppressWarnings("JavaReflectionMemberAccess")
+  private static Constructor<Options> canonicalConstructor() {
+    var types = Stream.of(canonicalComponents).map(RecordComponent::getType);
+    try {
+      return Options.class.getDeclaredConstructor(types.toArray(Class<?>[]::new));
+    } catch (NoSuchMethodException exception) {
+      throw new Error(exception);
+    }
+  }
+
+  private static Set<String> canonicalNames() {
+    return Stream.of(canonicalComponents)
+        .map(RecordComponent::getName)
+        .collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  private static Options emptyOptions() {
+    return create(Stream.of(canonicalComponents).map(Options::emptyValue).toList());
+  }
+
+  private static Object emptyValue(RecordComponent component) {
+    if (boolean.class == component.getType()) return false;
+    if (Optional.class == component.getType()) return Optional.empty();
+    if (List.class == component.getType()) return List.of();
+    throw new Error("Unsupported type: " + component.getType());
+  }
+
+  private static Options create(List<Object> arguments) {
+    var initargs = arguments.toArray(Object[]::new);
+    try {
+      return canonicalConstructor.newInstance(initargs);
+    } catch (ReflectiveOperationException exception) {
+      throw new AssertionError("create Options failed for " + arguments, exception);
+    }
+  }
+
+  private static Object access(Options options, RecordComponent component) {
+    try {
+      return component.getAccessor().invoke(options);
+    } catch (ReflectiveOperationException exception) {
+      throw new AssertionError("access failed for " + component + " on " + options, exception);
     }
   }
 }

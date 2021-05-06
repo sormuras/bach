@@ -3,7 +3,6 @@ package test.integration.core;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.api.UnsupportedOptionException;
 import com.github.sormuras.bach.core.ModuleRealm;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
@@ -35,7 +34,7 @@ class ModuleRealmTests {
 
       @Override
       public ModuleReader open() {
-        throw new UnsupportedOptionException("open");
+        throw new UnsupportedOperationException("open");
       }
     }
 

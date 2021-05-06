@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.api.Option;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -22,7 +21,7 @@ class BachTests {
 
   @Test
   void chrooted(@TempDir Path temp) {
-    var bach = Bach.of(Option.CHROOT.cli(), temp.toString());
+    var bach = Bach.of("--chroot", temp.toString());
     assertEquals(temp, bach.project().folders().root());
   }
 
@@ -32,7 +31,7 @@ class BachTests {
         Usage: bach [OPTIONS] [ACTIONS...]
         >> MESSAGE >>
         """;
-    bach(0, out, Option.CHROOT, temp, Option.HELP);
+    bach(0, out, "--chroot", temp, "--help");
   }
 
   @Test
@@ -44,22 +43,7 @@ class BachTests {
           --chroot.*
         >> MESSAGE >>
         """;
-    bach(0, out, Option.CHROOT, temp, Option.HELP_EXTRA);
-  }
-
-  @Test
-  void showConfiguration(@TempDir Path temp) {
-    var out =
-        """
-        Bach .+
-        >> BANNER >>
-        Configuration
-        --show-configuration
-        >> CONFIGURATION >>
-        Bach run took .+
-        Logbook written to .+
-        """;
-    bach(0, out, Option.CHROOT, temp, Option.SHOW_CONFIGURATION);
+    bach(0, out, "--chroot", temp, "--help-extra");
   }
 
   @Test
@@ -67,7 +51,7 @@ class BachTests {
     var out = """
         >> TOOLS >>
         """;
-    bach(0, out, Option.CHROOT, temp, Option.LIST_TOOLS);
+    bach(0, out, "--chroot", temp, "--list-tools");
   }
 
   @Test
@@ -75,7 +59,7 @@ class BachTests {
     var out = """
         javac .+
         """;
-    bach(0, out, Option.CHROOT, temp, Option.TOOL, "javac", "--version");
+    bach(0, out, "--chroot", temp, "--tool", "javac", "--version");
   }
 
   @Test
@@ -83,24 +67,17 @@ class BachTests {
     var out = """
         .+
         """;
-    bach(0, out, Option.CHROOT, temp, Option.TOOL, "bach", Option.CHROOT, temp, "--version");
+    bach(0, out, "--chroot", temp, "--tool", "bach", "--chroot", temp, "--version");
   }
 
   @Test
   void version(@TempDir Path temp) {
-    bach(0, ".+", Option.CHROOT, temp, Option.VERSION);
+    bach(0, ".+", "--chroot", temp, "--version");
   }
 
   private static void bach(int expectedStatus, String expectedOutput, Object... objects) {
     var out = new StringWriter();
-    var args =
-        Stream.of(objects)
-            .map(
-                object -> {
-                  if (object instanceof Option option) return option.cli();
-                  return object.toString();
-                })
-            .toArray(String[]::new);
+    var args = Stream.of(objects).map(Object::toString).toArray(String[]::new);
     var bach = Bach.of(Printer.of(new PrintWriter(out)), args);
     var status = bach.run();
 

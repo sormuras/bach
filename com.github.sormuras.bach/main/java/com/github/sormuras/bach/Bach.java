@@ -1,25 +1,22 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.api.Action;
-import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.UnsupportedActionException;
-import com.github.sormuras.bach.api.UnsupportedOptionException;
+import com.github.sormuras.bach.core.Commander;
 import com.github.sormuras.bach.core.CoreTrait;
 import com.github.sormuras.bach.core.ExternalModuleTrait;
 import com.github.sormuras.bach.core.HttpTrait;
 import com.github.sormuras.bach.core.PrintTrait;
-import com.github.sormuras.bach.core.Commander;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
-import com.github.sormuras.bach.internal.HelpMessageBuilder;
 import com.github.sormuras.bach.internal.Strings;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
     implements CoreTrait, HttpTrait, PrintTrait, ExternalModuleTrait, Commander {
@@ -29,16 +26,14 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   public static Bach of(Printer printer, String... args) {
-    var initialOptions = Options.ofCommandLineArguments("Initial Options", args);
-    var initialLogbook = Logbook.of(printer, initialOptions.is(Option.VERBOSE));
+    var initialOptions = Options.ofCommandLineArguments(args).id("Initial Options");
+    var initialLogbook = Logbook.of(printer, initialOptions.verbose());
     return Bach.of(initialLogbook, initialOptions);
   }
 
   public static Bach of(Logbook initialLogbook, Options initialOptions) {
-    var defaultOptions = Options.ofDefaultValues();
-    var interimOptions = Options.compose("Interims", Logbook.of(), initialOptions, defaultOptions);
-    var root = Path.of(interimOptions.get(Option.CHROOT));
-    var module = new BachInfoModuleBuilder(initialLogbook, interimOptions).build();
+    var root = initialOptions.chrootOrDefault();
+    var module = new BachInfoModuleBuilder(initialLogbook, initialOptions).build();
     var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
     var info = Optional.ofNullable(module.getAnnotation(ProjectInfo.class)).orElse(defaultInfo);
     var options =
@@ -46,14 +41,11 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
             "Options",
             initialLogbook,
             initialOptions,
-            Options.ofCommandLineArguments("ProjectInfo Arguments", info.arguments()),
-            Options.ofProjectInfoOptions(info.options()),
-            Options.ofProjectInfoElements(info),
             Options.ofFile(root.resolve("bach.args")),
-            Options.ofDirectory(root),
-            defaultOptions);
+            Options.ofCommandLineArguments(info.arguments()).id("@ProjectInfo#arguments()"),
+            Options.ofProjectInfoElements(info));
 
-    var logbook = initialLogbook.verbose(options.is(Option.VERBOSE));
+    var logbook = initialLogbook.verbose(options.verbose());
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
     var project = factory.newProjectBuilder(logbook, options).build();
@@ -73,41 +65,51 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   public int run() {
-    var exit = options.findFirstEntry(Option::isExit);
-    if (exit.isPresent()) return runExit(exit.get());
+    if (options.version()) return exit(Strings.version());
+    if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
+    if (options.helpExtra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
+    if (options.listConfiguration()) return exit(options.toString());
+    if (options.listModules()) return exit(this::printModules);
+    if (options.listTools()) return exit(this::printTools);
+    if (isPresent(options.describeTool(), this::printToolDescription)) return 0;
+    if (isPresent(options.loadExternalModule(), this::loadExternalModules)) return 0;
+    if (options.loadMissingExternalModules()) return exit(this::loadMissingExternalModules);
+    if (options.tool().isPresent()) {
+      Command<?> command = options.tool().get();
+      var name = command.name();
+      var args = command.arguments().toArray(String[]::new);
+      var out = logbook.printer().out();
+      var err = logbook.printer().err();
+      var provider = findToolProvider(name).orElseThrow();
+      Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
+      return provider.run(out, err, args);
+    }
 
     say(Strings.banner());
     return runActions(options.actions());
   }
 
-  private int runExit(Options.Entry exit) {
-    var out = logbook.printer().out();
-    switch (exit.option()) {
-      case VERSION -> out.println(Strings.version());
-      case HELP -> out.println(new HelpMessageBuilder(Option::isVisible).build());
-      case HELP_EXTRA -> out.println(new HelpMessageBuilder(Option::isHidden).build());
-      case LIST_CONFIGURATION -> options.lines(__ -> true).forEach(out::println);
-      case LIST_MODULES -> printModules();
-      case LIST_TOOLS -> printTools();
-      case DESCRIBE_TOOL -> printToolDescription(exit.value().elements().get(0));
-      case LOAD_EXTERNAL_MODULE -> loadExternalModules(exit.value().elements().get(0));
-      case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
-      case TOOL -> {
-        var line = exit.value().elements();
-        var name = line.get(0);
-        var args = line.subList(1, line.size()).toArray(String[]::new);
-        var provider = findToolProvider(name).orElseThrow();
-        return provider.run(out, logbook.printer().err(), args);
-      }
-      default -> throw new UnsupportedOptionException(exit.option().name());
-    }
+  private int exit(String message) {
+    logbook.printer().out().println(message);
     return 0;
   }
 
-  private int runActions(Stream<Action> actions) {
-    if (options.is(Option.SHOW_CONFIGURATION)) {
+  private int exit(Runnable runnable) {
+    runnable.run();
+    return 0;
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private <T> boolean isPresent(Optional<T> optional, Consumer<T> consumer) {
+    if (optional.isEmpty()) return false;
+    consumer.accept(optional.get());
+    return true;
+  }
+
+  private int runActions(List<Action> actions) {
+    if (options.verbose()) {
       say("Configuration");
-      options.lines(Option::isVisible).forEach(this::say);
+      say(options.toString());
     }
 
     say(project.name() + " 0");

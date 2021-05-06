@@ -9,8 +9,4 @@ public class BachException extends RuntimeException {
   public BachException(String message, Object... args) {
     super(args.length == 0 ? message : String.format(message, args));
   }
-
-  public BachException(String message, Throwable cause, Object... args) {
-    super(args.length == 0 ? message : String.format(message, args), cause);
-  }
 }

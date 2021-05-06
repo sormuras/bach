@@ -3,8 +3,10 @@ package test.integration.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Tweaks;
+import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -18,17 +20,21 @@ class TweaksTests {
 
   @Test
   void withOneTweak() {
-    var tweaks = Tweaks.of(new Tweak("*", List.of("1")));
+    var tweaks = Tweaks.of(tweak("*", "1"));
     assertEquals(1, tweaks.list().size());
     assertEquals(List.of("1"), tweaks.arguments("*"));
   }
 
   @Test
   void withTwoTweak() {
-    var one = new Tweak("*", List.of("1"));
-    var two = new Tweak("*", List.of("2"));
+    var one = tweak("*", "1");
+    var two = tweak("*", "2");
     var tweaks = Tweaks.of(one, two);
     assertEquals(2, tweaks.list().size());
     assertEquals(List.of("1", "2"), tweaks.arguments("*"));
+  }
+
+  private static Tweak tweak(String trigger, String... args) {
+    return new Tweak(EnumSet.allOf(CodeSpace.class), trigger, List.of(args));
   }
 }

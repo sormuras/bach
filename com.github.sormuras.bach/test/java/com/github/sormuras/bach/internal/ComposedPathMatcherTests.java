@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.api.ProjectInfo;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ class ComposedPathMatcherTests {
         "m/main/java-module/module-info.java"
       })
   void globMatchesMainPatterns(String string) {
-    var patterns = ProjectInfo.Main.DEFAULT_MODULES_PATTERNS.lines().toList();
+    var patterns = List.of("module-info.java", "*", "**");
     var matcher = ComposedPathMatcher.ofGlobModules(patterns);
     assertTrue(matcher.matches(Path.of(string)));
   }
@@ -72,7 +71,7 @@ class ComposedPathMatcherTests {
         "m/test/java-module/module-info.java"
       })
   void globMatchesTestPatterns(String string) {
-    var patterns = ProjectInfo.Test.DEFAULT_MODULES_PATTERNS.lines().toList();
+    var patterns = List.of("test", "**/test", "**/test/**");
     var matcher = ComposedPathMatcher.ofGlobModules(patterns);
     assertTrue(matcher.matches(Path.of(string)));
   }

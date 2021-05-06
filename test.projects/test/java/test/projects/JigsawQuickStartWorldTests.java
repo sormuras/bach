@@ -15,12 +15,11 @@ import com.github.sormuras.bach.api.DeclaredModuleReference;
 import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
-import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
-import com.github.sormuras.bach.api.Tweaks;
+import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -48,16 +47,15 @@ class JigsawQuickStartWorldTests {
                     SourceFolders.of(SourceFolder.of(astro)),
                     SourceFolders.of())),
             ModulePaths.of(folders.externals()),
-            0,
-            Tweaks.of());
+            0);
     var test =
         new CodeSpaceTest(
             DeclaredModuleFinder.of(),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()),
-            Tweaks.of());
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
     var externals = Externals.of();
-    return new Project(NAME, version, folders, spaces, externals);
+    var tools = Tools.of();
+    return new Project(NAME, version, folders, spaces, tools, externals);
   }
 
   @Test
@@ -66,10 +64,11 @@ class JigsawQuickStartWorldTests {
     var bach =
         Bach.of(
             Logbook.ofErrorPrinter(),
-            Options.of(NAME + " Options")
-                .with(Option.CHROOT, root)
-                .with(Option.VERBOSE)
-                .with(Action.BUILD));
+            Options.of()
+                .id(NAME + " Options")
+                .with("chroot", root)
+                .with("verbose", true)
+                .with("actions", Action.BUILD));
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());

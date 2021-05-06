@@ -2,25 +2,22 @@ package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.DeclaredModule;
 import com.github.sormuras.bach.api.DeclaredModuleFinder;
 import com.github.sormuras.bach.api.DeclaredModuleReference;
-import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ExternalModuleLocations;
 import com.github.sormuras.bach.api.ExternalModuleLocator;
 import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
-import com.github.sormuras.bach.api.Option;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
-import com.github.sormuras.bach.api.Tweak;
+import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweaks;
 import com.github.sormuras.bach.api.external.JUnit;
 import com.github.sormuras.bach.internal.ComposedPathMatcher;
@@ -30,14 +27,14 @@ import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ProjectBuilder {
 
@@ -51,25 +48,30 @@ public class ProjectBuilder {
 
   public Project build() {
     logbook.log(Level.DEBUG, "Project object being built by " + getClass());
-    logbook.log(Level.DEBUG, "Read values from options titled: " + options.title());
+    logbook.log(Level.DEBUG, "Read values from options with id: " + options.id());
     var name = buildProjectName();
     var version = buildProjectVersion();
     var folders = buildFolders();
     var spaces = buildSpaces(folders);
+    var tools = buildTools();
     var externals = buildExternals();
-    return new Project(name, version, folders, spaces, externals);
+    return new Project(name, version, folders, spaces, tools, externals);
   }
 
   public String buildProjectName() {
-    return options.get(Option.PROJECT_NAME);
+    var name = options.projectName().orElse(null);
+    if (name == null || name.equals(".")) {
+      return Strings.nameOrElse(options.chrootOrDefault(), "noname");
+    }
+    return name;
   }
 
   public Version buildProjectVersion() {
-    return Version.parse(options.get(Option.PROJECT_VERSION));
+    return options.projectVersion().orElseThrow();
   }
 
   public Folders buildFolders() {
-    return Folders.of(options.get(Option.CHROOT));
+    return Folders.of(options.chrootOrDefault());
   }
 
   public Spaces buildSpaces(Folders folders) {
@@ -81,10 +83,10 @@ public class ProjectBuilder {
     var mainModules = new TreeMap<String, DeclaredModule>();
     var testModules = new TreeMap<String, DeclaredModule>();
 
-    var mainMatcher = ComposedPathMatcher.ofGlobModules(options.list(Option.MAIN_MODULES_PATTERN));
-    var testMatcher = ComposedPathMatcher.ofGlobModules(options.list(Option.TEST_MODULES_PATTERN));
+    var mainMatcher = ComposedPathMatcher.ofGlobModules(options.mainModulePatterns());
+    var testMatcher = ComposedPathMatcher.ofGlobModules(options.testModulePatterns());
 
-    var jarWithSources = options.is(Option.MAIN_JAR_WITH_SOURCES);
+    var jarWithSources = options.mainJarWithSources();
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
         logbook.log(Level.DEBUG, "Skip module %s - its path contains `.bach`".formatted(path));
@@ -103,20 +105,15 @@ public class ProjectBuilder {
       logbook.log(Level.DEBUG, "Skip module %s - no match for main nor test space".formatted(path));
     }
 
-    var mainModulePaths = options.list(Option.MAIN_MODULE_PATH);
-    var testModulePaths = options.list(Option.TEST_MODULE_PATH);
-
     var main =
         new CodeSpaceMain(
             new DeclaredModuleFinder(mainModules),
-            buildDeclaredModulePaths(root, mainModulePaths),
-            Integer.parseInt(options.get(Option.MAIN_JAVA_RELEASE)),
-            buildTweaks(CodeSpace.MAIN));
+            buildDeclaredModulePaths(root, options.mainModulePaths()),
+            options.mainJavaRelease().orElse(Runtime.version().feature()));
     var test =
         new CodeSpaceTest(
             new DeclaredModuleFinder(testModules),
-            buildDeclaredModulePaths(root, testModulePaths),
-            buildTweaks(CodeSpace.TEST));
+            buildDeclaredModulePaths(root, options.testModulePaths()));
 
     return new Spaces(main, test);
   }
@@ -171,19 +168,25 @@ public class ProjectBuilder {
     return new SourceFolders(list);
   }
 
-  public Tweaks buildTweaks(CodeSpace space) {
-    var deque = new ArrayDeque<>(options.list(Option.TWEAK));
-    if (deque.isEmpty()) return Tweaks.of();
-    var tweaks = new ArrayList<Tweak>();
-    while (!deque.isEmpty()) {
-      var codespace = CodeSpace.valueOf(deque.removeFirst().toUpperCase(Locale.ROOT));
-      var trigger = deque.removeFirst();
-      var count = Integer.parseInt(deque.removeFirst());
-      var arguments = new ArrayList<String>();
-      for (int i = 0; i < count; i++) arguments.add(deque.removeFirst());
-      if (space == codespace) tweaks.add(new Tweak(trigger, arguments));
-    }
-    return new Tweaks(List.copyOf(tweaks));
+  public Tools buildTools() {
+    var limits = buildToolsLimits();
+    var skips = buildToolsSkips();
+    var tweaks = buildToolsTweaks();
+    return new Tools(limits, skips, tweaks);
+  }
+
+  public Set<String> buildToolsLimits() {
+    if (options.limitTools().isEmpty()) return Set.of();
+    return Set.of(options.limitTools().get().split(","));
+  }
+
+  public Set<String> buildToolsSkips() {
+    if (options.skipTools().isEmpty()) return Set.of();
+    return Set.of(options.skipTools().get().split(","));
+  }
+
+  public Tweaks buildToolsTweaks() {
+    return new Tweaks(options.tweaks().stream().toList());
   }
 
   public Externals buildExternals() {
@@ -193,7 +196,7 @@ public class ProjectBuilder {
   }
 
   public Set<String> buildExternalsRequires() {
-    return Set.copyOf(options.list(Option.PROJECT_REQUIRES));
+    return Set.copyOf(options.projectRequires());
   }
 
   public List<ExternalModuleLocator> buildExternalsLocators() {
@@ -204,27 +207,21 @@ public class ProjectBuilder {
   }
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
-    var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_MODULE_LOCATION));
-    if (deque.isEmpty()) return;
-    var locationMap = new TreeMap<String, ExternalModuleLocation>();
-    while (!deque.isEmpty()) {
-      var module = deque.removeFirst();
-      var uri = deque.removeFirst();
-      var old = locationMap.put(module, new ExternalModuleLocation(module, uri));
-      if (old != null) logbook.log(Level.WARNING, "Replaced %s with -> %s".formatted(old, uri));
-    }
-    locators.add(new ExternalModuleLocations(Map.copyOf(locationMap)));
+    var externalModuleLocations = options.externalModuleLocations();
+    if (externalModuleLocations.isEmpty()) return;
+    var map =
+        externalModuleLocations.stream()
+            .collect(Collectors.toMap(ExternalModuleLocation::module, Function.identity()));
+    locators.add(new ExternalModuleLocations(Map.copyOf(map)));
   }
 
   public void fillExternalsLocatorsFromOptionLibraryVersion(List<ExternalModuleLocator> locators) {
-    var deque = new ArrayDeque<>(options.list(Option.EXTERNAL_LIBRARY_VERSION));
-    if (deque.isEmpty()) return;
-    while (!deque.isEmpty()) {
-      var name = deque.removeFirst();
-      var version = deque.removeFirst();
+    var externalLibraryVersions = options.externalLibraryVersions();
+    if (externalLibraryVersions.isEmpty()) return;
+    for (var externalLibraryVersion : externalLibraryVersions) {
       //noinspection SwitchStatementWithTooFewBranches
-      switch (ExternalLibraryName.ofCli(name)) {
-        case JUNIT -> locators.add(JUnit.of(version));
+      switch (externalLibraryVersion.name()) {
+        case JUNIT -> locators.add(JUnit.of(externalLibraryVersion.version()));
       }
     }
   }

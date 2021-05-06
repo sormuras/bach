@@ -9,22 +9,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
 
-  /**
-   * {@return the name of the project}
-   *
-   * @see Option#PROJECT_NAME
-   */
-  String name() default DEFAULT_PROJECT_NAME;
-
-  String DEFAULT_PROJECT_NAME = "noname";
-
-  String version() default DEFAULT_PROJECT_VERSION;
-
-  String DEFAULT_PROJECT_VERSION = "0";
-
   String[] arguments() default {};
 
-  Options options() default @Options;
+  String name() default ".";
+
+  String version() default "0";
 
   String[] requires() default {};
 
@@ -34,39 +23,15 @@ public @interface ProjectInfo {
 
   Test test() default @Test;
 
+  Tool tool() default @Tool;
+
   // ---
 
   @Target({})
-  @interface Options {
-    /** {@return preset flag-style options} */
-    Option[] flags() default {};
-
-    /** {@return preset key-value pair options} */
-    Property[] properties() default {};
-
-    /** {@return preset actions} */
-    Action[] actions() default {};
-  }
-
-  @Target({})
-  @interface Property {
-    Option option();
-
-    String[] value();
-  }
-
-  @Target({})
   @interface External {
-    ExternalModule[] externalModules() default {};
+    ExternalModule[] modules() default {};
 
-    ExternalLibrary[] externalLibraries() default {};
-  }
-
-  @Target({})
-  @interface ExternalLibrary {
-    ExternalLibraryName name();
-
-    String version();
+    ExternalLibrary[] libraries() default {};
   }
 
   @Target({})
@@ -80,31 +45,21 @@ public @interface ProjectInfo {
     String mavenRepository() default "https://repo.maven.apache.org/maven2";
   }
 
-  enum LinkType {
-    AUTO,
-    URI,
-    MAVEN
+  @Target({})
+  @interface ExternalLibrary {
+    ExternalLibraryName name();
+
+    String version();
   }
 
   @Target({})
   @interface Main {
 
-    int javaRelease() default DEFAULT_JAVA_RELEASE;
+    int javaRelease() default 0;
 
-    int DEFAULT_JAVA_RELEASE = 0;
+    String[] modulesPatterns() default {"module-info.java", "*", "**"};
 
-    String modulesPatterns() default DEFAULT_MODULES_PATTERNS;
-
-    String DEFAULT_MODULES_PATTERNS =
-        """
-        module-info.java
-        *
-        **
-        """;
-
-    String modulePaths() default DEFAULT_MODULE_PATHS;
-
-    String DEFAULT_MODULE_PATHS = ".bach/external-modules";
+    String[] modulePaths() default {".bach/external-modules"};
 
     boolean jarWithSources() default false;
   }
@@ -112,20 +67,26 @@ public @interface ProjectInfo {
   @Target({})
   @interface Test {
 
-    String modulesPatterns() default DEFAULT_MODULES_PATTERNS;
+    String[] modulesPatterns() default {"test", "**/test", "**/test/**"};
 
-    String DEFAULT_MODULES_PATTERNS =
-        """
-        test
-        **/test
-        **/test/**
-        """;
+    String[] modulePaths() default {".bach/workspace/modules", ".bach/external-modules"};
+  }
 
-    String modulePaths() default DEFAULT_MODULE_PATHS;
+  @Target({})
+  @interface Tool {
+    String[] limit() default {};
+    String[] skip() default {};
+    Tweak[] tweaks() default {};
+  }
 
-    String DEFAULT_MODULE_PATHS =
-        """
-        .bach/workspace/modules
-        """ + Main.DEFAULT_MODULE_PATHS;
+  @Target({})
+  @interface Tweak {
+    String trigger();
+
+    String option();
+
+    String[] value() default {};
+
+    CodeSpace[] spaces() default {CodeSpace.MAIN, CodeSpace.TEST};
   }
 }
