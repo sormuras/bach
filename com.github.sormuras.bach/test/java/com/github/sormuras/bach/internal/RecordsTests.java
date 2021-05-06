@@ -2,8 +2,8 @@ package com.github.sormuras.bach.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.sormuras.bach.Wither;
 import com.github.sormuras.bach.internal.Records.Name;
-import com.github.sormuras.bach.internal.Records.Wither;
 import org.junit.jupiter.api.Test;
 
 class RecordsTests {

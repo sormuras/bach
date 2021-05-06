@@ -9,7 +9,6 @@ import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.internal.Records;
 import com.github.sormuras.bach.internal.Records.Name;
-import com.github.sormuras.bach.internal.Records.Wither;
 import java.lang.System.Logger.Level;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -110,7 +109,7 @@ public record Options(
             """
         --tool NAME [ARGS...]
           Run the specified tool and exit with its return value.""")
-        Optional<Command<?>> tool,
+        Optional<Tool> tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
@@ -342,9 +341,9 @@ public record Options(
                 "--external-library-version", ExternalLibraryVersion.ofCommandLine(pop));
             case "--tool" -> {
               var name = pop.get();
-              var args = deque.toArray(String[]::new);
+              var args = List.copyOf(deque);
               deque.clear();
-              yield options.with(argument, Command.of(name, args));
+              yield options.with(argument, new Tool(name, args));
             }
             case "--action", "--actions" -> options.with("actions", Action.ofCli(pop.get()));
             default -> options.with("actions", Action.ofCli(argument));
@@ -364,7 +363,7 @@ public record Options(
     }
   }
 
-  public static Options ofProjectInfoElements(ProjectInfo info) {
+  public static Options ofProjectInfo(ProjectInfo info) {
     var options = Options.of().id("@ProjectInfo Options");
     // project
     options = options.with("projectName", info.name());

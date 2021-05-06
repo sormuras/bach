@@ -19,22 +19,6 @@ import java.util.stream.Stream;
 
 public record Records<R extends Record>(Class<R> type) {
 
-  public interface Wither<R extends Record> {
-
-    @SuppressWarnings("unchecked")
-    default R with(String name, Object value) {
-      var records = new Records<R>((Class<R>) getClass());
-      return records.with((R) this, name, value);
-    }
-
-    @SuppressWarnings("unchecked")
-    default R with(
-        String name, Function<RecordComponent, Object> wrapper, BinaryOperator<Object> merger) {
-      var records = new Records<R>((Class<R>) getClass());
-      return records.with((R) this, name, wrapper, merger);
-    }
-  }
-
   @Target(ElementType.RECORD_COMPONENT)
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Name {

@@ -43,7 +43,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
             initialOptions,
             Options.ofFile(root.resolve("bach.args")),
             Options.ofCommandLineArguments(info.arguments()).id("@ProjectInfo#arguments()"),
-            Options.ofProjectInfoElements(info));
+            Options.ofProjectInfo(info));
 
     var logbook = initialLogbook.verbose(options.verbose());
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
