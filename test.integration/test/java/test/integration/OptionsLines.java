@@ -82,6 +82,20 @@ record OptionsLines(Options options) {
             .collect(Collectors.joining());
   }
 
+  public static String toComponentName(String cli) {
+    var codes = cli.substring(2).codePoints().toArray();
+    var builder = new StringBuilder(codes.length * 2);
+    for (int i = 0; i < codes.length; i++) {
+      int point = codes[i];
+      if (point == "-".codePointAt(0)) {
+        builder.append(Character.toChars(Character.toUpperCase(codes[++i])));
+        continue;
+      }
+      builder.append(Character.toChars(point));
+    }
+    return builder.toString();
+  }
+
   private static Object access(Options options, RecordComponent component) {
     try {
       return component.getAccessor().invoke(options);

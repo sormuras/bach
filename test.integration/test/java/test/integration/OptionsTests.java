@@ -37,7 +37,7 @@ class OptionsTests {
 
     @Test
     void toComponentName() {
-      assertEquals("abcDefGhi", Options.toComponentName("--abc-def-ghi"));
+      assertEquals("abcDefGhi", OptionsLines.toComponentName("--abc-def-ghi"));
     }
   }
 
@@ -104,39 +104,40 @@ class OptionsTests {
 
     @Test
     void withEverything() {
-      var options = new Options(
-          Optional.of("ID"),
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-          Optional.of("TOOL"),
-          Optional.of("MODULE"),
-          true,
-          Optional.empty(), // Optional.of(Command.of("TOOL", "ARGS...")),
-          Optional.of(Path.of("PATH")),
-          Optional.of("MODULE"),
-          Optional.of("NAME"),
-          Optional.of(Version.parse("0-ea+VERSION")),
-          List.of("M1", "M2"),
-          List.of("*", "**"),
-          List.of("PATH", "PATH"),
-          Optional.of(9),
-          true,
-          List.of("test", "**/test", "**/test/**"),
-          List.of("PATH", "PATH"),
-          Optional.of("TOOL"),
-          Optional.of("TOOL"),
-          List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
-          List.of(new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
-          List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
-          List.copyOf(EnumSet.allOf(Action.class))
-      );
+      var options =
+          new Options(
+              Optional.of("ID"),
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              Optional.of("TOOL"),
+              Optional.of("MODULE"),
+              true,
+              Optional.empty(), // Optional.of(Command.of("TOOL", "ARGS...")),
+              Optional.of(Path.of("PATH")),
+              Optional.of("MODULE"),
+              Optional.of("NAME"),
+              Optional.of(Version.parse("0-ea+VERSION")),
+              List.of("M1", "M2"),
+              List.of("*", "**"),
+              List.of("PATH", "PATH"),
+              Optional.of(9),
+              true,
+              List.of("test", "**/test", "**/test/**"),
+              List.of("PATH", "PATH"),
+              Optional.of("TOOL"),
+              Optional.of("TOOL"),
+              List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
+              List.of(
+                  new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
+              List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
+              List.copyOf(EnumSet.allOf(Action.class)));
       assertLinesMatch(
           """
           --actions
@@ -218,11 +219,11 @@ class OptionsTests {
             ARGS...
           --verbose
           --version
-          """.lines(),
+          """
+              .lines(),
           new OptionsLines(options).lines());
 
       var cli = Options.ofCommandLineArguments(new OptionsLines(options).lines().toList());
-      assertEquals(options, cli);
       assertEquals(options, cli);
     }
   }
