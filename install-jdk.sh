@@ -38,6 +38,7 @@ function initialize() {
     workspace="${HOME}"
     target='?'
     cacerts=false
+    distro='?'
 }
 
 function usage() {
@@ -60,6 +61,8 @@ Options:
   -w|--workspace PATH       Working directory defaults to \${HOME} [${HOME}]
   -t|--target PATH          Target directory, defaults to first component of the tarball
   -c|--cacerts              Link system CA certificates (currently only Debian/Ubuntu is supported)
+
+     --distro               Distributon from aoj, aoj_openj9, dragonwell, corretto, liberica, microsoft, ojdk_build, openlogic, oracle_open_jdk, sap_machine, temurin, trava, zulu
 EOF
 }
 
@@ -139,6 +142,11 @@ function parse_options() {
                 verbose "url=${url}"
                 shift
                 ;;
+            --distro)
+                distro="$1"
+                verbose "distro=${distro}"
+                shift
+                ;;
             -w|-W|--workspace)
                 workspace="$1"
                 verbose "workspace=${workspace}"
@@ -195,11 +203,39 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    local properties='https://github.com/sormuras/bach/raw/master/install-jdk.properties'
-    url=$(wget --quiet --output-document - ${properties} | grep -i "${feature}-${os}=" | awk -F "=" '{print $2}')
+    if [[ ${distro} != '?' ]]; then
+        osArch=(${os//-/ })
+        discoVersion=${feature}
+        discoOperatingSystem=${osArch[0]}
+        discoArchitecture=${osArch[1]}
+        discoArchiveType=tar.gz
+        discoUrl="https://api.foojay.io/disco/v2.0/uris?distro=${distro}&version=${discoVersion}&architecture=${discoArchitecture}&operating_system=${discoOperatingSystem}&archive_type=${discoArchiveType}"
+        verbose "url provided by disco api is: ${discoUrl}"
 
+        url=$(curl -s -m 10 $discoUrl)
+    else    
+        local properties='https://github.com/sormuras/bach/raw/master/install-jdk.properties'
+        url=$(wget --quiet --output-document - ${properties} | grep -i "${feature}-${os}=" | awk -F "=" '{print $2}')
+    fi
+    
     if [[ -z ${url} ]]; then
-        script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1
+        if [[ ${distro} != '?' ]]; then
+            script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1
+        else    
+            distro='zulu'
+            osArch=(${os//-/ })
+            discoVersion=${feature}
+            discoOperatingSystem=${osArch[0]}
+            discoArchitecture=${osArch[1]}
+            discoArchiveType=tar.gz
+            discoUrl="https://api.foojay.io/disco/v2.0/uris?distro=${distro}&version=${discoVersion}&architecture=${discoArchitecture}&operating_system=${discoOperatingSystem}&archive_type=${discoArchiveType}"
+            verbose "url provided by disco api is: ${discoUrl}"
+
+            url=$(curl -s -m 10 $discoUrl)
+            if [[ -z ${url} ]]; then
+                script_exit "Couldn't determine a download url for ${feature}-${license} on ${os}" 1
+            fi
+        fi
     fi
 }
 
