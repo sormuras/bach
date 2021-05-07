@@ -62,7 +62,7 @@ Options:
   -t|--target PATH          Target directory, defaults to first component of the tarball
   -c|--cacerts              Link system CA certificates (currently only Debian/Ubuntu is supported)
 
-     --distro               Distributon from aoj, aoj_openj9, dragonwell, corretto, liberica, microsoft, ojdk_build, openlogic, oracle_open_jdk, sap_machine, temurin, trava, zulu
+     --distro               Distributon from aoj, aoj_openj9, dragonwell, corretto, microsoft, ojdk_build, oracle_open_jdk, sap_machine, trava, zulu
 EOF
 }
 
@@ -209,7 +209,7 @@ function determine_url() {
         discoOperatingSystem=${osArch[0]}
         discoArchitecture=${osArch[1]}
         discoArchiveType=tar.gz
-        discoUrl="https://api.foojay.io/disco/v2.0/uris?distro=${distro}&version=${discoVersion}&architecture=${discoArchitecture}&operating_system=${discoOperatingSystem}&archive_type=${discoArchiveType}"
+        discoUrl="https://api.foojay.io/disco/v2.0/uris?distro=${distro}&version=${discoVersion}&architecture=${discoArchitecture}&operating_system=${discoOperatingSystem}&archive_type=${discoArchiveType}&latest=available"
         verbose "url provided by disco api is: ${discoUrl}"
 
         url=$(curl -s -m 10 $discoUrl)
@@ -286,11 +286,18 @@ function download_and_extract_and_set_target() {
 
     verbose "Using tar options: ${tar_options}"
     if [[ ${target} == '?' ]]; then
+        if [[ "$distro" == 'sap_machine' || "$distro" == 'oracle_open_jdk' ]]; then
+        	tar_dir=`tar ztf 'jdk.tar.gz' | cut -f2 -d/ | head -2 | tail -1`
+        else
+        	tar_dir=`tar ztf 'jdk.tar.gz' | cut -f1 -d/ | head -1`
+        fi
+    	verbose "tar dir: ${tar_dir}"
+
         tar --extract ${tar_options} -C "${workspace}"
         if [[ "$OSTYPE" != "darwin"* ]]; then
             target="${workspace}"/$(tar --list ${tar_options} | grep 'bin/javac' | tr '/' '\n' | tail -3 | head -1)
         else
-            target="${workspace}"/$(tar --list ${tar_options} | head -2 | tail -1 | cut -f 2 -d '/' -)/Contents/Home
+            target=$(find ${workspace}/${tar_dir} -name 'Home')
         fi
         verbose "Set target to: ${target}"
     else
