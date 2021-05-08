@@ -11,6 +11,7 @@ import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import test.base.resource.ResourceManager;
@@ -35,8 +36,8 @@ class ExternalModuleTraitTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", temp)
-                .with("externalModuleLocations", foo));
+                .with("chroot", Optional.of(temp))
+                .with("externalModuleLocations", List.of(foo)));
 
     bach.loadExternalModules("foo");
 
@@ -52,8 +53,8 @@ class ExternalModuleTraitTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", temp)
-                .with("projectRequires", "bar") // bar requires foo
+                .with("chroot", Optional.of(temp))
+                .with("projectRequires", List.of("bar")) // bar requires foo
                 .with("externalModuleLocations", List.of(bar, foo)));
 
     bach.loadMissingExternalModules();

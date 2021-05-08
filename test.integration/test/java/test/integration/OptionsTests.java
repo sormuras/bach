@@ -29,19 +29,6 @@ import org.junit.jupiter.api.TestFactory;
 class OptionsTests {
 
   @Nested
-  class NamesTests {
-    @Test
-    void toCli() {
-      assertEquals("--abc-def-ghi", OptionsLines.toCli("abcDefGhi"));
-    }
-
-    @Test
-    void toComponentName() {
-      assertEquals("abcDefGhi", OptionsLines.toComponentName("--abc-def-ghi"));
-    }
-  }
-
-  @Nested
   class EmptyOptionsTests {
     final Options empty = Options.of();
 
@@ -76,7 +63,7 @@ class OptionsTests {
               logbook,
               Options.of().id("top layer"),
               Options.of().id("1st layer").with("--verbose", true),
-              Options.of().id("2nd layer").with("--project-requires", "foo"));
+              Options.of().id("2nd layer").with("--project-requires", List.of("foo")));
 
       assertEquals("test options", options.id().orElseThrow());
       assertTrue(options.verbose(), options.toString());
@@ -98,13 +85,9 @@ class OptionsTests {
   @Nested
   class LinesTests {
     @Test
-    void empty() {
-      assertLinesMatch("".lines(), new OptionsLines(Options.of()).lines());
-    }
-
-    @Test
     void withEverything() {
-      var options =
+
+      var expected =
           new Options(
               Optional.of("ID"),
               true,
@@ -138,19 +121,20 @@ class OptionsTests {
                   new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
               List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
               List.copyOf(EnumSet.allOf(Action.class)));
-      assertLinesMatch(
+
+      var arguments =
           """
-          --actions
+          --action
             BUILD
-          --actions
+          --action
             CLEAN
-          --actions
+          --action
             COMPILE_MAIN
-          --actions
+          --action
             COMPILE_TEST
-          --actions
+          --action
             EXECUTE_TESTS
-          --actions
+          --action
             WRITE_LOGBOOK
           --bach-info
             MODULE
@@ -159,13 +143,13 @@ class OptionsTests {
           --describe-tool
             TOOL
           --dry-run
-          --external-library-versions
+          --external-library-version
             JUNIT
             VERSION
-          --external-module-locations
+          --external-module-location
             M1
             U1
-          --external-module-locations
+          --external-module-location
             M2
             U2
           --help
@@ -183,13 +167,13 @@ class OptionsTests {
           --main-jar-with-sources
           --main-java-release
             9
-          --main-module-paths
+          --main-module-path
             PATH
-          --main-module-paths
+          --main-module-path
             PATH
-          --main-module-patterns
+          --main-module-pattern
             *
-          --main-module-patterns
+          --main-module-pattern
             **
           --project-name
             NAME
@@ -202,29 +186,27 @@ class OptionsTests {
           --run-commands-sequentially
           --skip-tools
             TOOL
-          --test-module-paths
+          --test-module-path
             PATH
-          --test-module-paths
+          --test-module-path
             PATH
-          --test-module-patterns
+          --test-module-pattern
             test
-          --test-module-patterns
+          --test-module-pattern
             **/test
-          --test-module-patterns
+          --test-module-pattern
             **/test/**
-          --tweaks
+          --tweak
             main,test
             TRIGGER
             1
             ARGS...
           --verbose
           --version
-          """
-              .lines(),
-          new OptionsLines(options).lines());
+          """;
 
-      var cli = Options.ofCommandLineArguments(new OptionsLines(options).lines().toList());
-      assertEquals(options, cli);
+      var actual = Options.ofCommandLineArguments(arguments);
+      assertEquals(expected, actual);
     }
   }
 }

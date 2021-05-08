@@ -7,6 +7,7 @@ import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
+import com.github.sormuras.bach.internal.CommandLineParser;
 import com.github.sormuras.bach.internal.Records;
 import com.github.sormuras.bach.internal.Records.Name;
 import java.lang.System.Logger.Level;
@@ -18,12 +19,10 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,7 +32,10 @@ import java.util.stream.Stream;
  * @param actions a list of actions to execute
  */
 public record Options(
-    @Name("--id") Optional<String> id,
+    // <editor-fold desc="Internal Options">
+    @Name("--id") //
+        Optional<String> id,
+    // </editor-fold>
 
     // <editor-fold desc="Runtime Modifying Options">
     @Name("--verbose")
@@ -298,58 +300,8 @@ public record Options(
   }
 
   public static Options ofCommandLineArguments(List<String> arguments) {
-    var options = Options.of();
-    if (arguments.isEmpty()) return options;
-    var deque = new ArrayDeque<String>();
-    arguments.stream().flatMap(String::lines).map(String::strip).forEach(deque::add);
-    Supplier<String> pop = () -> deque.removeFirst().strip();
-    while (!deque.isEmpty()) {
-      var argument = pop.get();
-      options =
-          switch (argument) {
-            case // flags
-            "--version", //
-            "--help", "--help-extra", //
-            "--verbose", //
-            "--dry-run", "--run-commands-sequentially", //
-            "--list-configuration", "--list-modules", "--list-tools", //
-            "--main-jar-with-sources", //
-            "--load-missing-external-modules" //
-            -> options.with(argument, true);
-            case // single-value properties of type String
-            "--id", "--bach-info", //
-            "--describe-tool", "--load-external-module", //
-            "--project-requires", "--project-name", //
-            "--limit-tools", "--skip-tools" //
-            -> options.with(argument, pop.get());
-            case "--chroot" -> options.with("--chroot", Path.of(pop.get()));
-            case "--project-version" -> options.with("--project-version", Version.parse(pop.get()));
-            case "--main-module-path", "--main-module-paths" -> options.with(
-                "--main-module-path", pop.get());
-            case "--main-module-pattern", "--main-module-patterns" -> options.with(
-                "--main-module-pattern", pop.get());
-            case "--main-java-release" -> options.with(
-                "--main-java-release", Integer.parseInt(pop.get()));
-            case "--test-module-path", "--test-module-paths" -> options.with(
-                "--test-module-path", pop.get());
-            case "--test-module-pattern", "--test-module-patterns" -> options.with(
-                "--test-module-pattern", pop.get());
-            case "--tweak", "--tweaks" -> options.with("tweaks", Tweak.ofCommandLine(deque));
-            case "--external-module-location", "--external-module-locations" -> options.with(
-                "--external-module-location", ExternalModuleLocation.ofCommandLine(pop));
-            case "--external-library-version", "--external-library-versions" -> options.with(
-                "--external-library-version", ExternalLibraryVersion.ofCommandLine(pop));
-            case "--tool" -> {
-              var name = pop.get();
-              var args = List.copyOf(deque);
-              deque.clear();
-              yield options.with(argument, new Tool(name, args));
-            }
-            case "--action", "--actions" -> options.with("actions", Action.ofCli(pop.get()));
-            default -> options.with("actions", Action.ofCli(argument));
-          };
-    }
-    return options;
+    if (arguments.isEmpty()) return Options.of();
+    return new CommandLineParser(arguments).ofCommandLineArguments(arguments);
   }
 
   public static Options ofFile(Path file) {
@@ -366,12 +318,12 @@ public record Options(
   public static Options ofProjectInfo(ProjectInfo info) {
     var options = Options.of().id("@ProjectInfo Options");
     // project
-    options = options.with("projectName", info.name());
-    options = options.with("projectVersion", Version.parse(info.version()));
+    options = options.with("projectName", Optional.of(info.name()));
+    options = options.with("projectVersion", Optional.of(Version.parse(info.version())));
     options = options.with("projectRequires", List.of(info.requires()));
     // main
     var main = info.main();
-    options = options.with("mainJavaRelease", main.javaRelease());
+    options = options.with("mainJavaRelease", Optional.of(main.javaRelease()));
     options = options.with("mainModulePatterns", List.of(main.modulesPatterns()));
     options = options.with("mainModulePaths", List.of(main.modulePaths()));
     options = options.with("mainJarWithSources", main.jarWithSources());
@@ -382,9 +334,9 @@ public record Options(
     // tools & tweaks
     var tools = Tools.of(info);
     if (!tools.limits().isEmpty())
-      options = options.with("limitTools", String.join(",", tools.limits()));
+      options = options.with("limitTools", Optional.of(String.join(",", tools.limits())));
     if (!tools.skips().isEmpty())
-      options = options.with("skipTools", String.join(",", tools.skips()));
+      options = options.with("skipTools", Optional.of(String.join(",", tools.skips())));
     options = options.with("tweaks", tools.tweaks().list());
     // externals
     var external = info.external();
@@ -399,32 +351,28 @@ public record Options(
     return options;
   }
 
-  public static Options compose(String id, Logbook logbook, Options... options) {
+  public static Options compose(String id, Logbook logbook, Options... layers) {
     /* DEBUG */ {
-      logbook.log(Level.DEBUG, "Compose options from " + options.length + " layers");
-      for (int i = 0; i < options.length; i++) {
-        logbook.log(Level.TRACE, "[" + i + "] = " + options[i].id.orElse("-"));
+      logbook.log(Level.DEBUG, "Compose options from " + layers.length + " layers");
+      for (int i = 0; i < layers.length; i++) {
+        logbook.log(Level.TRACE, "[" + i + "] = " + layers[i].id().orElse("-"));
       }
-      logbook.log(Level.DEBUG, "[layer] --<option> <value...>");
+      logbook.log(Level.DEBUG, "[layer] option value...");
     }
-
-    return new Records<>(Options.class)
-        .compose(
-            Options.of().id(id),
-            component -> !component.getName().equals("id"),
-            value ->
-                value instanceof Boolean flag && flag
-                    || value instanceof Optional<?> optional && optional.isPresent()
-                    || value instanceof List<?> list && !list.isEmpty(),
-            composition ->
-                logbook.log(
-                    Level.DEBUG,
-                    "[%d] %s -> %s"
-                        .formatted(
-                            composition.index(),
-                            composition.component().getName(),
-                            composition.newValue())),
-            options);
+    var records = Records.of(Options.class);
+    return records.compose(
+        Options.of().id(id),
+        component -> !component.getName().equals("id"),
+        value ->
+            value instanceof Boolean flag && flag
+                || value instanceof Optional<?> optional && optional.isPresent()
+                || value instanceof List<?> list && !list.isEmpty(),
+        (component, index) -> {
+          var name = component.getName();
+          var value = records.value(layers[index], component);
+          logbook.log(Level.DEBUG, "[%d] %s -> %s".formatted(index, name, value));
+        },
+        layers);
   }
 
   // ---
@@ -443,28 +391,6 @@ public record Options(
     return with("id", Optional.ofNullable(id));
   }
 
-  @Override
-  public Options with(String name, Object value) {
-    return Wither.super.with(name, component -> wrap(component, value), Options::merge);
-  }
-
-  private static Object wrap(RecordComponent component, Object newValue) {
-    if (component.getType() == Optional.class) {
-      return newValue instanceof Optional ? newValue : Optional.ofNullable(newValue);
-    }
-    if (component.getType() == List.class) {
-      return newValue instanceof List ? newValue : List.of(newValue);
-    }
-    return newValue;
-  }
-
-  private static Object merge(Object oldValue, Object newValue) {
-    if (oldValue instanceof List<?> oldList && newValue instanceof List<?> newList) {
-      return Stream.concat(oldList.stream(), newList.stream()).toList();
-    }
-    return newValue;
-  }
-
   // ---
 
   @Retention(RetentionPolicy.RUNTIME)
@@ -477,7 +403,7 @@ public record Options(
   @Target(ElementType.RECORD_COMPONENT)
   @interface Extra {}
 
-  private static final Options EMPTY = new Records<>(Options.class).compose(Options::emptyValue);
+  private static final Options EMPTY = Records.of(Options.class).compose(Options::emptyValue);
 
   private static Object emptyValue(RecordComponent component) {
     if (boolean.class == component.getType()) return false;

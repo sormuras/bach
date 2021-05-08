@@ -38,7 +38,7 @@ class TweakTests {
         c
         """.lines().toList()
     );
-    var target = Tweak.ofCommandLine(deque);
+    var target = Tweak.ofCommandLine(deque::removeFirst);
     assertEquals(source, target);
     assertTrue(target.isForSpace(CodeSpace.MAIN));
     assertTrue(target.isForSpace(CodeSpace.TEST));

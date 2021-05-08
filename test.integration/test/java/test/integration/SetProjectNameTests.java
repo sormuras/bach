@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,7 +41,7 @@ class SetProjectNameTests {
   void viaOption(@TempDir Path temp) {
     var name = "demo";
 
-    var bach = Bach.of(errorLogbook(), chrootOptions(temp).with("projectName", name));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp).with("projectName", Optional.of(name)));
     assertEquals(name, bach.project().name());
   }
 
@@ -119,7 +120,7 @@ class SetProjectNameTests {
   }
 
   static Options chrootOptions(Path path) {
-    return Options.of().id("Test Options").with("chroot", path);
+    return Options.of().id("Test Options").with("chroot", Optional.of(path));
   }
 
   static void scaffold(Path root, Map<String, String> files) throws Exception {

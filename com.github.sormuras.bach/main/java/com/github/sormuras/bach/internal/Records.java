@@ -11,39 +11,37 @@ import java.lang.reflect.RecordComponent;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public record Records<R extends Record>(Class<R> type) {
 
-  @Target(ElementType.RECORD_COMPONENT)
-  @Retention(RetentionPolicy.RUNTIME)
-  public @interface Name {
-    String[] value();
+  public static <R extends Record> Records<R> of(Class<R> type) {
+    return new Records<>(type);
+  }
+
+  @SuppressWarnings("unchecked")
+  Cache<R> cache() {
+    return (Cache<R>) CACHES.get(type);
   }
 
   public R compose(Function<RecordComponent, Object> function) {
-    @SuppressWarnings("unchecked")
-    var cache = (Cache<R>) CACHES.get(type);
+    var cache = cache();
     var values = Stream.of(type.getRecordComponents()).map(function).toArray(Object[]::new);
     return cache.newRecord(values);
   }
-
-  public record Composition(int index, RecordComponent component, Object newValue) {}
 
   @SafeVarargs
   public final R compose(
       R initial,
       Predicate<RecordComponent> componentFilter,
       Predicate<Object> valueFilter,
-      Consumer<Composition> consumer,
+      BiConsumer<RecordComponent, Integer> valueConsumer,
       R... layers) {
     if (layers.length == 0) return initial;
-    @SuppressWarnings("unchecked")
-    var cache = (Cache<R>) CACHES.get(type);
+    var cache = cache();
     var components = type.getRecordComponents();
     var values = cache.values(initial);
     withNextComponent:
@@ -52,9 +50,9 @@ public record Records<R extends Record>(Class<R> type) {
       if (componentFilter.test(component)) {
         for (int layerIndex = 0; layerIndex < layers.length; layerIndex++) {
           var layer = layers[layerIndex];
-          var value = getValue(layer, component);
+          var value = value(layer, component);
           if (valueFilter.test(value)) {
-            consumer.accept(new Composition(layerIndex, component, value));
+            valueConsumer.accept(component, layerIndex);
             values[componentIndex] = value;
             continue withNextComponent;
           }
@@ -65,67 +63,19 @@ public record Records<R extends Record>(Class<R> type) {
   }
 
   public R with(R instance, String name, Object value) {
-    return with(instance, name, __ -> value, (o, n) -> n);
-  }
-
-  public R with(
-      R instance,
-      String name,
-      Function<RecordComponent, Object> wrapper,
-      BinaryOperator<Object> merger) {
-    @SuppressWarnings("unchecked")
-    var cache = (Cache<R>) CACHES.get(type);
+    var cache = cache();
     var index = cache.indexOf(name);
-    return with(cache, instance, index, wrapper, merger);
+    return with(cache, instance, index, value);
   }
 
-  private R with(
-      Cache<R> cache,
-      R instance,
-      int index,
-      Function<RecordComponent, Object> wrapper,
-      BinaryOperator<Object> merger) {
+  private R with(Cache<R> cache, R instance, int index, Object value) {
     var values = cache.values(instance);
-    var oldValue = values[index];
-    var newValue = wrapper.apply(type.getRecordComponents()[index]);
-    values[index] = merger.apply(oldValue, newValue);
+    values[index] = value;
     return cache.newRecord(values);
   }
 
-  private static Object getValue(Object instance, RecordComponent component) {
-    try {
-      return component.getAccessor().invoke(instance);
-    } catch (ReflectiveOperationException exception) {
-      var identity = System.identityHashCode(instance);
-      throw new AssertionError("access failed for " + component + " on @" + identity, exception);
-    }
-  }
-
-  private record Cache<R extends Record>(
-      Class<R> type, MethodHandle constructor, Map<String, Integer> index) {
-
-    int indexOf(String component) {
-      var index = index().getOrDefault(component, -1);
-      if (index == -1) throw new NoSuchElementException(component + " not in: " + index().keySet());
-      return index;
-    }
-
-    Object[] values(R instance) {
-      var components = type.getRecordComponents();
-      var length = components.length;
-      var values = new Object[length];
-      for (int i = 0; i < length; i++) values[i] = getValue(instance, components[i]);
-      return values;
-    }
-
-    @SuppressWarnings("unchecked")
-    R newRecord(Object[] initargs) {
-      try {
-        return (R) constructor.invokeWithArguments(initargs);
-      } catch (Throwable exception) {
-        throw new AssertionError("new " + type.getSimpleName() + " failed", exception);
-      }
-    }
+  public Object value(R instance, RecordComponent component) {
+    return cache().value(instance, component);
   }
 
   private static class Caches extends ClassValue<Cache<?>> {
@@ -165,4 +115,46 @@ public record Records<R extends Record>(Class<R> type) {
   }
 
   private static final Caches CACHES = new Caches();
+
+  record Cache<R extends Record>(
+      Class<R> type, MethodHandle constructor, Map<String, Integer> index) {
+
+    int indexOf(String component) {
+      var index = index().getOrDefault(component, -1);
+      if (index == -1) throw new NoSuchElementException(component + " not in: " + index().keySet());
+      return index;
+    }
+
+    Object[] values(R instance) {
+      var components = type.getRecordComponents();
+      var length = components.length;
+      var values = new Object[length];
+      for (int i = 0; i < length; i++) values[i] = value(instance, components[i]);
+      return values;
+    }
+
+    Object value(Object instance, RecordComponent component) {
+      try {
+        return component.getAccessor().invoke(instance);
+      } catch (ReflectiveOperationException exception) {
+        var identity = System.identityHashCode(instance);
+        throw new AssertionError("access failed for " + component + " on @" + identity, exception);
+      }
+    }
+
+    @SuppressWarnings("unchecked")
+    R newRecord(Object[] initargs) {
+      try {
+        return (R) constructor.invokeWithArguments(initargs);
+      } catch (Throwable exception) {
+        throw new AssertionError("new " + type.getSimpleName() + " failed", exception);
+      }
+    }
+  }
+
+  @Target(ElementType.RECORD_COMPONENT)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Name {
+    String[] value();
+  }
 }

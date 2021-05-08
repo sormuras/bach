@@ -23,6 +23,8 @@ import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
@@ -61,12 +63,12 @@ class SimplicissimusTests {
             Logbook.ofErrorPrinter(),
             Options.of()
                 .id(name + " Options")
-                .with("chroot", root)
+                .with("chroot", Optional.of(root))
                 .with("verbose", true)
-                .with("projectVersion", Version.parse("123"))
-                .with("mainJavaRelease", 9)
+                .with("projectVersion", Optional.of(Version.parse("123")))
+                .with("mainJavaRelease", Optional.of(9))
                 .with("mainJarWithSources", true)
-                .with("actions", Action.BUILD));
+                .with("actions", List.of(Action.BUILD)));
 
     var expectedProject = expectedProject();
     assertEquals(expectedProject.name(), bach.project().name());

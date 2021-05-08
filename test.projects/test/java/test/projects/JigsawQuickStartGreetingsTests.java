@@ -22,6 +22,8 @@ import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartGreetingsTests {
@@ -60,9 +62,9 @@ class JigsawQuickStartGreetingsTests {
             Logbook.ofErrorPrinter(),
             Options.of()
                 .id(NAME + " Options")
-                .with("chroot", root)
+                .with("chroot", Optional.of(root))
                 .with("verbose", true)
-                .with("actions", Action.BUILD));
+                .with("actions", List.of(Action.BUILD)));
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());

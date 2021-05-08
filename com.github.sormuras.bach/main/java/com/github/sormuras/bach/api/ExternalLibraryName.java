@@ -8,12 +8,4 @@ public enum ExternalLibraryName {
   public static ExternalLibraryName ofCli(String cli) {
     return valueOf(cli.toUpperCase(Locale.ROOT).replace('-', '_'));
   }
-
-  public static String toCli(ExternalLibraryName externalLibraryName) {
-    return externalLibraryName.name().replace('_', '-');
-  }
-
-  public String cli() {
-    return toCli(this);
-  }
 }
