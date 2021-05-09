@@ -75,9 +75,9 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     if (isPresent(options.loadExternalModule(), this::loadExternalModules)) return 0;
     if (options.loadMissingExternalModules()) return exit(this::loadMissingExternalModules);
     if (options.tool().isPresent()) {
-      Command<?> command = options.tool().get();
-      var name = command.name();
-      var args = command.arguments().toArray(String[]::new);
+      var tool = options.tool().get();
+      var name = tool.name();
+      var args = tool.arguments().toArray(String[]::new);
       var out = logbook.printer().out();
       var err = logbook.printer().err();
       var provider = findToolProvider(name).orElseThrow();
