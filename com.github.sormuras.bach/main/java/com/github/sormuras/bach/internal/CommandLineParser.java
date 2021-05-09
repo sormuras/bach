@@ -6,8 +6,11 @@ import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Tweak;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.reflect.RecordComponent;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -29,10 +32,29 @@ public final class CommandLineParser {
     var cache = Records.of(Options.class).cache();
     var values = cache.values(Options.of());
     while (!deque.isEmpty()) {
-      var index = cache.indexOf(deque.peek().startsWith("--") ? deque.removeFirst() : "--action");
+      var peeked = deque.peek();
+      if (peeked.startsWith("@")) {
+        var file = Path.of(deque.removeFirst().substring(1));
+        if (Files.isRegularFile(file)) prepend(file);
+        continue;
+      }
+      var index = cache.indexOf(peeked.startsWith("--") ? deque.removeFirst() : "--action");
       values[index] = read(cache.type().getRecordComponents()[index], values[index]);
     }
     return cache.newRecord(values);
+  }
+
+  private void prepend(Path file) {
+    try {
+      var lines = Files.readAllLines(file);
+      var iterator = lines.listIterator(lines.size());
+      while (iterator.hasPrevious()) {
+        var line = iterator.previous().strip();
+        deque.addFirst(line);
+      }
+    } catch (IOException exception) {
+      throw new UncheckedIOException("Read all lines failed for file: " + file, exception);
+    }
   }
 
   private Object read(RecordComponent component, Object old) {

@@ -55,6 +55,18 @@ class SetProjectNameTests {
   }
 
   @Test
+  void viaCommandLineArgumentInArgumentFile(@TempDir Path temp) throws Exception {
+    scaffold(temp, Map.of("options", """
+        --project-name
+          demo
+        """));
+    var args = List.of("--chroot", temp.toString(), "@" + temp.resolve("options"));
+
+    var bach = Bach.of(errorPrinter(), args.toArray(String[]::new));
+    assertEquals("demo", bach.project().name());
+  }
+
+  @Test
   void viaProjectInfoNameElement(@TempDir Path temp) throws Exception {
     var info =
         """
