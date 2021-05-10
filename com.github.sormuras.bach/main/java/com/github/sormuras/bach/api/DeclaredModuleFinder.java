@@ -59,18 +59,18 @@ public record DeclaredModuleFinder(Map<String, DeclaredModule> map) implements M
     var paths = new ArrayList<String>();
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
-    for (var unit : map.values()) {
-      var sourcePaths = unit.sources().toModuleSpecificSourcePaths();
+    for (var declared : map.values()) {
+      var sourcePaths = declared.toModuleSpecificSourcePaths();
       if (forceModuleSpecificForm) {
-        specific.put(unit.name(), sourcePaths);
+        specific.put(declared.name(), sourcePaths);
         continue;
       }
       try {
         for (var path : sourcePaths) {
-          patterns.add(toModuleSourcePathPatternForm(path, unit.name()));
+          patterns.add(toModuleSourcePathPatternForm(path, declared.name()));
         }
       } catch (FindException e) {
-        specific.put(unit.name(), sourcePaths);
+        specific.put(declared.name(), sourcePaths);
       }
     }
     if (patterns.isEmpty() && specific.isEmpty()) throw new IllegalStateException("No forms?!");

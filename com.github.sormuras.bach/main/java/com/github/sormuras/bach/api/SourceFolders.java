@@ -25,11 +25,10 @@ public record SourceFolders(List<SourceFolder> list) {
   }
 
   List<Path> toModuleSpecificSourcePaths() {
-    if (list.isEmpty()) return List.of(Path.of("."));
     var first = first();
-    if (first.isModuleInfoJavaPresent()) return List.of(first.path());
-    for (var folder : list)
-      if (folder.isModuleInfoJavaPresent()) return List.of(first.path(), folder.path());
+    var path = first.path();
+    if (first.isModuleInfoJavaPresent()) return List.of(path);
+    for (var next : list) if (next.isModuleInfoJavaPresent()) return List.of(path, next.path());
     throw new IllegalStateException("No module-info.java found in: " + list);
   }
 }

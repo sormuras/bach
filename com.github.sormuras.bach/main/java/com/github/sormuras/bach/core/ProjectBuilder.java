@@ -133,8 +133,8 @@ public class ProjectBuilder {
     // no source folder, no resource folder, module declaration in root directory
     // "module-info.java"
     if (root.relativize(info).getNameCount() == 1) {
-      var sources = new SourceFolders(List.of());
-      var resources = new SourceFolders(List.of());
+      var sources = SourceFolders.of();
+      var resources = SourceFolders.of();
       return new DeclaredModule(root, reference, sources, resources);
     }
 
@@ -143,10 +143,11 @@ public class ProjectBuilder {
     var parent = info.getParent();
     if (Strings.name(parent).equals(reference.name())) {
       var folder = buildDeclaredSourceFolder(parent);
-      var sources = new SourceFolders(List.of(folder));
-      var resources = new SourceFolders(jarWithSources ? List.of(folder) : List.of());
+      var sources = SourceFolders.of( folder);
+      var resources = jarWithSources ? SourceFolders.of(folder) : SourceFolders.of();
       return new DeclaredModule(parent, reference, sources, resources);
     }
+
     // sources = "java", "java-module", or targeted "java.*?(\d+)$"
     // resources = "resources", or targeted "resource.*?(\d+)$"
     var space = parent.getParent(); // usually "main", "test", or equivalent

@@ -37,8 +37,8 @@ class DeclaredModuleFinderTests {
   void one(@TempDir Path temp) throws Exception {
     var info = Files.writeString(temp.resolve("module-info.java"), "module one {}");
     var reference = DeclaredModuleReference.of(info);
-    var sources = new SourceFolders(List.of());
-    var resources = new SourceFolders(List.of());
+    var sources = SourceFolders.of();
+    var resources = SourceFolders.of();
     var module = new DeclaredModule(temp, reference, sources, resources);
     var finder = DeclaredModuleFinder.of(module);
 
@@ -47,8 +47,8 @@ class DeclaredModuleFinderTests {
     assertFalse(finder.isEmpty());
     assertEquals(1, finder.size());
     assertEquals("one", finder.toNames(","));
-    assertLinesMatch(List.of("one=."), finder.toModuleSourcePaths(true));
-    assertLinesMatch(List.of("one=."), finder.toModuleSourcePaths(false));
+    assertLinesMatch(List.of("one=" + temp), finder.toModuleSourcePaths(true));
+    assertLinesMatch(List.of("one=" + temp), finder.toModuleSourcePaths(false));
     assertEquals(Map.of(), finder.toModulePatches(new DeclaredModuleFinder(Map.of())));
     assertEquals(Map.of(), new DeclaredModuleFinder(Map.of()).toModulePatches(finder));
   }

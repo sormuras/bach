@@ -21,7 +21,6 @@ import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor.Version;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +54,7 @@ class SimplicissimusTests {
   }
 
   @Test
-  void build() throws Exception {
+  void build() {
     var name = "Simplicissimus";
     var root = Path.of("test.projects", name);
     var bach =
@@ -111,12 +110,7 @@ class SimplicissimusTests {
         bach.logbook().lines());
 
     var folders = bach.project().folders();
-    var jar = folders.modules(CodeSpace.MAIN, "simplicissimus@0.jar");
-
-    var classes = folders.workspace("classes");
-    ToolProviders.run("javac", folders.root("module-info.java"), "-d", classes);
-    Files.createDirectories(jar.getParent());
-    ToolProviders.run("jar", "--create", "--file", jar, "-C", classes, ".");
+    var jar = folders.modules(CodeSpace.MAIN, "simplicissimus@123.jar");
 
     assertLinesMatch(
         """

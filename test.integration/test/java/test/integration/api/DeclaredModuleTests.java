@@ -9,7 +9,6 @@ import com.github.sormuras.bach.api.DeclaredModuleReference;
 import com.github.sormuras.bach.api.SourceFolders;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,8 +17,8 @@ class DeclaredModuleTests {
   void empty(@TempDir Path temp) throws Exception {
     var info = Files.writeString(temp.resolve("module-info.java"), "module empty {}");
     var reference = DeclaredModuleReference.of(info);
-    var sources = new SourceFolders(List.of());
-    var resources = new SourceFolders(List.of());
+    var sources = SourceFolders.of();
+    var resources = SourceFolders.of();
     var module = new DeclaredModule(temp, reference, sources, resources);
 
     assertSame(temp, module.root());
