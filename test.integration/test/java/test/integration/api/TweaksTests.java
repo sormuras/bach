@@ -15,14 +15,16 @@ class TweaksTests {
   void empty() {
     var tweaks = Tweaks.of();
     assertTrue(tweaks.list().isEmpty());
-    assertTrue(tweaks.arguments("*").isEmpty());
+    assertTrue(tweaks.arguments(CodeSpace.MAIN, "*").isEmpty());
+    assertTrue(tweaks.arguments(CodeSpace.MAIN, "*").isEmpty());
   }
 
   @Test
   void withOneTweak() {
     var tweaks = Tweaks.of(tweak("*", "1"));
     assertEquals(1, tweaks.list().size());
-    assertEquals(List.of("1"), tweaks.arguments("*"));
+    assertEquals(List.of("1"), tweaks.arguments(CodeSpace.MAIN, "*"));
+    assertEquals(List.of("1"), tweaks.arguments(CodeSpace.TEST, "*"));
   }
 
   @Test
@@ -31,7 +33,8 @@ class TweaksTests {
     var two = tweak("*", "2");
     var tweaks = Tweaks.of(one, two);
     assertEquals(2, tweaks.list().size());
-    assertEquals(List.of("1", "2"), tweaks.arguments("*"));
+    assertEquals(List.of("1", "2"), tweaks.arguments(CodeSpace.MAIN, "*"));
+    assertEquals(List.of("1", "2"), tweaks.arguments(CodeSpace.TEST, "*"));
   }
 
   private static Tweak tweak(String trigger, String... args) {

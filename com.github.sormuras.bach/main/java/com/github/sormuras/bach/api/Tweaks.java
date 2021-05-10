@@ -13,8 +13,9 @@ public record Tweaks(List<Tweak> list) {
     return new Tweaks(Stream.of(info.tool().tweaks()).map(Tweak::of).toList());
   }
 
-  public List<String> arguments(String trigger) {
+  public List<String> arguments(CodeSpace space, String trigger) {
     return list.stream()
+        .filter(tweak -> tweak.isForSpace(space))
         .filter(tweak -> tweak.trigger().equals(trigger))
         .flatMap(tweak -> tweak.arguments().stream())
         .toList();
