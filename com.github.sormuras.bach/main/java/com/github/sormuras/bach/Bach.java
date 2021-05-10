@@ -112,7 +112,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       say(options.toString());
     }
 
-    say(project.name() + " 0");
+    say(project.name() + " " + project.version());
     var start = Instant.now();
     try {
       actions.forEach(this::runAction);
