@@ -78,7 +78,9 @@ public class ProjectBuilder {
     logbook.log(Level.DEBUG, "Build code spaces object for " + folders);
     var root = folders.root();
     var paths = new ArrayList<>(Paths.findModuleInfoJavaFiles(root, 9));
-    logbook.log(Level.DEBUG, "Build spaces for %d module(s)".formatted(paths.size()));
+    var size = paths.size();
+    var s = size == 1 ? "" : "s";
+    logbook.log(Level.DEBUG, "Build spaces from %d module declaration%s".formatted(size, s));
 
     var mainModules = new TreeMap<String, DeclaredModule>();
     var testModules = new TreeMap<String, DeclaredModule>();
@@ -89,20 +91,22 @@ public class ProjectBuilder {
     var jarWithSources = options.mainJarWithSources();
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
-        logbook.log(Level.DEBUG, "Skip module %s - its path contains `.bach`".formatted(path));
+        logbook.log(Level.TRACE, "Skip module %s - its path contains `.bach`".formatted(path));
         continue;
       }
       if (testMatcher.anyMatch(path)) {
-        var local = buildDeclaredModule(root, path, jarWithSources);
-        testModules.put(local.name(), local);
+        var module = buildDeclaredModule(root, path, jarWithSources);
+        logbook.log(Level.DEBUG, "Test module %s declared in %s".formatted(module.name(), path));
+        testModules.put(module.name(), module);
         continue;
       }
       if (mainMatcher.anyMatch(path)) {
-        var local = buildDeclaredModule(root, path, jarWithSources);
-        mainModules.put(local.name(), local);
+        var module = buildDeclaredModule(root, path, jarWithSources);
+        mainModules.put(module.name(), module);
+        logbook.log(Level.DEBUG, "Main module %s declared in %s".formatted(module.name(), path));
         continue;
       }
-      logbook.log(Level.DEBUG, "Skip module %s - no match for main nor test space".formatted(path));
+      logbook.log(Level.TRACE, "Skip module %s - no match for main nor test space".formatted(path));
     }
 
     var main =
@@ -114,6 +118,10 @@ public class ProjectBuilder {
         new CodeSpaceTest(
             new DeclaredModuleFinder(testModules),
             buildDeclaredModulePaths(root, options.testModulePaths()));
+
+
+    logbook.log(Level.DEBUG, "Main space modules: %s".formatted(main.modules().toNames(", ")));
+    logbook.log(Level.DEBUG, "Test space modules: %s".formatted(test.modules().toNames(", ")));
 
     return new Spaces(main, test);
   }

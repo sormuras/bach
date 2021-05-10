@@ -1,11 +1,17 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -85,6 +91,16 @@ public class Strings {
   public static String nameOrElse(Path path, String defautName) {
     var name = path.toAbsolutePath().getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
+  }
+
+  /** {@return the message digest of the given file as a hexadecimal string} */
+  public static String hash(String algorithm, Path file) throws Exception {
+    var md = MessageDigest.getInstance(algorithm);
+    try (var in = new BufferedInputStream(new FileInputStream(file.toFile()));
+         var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+      in.transferTo(out);
+    }
+    return String.format("%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
   }
 
   /** {@return a string in module-pattern form usable as a {@code --module-source-path} value} */

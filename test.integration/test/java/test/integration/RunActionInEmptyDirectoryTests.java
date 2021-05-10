@@ -8,6 +8,7 @@ import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.api.Action;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,8 +19,9 @@ public class RunActionInEmptyDirectoryTests {
 
   @ParameterizedTest
   @EnumSource(Action.class)
-  void action(Action action, @TempDir Path temp) {
-    bach(0, ">>>>", "--chroot", temp, "--action", action.cli());
+  void action(Action action, @TempDir Path temp) throws Exception {
+    var directory = Files.createDirectory(temp.resolve(action.name()));
+    bach(0, ">>>>", "--chroot", directory, "--action", action.cli());
   }
 
   private static void bach(int expectedStatus, String expectedOutput, Object... objects) {

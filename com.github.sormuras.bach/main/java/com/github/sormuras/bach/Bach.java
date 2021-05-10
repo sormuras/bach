@@ -28,10 +28,12 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   public static Bach of(Printer printer, String... args) {
     var initialOptions = Options.ofCommandLineArguments(args).id("Initial Options");
     var initialLogbook = Logbook.of(printer, initialOptions.verbose());
+    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
     return Bach.of(initialLogbook, initialOptions);
   }
 
   public static Bach of(Logbook initialLogbook, Options initialOptions) {
+    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(initialOptions.id()));
     var root = initialOptions.chrootOrDefault();
     var module = new BachInfoModuleBuilder(initialLogbook, initialOptions).build();
     var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
