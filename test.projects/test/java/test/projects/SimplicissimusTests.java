@@ -116,7 +116,9 @@ class SimplicissimusTests {
         """
         META-INF/
         META-INF/MANIFEST.MF
+        README.md
         module-info.class
+        module-info.java
         """
             .lines()
             .sorted(),

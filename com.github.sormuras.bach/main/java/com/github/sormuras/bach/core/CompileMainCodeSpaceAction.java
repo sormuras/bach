@@ -146,7 +146,7 @@ public class CompileMainCodeSpaceAction extends BachAction {
 
   public Jar buildMainJar(DeclaredModule declared, Path classes) {
     var name = declared.name();
-    var file = bach().project().folders().workspace("modules", generateJarFileName(name));
+    var file = bach().project().folders().modules(CodeSpace.MAIN, generateJarFileName(name));
     var mainClass = declared.reference().descriptor().mainClass();
     var tweaks = bach().project().tools().tweaks();
     var jar =
@@ -173,6 +173,17 @@ public class CompileMainCodeSpaceAction extends BachAction {
       if (paths.isEmpty()) continue;
       jar = jar.with("--release", release);
       for (var path : paths) jar = jar.with("-C", path, ".");
+    }
+    // force-include sources as resources
+    if (bach().options().mainJarWithSources()
+        && declared.sources().list().isEmpty()
+        && declared.resources().list().isEmpty()) {
+      var root = declared.root();
+      for (var resource : Paths.find(root, 9, Files::isRegularFile)) {
+        var relativized = root.relativize(resource);
+        if (relativized.toString().startsWith(".")) continue;
+        jar = jar.with("-C", root, relativized);
+      }
     }
     return jar;
   }
