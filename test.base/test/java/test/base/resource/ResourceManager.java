@@ -51,7 +51,11 @@ public class ResourceManager implements ParameterResolver, AfterEachCallback {
   private static final Namespace NAMESPACE = Namespace.create(ResourceManager.class);
   private static final AtomicLong NEW_COUNTER = new AtomicLong();
 
-  private final Map<String, Set<ResourceSupplier<?>>> registry = new ConcurrentHashMap<>();
+  private final Map<String, Set<ResourceSupplier<?>>> registry;
+
+  public ResourceManager() {
+    this.registry = new ConcurrentHashMap<>();
+  }
 
   @Override
   public boolean supportsParameter(ParameterContext parameter, ExtensionContext __) {

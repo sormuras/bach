@@ -155,7 +155,7 @@ public record Options(
     var instance =
         Proxy.newProxyInstance(
             getClass().getClassLoader(),
-            new Class[] {Cli.class},
+            new Class<?>[] {Cli.class},
             (proxy, method, args) -> {
               if (method.getDeclaringClass() == Object.class) return method.invoke(args);
               option.set(method.getName());

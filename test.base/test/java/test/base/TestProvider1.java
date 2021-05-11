@@ -3,7 +3,7 @@ package test.base;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 
-public class TestProvider1 implements ToolProvider {
+public record TestProvider1() implements ToolProvider {
 
   @Override
   public String name() {
