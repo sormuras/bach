@@ -27,7 +27,7 @@ public class CompileMainCodeSpaceAction extends BachAction {
       return;
     }
     var s = modules.size() == 1 ? "" : "s";
-    bach().say("Build %d main module%s: %s".formatted(modules.size(), s, modules.toNames(", ")));
+    bach().say("Compile %d main module%s: %s".formatted(modules.size(), s, modules.toNames(", ")));
 
     var release = main.release();
     var feature = release != 0 ? release : Runtime.version().feature();
