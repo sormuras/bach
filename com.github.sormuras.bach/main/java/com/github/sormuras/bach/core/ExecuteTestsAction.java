@@ -81,8 +81,8 @@ public class ExecuteTestsAction extends BachAction {
     var junit =
         Command.of("junit")
             .with("--select-module", module)
-            .withAll(tweaks.arguments(CodeSpace.TEST, "jar"))
-            .withAll(tweaks.arguments(CodeSpace.TEST, "jar(" + module + ")"))
+            .withAll(tweaks.arguments(CodeSpace.TEST, "junit"))
+            .withAll(tweaks.arguments(CodeSpace.TEST, "junit(" + module + ")"))
             .with("--reports-dir", project.folders().workspace("reports", "junit", module));
 
     var description = junit.toDescription(Commander.MAX_DESCRIPTION_LENGTH);
