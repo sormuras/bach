@@ -34,10 +34,10 @@ public class ExecuteTestsAction extends BachAction {
       return;
     }
 
-    bach().say("Execute each test module");
-    var runs = new ArrayList<CommandResult>();
+    bach().log("Execute each test module");
+    var results = new ArrayList<CommandResult>();
     for (var name : modules.toNames().toList()) {
-      bach().log("Test module %s".formatted(name));
+      bach().say("Test module %s".formatted(name));
       // "test"
       var finder = buildTestModuleFinder(name);
       if (testsEnabled)
@@ -45,13 +45,18 @@ public class ExecuteTestsAction extends BachAction {
             .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
             .filter(provider -> provider.getClass().getModule().getName().equals(name))
             .filter(provider -> provider.name().equals("test"))
-            .map(this::buildTestRun)
-            .forEach(runs::add);
+            .map(provider -> runTest(provider, List.of()))
+            .forEach(results::add);
       // "junit"
-      if (junitEnabled && junitPresent) runs.add(buildTestJUnitRun(name));
+      if (junitEnabled && junitPresent)
+        bach()
+          .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
+          .filter(provider -> provider.name().equals("junit"))
+          .map(provider -> runJUnit(provider, name))
+          .forEach(results::add);
     }
 
-    new CommandResults(runs).requireSuccessful();
+    new CommandResults(results).requireSuccessful();
   }
 
   private ModuleFinder buildTestModuleFinder(String module) {
@@ -64,14 +69,13 @@ public class ExecuteTestsAction extends BachAction {
         folders.externals());
   }
 
-  private CommandResult buildTestRun(ToolProvider provider, String... args) {
+  public CommandResult runTest(ToolProvider provider, List<String> arguments) {
     var providerClass = provider.getClass();
     var description = providerClass.getModule().getName() + "/" + providerClass.getName();
-    return bach().run(provider, List.of(args), description);
+    return bach().run(provider, arguments, description);
   }
 
-  public CommandResult buildTestJUnitRun(String module) {
-    var finder = buildTestModuleFinder(module);
+  public CommandResult runJUnit(ToolProvider provider, String module) {
     var project = bach().project();
     var tweaks = project.tools().tweaks();
     var junit =
@@ -81,6 +85,7 @@ public class ExecuteTestsAction extends BachAction {
             .withAll(tweaks.arguments(CodeSpace.TEST, "jar(" + module + ")"))
             .with("--reports-dir", project.folders().workspace("reports", "junit", module));
 
-    return bach().run(junit, finder, module);
+    var description = junit.toDescription(Commander.MAX_DESCRIPTION_LENGTH);
+    return bach().run(provider, junit.arguments(), description);
   }
 }

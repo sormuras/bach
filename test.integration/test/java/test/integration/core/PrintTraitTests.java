@@ -105,8 +105,6 @@ class PrintTraitTests {
           >>>>
           javac                \\(SYSTEM, jdk\\.compiler.*\\)
           >>>>
-          test                 (EXTERNAL, test.base)
-          >>>>
             \\d+ tools
           """
               .lines(),
