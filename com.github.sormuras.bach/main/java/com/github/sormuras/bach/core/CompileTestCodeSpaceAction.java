@@ -5,7 +5,6 @@ import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.DeclaredModule;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.tool.Jar;
 import com.github.sormuras.bach.tool.Javac;
 import java.nio.file.Path;
@@ -22,7 +21,7 @@ public class CompileTestCodeSpaceAction extends BachAction {
     var test = bach().project().spaces().test();
     var modules = test.modules();
     if (modules.isEmpty()) {
-      bach().log("Test module list is empty, nothing to build here.");
+      bach().log("Test module list is empty, nothing to compile here.");
       return;
     }
     var s = modules.size() == 1 ? "" : "s";
@@ -36,9 +35,7 @@ public class CompileTestCodeSpaceAction extends BachAction {
     bach().run(buildTestJavac(testClasses)).requireSuccessful();
 
     Paths.createDirectories(testModules);
-    var jars =
-        modules.map().values().stream()
-            .map(module -> buildTestJar(testModules, module, testClasses));
+    var jars = modules.map().values().stream().map(module -> buildTestJar(module, testClasses));
     bach().run(jars).requireSuccessful();
   }
 
@@ -59,10 +56,11 @@ public class CompileTestCodeSpaceAction extends BachAction {
         .with("-d", classes);
   }
 
-  public Jar buildTestJar(Path testModules, DeclaredModule declared, Path classes) {
+  public Jar buildTestJar(DeclaredModule declared, Path classes) {
     var name = declared.name();
-    var file = testModules.resolve(generateJarFileName(name));
-    var tweaks = bach().project().tools().tweaks();
+    var project = bach().project();
+    var file = project.folders().jar(CodeSpace.TEST, name, project.version());
+    var tweaks = project.tools().tweaks();
     var jar =
         new Jar()
             .ifTrue(bach().options().verbose(), args -> args.with("--verbose"))
@@ -86,9 +84,5 @@ public class CompileTestCodeSpaceAction extends BachAction {
       for (var path : paths) jar = jar.with("-C", path, ".");
     }
     return jar;
-  }
-
-  public String generateJarFileName(String module) {
-    return module + '@' + Strings.toNumberAndPreRelease(bach().project().version()) + "+test.jar";
   }
 }

@@ -146,9 +146,10 @@ public class CompileMainCodeSpaceAction extends BachAction {
 
   public Jar buildMainJar(DeclaredModule declared, Path classes) {
     var name = declared.name();
-    var file = bach().project().folders().modules(CodeSpace.MAIN, generateJarFileName(name));
+    var project = bach().project();
+    var file = project.folders().jar(CodeSpace.MAIN, name, project.version());
     var mainClass = declared.reference().descriptor().mainClass();
-    var tweaks = bach().project().tools().tweaks();
+    var tweaks = project.tools().tweaks();
     var jar =
         new Jar()
             .ifTrue(bach().options().verbose(), args -> args.with("--verbose"))
@@ -186,9 +187,5 @@ public class CompileMainCodeSpaceAction extends BachAction {
       }
     }
     return jar;
-  }
-
-  public String generateJarFileName(String module) {
-    return module + '@' + Strings.toNumberAndPreRelease(bach().project().version()) + ".jar";
   }
 }

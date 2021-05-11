@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.api;
 
+import com.github.sormuras.bach.internal.Strings;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 
 public record Folders(Path root, Path workspace, Path externals) {
@@ -36,5 +38,10 @@ public record Folders(Path root, Path workspace, Path externals) {
 
   public Path modules(CodeSpace space, String first, String... more) {
     return modules(space).resolve(Path.of(first, more));
+  }
+
+  public Path jar(CodeSpace space, String module, Version version) {
+    var jar = module + '@' + Strings.toNumberAndPreRelease(version) + space.suffix() + ".jar";
+    return modules(space, jar);
   }
 }
