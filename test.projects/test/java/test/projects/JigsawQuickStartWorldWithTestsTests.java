@@ -1,6 +1,7 @@
 package test.projects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
@@ -82,5 +83,21 @@ class JigsawQuickStartWorldWithTestsTests {
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());
+
+    assertLinesMatch("""
+        >> BACH'S INITIALIZATION >>
+        JigsawQuickStartWorldWithTests 0
+        >> INFO + BUILD >>
+        Compile 2 main modules: com.greetings, org.astro
+        >>>>
+        Compile 1 test module: test.modules
+        >>>>
+        Test module test.modules
+        >>>>
+        Bach run took .+
+        Logbook written to .+
+        """.lines(),
+        bach.logbook().lines()
+    );
   }
 }

@@ -28,6 +28,7 @@ import java.lang.module.ModuleDescriptor;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -105,6 +106,8 @@ class BachTests {
 
   @Test
   void build() {
+    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
+
     var bach = Bach.of(Logbook.ofErrorPrinter(), Options.of().with("--dry-run", true));
 
     var actual = bach.project();

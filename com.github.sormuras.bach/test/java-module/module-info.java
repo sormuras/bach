@@ -1,14 +1,13 @@
-@com.github.sormuras.bach.ProjectInfo
+@com.github.sormuras.bach.api.ProjectInfo
 open /*test*/ module com.github.sormuras.bach {
   requires org.junit.jupiter;
   requires test.base;
 
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.api;
-  exports com.github.sormuras.bach.lookup;
-  exports com.github.sormuras.bach.project;
+  exports com.github.sormuras.bach.api.external;
+  exports com.github.sormuras.bach.core;
   exports com.github.sormuras.bach.tool;
-  exports com.github.sormuras.bach.util;
 
   requires transitive java.net.http;
   requires jdk.compiler;
@@ -18,9 +17,9 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.jdeps;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Bach.Provider;
+  uses com.github.sormuras.bach.Factory;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
-      com.github.sormuras.bach.Main;
+      com.github.sormuras.bach.internal.BachToolProvider;
 }

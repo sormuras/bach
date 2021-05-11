@@ -9,12 +9,15 @@ import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.tool.Jar;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class SimpleTests {
 
   @Test
   void build() {
+    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
+
     var name = "Simple";
     var root = Path.of("test.projects", name);
     var bach =
