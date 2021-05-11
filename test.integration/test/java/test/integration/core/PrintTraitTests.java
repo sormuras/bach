@@ -3,7 +3,6 @@ package test.integration.core;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.io.StringWriter;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import test.integration.Auxiliary;
@@ -73,8 +72,6 @@ class PrintTraitTests {
 
     @Test
     void printLayerModules() {
-      Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
-
       var actual = new StringWriter();
       Auxiliary.newEmptyBach(actual).printLayerModules();
       assertLinesMatch(

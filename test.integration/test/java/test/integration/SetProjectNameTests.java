@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -69,8 +68,6 @@ class SetProjectNameTests {
 
   @Test
   void viaProjectInfoNameElement(@TempDir Path temp) throws Exception {
-    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
-
     var info =
         """
         import com.github.sormuras.bach.api.*;
@@ -88,8 +85,6 @@ class SetProjectNameTests {
 
   @Test
   void viaProjectInfoArgumentsAsStringArray(@TempDir Path temp) throws Exception {
-    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
-
     var info =
         """
         import com.github.sormuras.bach.api.*;
@@ -107,8 +102,6 @@ class SetProjectNameTests {
 
   @Test
   void viaProjectInfoArgumentsAsTextBlock(@TempDir Path temp) throws Exception {
-    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
-
     var info =
         """
         import com.github.sormuras.bach.api.*;

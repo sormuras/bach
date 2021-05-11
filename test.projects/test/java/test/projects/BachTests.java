@@ -88,7 +88,16 @@ class BachTests {
             Tweaks.of(
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-encoding", "UTF-8")),
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-Xlint")),
-                new Tweak(Set.of(CodeSpace.MAIN), "javac", List.of("-Werror"))));
+                new Tweak(Set.of(CodeSpace.MAIN), "javac", List.of("-Werror")),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "junit", List.of(
+                    "--config",
+                    "junit.jupiter.execution.parallel.enabled=true"
+                )),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "junit", List.of(
+                    "--config",
+                    "junit.jupiter.execution.parallel.mode.default=concurrent"
+                ))
+            ));
     var externals =
         new Externals(
             Set.of("org.junit.platform.console"),

@@ -21,7 +21,15 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
             tweaks = {
               @Tweak(trigger = "javac", option = "-encoding", value = "UTF-8"),
               @Tweak(trigger = "javac", option = "-Xlint"),
-              @Tweak(trigger = "javac", option = "-Werror", spaces = MAIN)
+              @Tweak(trigger = "javac", option = "-Werror", spaces = MAIN),
+              @Tweak(
+                  trigger = "junit",
+                  option = "--config",
+                  value = "junit.jupiter.execution.parallel.enabled=true"),
+              @Tweak(
+                  trigger = "junit",
+                  option = "--config",
+                  value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
             }),
     // </editor-fold>
     // <editor-fold desc="External Modules">
@@ -38,4 +46,7 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
     )
 module bach.info {
   requires com.github.sormuras.bach;
+
+  provides com.github.sormuras.bach.Factory with
+      bach.info.MyFactory;
 }
