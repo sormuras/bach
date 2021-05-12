@@ -22,6 +22,10 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
               @Tweak(trigger = "javac", option = "-encoding", value = "UTF-8"),
               @Tweak(trigger = "javac", option = "-Xlint"),
               @Tweak(trigger = "javac", option = "-Werror", spaces = MAIN),
+              @Tweak(trigger = "javadoc", option = "-encoding", value = "UTF-8"),
+              @Tweak(trigger = "javadoc", option = "-notimestamp"),
+              @Tweak(trigger = "javadoc", option = "-Xdoclint:-missing"),
+              @Tweak(trigger = "javadoc", option = "-Werror"),
               @Tweak(
                   trigger = "junit",
                   option = "--config",

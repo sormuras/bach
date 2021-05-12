@@ -89,6 +89,10 @@ class BachTests {
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-encoding", "UTF-8")),
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-Xlint")),
                 new Tweak(Set.of(CodeSpace.MAIN), "javac", List.of("-Werror")),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-encoding", "UTF-8")),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-notimestamp")),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Xdoclint:-missing")),
+                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Werror")),
                 new Tweak(EnumSet.allOf(CodeSpace.class), "junit", List.of(
                     "--config",
                     "junit.jupiter.execution.parallel.enabled=true"
