@@ -21,6 +21,10 @@ public /*sealed*/ interface CoreTrait extends BachTrait {
     bach().factory().newExecuteTestsAction(bach()).execute();
   }
 
+  default void generateDocumentation() {
+    bach().factory().newGenerateDocumentationAction(bach()).generate();
+  }
+
   default void writeLogbook() {
     bach().factory().newWriteLogbookAction(bach()).write();
   }

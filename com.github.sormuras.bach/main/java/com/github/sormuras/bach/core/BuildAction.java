@@ -13,5 +13,6 @@ public class BuildAction extends BachAction {
     bach().compileMainCodeSpace();
     bach().compileTestCodeSpace();
     bach().executeTests();
+    bach().generateDocumentation();
   }
 }
