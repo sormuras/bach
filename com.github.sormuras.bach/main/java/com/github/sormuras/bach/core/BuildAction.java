@@ -14,5 +14,6 @@ public class BuildAction extends BachAction {
     bach().compileTestCodeSpace();
     bach().executeTests();
     bach().generateDocumentation();
+    bach().generateImage();
   }
 }

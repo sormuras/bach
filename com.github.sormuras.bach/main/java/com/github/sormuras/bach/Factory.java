@@ -6,6 +6,7 @@ import com.github.sormuras.bach.core.CompileMainCodeSpaceAction;
 import com.github.sormuras.bach.core.CompileTestCodeSpaceAction;
 import com.github.sormuras.bach.core.ExecuteTestsAction;
 import com.github.sormuras.bach.core.GenerateDocumentationAction;
+import com.github.sormuras.bach.core.GenerateImageAction;
 import com.github.sormuras.bach.core.ProjectBuilder;
 import com.github.sormuras.bach.core.WriteLogbookAction;
 import com.github.sormuras.bach.internal.Strings;
@@ -61,6 +62,10 @@ public class Factory {
 
   public GenerateDocumentationAction newGenerateDocumentationAction(Bach bach) {
     return new GenerateDocumentationAction(bach);
+  }
+
+  public GenerateImageAction newGenerateImageAction(Bach bach) {
+    return new GenerateImageAction(bach);
   }
 
   public WriteLogbookAction newWriteLogbookAction(Bach bach) {

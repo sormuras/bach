@@ -9,6 +9,7 @@ public enum Action {
   COMPILE_TEST,
   EXECUTE_TESTS,
   GENERATE_DOCUMENTATION,
+  GENERATE_IMAGE,
   WRITE_LOGBOOK;
 
   public static Action ofCli(String string) {

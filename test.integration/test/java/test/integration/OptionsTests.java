@@ -137,6 +137,8 @@ class OptionsTests {
           --action
             GENERATE_DOCUMENTATION
           --action
+            GENERATE_IMAGE
+          --action
             WRITE_LOGBOOK
           --bach-info
             MODULE

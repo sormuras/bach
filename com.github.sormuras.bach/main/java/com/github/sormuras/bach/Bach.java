@@ -137,6 +137,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       case COMPILE_TEST -> compileTestCodeSpace();
       case EXECUTE_TESTS -> executeTests();
       case GENERATE_DOCUMENTATION -> generateDocumentation();
+      case GENERATE_IMAGE -> generateImage();
       case WRITE_LOGBOOK -> writeLogbook();
       default -> throw new UnsupportedActionException(action.toString());
     }

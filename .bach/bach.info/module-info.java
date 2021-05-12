@@ -26,6 +26,7 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
               @Tweak(trigger = "javadoc", option = "-notimestamp"),
               @Tweak(trigger = "javadoc", option = "-Xdoclint:-missing"),
               @Tweak(trigger = "javadoc", option = "-Werror"),
+              @Tweak(trigger = "jlink", option = "--launcher", value = "bach=com.github.sormuras.bach"),
               @Tweak(
                   trigger = "junit",
                   option = "--config",

@@ -93,15 +93,19 @@ class BachTests {
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-notimestamp")),
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Xdoclint:-missing")),
                 new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Werror")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "junit", List.of(
-                    "--config",
-                    "junit.jupiter.execution.parallel.enabled=true"
-                )),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "junit", List.of(
-                    "--config",
-                    "junit.jupiter.execution.parallel.mode.default=concurrent"
-                ))
-            ));
+                new Tweak(
+                    EnumSet.allOf(CodeSpace.class),
+                    "jlink",
+                    List.of("--launcher", "bach=com.github.sormuras.bach")),
+                new Tweak(
+                    EnumSet.allOf(CodeSpace.class),
+                    "junit",
+                    List.of("--config", "junit.jupiter.execution.parallel.enabled=true")),
+                new Tweak(
+                    EnumSet.allOf(CodeSpace.class),
+                    "junit",
+                    List.of(
+                        "--config", "junit.jupiter.execution.parallel.mode.default=concurrent"))));
     var externals =
         new Externals(
             Set.of("org.junit.platform.console"),
