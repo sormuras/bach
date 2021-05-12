@@ -155,6 +155,7 @@ public class CompileMainCodeSpaceAction extends BachAction {
             .ifTrue(bach().options().verbose(), args -> args.with("--verbose"))
             .with("--create")
             .with("--file", file)
+            .with("--module-version", project.version())
             .ifPresent(mainClass, (args, value) -> args.with("--main-class", value))
             .withAll(tweaks.arguments(CodeSpace.MAIN, "jar"))
             .withAll(tweaks.arguments(CodeSpace.MAIN, "jar(" + name + ")"));
