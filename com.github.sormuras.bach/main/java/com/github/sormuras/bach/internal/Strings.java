@@ -15,9 +15,11 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** String-related helpers. */
 public class Strings {
@@ -47,6 +49,20 @@ public class Strings {
     var module = Bach.class.getModule();
     if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
     return module.getDescriptor().version().map(Object::toString).orElse("exploded");
+  }
+
+  public static Stream<String> unroll(String string) {
+    return string.lines().map(String::strip);
+  }
+
+  public static Stream<String> unroll(String... strings) {
+    if (strings.length == 0) return Stream.empty();
+    if (strings.length == 1) return unroll(strings[0]);
+    return unroll(List.of(strings));
+  }
+
+  public static Stream<String> unroll(Collection<String> strings) {
+    return strings.stream().flatMap(String::lines).map(String::strip);
   }
 
   /** {@return a human-readable representation of the given duration} */

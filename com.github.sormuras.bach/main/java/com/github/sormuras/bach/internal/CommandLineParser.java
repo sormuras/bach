@@ -24,7 +24,7 @@ public final class CommandLineParser {
 
   public CommandLineParser(List<String> arguments) {
     this.deque = new ArrayDeque<>();
-    arguments.stream().flatMap(String::lines).map(String::strip).forEach(deque::add);
+    Strings.unroll(arguments).forEach(deque::add);
   }
 
   public Options ofCommandLineArguments(List<String> arguments) {

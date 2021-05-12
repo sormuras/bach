@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.api;
 
+import com.github.sormuras.bach.internal.Strings;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -11,10 +12,12 @@ import java.util.stream.Stream;
 public record Tweak(Set<CodeSpace> spaces, String trigger, List<String> arguments) {
 
   public static Tweak of(ProjectInfo.Tweak info) {
+    var spaces = Set.of(info.spaces());
+    var trigger = info.tool();
     var arguments = new ArrayList<String>();
-    arguments.add(info.option());
-    arguments.addAll(List.of(info.value()));
-    return new Tweak(Set.of(info.spaces()), info.trigger(), List.copyOf(arguments));
+    Strings.unroll(info.with()).forEach(arguments::add);
+    Strings.unroll(info.more()).forEach(arguments::add);
+    return new Tweak(spaces, trigger, List.copyOf(arguments));
   }
 
   public static Tweak ofCommandLine(Supplier<String> supplier) {

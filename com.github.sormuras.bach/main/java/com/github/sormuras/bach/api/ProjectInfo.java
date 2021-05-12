@@ -81,11 +81,11 @@ public @interface ProjectInfo {
 
   @Target({})
   @interface Tweak {
-    String trigger();
+    String tool();
 
-    String option();
+    String with();
 
-    String[] value() default {};
+    String[] more() default {};
 
     CodeSpace[] spaces() default {CodeSpace.MAIN, CodeSpace.TEST};
   }

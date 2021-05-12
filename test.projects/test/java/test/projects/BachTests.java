@@ -86,13 +86,15 @@ class BachTests {
             Set.of(),
             Set.of("jlink"),
             Tweaks.of(
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-encoding", "UTF-8")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javac", List.of("-Xlint")),
+                new Tweak(
+                    EnumSet.allOf(CodeSpace.class),
+                    "javac",
+                    List.of("-encoding", "UTF-8", "-Xlint")),
                 new Tweak(Set.of(CodeSpace.MAIN), "javac", List.of("-Werror")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-encoding", "UTF-8")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-notimestamp")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Xdoclint:-missing")),
-                new Tweak(EnumSet.allOf(CodeSpace.class), "javadoc", List.of("-Werror")),
+                new Tweak(
+                    EnumSet.allOf(CodeSpace.class),
+                    "javadoc",
+                    List.of("-encoding", "UTF-8", "-notimestamp", "-Xdoclint:-missing", "-Werror")),
                 new Tweak(
                     EnumSet.allOf(CodeSpace.class),
                     "jlink",
@@ -100,11 +102,8 @@ class BachTests {
                 new Tweak(
                     EnumSet.allOf(CodeSpace.class),
                     "junit",
-                    List.of("--config", "junit.jupiter.execution.parallel.enabled=true")),
-                new Tweak(
-                    EnumSet.allOf(CodeSpace.class),
-                    "junit",
                     List.of(
+                        "--config", "junit.jupiter.execution.parallel.enabled=true",
                         "--config", "junit.jupiter.execution.parallel.mode.default=concurrent"))));
     var externals =
         new Externals(

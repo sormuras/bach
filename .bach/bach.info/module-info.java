@@ -19,22 +19,34 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
         @Tool(
             skip = {"jlink"},
             tweaks = {
-              @Tweak(trigger = "javac", option = "-encoding", value = "UTF-8"),
-              @Tweak(trigger = "javac", option = "-Xlint"),
-              @Tweak(trigger = "javac", option = "-Werror", spaces = MAIN),
-              @Tweak(trigger = "javadoc", option = "-encoding", value = "UTF-8"),
-              @Tweak(trigger = "javadoc", option = "-notimestamp"),
-              @Tweak(trigger = "javadoc", option = "-Xdoclint:-missing"),
-              @Tweak(trigger = "javadoc", option = "-Werror"),
-              @Tweak(trigger = "jlink", option = "--launcher", value = "bach=com.github.sormuras.bach"),
               @Tweak(
-                  trigger = "junit",
-                  option = "--config",
-                  value = "junit.jupiter.execution.parallel.enabled=true"),
+                  tool = "javac",
+                  with =
+                      """
+                      -encoding
+                       UTF-8
+                      -Xlint
+                      """),
+              @Tweak(tool = "javac", with = "-Werror", spaces = MAIN),
               @Tweak(
-                  trigger = "junit",
-                  option = "--config",
-                  value = "junit.jupiter.execution.parallel.mode.default=concurrent"),
+                  tool = "javadoc",
+                  with =
+                      """
+                      -encoding
+                       UTF-8
+                      -notimestamp
+                      -Xdoclint:-missing
+                      -Werror
+                      """),
+              @Tweak(tool = "jlink", with = "--launcher", more = "bach=com.github.sormuras.bach"),
+              @Tweak(
+                  tool = "junit",
+                  with = """
+                  --config
+                    junit.jupiter.execution.parallel.enabled=true
+                  --config
+                    junit.jupiter.execution.parallel.mode.default=concurrent
+                  """),
             }),
     // </editor-fold>
     // <editor-fold desc="External Modules">
