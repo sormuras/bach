@@ -6,6 +6,8 @@ import com.github.sormuras.bach.Options;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -49,7 +51,16 @@ public record BachInfoModuleBuilder(Logbook logbook, Options options) {
     var javac = ToolProvider.findFirst("javac").orElseThrow();
     var out = logbook.printer().out();
     var err = logbook.printer().err();
+    var start = Instant.now();
     var result = javac.run(out, err, args.toArray(String[]::new));
+    logbook.log(
+        System.Logger.Level.TRACE,
+        "%s %s returned %d took %s"
+            .formatted(
+                "javac",
+                String.join(" ", args),
+                result,
+                Strings.toString(Duration.between(start, Instant.now()))));
     if (result != 0) throw new RuntimeException("Non-zero exit code: " + result + " with: " + args);
     var boot = ModuleLayer.boot();
     return new ModuleLayerBuilder()

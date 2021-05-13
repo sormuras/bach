@@ -7,7 +7,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
-import com.github.sormuras.bach.tool.Jar;
+import com.github.sormuras.bach.tool.JarCall;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -66,6 +66,6 @@ class SimpleTests {
         """
             .lines()
             .sorted(),
-        bach.run(new Jar().with("--list").with("--file", jar)).output().lines().sorted());
+        bach.run(new JarCall().with("--list").with("--file", jar)).output().lines().sorted());
   }
 }

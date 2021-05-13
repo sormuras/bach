@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -49,7 +49,7 @@ class SimplicissimusTests {
             ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
     var externals = Externals.of();
-    var tools = Tools.of();
+    var tools = Tools.of("javac", "jar");
     return new Project(name, version, folders, spaces, tools, externals);
   }
 
@@ -64,10 +64,11 @@ class SimplicissimusTests {
                 .id(name + " Options")
                 .with("chroot", Optional.of(root))
                 .with("verbose", true)
+                .with("limitTools", Optional.of("javac,jar"))
                 .with("projectVersion", Optional.of(Version.parse("123")))
                 .with("mainJavaRelease", Optional.of(9))
                 .with("mainJarWithSources", true)
-                .with("actions", List.of(Action.BUILD)));
+                .with("workflows", List.of(Workflow.BUILD)));
 
     var expectedProject = expectedProject();
     assertEquals(expectedProject.name(), bach.project().name());
@@ -86,6 +87,8 @@ class SimplicissimusTests {
                 --chroot
                   %s
                 --verbose
+                --limit-tools
+                  javac,jar
                 --project-version
                   123
                 --main-java-release
@@ -96,7 +99,7 @@ class SimplicissimusTests {
 
     assertEquals(expectedProject, cli.project());
 
-    assertEquals(0, bach.run(), bach.logbook().toString());
+    assertEquals(0, bach.run(), () -> bach.logbook().toString());
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>

@@ -7,7 +7,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
-import com.github.sormuras.bach.tool.Jar;
+import com.github.sormuras.bach.tool.JarCall;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -58,7 +58,7 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        bach.run(new Jar().with("--list").with("--file", api)).output().lines().sorted());
+        bach.run(new JarCall().with("--list").with("--file", api)).output().lines().sorted());
 
     var engine = bach.project().folders().modules(CodeSpace.MAIN, "engine@0.jar");
     assertLinesMatch(
@@ -81,6 +81,6 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        bach.run(new Jar().with("--list").with("--file", engine)).output().lines().sorted());
+        bach.run(new JarCall().with("--list").with("--file", engine)).output().lines().sorted());
   }
 }

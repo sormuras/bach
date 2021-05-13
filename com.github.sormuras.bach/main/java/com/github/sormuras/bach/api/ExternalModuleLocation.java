@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.api;
 
-import com.github.sormuras.bach.api.external.Maven;
+import com.github.sormuras.bach.locator.Maven;
 import java.util.Optional;
 import java.util.function.Supplier;
 

@@ -23,12 +23,11 @@ import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Tweaks;
-import com.github.sormuras.bach.api.external.JUnit;
+import com.github.sormuras.bach.locator.JUnit;
 import java.lang.module.ModuleDescriptor;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 class BachTests {
@@ -122,8 +121,6 @@ class BachTests {
 
   @Test
   void build() {
-    Assumptions.assumeTrue(getClass().getClassLoader() == ClassLoader.getSystemClassLoader());
-
     var bach = Bach.of(Logbook.ofErrorPrinter(), Options.of().with("--dry-run", true));
 
     var actual = bach.project();

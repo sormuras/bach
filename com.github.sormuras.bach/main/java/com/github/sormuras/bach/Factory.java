@@ -1,14 +1,13 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.core.BuildAction;
-import com.github.sormuras.bach.core.CleanAction;
-import com.github.sormuras.bach.core.CompileMainCodeSpaceAction;
-import com.github.sormuras.bach.core.CompileTestCodeSpaceAction;
-import com.github.sormuras.bach.core.ExecuteTestsAction;
-import com.github.sormuras.bach.core.GenerateDocumentationAction;
-import com.github.sormuras.bach.core.GenerateImageAction;
-import com.github.sormuras.bach.core.ProjectBuilder;
-import com.github.sormuras.bach.core.WriteLogbookAction;
+import com.github.sormuras.bach.workflow.BuildWorkflow;
+import com.github.sormuras.bach.workflow.CleanWorkflow;
+import com.github.sormuras.bach.workflow.CompileMainCodeSpaceWorkflow;
+import com.github.sormuras.bach.workflow.CompileTestCodeSpaceWorkflow;
+import com.github.sormuras.bach.workflow.ExecuteTestsWorkflow;
+import com.github.sormuras.bach.workflow.GenerateDocumentationWorkflow;
+import com.github.sormuras.bach.workflow.GenerateImageWorkflow;
+import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import com.github.sormuras.bach.internal.Strings;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -40,35 +39,35 @@ public class Factory {
     return HttpClient.newBuilder().connectTimeout(timeout).followRedirects(policy);
   }
 
-  public BuildAction newBuildAction(Bach bach) {
-    return new BuildAction(bach);
+  public BuildWorkflow newBuildWorkflow(Bach bach) {
+    return new BuildWorkflow(bach);
   }
 
-  public CleanAction newCleanAction(Bach bach) {
-    return new CleanAction(bach);
+  public CleanWorkflow newCleanWorkflow(Bach bach) {
+    return new CleanWorkflow(bach);
   }
 
-  public CompileMainCodeSpaceAction newCompileMainCodeSpaceAction(Bach bach) {
-    return new CompileMainCodeSpaceAction(bach);
+  public CompileMainCodeSpaceWorkflow newCompileMainCodeSpaceWorkflow(Bach bach) {
+    return new CompileMainCodeSpaceWorkflow(bach);
   }
 
-  public CompileTestCodeSpaceAction newCompileTestCodeSpaceAction(Bach bach) {
-    return new CompileTestCodeSpaceAction(bach);
+  public CompileTestCodeSpaceWorkflow newCompileTestCodeSpaceWorkflow(Bach bach) {
+    return new CompileTestCodeSpaceWorkflow(bach);
   }
 
-  public ExecuteTestsAction newExecuteTestsAction(Bach bach) {
-    return new ExecuteTestsAction(bach);
+  public ExecuteTestsWorkflow newExecuteTestsWorkflow(Bach bach) {
+    return new ExecuteTestsWorkflow(bach);
   }
 
-  public GenerateDocumentationAction newGenerateDocumentationAction(Bach bach) {
-    return new GenerateDocumentationAction(bach);
+  public GenerateDocumentationWorkflow newGenerateDocumentationWorkflow(Bach bach) {
+    return new GenerateDocumentationWorkflow(bach);
   }
 
-  public GenerateImageAction newGenerateImageAction(Bach bach) {
-    return new GenerateImageAction(bach);
+  public GenerateImageWorkflow newGenerateImageWorkflow(Bach bach) {
+    return new GenerateImageWorkflow(bach);
   }
 
-  public WriteLogbookAction newWriteLogbookAction(Bach bach) {
-    return new WriteLogbookAction(bach);
+  public WriteLogbookWorkflow newWriteLogbookWorkflow(Bach bach) {
+    return new WriteLogbookWorkflow(bach);
   }
 }

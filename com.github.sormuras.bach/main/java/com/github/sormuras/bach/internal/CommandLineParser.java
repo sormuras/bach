@@ -1,11 +1,11 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Tool;
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Tweak;
+import com.github.sormuras.bach.tool.AnyCall;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -38,7 +38,7 @@ public final class CommandLineParser {
         if (Files.isRegularFile(file)) prepend(file);
         continue;
       }
-      var index = cache.indexOf(peeked.startsWith("--") ? deque.removeFirst() : "--action");
+      var index = cache.indexOf(peeked.startsWith("--") ? deque.removeFirst() : "--workflow");
       values[index] = read(cache.type().getRecordComponents()[index], values[index]);
     }
     return cache.newRecord(values);
@@ -65,8 +65,8 @@ public final class CommandLineParser {
     if (component.getType() == boolean.class) return true;
 
     switch (component.getName()) {
-      case "actions" -> {
-        return Action.ofCli(deque.removeFirst());
+      case "workflows" -> {
+        return Workflow.ofCli(deque.removeFirst());
       }
       case "chroot" -> {
         return Path.of(deque.removeFirst());
@@ -87,7 +87,7 @@ public final class CommandLineParser {
         var name = deque.removeFirst();
         var args = List.copyOf(deque);
         deque.clear();
-        return new Tool(name, args);
+        return new AnyCall(name, args);
       }
       case "tweaks" -> {
         return Tweak.ofCommandLine(deque::removeFirst);

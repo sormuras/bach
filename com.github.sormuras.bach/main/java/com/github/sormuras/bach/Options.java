@@ -1,12 +1,13 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
+import com.github.sormuras.bach.tool.AnyCall;
 import com.github.sormuras.bach.internal.CommandLineParser;
 import com.github.sormuras.bach.internal.Records;
 import com.github.sormuras.bach.internal.Records.Name;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
 /**
  * @param id an internal identifier for this options instance
  * @param verbose output messages about what Bach is doing
- * @param actions a list of actions to execute
+ * @param workflows a list of workflows to execute
  */
 public record Options(
     // <editor-fold desc="Internal Options">
@@ -111,7 +112,7 @@ public record Options(
             """
         --tool NAME [ARGS...]
           Run the specified tool and exit with its return value.""")
-        Optional<Tool> tool,
+        Optional<AnyCall> tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
@@ -257,14 +258,14 @@ public record Options(
         List<ExternalLibraryVersion> externalLibraryVersions,
     // </editor-fold>
 
-    // <editor-fold desc="...and ACTION!">
-    @Name("--action")
+    // <editor-fold desc="Workflows">
+    @Name("--workflow")
         @Help(
             """
-        --action ACTION
-          Execute the specified action.
+        --workflow WORKFLOW
+          Execute a workflow specified by its name.
           This option is repeatable.""")
-        List<Action> actions
+        List<Workflow> workflows
     // </editor-fold>
     ) implements Wither<Options> {
 
@@ -277,11 +278,11 @@ public record Options(
             .collect(Collectors.joining(System.lineSeparator()));
 
     return """
-        Usage: bach [OPTIONS] [ACTIONS...]
-                 to execute one or more actions in sequence
+        Usage: bach [OPTIONS] [WORKFLOW...]
+                 to execute one or more workflows in sequence
 
-        Actions may either be passed via their --action <ACTION> option at a random
-        location or by their <ACTION> name at the end of the command-line arguments.
+        Workflows may either be passed via their --workflow <WORKFLOW> option at a random
+        position or by their <WORKFLOW> name at the end of the command-line arguments.
 
         OPTIONS include:
 

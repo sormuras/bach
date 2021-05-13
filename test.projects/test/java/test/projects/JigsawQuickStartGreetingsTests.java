@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -49,7 +49,7 @@ class JigsawQuickStartGreetingsTests {
             DeclaredModuleFinder.of(),
             ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
-    var tools = Tools.of();
+    var tools = Tools.of("javac", "jar");
     var externals = Externals.of();
     return new Project(NAME, version, folders, spaces, tools, externals);
   }
@@ -64,7 +64,8 @@ class JigsawQuickStartGreetingsTests {
                 .id(NAME + " Options")
                 .with("chroot", Optional.of(root))
                 .with("verbose", true)
-                .with("actions", List.of(Action.BUILD)));
+                .with("limitTools", Optional.of("javac,jar"))
+                .with("workflows", List.of(Workflow.BUILD)));
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());

@@ -26,7 +26,7 @@ class ProcessingCodeTests {
                   %s
                 --verbose
                 --limit-tools
-                  javac,jar,javadoc
+                  javac,jar
                 --tweak
                   test
                   javac

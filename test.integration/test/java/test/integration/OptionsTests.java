@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
@@ -120,26 +120,10 @@ class OptionsTests {
               List.of(
                   new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
               List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
-              List.copyOf(EnumSet.allOf(Action.class)));
+              List.copyOf(EnumSet.allOf(Workflow.class)));
 
       var arguments =
           """
-          --action
-            BUILD
-          --action
-            CLEAN
-          --action
-            COMPILE_MAIN
-          --action
-            COMPILE_TEST
-          --action
-            EXECUTE_TESTS
-          --action
-            GENERATE_DOCUMENTATION
-          --action
-            GENERATE_IMAGE
-          --action
-            WRITE_LOGBOOK
           --bach-info
             MODULE
           --chroot
@@ -207,6 +191,22 @@ class OptionsTests {
             ARGS...
           --verbose
           --version
+          --workflow
+            BUILD
+          --workflow
+            CLEAN
+          --workflow
+            COMPILE_MAIN
+          --workflow
+            COMPILE_TEST
+          --workflow
+            EXECUTE_TESTS
+          --workflow
+            GENERATE_DOCUMENTATION
+          --workflow
+            GENERATE_IMAGE
+          --workflow
+            WRITE_LOGBOOK
           """;
 
       var actual = Options.ofCommandLineArguments(arguments);

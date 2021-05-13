@@ -1,16 +1,14 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.Action;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
-import com.github.sormuras.bach.api.UnsupportedActionException;
-import com.github.sormuras.bach.core.Commander;
-import com.github.sormuras.bach.core.CoreTrait;
-import com.github.sormuras.bach.core.ExternalModuleTrait;
-import com.github.sormuras.bach.core.HttpTrait;
-import com.github.sormuras.bach.core.PrintTrait;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.trait.ActionTrait;
+import com.github.sormuras.bach.trait.HttpTrait;
+import com.github.sormuras.bach.trait.PrintTrait;
+import com.github.sormuras.bach.trait.ResolveTrait;
+import com.github.sormuras.bach.trait.ToolTrait;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -19,13 +17,13 @@ import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements CoreTrait, HttpTrait, PrintTrait, ExternalModuleTrait, Commander {
+    implements ActionTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static Bach of(String... args) {
-    return Bach.of(Printer.ofSystem(), args);
+    return Bach.of(com.github.sormuras.bach.Printer.ofSystem(), args);
   }
 
-  public static Bach of(Printer printer, String... args) {
+  public static Bach of(com.github.sormuras.bach.Printer printer, String... args) {
     var initialOptions = Options.ofCommandLineArguments(args).id("Initial Options");
     var initialLogbook = Logbook.of(printer, initialOptions.verbose());
     initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
@@ -88,7 +86,23 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     }
 
     say(Strings.banner());
-    return runActions(options.actions());
+    if (options.verbose()) {
+      say("Configuration");
+      say(options.toString());
+    }
+    say(project.name() + " " + project.version());
+
+    var start = Instant.now();
+    try {
+      options.workflows().forEach(this::run);
+    } catch (Exception exception) {
+      logbook.log(exception);
+      return 1;
+    } finally {
+      say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
+      writeLogbook();
+    }
+    return 0;
   }
 
   private int exit(String message) {
@@ -106,40 +120,5 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     if (optional.isEmpty()) return false;
     consumer.accept(optional.get());
     return true;
-  }
-
-  private int runActions(List<Action> actions) {
-    if (options.verbose()) {
-      say("Configuration");
-      say(options.toString());
-    }
-
-    say(project.name() + " " + project.version());
-    var start = Instant.now();
-    try {
-      actions.forEach(this::runAction);
-    } catch (Exception exception) {
-      logbook.log(exception);
-      return 1;
-    } finally {
-      say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
-      writeLogbook();
-    }
-    return 0;
-  }
-
-  private void runAction(Action action) {
-    log("run(%s)".formatted(action));
-    switch (action) {
-      case BUILD -> build();
-      case CLEAN -> clean();
-      case COMPILE_MAIN -> compileMainCodeSpace();
-      case COMPILE_TEST -> compileTestCodeSpace();
-      case EXECUTE_TESTS -> executeTests();
-      case GENERATE_DOCUMENTATION -> generateDocumentation();
-      case GENERATE_IMAGE -> generateImage();
-      case WRITE_LOGBOOK -> writeLogbook();
-      default -> throw new UnsupportedActionException(action.toString());
-    }
   }
 }

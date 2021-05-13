@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.api.Action;
+import com.github.sormuras.bach.api.Workflow;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -18,10 +18,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class RunActionInEmptyDirectoryTests {
 
   @ParameterizedTest
-  @EnumSource(Action.class)
-  void action(Action action, @TempDir Path temp) throws Exception {
-    var directory = Files.createDirectory(temp.resolve(action.name()));
-    bach(0, ">>>>", "--chroot", directory, "--action", action.cli());
+  @EnumSource(Workflow.class)
+  void action(Workflow workflow, @TempDir Path temp) throws Exception {
+    var directory = Files.createDirectory(temp.resolve(workflow.name()));
+    bach(0, ">>>>", "--chroot", directory, "--workflow", workflow.cli());
   }
 
   private static void bach(int expectedStatus, String expectedOutput, Object... objects) {

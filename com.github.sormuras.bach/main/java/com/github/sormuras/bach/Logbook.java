@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.lang.System.Logger.Level;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
@@ -12,7 +13,7 @@ public record Logbook(
     boolean verbose,
     Queue<Message> messages,
     Queue<Exception> exceptions,
-    Queue<CommandResult> results) {
+    Queue<ToolRun> runs) {
 
   public static Logbook of() {
     return Logbook.of(Printer.of(), false);
@@ -34,32 +35,32 @@ public record Logbook(
   }
 
   Logbook verbose(boolean verbose) {
-    return new Logbook(printer, verbose, messages, exceptions, results);
+    return new Logbook(printer, verbose, messages, exceptions, runs);
   }
 
-  public void log(System.Logger.Level level, String text) {
+  public void log(Level level, String text) {
     messages.add(new Message(level, text));
-    if (level.getSeverity() >= System.Logger.Level.ERROR.getSeverity()) {
+    if (level.getSeverity() >= Level.ERROR.getSeverity()) {
       printer.err().println(text);
       return;
     }
-    if (level.getSeverity() >= System.Logger.Level.WARNING.getSeverity()) {
+    if (level.getSeverity() >= Level.WARNING.getSeverity()) {
       printer.out().println(text);
       return;
     }
-    if (verbose || level.getSeverity() >= System.Logger.Level.INFO.getSeverity()) {
+    if (verbose || level.getSeverity() >= Level.INFO.getSeverity()) {
       printer.out().println(text);
     }
   }
 
   public void log(Exception exception) {
-    log(System.Logger.Level.ERROR, "Exception: " + exception.toString());
+    log(Level.ERROR, "Exception: " + exception.toString());
     exceptions.add(exception);
   }
 
-  public void log(CommandResult result) {
-    if (result.isError()) log(System.Logger.Level.ERROR, "Non-zero command result: " + result);
-    results.add(result);
+  public void log(ToolRun run) {
+    if (run.isError()) log(Level.ERROR, "Non-zero tool call run: " + run);
+    runs.add(run);
   }
 
   public Stream<String> lines() {
@@ -70,5 +71,5 @@ public record Logbook(
     return messages.stream().filter(filter).map(Logbook.Message::text);
   }
 
-  public record Message(System.Logger.Level level, String text) {}
+  public record Message(Level level, String text) {}
 }

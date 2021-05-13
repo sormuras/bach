@@ -28,7 +28,7 @@ class BachTests {
   @Test
   void help(@TempDir Path temp) {
     var out = """
-        Usage: bach [OPTIONS] [ACTIONS...]
+        Usage: bach [OPTIONS] [WORKFLOW...]
         >> MESSAGE >>
         """;
     bach(0, out, "--chroot", temp, "--help");
@@ -38,7 +38,7 @@ class BachTests {
   void helpExtra(@TempDir Path temp) {
     var out =
         """
-        Usage: bach [OPTIONS] [ACTIONS...]
+        Usage: bach [OPTIONS] [WORKFLOW...]
         >> MESSAGE >>
           --chroot.*
         >> MESSAGE >>

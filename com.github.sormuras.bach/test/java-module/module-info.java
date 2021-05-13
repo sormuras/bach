@@ -5,9 +5,10 @@ open /*test*/ module com.github.sormuras.bach {
 
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.api;
-  exports com.github.sormuras.bach.api.external;
-  exports com.github.sormuras.bach.core;
+  exports com.github.sormuras.bach.locator;
   exports com.github.sormuras.bach.tool;
+  exports com.github.sormuras.bach.trait;
+  exports com.github.sormuras.bach.workflow;
 
   requires transitive java.net.http;
   requires jdk.compiler;
