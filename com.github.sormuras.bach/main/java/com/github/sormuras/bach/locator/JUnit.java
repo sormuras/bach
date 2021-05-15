@@ -10,11 +10,8 @@ public enum JUnit implements ExternalModuleLocator {
   /** Lookup modules of JUnit 5.8.0-M1 via their Maven Central artifacts. */
   V_5_8_0_M1("5.8.0-M1", "1.8.0-M1", "1.1.1", "1.2.0"),
 
-  /** Lookup modules of JUnit 5.7.1 via their Maven Central artifacts. */
-  V_5_7_1("5.7.1", "1.7.1", "1.1.1", "1.2.0"),
-
-  /** Lookup modules of JUnit 5.7.0 via their Maven Central artifacts. */
-  V_5_7_0("5.7.0", "1.7.0", "1.1.1", "1.2.0");
+  /** Lookup modules of JUnit 5.7.2 via their Maven Central artifacts. */
+  V_5_7_2("5.7.2", "1.7.2", "1.1.1", "1.2.0");
 
   public static ExternalModuleLocator of(String version) {
     try {
