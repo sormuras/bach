@@ -68,9 +68,12 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     if (options.version()) return exit(Strings.version());
     if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
     if (options.helpExtra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
-    if (options.listConfiguration()) return exit(options.toString());
-    if (options.listModules()) return exit(this::printModules);
-    if (options.listTools()) return exit(this::printTools);
+    if (options.printConfiguration()) return exit(options.toString());
+    if (options.printModules()) return exit(this::printModules);
+    if (options.printDeclaredModules()) return exit(this::printDeclaredModules);
+    if (options.printExternalModules()) return exit(this::printExternalModules);
+    if (options.printSystemModules()) return exit(this::printSystemModules);
+    if (options.printTools()) return exit(this::printTools);
     if (isPresent(options.describeTool(), this::printToolDescription)) return 0;
     if (isPresent(options.loadExternalModule(), this::loadExternalModules)) return 0;
     if (options.loadMissingExternalModules()) return exit(this::loadMissingExternalModules);

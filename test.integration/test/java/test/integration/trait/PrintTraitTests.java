@@ -18,12 +18,17 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printModules();
       assertLinesMatch(
           """
+          Declared Modules
+            No modules declared by project empty
+          External Modules
           >>>>
-          java\\.se.*
+          System Modules
           >>>>
-          jdk\\.net.*
+            java\\.se.*
           >>>>
-            \\d+ modules
+            jdk\\.net.*
+          >>>>
+              \\d+ modules
           """
               .lines(),
           actual.toString().lines());
@@ -35,7 +40,8 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printDeclaredModules();
       assertLinesMatch(
           """
-            0 modules
+          Declared Modules
+            No modules declared by project empty
           """.lines(),
           actual.toString().lines());
     }
@@ -46,7 +52,9 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printExternalModules();
       assertLinesMatch(
           """
-            \\d+ modules
+          External Modules
+          >>>>
+              \\d+ modules
           """.lines(),
           actual.toString().lines());
     }
@@ -57,29 +65,13 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printSystemModules();
       assertLinesMatch(
           """
+          System Modules
           >>>>
-          java\\.se.*
+            java\\.se.*
           >>>>
-          jdk\\.net.*
+            jdk\\.net.*
           >>>>
-            \\d+ modules
-          """
-              .lines(),
-          actual.toString().lines());
-    }
-
-    @Test
-    void printLayerModules() {
-      var actual = new StringWriter();
-      Auxiliary.newEmptyBach(actual).printLayerModules();
-      assertLinesMatch(
-          """
-          >>>>
-          java\\.se.*
-          >>>>
-          jdk\\.net.*
-          >>>>
-            \\d+ modules
+              \\d+ modules
           """
               .lines(),
           actual.toString().lines());

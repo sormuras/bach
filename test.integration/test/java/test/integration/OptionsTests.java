@@ -99,6 +99,9 @@ class OptionsTests {
               true,
               true,
               true,
+              true,
+              true,
+              true,
               Optional.of("TOOL"),
               Optional.of("MODULE"),
               true,
@@ -146,9 +149,12 @@ class OptionsTests {
             ID
           --limit-tools
             TOOL
-          --list-configuration
-          --list-modules
-          --list-tools
+          --print-configuration
+          --print-modules
+          --print-declared-modules
+          --print-external-modules
+          --print-system-modules
+          --print-tools
           --load-external-module
             MODULE
           --load-missing-external-modules

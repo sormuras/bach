@@ -47,11 +47,11 @@ class BachTests {
   }
 
   @Test
-  void listTools(@TempDir Path temp) {
+  void printTools(@TempDir Path temp) {
     var out = """
         >> TOOLS >>
         """;
-    bach(0, out, "--chroot", temp, "--list-tools");
+    bach(0, out, "--chroot", temp, "--print-tools");
   }
 
   @Test

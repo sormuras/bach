@@ -75,22 +75,37 @@ public record Options(
         --help-extra
           Print help on extra options and exit.""")
         boolean helpExtra,
-    @Name("--list-configuration")
+    @Name("--print-configuration")
         @Help(
             """
-        --list-configuration
+        --print-configuration
           Print effective configuration and exit.""")
-        boolean listConfiguration,
-    @Name("--list-modules") //
+        boolean printConfiguration,
+    @Name("--print-modules") //
         @Help("""
-        --list-modules
-          List modules and exit.""")
-        boolean listModules,
-    @Name("--list-tools") //
+        --print-modules
+          List all (declared, external, and system) modules and exit.""")
+        boolean printModules,
+    @Name("--print-declared-modules") //
         @Help("""
-        --list-tools
+        --print-declared-modules
+          List declared (main and test) modules and exit.""")
+        boolean printDeclaredModules,
+    @Name("--print-external-modules") //
+        @Help("""
+        --print-external-modules
+          List external modules and exit.""")
+        boolean printExternalModules,
+    @Name("--print-system-modules") //
+        @Help("""
+        --print-system-modules
+          List system modules and exit.""")
+        boolean printSystemModules,
+    @Name("--print-tools") //
+        @Help("""
+        --print-tools
           List tools and exit.""")
-        boolean listTools,
+        boolean printTools,
     @Name("--describe-tool")
         @Help("""
         --describe-tool TOOL
