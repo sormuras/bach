@@ -10,6 +10,7 @@ public class BuildWorkflow extends BachWorkflow {
 
   public void build() {
     bach().log("Build begin...");
+    bach().resolve();
     bach().compileMainCodeSpace();
     bach().compileTestCodeSpace();
     bach().executeTests();

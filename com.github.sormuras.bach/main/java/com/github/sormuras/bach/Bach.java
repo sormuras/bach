@@ -4,11 +4,11 @@ import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.Strings;
-import com.github.sormuras.bach.trait.ActionTrait;
 import com.github.sormuras.bach.trait.HttpTrait;
 import com.github.sormuras.bach.trait.PrintTrait;
 import com.github.sormuras.bach.trait.ResolveTrait;
 import com.github.sormuras.bach.trait.ToolTrait;
+import com.github.sormuras.bach.trait.WorkflowTrait;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
 public record Bach(Logbook logbook, Options options, Factory factory, Project project)
-    implements ActionTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
+    implements WorkflowTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static Bach of(String... args) {
     return Bach.of(com.github.sormuras.bach.Printer.ofSystem(), args);

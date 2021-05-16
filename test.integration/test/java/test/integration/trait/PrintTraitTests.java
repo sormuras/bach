@@ -35,7 +35,6 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printDeclaredModules();
       assertLinesMatch(
           """
-          TODO DECLARED
             0 modules
           """.lines(),
           actual.toString().lines());
@@ -47,7 +46,6 @@ class PrintTraitTests {
       Auxiliary.newEmptyBach(actual).printExternalModules();
       assertLinesMatch(
           """
-          >>>>
             \\d+ modules
           """.lines(),
           actual.toString().lines());

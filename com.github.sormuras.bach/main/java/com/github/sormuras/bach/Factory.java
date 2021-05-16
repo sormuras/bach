@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.workflow.ResolveWorkflow;
 import com.github.sormuras.bach.workflow.BuildWorkflow;
 import com.github.sormuras.bach.workflow.CleanWorkflow;
 import com.github.sormuras.bach.workflow.CompileMainCodeSpaceWorkflow;
@@ -41,6 +42,10 @@ public class Factory {
 
   public BuildWorkflow newBuildWorkflow(Bach bach) {
     return new BuildWorkflow(bach);
+  }
+
+  public ResolveWorkflow newResolveWorkflow(Bach bach) {
+    return new ResolveWorkflow(bach);
   }
 
   public CleanWorkflow newCleanWorkflow(Bach bach) {

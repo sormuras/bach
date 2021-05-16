@@ -196,6 +196,8 @@ class OptionsTests {
           --workflow
             CLEAN
           --workflow
+            RESOLVE
+          --workflow
             COMPILE_MAIN
           --workflow
             COMPILE_TEST

@@ -4,13 +4,14 @@ import com.github.sormuras.bach.Trait;
 import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.UnsupportedWorkflowException;
 
-public /*sealed*/ interface ActionTrait extends Trait {
+public /*sealed*/ interface WorkflowTrait extends Trait {
 
   default void run(Workflow workflow) {
     bach().log("run(%s)".formatted(workflow));
     switch (workflow) {
       case BUILD -> build();
       case CLEAN -> clean();
+      case RESOLVE -> resolve();
       case COMPILE_MAIN -> compileMainCodeSpace();
       case COMPILE_TEST -> compileTestCodeSpace();
       case EXECUTE_TESTS -> executeTests();
@@ -27,6 +28,10 @@ public /*sealed*/ interface ActionTrait extends Trait {
 
   default void clean() {
     bach().factory().newCleanWorkflow(bach()).clean();
+  }
+
+  default void resolve() {
+    bach().factory().newResolveWorkflow(bach()).resolve();
   }
 
   default void compileMainCodeSpace() {

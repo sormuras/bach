@@ -35,9 +35,8 @@ public /*sealed*/ interface PrintTrait extends Trait {
   }
 
   default void printModules(Set<ModuleOrigin> origins) {
-    var out = bach().logbook().printer().out();
     var finders = new ArrayList<ModuleFinder>();
-    if (origins.contains(ModuleOrigin.DECLARED)) out.printf("TODO %s%n", ModuleOrigin.DECLARED);
+    if (origins.contains(ModuleOrigin.DECLARED)) finders.add(bach().project().spaces().main().modules());
     if (origins.contains(ModuleOrigin.EXTERNAL)) finders.add(ModuleFinder.of(bach().project().folders().externals()));
     if (origins.contains(ModuleOrigin.SYSTEM)) finders.add(ModuleFinder.ofSystem());
     printModules(ModuleFinder.compose(finders.toArray(ModuleFinder[]::new)));

@@ -5,6 +5,7 @@ import java.util.Locale;
 public enum Workflow {
   BUILD,
   CLEAN,
+  RESOLVE,
   COMPILE_MAIN,
   COMPILE_TEST,
   EXECUTE_TESTS,

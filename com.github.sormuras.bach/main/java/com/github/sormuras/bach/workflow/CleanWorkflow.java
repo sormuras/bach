@@ -14,7 +14,7 @@ public class CleanWorkflow extends BachWorkflow {
     cleanWorkspace();
   }
 
-  public void cleanWorkspace() {
+  protected void cleanWorkspace() {
     var workspace = bach().project().folders().workspace();
     if (Files.notExists(workspace)) {
       bach().log("No workspace directory found, nothing to do here.");

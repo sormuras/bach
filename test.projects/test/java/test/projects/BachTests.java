@@ -1,6 +1,7 @@
 package test.projects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
@@ -126,6 +127,8 @@ class BachTests {
     var actual = bach.project();
     var expected = expectedProject();
     assertEquals(expected, actual);
+
+    assertTrue(bach.options().workflows().isEmpty());
     assertEquals(0, bach.run(), bach.logbook().toString());
   }
 }
