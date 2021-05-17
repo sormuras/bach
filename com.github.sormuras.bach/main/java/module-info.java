@@ -11,6 +11,9 @@
  * </ul>
  *
  * @uses com.github.sormuras.bach.Factory
+ * @uses com.github.sormuras.bach.Service.BeginOfWorkflowExecution
+ * @uses com.github.sormuras.bach.Service.EndOfWorkflowExecution
+ * @uses com.github.sormuras.bach.api.ExternalModuleLocator
  * @uses java.util.spi.ToolProvider
  */
 @com.github.sormuras.bach.api.ProjectInfo
@@ -33,6 +36,7 @@ module com.github.sormuras.bach {
   uses com.github.sormuras.bach.Factory;
   uses com.github.sormuras.bach.Service.BeginOfWorkflowExecution;
   uses com.github.sormuras.bach.Service.EndOfWorkflowExecution;
+  uses com.github.sormuras.bach.api.ExternalModuleLocator;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with

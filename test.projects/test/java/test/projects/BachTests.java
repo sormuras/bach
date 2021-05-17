@@ -14,6 +14,7 @@ import com.github.sormuras.bach.api.DeclaredModuleFinder;
 import com.github.sormuras.bach.api.DeclaredModuleReference;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ExternalModuleLocations;
+import com.github.sormuras.bach.api.ExternalModuleLocator;
 import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
@@ -28,6 +29,7 @@ import com.github.sormuras.bach.locator.JUnit;
 import java.lang.module.ModuleDescriptor;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -111,6 +113,7 @@ class BachTests {
         new Externals(
             Set.of("org.junit.platform.console"),
             List.of(
+                new MyLocator(),
                 ExternalModuleLocations.of(
                     new ExternalModuleLocation(
                         "junit",
@@ -132,5 +135,27 @@ class BachTests {
 
     assertTrue(bach.options().workflows().isEmpty());
     assertEquals(0, bach.run(), bach.logbook().toString());
+  }
+
+  private static record MyLocator() implements ExternalModuleLocator {
+    @Override
+    public Optional<ExternalModuleLocation> locate(String module) {
+      return Optional.empty();
+    }
+
+    @Override
+    public Stability stability() {
+      return Stability.STABLE;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof ExternalModuleLocator;
+    }
   }
 }

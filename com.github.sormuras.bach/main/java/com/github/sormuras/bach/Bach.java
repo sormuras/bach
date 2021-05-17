@@ -48,8 +48,8 @@ public record Bach(Configuration configuration, Project project)
     var logbook = initialLogbook.verbose(options.verbose());
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
-    var project = factory.newProjectBuilder(logbook, options).build();
     var configuration = new Configuration(logbook, module.getLayer(), options, factory);
+    var project = factory.newProjectBuilder(configuration).build();
     return new Bach(configuration, project);
   }
 

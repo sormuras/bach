@@ -27,8 +27,8 @@ public class Factory {
     return atomicHttpClient.compareAndSet(null, newClient) ? newClient : atomicHttpClient.get();
   }
 
-  public ProjectBuilder newProjectBuilder(Logbook logbook, Options options) {
-    return new ProjectBuilder(logbook, options);
+  public ProjectBuilder newProjectBuilder(Configuration configuration) {
+    return new ProjectBuilder(configuration);
   }
 
   public HttpClient.Builder newHttpClientBuilder(Bach bach) {

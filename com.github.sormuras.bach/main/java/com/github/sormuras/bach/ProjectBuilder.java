@@ -17,10 +17,10 @@ import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweaks;
-import com.github.sormuras.bach.locator.JUnit;
 import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.locator.JUnit;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -36,12 +37,14 @@ import java.util.stream.Collectors;
 
 public class ProjectBuilder {
 
+  protected final Configuration configuration;
   protected final Logbook logbook;
   protected final Options options;
 
-  public ProjectBuilder(Logbook logbook, Options options) {
-    this.logbook = logbook;
-    this.options = options;
+  public ProjectBuilder(Configuration configuration) {
+    this.configuration = configuration;
+    this.logbook = configuration.logbook();
+    this.options = configuration.options();
   }
 
   public Project build() {
@@ -117,7 +120,6 @@ public class ProjectBuilder {
             new DeclaredModuleFinder(testModules),
             buildDeclaredModulePaths(root, options.testModulePaths()));
 
-
     logbook.log(Level.DEBUG, "Main space modules: %s".formatted(main.modules().toNames(", ")));
     logbook.log(Level.DEBUG, "Test space modules: %s".formatted(test.modules().toNames(", ")));
 
@@ -141,7 +143,7 @@ public class ProjectBuilder {
     var parent = info.getParent();
     if (Strings.name(parent).equals(reference.name())) {
       var folder = buildDeclaredSourceFolder(parent);
-      var sources = SourceFolders.of( folder);
+      var sources = SourceFolders.of(folder);
       var resources = jarWithSources ? SourceFolders.of(folder) : SourceFolders.of();
       return new DeclaredModule(parent, reference, sources, resources);
     }
@@ -208,9 +210,14 @@ public class ProjectBuilder {
 
   public List<ExternalModuleLocator> buildExternalsLocators() {
     var locators = new ArrayList<ExternalModuleLocator>();
+    fillExternalsLocatorsFromServices(locators);
     fillExternalsLocatorsFromOptionModuleLocation(locators);
     fillExternalsLocatorsFromOptionLibraryVersion(locators);
     return List.copyOf(locators);
+  }
+
+  public void fillExternalsLocatorsFromServices(List<ExternalModuleLocator> locators) {
+    ServiceLoader.load(configuration.layer(), ExternalModuleLocator.class).forEach(locators::add);
   }
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
