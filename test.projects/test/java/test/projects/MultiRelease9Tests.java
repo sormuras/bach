@@ -39,7 +39,7 @@ class MultiRelease9Tests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        MultiRelease-9 0
+        Work on project MultiRelease-9 0
         >> INFO + BUILD >>
         Bach run took .+
         Logbook written to .+

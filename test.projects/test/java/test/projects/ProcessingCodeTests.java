@@ -48,7 +48,7 @@ class ProcessingCodeTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        ProcessingCode 0
+        Work on project ProcessingCode 0
         >> INFO + BUILD >>
         Bach run took .+
         Logbook written to .+

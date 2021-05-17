@@ -103,7 +103,7 @@ class SimplicissimusTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        Simplicissimus 123
+        Work on project Simplicissimus 123
         run(BUILD)
         >> BUILD >>
         Bach run took .+

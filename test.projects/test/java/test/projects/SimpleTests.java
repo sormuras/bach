@@ -40,7 +40,7 @@ class SimpleTests {
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
-        Simple 1.0.1
+        Work on project Simple 1.0.1
         >> INFO + BUILD >>
         Bach run took .+
         Logbook written to .+

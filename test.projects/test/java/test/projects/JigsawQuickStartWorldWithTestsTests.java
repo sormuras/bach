@@ -87,7 +87,7 @@ class JigsawQuickStartWorldWithTestsTests {
 
     assertLinesMatch("""
         >> BACH'S INITIALIZATION >>
-        JigsawQuickStartWorldWithTests 0
+        Work on project JigsawQuickStartWorldWithTests 0
         >> INFO + BUILD >>
         Compile 2 main modules: com.greetings, org.astro
         >>>>

@@ -93,7 +93,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
       say("Configuration");
       say(options.toString());
     }
-    say(project.name() + " " + project.version());
+    say("Work on project %s %s".formatted(project.name(), project.version()));
 
     var start = Instant.now();
     try {
