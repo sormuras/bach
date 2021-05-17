@@ -124,7 +124,7 @@ jobs:
         run: mkdir air && cd air
       - name: 'Initialize Bach using JShell''s load file feature'
         working-directory: air
-        run: jshell https://bit.io/bach-init
+        run: jshell -R-Dbach-version=17-ea https://git.io/bach-init
       - name: 'Create modular Java project'
         working-directory: air
         run: |
