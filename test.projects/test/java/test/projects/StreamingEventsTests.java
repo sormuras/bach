@@ -36,7 +36,7 @@ class StreamingEventsTests {
         >> BACH'S INITIALIZATION >>
         Work on project StreamingEvents 0
         >> INFO + BUILD >>
-        Ran 2 tests
+        Ran \\d+ tests
         Build end.
         Bach run took .+
         Logbook written to .+
