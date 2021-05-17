@@ -16,14 +16,14 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
-public record Bach(Logbook logbook, Options options, Factory factory, Project project)
+public record Bach(Configuration configuration, Project project)
     implements WorkflowTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static Bach of(String... args) {
-    return Bach.of(com.github.sormuras.bach.Printer.ofSystem(), args);
+    return Bach.of(Printer.ofSystem(), args);
   }
 
-  public static Bach of(com.github.sormuras.bach.Printer printer, String... args) {
+  public static Bach of(Printer printer, String... args) {
     var initialOptions = Options.ofCommandLineArguments(args).id("Initial Options");
     var initialLogbook = Logbook.of(printer, initialOptions.verbose());
     initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
@@ -49,22 +49,33 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
     var project = factory.newProjectBuilder(logbook, options).build();
-    return new Bach(logbook, options, factory, project);
+    var configuration = new Configuration(logbook, module.getLayer(), options, factory);
+    return new Bach(configuration, project);
   }
 
   public Bach bach() {
     return this;
   }
 
+  public Logbook logbook() {
+    return configuration.logbook();
+  }
+
+  public Options options() {
+    return configuration.options();
+  }
+
   public void say(String message) {
-    logbook.log(System.Logger.Level.INFO, message);
+    logbook().log(System.Logger.Level.INFO, message);
   }
 
   public void log(String message) {
-    logbook.log(System.Logger.Level.DEBUG, message);
+    logbook().log(System.Logger.Level.DEBUG, message);
   }
 
   public int run() {
+    var options = options();
+    var logbook = logbook();
     if (options.version()) return exit(Strings.version());
     if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
     if (options.helpExtra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
@@ -95,9 +106,12 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
     }
     say("Work on project %s %s".formatted(project.name(), project.version()));
 
+    var workflows = options.workflows();
     var start = Instant.now();
     try {
-      options.workflows().forEach(this::run);
+      Service.BeginOfWorkflowExecution.fire(this);
+      workflows.forEach(this::run);
+      Service.EndOfWorkflowExecution.fire(this);
     } catch (Exception exception) {
       logbook.log(exception);
       return 1;
@@ -109,7 +123,7 @@ public record Bach(Logbook logbook, Options options, Factory factory, Project pr
   }
 
   private int exit(String message) {
-    logbook.printer().out().println(message);
+    logbook().printer().out().println(message);
     return 0;
   }
 

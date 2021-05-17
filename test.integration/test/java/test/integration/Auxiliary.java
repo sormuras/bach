@@ -1,6 +1,7 @@
 package test.integration;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
@@ -27,8 +28,10 @@ public class Auxiliary {
   }
 
   public static Bach newEmptyBach(Logbook logbook) {
+    var layer = Bach.class.getModule().getLayer();
     var options = Options.of();
     var factory = new Factory();
+    var configuration = new Configuration(logbook, layer, options, factory);
 
     var name = "empty";
     var version = Version.parse("0");
@@ -38,7 +41,7 @@ public class Auxiliary {
     var externals = Externals.of();
     var project = new Project(name, version, folders, spaces, tools, externals);
 
-    return new Bach(logbook, options, factory, project);
+    return new Bach(configuration, project);
   }
 
   private Auxiliary() {}

@@ -59,6 +59,6 @@ public interface HttpTrait extends Trait {
   }
 
   private HttpClient http() {
-    return bach().factory().defaultHttpClient(bach());
+    return bach().configuration().factory().defaultHttpClient(bach());
   }
 }

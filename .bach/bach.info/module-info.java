@@ -66,4 +66,6 @@ module bach.info {
 
   provides com.github.sormuras.bach.Factory with
       bach.info.MyFactory;
+  provides com.github.sormuras.bach.Service.EndOfWorkflowExecution with
+      bach.info.MyFinally;
 }

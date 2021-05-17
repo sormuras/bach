@@ -23,38 +23,38 @@ public /*sealed*/ interface WorkflowTrait extends Trait {
   }
 
   default void build() {
-    bach().factory().newBuildWorkflow(bach()).build();
+    bach().configuration().factory().newBuildWorkflow(bach()).build();
   }
 
   default void clean() {
-    bach().factory().newCleanWorkflow(bach()).clean();
+    bach().configuration().factory().newCleanWorkflow(bach()).clean();
   }
 
   default void resolve() {
-    bach().factory().newResolveWorkflow(bach()).resolve();
+    bach().configuration().factory().newResolveWorkflow(bach()).resolve();
   }
 
   default void compileMainCodeSpace() {
-    bach().factory().newCompileMainCodeSpaceWorkflow(bach()).compile();
+    bach().configuration().factory().newCompileMainCodeSpaceWorkflow(bach()).compile();
   }
 
   default void compileTestCodeSpace() {
-    bach().factory().newCompileTestCodeSpaceWorkflow(bach()).compile();
+    bach().configuration().factory().newCompileTestCodeSpaceWorkflow(bach()).compile();
   }
 
   default void executeTests() {
-    bach().factory().newExecuteTestsWorkflow(bach()).execute();
+    bach().configuration().factory().newExecuteTestsWorkflow(bach()).execute();
   }
 
   default void generateDocumentation() {
-    bach().factory().newGenerateDocumentationWorkflow(bach()).generate();
+    bach().configuration().factory().newGenerateDocumentationWorkflow(bach()).generate();
   }
 
   default void generateImage() {
-    bach().factory().newGenerateImageWorkflow(bach()).generate();
+    bach().configuration().factory().newGenerateImageWorkflow(bach()).generate();
   }
 
   default void writeLogbook() {
-    bach().factory().newWriteLogbookWorkflow(bach()).write();
+    bach().configuration().factory().newWriteLogbookWorkflow(bach()).write();
   }
 }
