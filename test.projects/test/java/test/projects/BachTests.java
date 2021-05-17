@@ -46,7 +46,7 @@ class BachTests {
                     modulePath,
                     DeclaredModuleReference.of(modulePath.resolve("main/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(modulePath.resolve("main/java"))),
-                    SourceFolders.of())),
+                    SourceFolders.of(SourceFolder.of(modulePath.resolve("main/java"))))),
             ModulePaths.of(folders.externals()),
             0);
     var testBase = folders.root("test.base");
@@ -62,23 +62,25 @@ class BachTests {
                     SourceFolders.of(
                         SourceFolder.of(modulePath.resolve("test/java")),
                         SourceFolder.of(modulePath.resolve("test/java-module"))),
-                    SourceFolders.of()),
+                    SourceFolders.of(
+                        SourceFolder.of(modulePath.resolve("test/java")),
+                        SourceFolder.of(modulePath.resolve("test/java-module")))),
                 new DeclaredModule(
                     testBase,
                     DeclaredModuleReference.of(testBase.resolve("test/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(testBase.resolve("test/java"))),
-                    SourceFolders.of()),
+                    SourceFolders.of(SourceFolder.of(testBase.resolve("test/java")))),
                 new DeclaredModule(
                     testIntegration,
                     DeclaredModuleReference.of(
                         testIntegration.resolve("test/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(testIntegration.resolve("test/java"))),
-                    SourceFolders.of()),
+                    SourceFolders.of(SourceFolder.of(testIntegration.resolve("test/java")))),
                 new DeclaredModule(
                     testProjects,
                     DeclaredModuleReference.of(testProjects.resolve("test/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(testProjects.resolve("test/java"))),
-                    SourceFolders.of())),
+                    SourceFolders.of(SourceFolder.of(testProjects.resolve("test/java"))))),
             ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
     var tools =

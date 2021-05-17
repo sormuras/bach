@@ -11,7 +11,7 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
     requires = {"org.junit.platform.console"},
     // </editor-fold>
     // <editor-fold desc="Code Spaces">
-    main = @Main(modulesPatterns = {"*/main/java"}),
+    main = @Main(modulesPatterns = {"*/main/java"}, jarWithSources = true),
     test = @Test(modulesPatterns = {"*/test/java", "*/test/java-module"}),
     // </editor-fold>+
     // <editor-fold desc="Tool Tweaks">
