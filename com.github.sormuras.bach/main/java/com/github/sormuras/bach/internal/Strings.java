@@ -105,7 +105,7 @@ public class Strings {
 
   /** {@return the file name of the path as a string, or the given default name} */
   public static String nameOrElse(Path path, String defautName) {
-    var name = path.toAbsolutePath().getFileName();
+    var name = path.toAbsolutePath().normalize().getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
   }
 

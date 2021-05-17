@@ -64,6 +64,11 @@ class StringsTests {
     }
 
     @Test
+    void nameOfPathEndingWithSingleDot() {
+      assertEquals("a", Strings.nameOrElse(Path.of("a/."), "b"));
+    }
+
+    @Test
     void nameOfPathWithMoreElements() {
       assertEquals("a", Strings.name(Path.of("x/y/z/a")));
       assertEquals("a", Strings.nameOrElse(Path.of("x/y/z/a"), "b"));
