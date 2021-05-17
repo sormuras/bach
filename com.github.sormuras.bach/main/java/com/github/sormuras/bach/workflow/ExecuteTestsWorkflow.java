@@ -11,8 +11,11 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.spi.ToolProvider;
+import jdk.jfr.Event;
+import jdk.jfr.Name;
 import jdk.jfr.consumer.RecordingStream;
 
 public class ExecuteTestsWorkflow extends BachWorkflow {
@@ -38,14 +41,19 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
       return;
     }
 
+    @Name("CountDown")
+    class CountDownEvent extends Event {}
+    var latch = new CountDownLatch(1);
     var testCounter = new AtomicLong();
     try (var stream = new RecordingStream()) {
       stream.enable("org.junit.*").withoutStackTrace();
+      stream.enable("CountDown").withoutStackTrace();
       stream.onEvent("org.junit.TestExecution", __ -> testCounter.incrementAndGet());
+      stream.onEvent("CountDown", event -> latch.countDown());
       stream.startAsync();
-      Thread.sleep(1000);
       execute(modules, testsEnabled, junitEnabled);
-      Thread.sleep(1000);
+      new CountDownEvent().commit();
+      latch.await();
     } catch (InterruptedException exception) {
       bach().log("Interupted while waiting for JFR-related work...");
     }
