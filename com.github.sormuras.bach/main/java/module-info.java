@@ -31,6 +31,7 @@ module com.github.sormuras.bach {
   requires jdk.jartool;
   requires jdk.javadoc;
   requires jdk.jdeps;
+  requires jdk.jfr;
   requires jdk.jlink;
 
   uses com.github.sormuras.bach.Factory;

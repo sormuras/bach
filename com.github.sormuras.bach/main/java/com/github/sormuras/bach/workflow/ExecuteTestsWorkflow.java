@@ -4,13 +4,16 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolRun;
 import com.github.sormuras.bach.ToolRuns;
 import com.github.sormuras.bach.api.CodeSpace;
+import com.github.sormuras.bach.api.DeclaredModuleFinder;
 import com.github.sormuras.bach.tool.AnyCall;
 import com.github.sormuras.bach.trait.ToolTrait;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.spi.ToolProvider;
+import jdk.jfr.consumer.RecordingStream;
 
 public class ExecuteTestsWorkflow extends BachWorkflow {
 
@@ -29,14 +32,31 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
     var tools = bach().project().tools();
     var testsEnabled = tools.enabled("test");
     var junitEnabled = tools.enabled("junit");
-    var junitPresent = bach().findToolProvider("junit").isPresent();
 
     if (!testsEnabled && !junitEnabled) {
       bach().log("Test runs are disabled, nothing to do here.");
       return;
     }
 
+    var testCounter = new AtomicLong();
+    try (var stream = new RecordingStream()) {
+      stream.enable("org.junit.*").withoutStackTrace();
+      stream.onEvent("org.junit.TestExecution", __ -> testCounter.incrementAndGet());
+      stream.startAsync();
+      Thread.sleep(1000);
+      execute(modules, testsEnabled, junitEnabled);
+      Thread.sleep(1000);
+    } catch (InterruptedException exception) {
+      bach().log("Interupted while waiting for JFR-related work...");
+    }
+    var count = testCounter.get();
+    bach().say("Ran %d test%s".formatted(count, count == 1 ? "" : "s"));
+  }
+
+  protected void execute(DeclaredModuleFinder modules, boolean testsEnabled, boolean junitEnabled) {
     bach().log("Execute each test module");
+    var junitPresent = bach().findToolProvider("junit").isPresent();
+
     var results = new ArrayList<ToolRun>();
     for (var name : modules.toNames().toList()) {
       bach().say("Test module %s".formatted(name));
@@ -52,10 +72,10 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
       // "junit"
       if (junitEnabled && junitPresent)
         bach()
-          .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
-          .filter(provider -> provider.name().equals("junit"))
-          .map(provider -> runJUnit(provider, name))
-          .forEach(results::add);
+            .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
+            .filter(provider -> provider.name().equals("junit"))
+            .map(provider -> runJUnit(provider, name))
+            .forEach(results::add);
     }
 
     new ToolRuns(results).requireSuccessful();
