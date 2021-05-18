@@ -5,18 +5,18 @@ import com.github.sormuras.bach.ToolRun;
 import com.github.sormuras.bach.ToolRuns;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.DeclaredModuleFinder;
+import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.tool.AnyCall;
 import com.github.sormuras.bach.trait.ToolTrait;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.spi.ToolProvider;
-import jdk.jfr.Event;
-import jdk.jfr.Name;
-import jdk.jfr.consumer.RecordingStream;
+import jdk.jfr.Recording;
+import jdk.jfr.consumer.RecordingFile;
 
 public class ExecuteTestsWorkflow extends BachWorkflow {
 
@@ -41,24 +41,40 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
       return;
     }
 
-    @Name("CountDown")
-    class CountDownEvent extends Event {}
-    var latch = new CountDownLatch(1);
-    var testCounter = new AtomicLong();
-    try (var stream = new RecordingStream()) {
-      stream.enable("org.junit.*").withoutStackTrace();
-      stream.enable("CountDown").withoutStackTrace();
-      stream.onEvent("org.junit.TestExecution", __ -> testCounter.incrementAndGet());
-      stream.onEvent("CountDown", event -> latch.countDown());
-      stream.startAsync();
+    var folders = bach().project().folders();
+    var externalsFinder = ModuleFinder.of(folders.externals());
+    var junitPlatformJFR = externalsFinder.find("org.junit.platform.jfr");
+    var start = Instant.now();
+    if (junitPlatformJFR.isEmpty()) {
       execute(modules, testsEnabled, junitEnabled);
-      new CountDownEvent().commit();
-      latch.await();
-    } catch (InterruptedException exception) {
-      bach().log("Interupted while waiting for JFR-related work...");
+      var duration = Strings.toString(Duration.between(start, Instant.now()));
+      bach().say("Ran test(s) in %s".formatted(duration));
+    } else {
+      var file = folders.workspace("junit-platform.jfr");
+      try (var recording = new Recording()) {
+        recording.enable("org.junit.*").withoutStackTrace();
+        recording.setDestination(file);
+        recording.setToDisk(false);
+        recording.start();
+        execute(modules, testsEnabled, junitEnabled);
+        bach().say("Wrote flight-recording to " + file.toUri());
+      } catch (Exception exception) {
+        bach().logbook().log(exception);
+      }
+      var count = 0;
+      try {
+        var events = RecordingFile.readAllEvents(file);
+        for (var event : events) {
+          if ("org.junit.TestExecution".equals(event.getEventType().getName())) {
+            count++;
+          }
+        }
+      } catch (Exception exception) {
+        bach().logbook().log(exception);
+      }
+      var duration = Strings.toString(Duration.between(start, Instant.now()));
+      bach().say("Ran %d test%s in %s".formatted(count, count == 1 ? "" : "s", duration));
     }
-    var count = testCounter.get();
-    bach().say("Ran %d test%s".formatted(count, count == 1 ? "" : "s"));
   }
 
   protected void execute(DeclaredModuleFinder modules, boolean testsEnabled, boolean junitEnabled) {
@@ -82,8 +98,9 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
         bach()
             .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
             .filter(provider -> provider.name().equals("junit"))
+            .findFirst()
             .map(provider -> runJUnit(provider, name))
-            .forEach(results::add);
+            .map(results::add);
     }
 
     new ToolRuns(results).requireSuccessful();
