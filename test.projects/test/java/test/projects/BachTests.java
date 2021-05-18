@@ -82,7 +82,9 @@ class BachTests {
                     testProjects,
                     DeclaredModuleReference.of(testProjects.resolve("test/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(testProjects.resolve("test/java"))),
-                    SourceFolders.of(SourceFolder.of(testProjects.resolve("test/java"))))),
+                    SourceFolders.of(
+                        SourceFolder.of(testProjects.resolve("test/java")),
+                        SourceFolder.of(testProjects.resolve("test/resources"))))),
             ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
     var tools =
