@@ -52,7 +52,6 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
     } else {
       var file = folders.workspace("junit-platform.jfr");
       try (var recording = new Recording()) {
-        recording.enable("org.junit.*").withoutStackTrace();
         recording.setDestination(file);
         recording.setToDisk(false);
         recording.start();
