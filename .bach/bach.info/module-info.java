@@ -11,7 +11,10 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
     requires = {"org.junit.platform.console"},
     // </editor-fold>
     // <editor-fold desc="Code Spaces">
-    main = @Main(modulesPatterns = {"*/main/java"}, jarWithSources = true),
+    main =
+        @Main(
+            modulesPatterns = {"*/main/java"},
+            jarWithSources = true),
     test = @Test(modulesPatterns = {"*/test/java", "*/test/java-module"}),
     // </editor-fold>+
     // <editor-fold desc="Tool Tweaks">
@@ -41,12 +44,13 @@ import com.github.sormuras.bach.api.ProjectInfo.*;
               @Tweak(tool = "jlink", with = "--launcher", more = "bach=com.github.sormuras.bach"),
               @Tweak(
                   tool = "junit",
-                  with = """
-                  --config
-                    junit.jupiter.execution.parallel.enabled=true
-                  --config
-                    junit.jupiter.execution.parallel.mode.default=concurrent
-                  """),
+                  with =
+                      """
+                      --config
+                        junit.jupiter.execution.parallel.enabled=true
+                      --config
+                        junit.jupiter.execution.parallel.mode.default=concurrent
+                      """),
             }),
     // </editor-fold>
     // <editor-fold desc="External Modules">
