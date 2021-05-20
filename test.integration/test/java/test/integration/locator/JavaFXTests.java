@@ -5,16 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.api.ExternalModuleLocator;
-import com.github.sormuras.bach.locator.JavaFXModuleLocator;
+import com.github.sormuras.bach.locator.JavaFX;
 import com.github.sormuras.bach.locator.Maven;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class JavaFXModuleLocatorTests {
+class JavaFXTests {
   @Test
   void defaults() {
-    var locator = new JavaFXModuleLocator("0");
+    var locator = JavaFX.of("0");
 
     assertSame(ExternalModuleLocator.Stability.STABLE, locator.stability());
     assertTrue(locator.title().startsWith("javafx.[*] -> JavaFX 0-")); // "classifier"
@@ -34,7 +34,7 @@ class JavaFXModuleLocatorTests {
         "javafx.web"
       })
   void checkModuleIsLocatable(String module) {
-    var locator = new JavaFXModuleLocator("99", "Z");
+    var locator = JavaFX.of("99", "Z");
     var optional = locator.locate(module);
     assertTrue(optional.isPresent());
     var location = optional.orElseThrow();

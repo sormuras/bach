@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Optional;
 
 /** Locates well-known JUnit modules published at Maven Central. */
-record JUnitExternalModuleLocator(String version, List<ExternalModuleLocator> locators)
+record JUnitModuleLocator(String version, List<ExternalModuleLocator> locators)
     implements ExternalModuleLocator {
 
-  static JUnitExternalModuleLocator of(
+  static JUnitModuleLocator of(
       String jupiterVersion,
       String platformVersion,
       String apiguardianVersion,
       String opentest4jVersion) {
-    var externalModuleLocators =
+    var locators =
         List.of(
             new JUnitJupiterModuleLocator(jupiterVersion),
             new JUnitPlatformModuleLocator(platformVersion),
@@ -28,7 +28,7 @@ record JUnitExternalModuleLocator(String version, List<ExternalModuleLocator> lo
                 "org.opentest4j",
                 Maven.central("org.opentest4j", "opentest4j", opentest4jVersion)));
 
-    return new JUnitExternalModuleLocator(jupiterVersion, externalModuleLocators);
+    return new JUnitModuleLocator(jupiterVersion, locators);
   }
 
   @Override

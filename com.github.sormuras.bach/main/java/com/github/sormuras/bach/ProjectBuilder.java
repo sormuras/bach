@@ -21,6 +21,7 @@ import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.locator.JUnit;
+import com.github.sormuras.bach.locator.JavaFX;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -233,9 +234,10 @@ public class ProjectBuilder {
     var externalLibraryVersions = options.externalLibraryVersions();
     if (externalLibraryVersions.isEmpty()) return;
     for (var externalLibraryVersion : externalLibraryVersions) {
-      //noinspection SwitchStatementWithTooFewBranches
+      var version = externalLibraryVersion.version();
       switch (externalLibraryVersion.name()) {
-        case JUNIT -> locators.add(JUnit.of(externalLibraryVersion.version()));
+        case JAVAFX -> locators.add(JavaFX.of(version));
+        case JUNIT -> locators.add(JUnit.of(version));
       }
     }
   }

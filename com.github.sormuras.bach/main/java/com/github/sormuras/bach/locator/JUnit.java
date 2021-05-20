@@ -36,14 +36,13 @@ public enum JUnit implements ExternalModuleLocator {
       String platformVersion,
       String guardianVersion,
       String opentestVersion) {
-    return JUnitExternalModuleLocator.of(
-        jupiterVersion, platformVersion, guardianVersion, opentestVersion);
+    return JUnitModuleLocator.of(jupiterVersion, platformVersion, guardianVersion, opentestVersion);
   }
 
   private final ExternalModuleLocator junit;
 
   JUnit(String jupiter, String platform, String apiguardian, String opentest4j) {
-    this.junit = JUnitExternalModuleLocator.of(jupiter, platform, apiguardian, opentest4j);
+    this.junit = JUnitModuleLocator.of(jupiter, platform, apiguardian, opentest4j);
   }
 
   @Override
