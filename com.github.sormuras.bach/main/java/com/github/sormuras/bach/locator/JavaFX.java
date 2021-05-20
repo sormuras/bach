@@ -46,7 +46,7 @@ public record JavaFX(String version, String classifier) implements ExternalModul
   @Override
   public Optional<ExternalModuleLocation> locate(String module) {
     if (!module.startsWith("javafx.")) return Optional.empty();
-    var artifact = "javafx-" + module.substring(7).replace('.', '-');
+    var artifact = "javafx-" + module.substring(7);
     var uri = Maven.central(MAVEN_GROUP, artifact, version, classifier);
     return Optional.of(new ExternalModuleLocation(module, uri));
   }

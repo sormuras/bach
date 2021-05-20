@@ -20,6 +20,7 @@ import com.github.sormuras.bach.api.Tweaks;
 import com.github.sormuras.bach.internal.ComposedPathMatcher;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.locator.FXGL;
 import com.github.sormuras.bach.locator.JUnit;
 import com.github.sormuras.bach.locator.JavaFX;
 import java.lang.System.Logger.Level;
@@ -236,6 +237,7 @@ public class ProjectBuilder {
     for (var externalLibraryVersion : externalLibraryVersions) {
       var version = externalLibraryVersion.version();
       switch (externalLibraryVersion.name()) {
+        case FXGL -> locators.add(FXGL.of(version));
         case JAVAFX -> locators.add(JavaFX.of(version));
         case JUNIT -> locators.add(JUnit.of(version));
       }
