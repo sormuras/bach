@@ -2,6 +2,7 @@ package test.integration.locator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.api.ExternalModuleLocator;
@@ -45,6 +46,12 @@ class JUnitTests {
   }
 
   @Test
+  void passingUnkownAndIllegalVersionFails() {
+    var exception = assertThrows(IllegalArgumentException.class, () -> JUnit.of("123"));
+    assertEquals("JUnit version must start with `5.`, but got: 123", exception.getMessage());
+  }
+
+  @Test
   void checkJUnit580M1() {
     var junit = JUnit.V_5_8_0_M1;
     assertEquals("JUnit 5.8.0-M1", junit.title());
@@ -57,6 +64,8 @@ class JUnitTests {
     assertTrue(guardian.uri().endsWith("apiguardian-api-1.1.1.jar"));
     var opentest = junit.locate("org.opentest4j").orElseThrow();
     assertTrue(opentest.uri().endsWith("opentest4j-1.2.0.jar"));
+
+    assertTrue(junit.locate("foo").isEmpty());
   }
 
   private static void assertEndsWith(ExternalModuleLocator locator, String module, String suffix) {
