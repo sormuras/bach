@@ -1,17 +1,17 @@
 package test.base.architecture;
 
 import java.lang.Character.UnicodeScript;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 record Options(
-    Boolean a, List<String> b, Integer c, Double d, List<UnicodeScript> e, List<String> f) {
+    Boolean a, List<String> b, Integer c, Double d, List<UnicodeScript> e, List<String> f, String g) {
 
   static Options of(String... args) {
-    var options = new Options(null, null, null, null, null, null);
+    var options = new Options(null, null, null, null, null, null, null);
     for (int i = 0; i < args.length; i++) {
       var current = args[i];
       if (!current.startsWith("--")) {
@@ -31,7 +31,9 @@ record Options(
         underlay(c, Options::c, layers),
         underlay(d, Options::d, layers),
         underlay(e, Options::e, layers),
-        underlay(f, Options::f, layers));
+        underlay(f, Options::f, layers),
+        underlay(g, Options::g, layers)
+    );
   }
 
   private static <T> T underlay(T initialValue, Function<Options, T> function, Options... layers) {
@@ -44,51 +46,47 @@ record Options(
   }
 
   Options with(String option, String text) {
-    return with(Map.of(option, text == null ? Optional.empty() : Optional.of(List.of(text))));
+    return with(Map.of(option, new Value(text)));
   }
 
   Options with(String option, String text, String... more) {
-    return with(
-        Map.of(option, Optional.of(Stream.concat(Stream.of(text), Stream.of(more)).toList())));
+    return with(Map.of(option, new Value(text, more)));
   }
 
-  Options with(Map<String, Optional<List<String>>> map) {
+  private record Value(String text, String... more) {}
+
+  private Options with(Map<String, Value> map) {
     return new Options(
         withSetting(a, map.get("--a"), Boolean::parseBoolean),
         withMerging(b, map.get("--b")),
         withSetting(c, map.get("--c"), Integer::parseInt),
         withSetting(d, map.get("--d"), Double::parseDouble),
         withMerging(e, map.get("--e"), UnicodeScript::valueOf),
-        withMerging(f, map.get("--f")));
+        withMerging(f, map.get("--f")),
+        withSetting(g, map.get("--g")));
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  private static String withSetting(String old, Optional<List<String>> entry) {
-    return withSetting(old, entry, Function.identity());
+  private static String withSetting(String old, Value value) {
+    return withSetting(old, value, Function.identity());
   }
 
-  @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "OptionalAssignedToNull"})
-  private static <T> T withSetting(
-      T old, Optional<List<String>> entry, Function<String, T> mapper) {
-    if (entry == null) return old;
-    if (entry.isEmpty()) return null;
-    return entry.map(strings -> strings.get(0)).map(mapper).orElse(old);
+  private static <T> T withSetting(T old, Value value, Function<String, T> mapper) {
+    if (value == null) return old;
+    if (value.text == null) return null;
+    return mapper.apply(value.text);
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  private static List<String> withMerging(List<String> old, Optional<List<String>> entry) {
-    return withMerging(old, entry, Function.identity());
+  private static List<String> withMerging(List<String> old, Value value) {
+    return withMerging(old, value, Function.identity());
   }
 
-  @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "OptionalAssignedToNull"})
-  private static <T> List<T> withMerging(
-      List<T> old, Optional<List<String>> entry, Function<String, T> mapper) {
-    if (entry == null) return old;
-    if (entry.isEmpty()) return null;
-    if (old == null) return entry.get().stream().map(mapper).toList();
-    return entry
-        .map(strings -> Stream.concat(old.stream(), strings.stream().map(mapper)))
-        .map(Stream::toList)
-        .orElse(old);
+  private static <T> List<T> withMerging(List<T> old, Value value, Function<String, T> mapper) {
+    if (value == null) return old;
+    if (value.text == null) return null;
+    var list = new ArrayList<T>();
+    if (old != null) list.addAll(old);
+    list.add(mapper.apply(value.text));
+    Stream.of(value.more).map(mapper).forEach(list::add);
+    return List.copyOf(list);
   }
 }

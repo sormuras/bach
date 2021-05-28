@@ -2,6 +2,7 @@ package test.base.architecture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +45,16 @@ class OptionsTest {
   }
 
   @Test
+  void f() {
+    assertEquals(List.of("a"), Options.of("--f", "a").f());
+  }
+
+  @Test
+  void g() {
+    assertEquals("g", Options.of("--g", "g").g());
+  }
+
+  @Test
   void abcdefff() {
     var options =
         Options.of(
@@ -62,7 +73,7 @@ class OptionsTest {
     var options =
         Options.of()
             .underlay(
-                Options.of("--a", "true"),
+                Options.of("--a", "true", "--g", "Lorem\nipsum"),
                 Options.of("--b", "S"),
                 Options.of("--c", "1"),
                 Options.of("--d", "2.3"),
@@ -74,5 +85,11 @@ class OptionsTest {
     assertEquals(2.3, options.d());
     assertEquals(List.of(UnicodeScript.RUNIC), options.e());
     assertEquals(List.of("Hello", "World", "!"), options.f());
+    assertLinesMatch(
+            """
+            Lorem
+            ipsum
+            """.lines(),
+            options.g().lines());
   }
 }
