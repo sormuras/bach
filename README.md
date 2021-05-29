@@ -155,6 +155,8 @@ Bach will **not**...
 
 [![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://sormuras.github.io/api/bach/17-ea)
+![GitHub all releases](https://img.shields.io/github/downloads/sormuras/bach/total)
+![GitHub all releases](https://img.shields.io/github/downloads/sormuras/bach/17-ea-3/total)
 
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
