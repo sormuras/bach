@@ -36,8 +36,8 @@ class ResolveTraitTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", Optional.of(temp))
-                .with("externalModuleLocations", List.of(foo)));
+                .with("--chroot", temp.toString())
+                .with("--external-module-location", foo.toString()));
 
     bach.loadExternalModules("foo");
 
@@ -53,9 +53,10 @@ class ResolveTraitTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", Optional.of(temp))
-                .with("projectRequires", List.of("bar")) // bar requires foo
-                .with("externalModuleLocations", List.of(bar, foo)));
+                .with("--chroot", temp.toString())
+                .with("--project-requires", "bar") // bar requires foo
+                .with("--external-module-location", bar.toString())
+                .with("--external-module-location", foo.toString()));
 
     bach.loadMissingExternalModules();
 

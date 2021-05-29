@@ -177,7 +177,7 @@ public class CompileMainCodeSpaceWorkflow extends BachWorkflow {
       for (var path : paths) jar = jar.with("-C", path, ".");
     }
     // force-include sources as resources
-    if (bach().options().mainJarWithSources()
+    if (bach().options().main_jar_with_sources()
         && declared.sources().list().isEmpty()
         && declared.resources().list().isEmpty()) {
       var root = declared.root();

@@ -6,11 +6,8 @@ import java.util.function.Supplier;
 
 public record ExternalModuleLocation(String module, String uri) implements ExternalModuleLocator {
 
-  public static ExternalModuleLocation ofCommandLine(Supplier<String> supplier) {
-    var module = supplier.get();
-    var link = supplier.get();
-    var type = detectLinkType(link);
-    return ExternalModuleLocation.of(module, link, type, Maven.CENTRAL_REPOSITORY);
+  public static ExternalModuleLocation ofCommandLine(String supplier) {
+    return null;
   }
 
   public static ExternalModuleLocation ofInfo(ProjectInfo.ExternalModule info) {

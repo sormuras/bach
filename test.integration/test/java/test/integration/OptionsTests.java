@@ -57,15 +57,10 @@ class OptionsTests {
     @Test
     void compose() {
       var logbook = Logbook.of();
-      var options =
-          Options.compose(
-              "test options",
-              logbook,
-              Options.of().id("top layer"),
-              Options.of().id("1st layer").with("--verbose", true),
-              Options.of().id("2nd layer").with("--project-requires", List.of("foo")));
+      var options =Options.of().underlay(
+              Options.of().with("--verbose", "true"),
+              Options.of().with("--project-requires", "foo"));
 
-      assertEquals("test options", options.id().orElseThrow());
       assertTrue(options.verbose(), options.toString());
       assertLinesMatch(
           """
@@ -89,7 +84,6 @@ class OptionsTests {
 
       var expected =
           new Options(
-              Optional.of("ID"),
               true,
               true,
               true,
@@ -102,23 +96,23 @@ class OptionsTests {
               true,
               true,
               true,
-              Optional.of("TOOL"),
-              Optional.of("MODULE"),
+              "TOOL",
+              "MODULE",
               true,
-              Optional.empty(), // Optional.of(Command.of("TOOL", "ARGS...")),
-              Optional.of(Path.of("PATH")),
-              Optional.of("MODULE"),
-              Optional.of("NAME"),
-              Optional.of(Version.parse("0-ea+VERSION")),
+              null, // Optional.of(Command.of("TOOL", "ARGS...")),
+              Path.of("PATH"),
+              "MODULE",
+              "NAME",
+              Version.parse("0-ea+VERSION"),
               List.of("M1", "M2"),
               List.of("*", "**"),
               List.of("PATH", "PATH"),
-              Optional.of(9),
+              9,
               true,
               List.of("test", "**/test", "**/test/**"),
               List.of("PATH", "PATH"),
-              Optional.of("TOOL"),
-              Optional.of("TOOL"),
+              List.of("TOOL"),
+              List.of("TOOL"),
               List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
               List.of(
                   new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),

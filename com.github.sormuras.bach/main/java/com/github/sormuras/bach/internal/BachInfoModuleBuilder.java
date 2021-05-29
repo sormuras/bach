@@ -24,9 +24,9 @@ public record BachInfoModuleBuilder(Logbook logbook, Options options) {
   }
 
   public Module build() {
-    var root = options.chrootOrDefault();
+    var root = options.chroot();
     var infoFolder = root.resolve(".bach").normalize();
-    var infoModule = options.bachInfoOrDefault();
+    var infoModule = options.bach_info();
     var layer = newModuleLayer(infoModule, infoFolder);
     return layer.findModule(infoModule).orElse(Bach.class.getModule());
   }

@@ -8,9 +8,7 @@ public record ExternalLibraryVersion(ExternalLibraryName name, String version) {
     return new ExternalLibraryVersion(info.name(), info.version());
   }
 
-  public static ExternalLibraryVersion ofCommandLine(Supplier<String> supplier) {
-    var name = ExternalLibraryName.ofCli(supplier.get());
-    var version = supplier.get();
-    return new ExternalLibraryVersion(name, version);
+  public static ExternalLibraryVersion ofCommandLine(String supplier) {
+    return null;
   }
 }
