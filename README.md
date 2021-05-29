@@ -13,6 +13,35 @@ in a declarative manner back to Bach using pure Java syntax.
 
 Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), and ❌ [Non-Goals](#non-goals)
 
+## Prelude & Build bach with bach
+
+- Install [JDK] 16 or later. For convenient JDK switching install bhttps://sdkman.io and choose a 16-open.
+  ```text
+  > sdk install java 16-open
+
+- Open a terminal and verify `java --version` and `jshell --version` reports at least Java 16.
+  ```text
+  > java --version                                          > jshell --version
+  openjdk 16 2021-03-16                                     jshell 16
+  ```
+- Create a new directory and change into it.
+  ```text
+  > mkdir air && cd air
+  ```
+- Clone
+  ```text
+  > git clone https://github.com/sormuras/bach.git
+
+  ```
+- Build 
+Change into folder & build 
+  ```text
+  > cd Bach
+  > java bootstrap.java
+  
+  On Windows try                                            UNIX/Mac Machines try 
+  > .bach\bin\bach build                                  .bach/bin/bach build
+
 ## Motivation
 
 The JDK contains a set of foundation tools but none of them guides developers from processing Java source files into
