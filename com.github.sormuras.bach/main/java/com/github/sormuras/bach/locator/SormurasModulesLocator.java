@@ -40,7 +40,7 @@ public class SormurasModulesLocator implements ExternalModuleLocator {
   }
 
   private synchronized Map<String, String> loadUris() throws Exception {
-    var dir = configuration.folders().workspace("external-tools", "sormuras-modules", version);
+    var dir = configuration.folders().tools("sormuras-modules", version);
     var name = "com.github.sormuras.modules@" + version + ".jar";
     var file = dir.resolve(name);
     if (!Files.exists(file)) {
