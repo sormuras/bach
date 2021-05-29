@@ -23,6 +23,7 @@ import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.locator.FXGL;
 import com.github.sormuras.bach.locator.JUnit;
 import com.github.sormuras.bach.locator.JavaFX;
+import com.github.sormuras.bach.locator.SormurasModulesLocator;
 import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Files;
@@ -240,6 +241,7 @@ public class ProjectBuilder {
         case FXGL -> locators.add(FXGL.of(version));
         case JAVAFX -> locators.add(JavaFX.of(version));
         case JUNIT -> locators.add(JUnit.of(version));
+        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(version));
       }
     }
   }
