@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.trait;
 
+import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Trait;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
@@ -16,12 +17,18 @@ import java.util.stream.Stream;
 
 public /*sealed*/ interface ResolveTrait extends Trait {
 
+  @SuppressWarnings("removal")
   private String computeExternalModuleUri(String module) {
-    var bach = bach();
-    var externals = bach.project().externals();
-    var found = externals.findExternal(module).orElseThrow(() -> new FindException(module));
-    bach().log("%s <- %s (by %s)".formatted(module, found.location().uri(), found.by().title()));
-    return found.location().uri();
+    var externals = bach().project().externals();
+    for (var locator : externals.locators()) {
+      if (locator instanceof Bach.Acceptor acceptor) acceptor.accept(bach());
+      var location = locator.locate(module);
+      if (location.isEmpty()) continue;
+      var uri = location.get().uri();
+      bach().log("%s <- %s (by %s)".formatted(module, uri, locator.title()));
+      return uri;
+    }
+    throw new FindException(module);
   }
 
   private Path computeExternalModuleFile(String module) {
