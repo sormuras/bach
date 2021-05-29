@@ -112,9 +112,9 @@ public record Bach(Configuration configuration, Project project)
     var workflows = options.workflows();
     var start = Instant.now();
     try {
-      Service.BeginOfWorkflowExecution.fire(this);
+      ExtensionPoint.BeginOfWorkflowExecution.fire(this);
       workflows.forEach(this::run);
-      Service.EndOfWorkflowExecution.fire(this);
+      ExtensionPoint.EndOfWorkflowExecution.fire(this);
     } catch (Exception exception) {
       logbook.log(exception);
       return 1;

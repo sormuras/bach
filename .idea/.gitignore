@@ -1,4 +1,7 @@
 out/
 shelf/
+sonarlint/
+dbnavigator.xml
 uiDesigner.xml
 workspace.xml
+

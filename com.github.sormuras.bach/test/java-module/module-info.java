@@ -20,8 +20,8 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses com.github.sormuras.bach.Factory;
-  uses com.github.sormuras.bach.Service.BeginOfWorkflowExecution;
-  uses com.github.sormuras.bach.Service.EndOfWorkflowExecution;
+  uses com.github.sormuras.bach.ExtensionPoint.BeginOfWorkflowExecution;
+  uses com.github.sormuras.bach.ExtensionPoint.EndOfWorkflowExecution;
   uses com.github.sormuras.bach.api.ExternalModuleLocator;
   uses java.util.spi.ToolProvider;
 

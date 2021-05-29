@@ -1,13 +1,13 @@
 package bach.info;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Service;
+import com.github.sormuras.bach.ExtensionPoint;
 import com.github.sormuras.bach.api.CodeSpace;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.StringJoiner;
 
-public class MyFinally implements Service.EndOfWorkflowExecution {
+public class MyFinally implements ExtensionPoint.EndOfWorkflowExecution {
 
   @Override
   public void onEndOfWorkflowExecution(Event event) {

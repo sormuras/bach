@@ -2,9 +2,9 @@ package com.github.sormuras.bach;
 
 import java.util.ServiceLoader;
 
-public interface Service {
+public interface ExtensionPoint {
 
-  interface BeginOfWorkflowExecution extends Service {
+  interface BeginOfWorkflowExecution extends ExtensionPoint {
 
     record Event(Bach bach) {}
 
@@ -17,7 +17,7 @@ public interface Service {
     }
   }
 
-  interface EndOfWorkflowExecution extends Service {
+  interface EndOfWorkflowExecution extends ExtensionPoint {
 
     record Event(Bach bach) {}
 

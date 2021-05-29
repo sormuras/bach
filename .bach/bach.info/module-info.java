@@ -1,6 +1,7 @@
 import static com.github.sormuras.bach.api.CodeSpace.*;
 import static com.github.sormuras.bach.api.ExternalLibraryName.*;
 
+import com.github.sormuras.bach.ExtensionPoint;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.ProjectInfo.*;
 
@@ -72,6 +73,6 @@ module bach.info {
       bach.info.MyFactory;
   provides com.github.sormuras.bach.api.ExternalModuleLocator with
       bach.info.MyLocator;
-  provides com.github.sormuras.bach.Service.EndOfWorkflowExecution with
+  provides ExtensionPoint.EndOfWorkflowExecution with
       bach.info.MyFinally;
 }
