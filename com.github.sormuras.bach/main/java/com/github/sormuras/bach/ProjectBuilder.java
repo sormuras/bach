@@ -52,7 +52,7 @@ public class ProjectBuilder {
 
   public Project build() {
     logbook.log(Level.DEBUG, "Project object being built by " + getClass());
-    logbook.log(Level.DEBUG, "Read values from options with id: " + options.id());
+    logbook.log(Level.DEBUG, "Read values from options with id: " + options);
     var name = buildProjectName();
     var version = buildProjectVersion();
     var folders = configuration.folders();
@@ -63,15 +63,15 @@ public class ProjectBuilder {
   }
 
   public String buildProjectName() {
-    var name = options.projectName().orElse(null);
+    var name = options.project_name();
     if (name == null || name.equals(".")) {
-      return Strings.nameOrElse(options.chrootOrDefault(), "noname");
+      return Strings.nameOrElse(options.chroot(), "noname");
     }
     return name;
   }
 
   public Version buildProjectVersion() {
-    return options.projectVersion().orElseThrow();
+    return options.project_version();
   }
 
   public Spaces buildSpaces(Folders folders) {
@@ -85,10 +85,10 @@ public class ProjectBuilder {
     var mainModules = new TreeMap<String, DeclaredModule>();
     var testModules = new TreeMap<String, DeclaredModule>();
 
-    var mainMatcher = ComposedPathMatcher.ofGlobModules(options.mainModulePatterns());
-    var testMatcher = ComposedPathMatcher.ofGlobModules(options.testModulePatterns());
+    var mainMatcher = ComposedPathMatcher.ofGlobModules(options.main_module_pattern());
+    var testMatcher = ComposedPathMatcher.ofGlobModules(options.test_module_pattern());
 
-    var jarWithSources = options.mainJarWithSources();
+    var jarWithSources = options.main_jar_with_sources();
     for (var path : paths) {
       if (Paths.countName(path, ".bach") >= 1) {
         logbook.log(Level.TRACE, "Skip module %s - its path contains `.bach`".formatted(path));
@@ -109,15 +109,16 @@ public class ProjectBuilder {
       logbook.log(Level.TRACE, "Skip module %s - no match for main nor test space".formatted(path));
     }
 
+    var javaRelease = options.main_java_release();
     var main =
         new CodeSpaceMain(
             new DeclaredModuleFinder(mainModules),
-            buildDeclaredModulePaths(root, options.mainModulePaths()),
-            options.mainJavaRelease().orElse(Runtime.version().feature()));
+            buildDeclaredModulePaths(root, options.main_module_path()),
+            javaRelease != null ? javaRelease : Runtime.version().feature());
     var test =
         new CodeSpaceTest(
             new DeclaredModuleFinder(testModules),
-            buildDeclaredModulePaths(root, options.testModulePaths()));
+            buildDeclaredModulePaths(root, options.test_module_path()));
 
     logbook.log(Level.DEBUG, "Main space modules: %s".formatted(main.modules().toNames(", ")));
     logbook.log(Level.DEBUG, "Test space modules: %s".formatted(test.modules().toNames(", ")));
@@ -184,17 +185,17 @@ public class ProjectBuilder {
   }
 
   public Set<String> buildToolsLimits() {
-    if (options.limitTools().isEmpty()) return Set.of();
-    return Set.of(options.limitTools().get().split(","));
+    if (options.limit_tool().isEmpty()) return Set.of();
+    return Set.copyOf(options.limit_tool());
   }
 
   public Set<String> buildToolsSkips() {
-    if (options.skipTools().isEmpty()) return Set.of();
-    return Set.of(options.skipTools().get().split(","));
+    if (options.skip_tool().isEmpty()) return Set.of();
+    return Set.copyOf(options.skip_tool());
   }
 
   public Tweaks buildToolsTweaks() {
-    return new Tweaks(options.tweaks().stream().toList());
+    return new Tweaks(options.tweak().stream().toList());
   }
 
   public Externals buildExternals() {
@@ -204,7 +205,7 @@ public class ProjectBuilder {
   }
 
   public Set<String> buildExternalsRequires() {
-    return Set.copyOf(options.projectRequires());
+    return Set.copyOf(options.project_requires());
   }
 
   public List<ExternalModuleLocator> buildExternalsLocators() {
@@ -220,7 +221,7 @@ public class ProjectBuilder {
   }
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
-    var externalModuleLocations = options.externalModuleLocations();
+    var externalModuleLocations = options.external_module_location();
     if (externalModuleLocations.isEmpty()) return;
     var map =
         externalModuleLocations.stream()
@@ -229,7 +230,7 @@ public class ProjectBuilder {
   }
 
   public void fillExternalsLocatorsFromOptionLibraryVersion(List<ExternalModuleLocator> locators) {
-    var externalLibraryVersions = options.externalLibraryVersions();
+    var externalLibraryVersions = options.external_library_version();
     if (externalLibraryVersions.isEmpty()) return;
     for (var externalLibraryVersion : externalLibraryVersions) {
       var version = externalLibraryVersion.version();

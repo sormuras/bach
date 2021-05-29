@@ -61,14 +61,13 @@ class SimplicissimusTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .id(name + " Options")
-                .with("chroot", Optional.of(root))
-                .with("verbose", true)
-                .with("limitTools", Optional.of("javac,jar"))
-                .with("projectVersion", Optional.of(Version.parse("123")))
-                .with("mainJavaRelease", Optional.of(9))
-                .with("mainJarWithSources", true)
-                .with("workflows", List.of(Workflow.BUILD)));
+                .with("chroot", root.toString())
+                .with("verbose", "true")
+                .with("limitTools", "javac,jar")
+                .with("projectVersion", "123")
+                .with("mainJavaRelease", "9")
+                .with("mainJarWithSources", "true")
+                .with("workflows", "build"));
 
     var expectedProject = expectedProject();
     assertEquals(expectedProject.name(), bach.project().name());

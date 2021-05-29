@@ -28,17 +28,13 @@ class TweakTests {
   @Test
   void cli() {
     var source = new Tweak(EnumSet.allOf(CodeSpace.class), "trigger", List.of("a", "b", "c"));
-    var deque = new ArrayDeque<>(
-        """
+    var target = Tweak.ofCommandLine("""
         main,test
         trigger
-        3
         a
         b
         c
-        """.lines().toList()
-    );
-    var target = Tweak.ofCommandLine(deque::removeFirst);
+        """);
     assertEquals(source, target);
     assertTrue(target.isForSpace(CodeSpace.MAIN));
     assertTrue(target.isForSpace(CodeSpace.TEST));

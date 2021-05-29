@@ -25,31 +25,30 @@ public record Bach(Configuration configuration, Project project)
   }
 
   public static Bach of(Printer printer, String... args) {
-    var initialOptions = Options.ofCommandLineArguments(args).id("Initial Options");
+    var initialOptions = Options.ofCommandLineArguments(args);
     var initialLogbook = Logbook.of(printer, initialOptions.verbose());
     initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
     return Bach.of(initialLogbook, initialOptions);
   }
 
   public static Bach of(Logbook initialLogbook, Options initialOptions) {
-    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(initialOptions.id()));
-    var root = initialOptions.chrootOrDefault();
-    var module = new BachInfoModuleBuilder(initialLogbook, initialOptions).build();
+    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(initialOptions));
+    var bootOptions = initialOptions.underlay(Options.ofDefaultValues());
+    var root = bootOptions.chroot();
+    var module = new BachInfoModuleBuilder(initialLogbook, bootOptions).build();
     var defaultInfo = Bach.class.getModule().getAnnotation(ProjectInfo.class);
     var info = Optional.ofNullable(module.getAnnotation(ProjectInfo.class)).orElse(defaultInfo);
     var options =
-        Options.compose(
-            "Options",
-            initialLogbook,
-            initialOptions,
+        initialOptions.underlay(
             Options.ofFile(root.resolve("bach.args")),
-            Options.ofCommandLineArguments(info.arguments()).id("@ProjectInfo#arguments()"),
-            Options.ofProjectInfo(info));
+            Options.ofCommandLineArguments(info.arguments()),
+            Options.ofProjectInfo(info),
+            Options.ofDefaultValues());
 
     var logbook = initialLogbook.verbose(options.verbose());
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
-    var folders = Folders.of(options.chrootOrDefault());
+    var folders = Folders.of(root);
     var configuration = new Configuration(logbook, module.getLayer(), options, factory, folders);
     var project = factory.newProjectBuilder(configuration).build();
     return new Bach(configuration, project);
@@ -80,18 +79,18 @@ public record Bach(Configuration configuration, Project project)
     var logbook = logbook();
     if (options.version()) return exit(Strings.version());
     if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
-    if (options.helpExtra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
-    if (options.printConfiguration()) return exit(options.toString());
-    if (options.printModules()) return exit(this::printModules);
-    if (options.printDeclaredModules()) return exit(this::printDeclaredModules);
-    if (options.printExternalModules()) return exit(this::printExternalModules);
-    if (options.printSystemModules()) return exit(this::printSystemModules);
-    if (options.printTools()) return exit(this::printTools);
-    if (isPresent(options.describeTool(), this::printToolDescription)) return 0;
-    if (isPresent(options.loadExternalModule(), this::loadExternalModules)) return 0;
-    if (options.loadMissingExternalModules()) return exit(this::loadMissingExternalModules);
-    if (options.tool().isPresent()) {
-      var tool = options.tool().get();
+    if (options.help_extra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
+    if (options.print_configuration()) return exit(options.toString());
+    if (options.print_modules()) return exit(this::printModules);
+    if (options.print_declared_modules()) return exit(this::printDeclaredModules);
+    if (options.print_external_modules()) return exit(this::printExternalModules);
+    if (options.print_system_modules()) return exit(this::printSystemModules);
+    if (options.print_tools()) return exit(this::printTools);
+    if (isPresent(options.describe_tool(), this::printToolDescription)) return 0;
+    if (isPresent(options.load_external_module(), this::loadExternalModules)) return 0;
+    if (options.load_missing_external_modules()) return exit(this::loadMissingExternalModules);
+    if (options.tool() != null) {
+      var tool = options.tool();
       var name = tool.name();
       var args = tool.arguments().toArray(String[]::new);
       var out = logbook.printer().out();
@@ -108,7 +107,7 @@ public record Bach(Configuration configuration, Project project)
     }
     say("Work on project %s %s".formatted(project.name(), project.version()));
 
-    var workflows = options.workflows();
+    var workflows = options.workflow();
     var start = Instant.now();
     try {
       ExtensionPoint.BeginOfWorkflowExecution.fire(this);
@@ -135,9 +134,9 @@ public record Bach(Configuration configuration, Project project)
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  private <T> boolean isPresent(Optional<T> optional, Consumer<T> consumer) {
-    if (optional.isEmpty()) return false;
-    consumer.accept(optional.get());
+  private <T> boolean isPresent(T optional, Consumer<T> consumer) {
+    if (optional == null) return false;
+    consumer.accept(optional);
     return true;
   }
 }

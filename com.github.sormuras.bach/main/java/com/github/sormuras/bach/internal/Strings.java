@@ -4,7 +4,9 @@ import com.github.sormuras.bach.Bach;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.math.BigInteger;
@@ -135,6 +137,14 @@ public class Strings {
     return pattern;
   }
 
-  /** Hidden default constructor. */
+	public static List<String> lines(Path file) {
+		try {
+			return Files.readAllLines(file);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	/** Hidden default constructor. */
   private Strings() {}
 }

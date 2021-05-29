@@ -69,7 +69,7 @@ public /*sealed*/ interface ToolTrait extends Trait {
   }
 
   default ToolRuns run(Stream<? extends ToolCall<?>> calls) {
-    var sequentially = bach().options().runCommandsSequentially();
+    var sequentially = bach().options().run_commands_sequentially();
     var stream = sequentially ? calls.sequential() : calls;
     var parallel = stream.isParallel();
     bach().log("Stream tool calls %s".formatted(parallel ? "in parallel" : "sequentially"));
@@ -99,7 +99,7 @@ public /*sealed*/ interface ToolTrait extends Trait {
     var start = Instant.now();
     int code;
     try {
-      var dry = bach().options().dryRun();
+      var dry = bach().options().dry_run();
       var enabled = !dry && bach().project().tools().enabled(name);
       if (enabled) bach().say("  %-8s %s".formatted(name, description));
       else bach().log("Skip " + name);

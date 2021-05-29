@@ -20,13 +20,12 @@ public record Tweak(Set<CodeSpace> spaces, String trigger, List<String> argument
     return new Tweak(spaces, trigger, List.copyOf(arguments));
   }
 
-  public static Tweak ofCommandLine(Supplier<String> supplier) {
-    var namesOfSpaces = Stream.of(supplier.get().split(","));
+  public static Tweak ofCommandLine(String tweaks) {
+    var lines = tweaks.lines().toList();
+    var namesOfSpaces = Stream.of(lines.get(0).split(","));
     var spaces = EnumSet.copyOf(namesOfSpaces.map(CodeSpace::ofCli).toList());
-    var trigger = supplier.get();
-    var count = Integer.parseInt(supplier.get());
-    var arguments = IntStream.range(0, count).mapToObj(__ -> supplier.get()).toList();
-    return new Tweak(spaces, trigger, arguments);
+    var trigger = lines.get(1);
+    return new Tweak(spaces, trigger, lines.size() <= 2 ? List.of() : lines.subList(2, lines.size()));
   }
 
   public boolean isForSpace(CodeSpace space) {

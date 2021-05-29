@@ -129,13 +129,13 @@ class BachTests {
 
   @Test
   void build() {
-    var bach = Bach.of(Logbook.ofErrorPrinter(), Options.of().with("--dry-run", true));
+    var bach = Bach.of(Logbook.ofErrorPrinter(), Options.of().with("--dry-run", "true"));
 
     var actual = bach.project();
     var expected = expectedProject();
     assertEquals(expected, actual);
 
-    assertTrue(bach.options().workflows().isEmpty());
+    assertTrue(bach.options().workflow().isEmpty());
     assertEquals(0, bach.run(), bach.logbook().toString());
   }
 
