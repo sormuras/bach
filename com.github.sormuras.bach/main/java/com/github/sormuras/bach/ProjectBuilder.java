@@ -55,7 +55,7 @@ public class ProjectBuilder {
     logbook.log(Level.DEBUG, "Read values from options with id: " + options.id());
     var name = buildProjectName();
     var version = buildProjectVersion();
-    var folders = buildFolders();
+    var folders = configuration.folders();
     var spaces = buildSpaces(folders);
     var tools = buildTools();
     var externals = buildExternals();
@@ -72,10 +72,6 @@ public class ProjectBuilder {
 
   public Version buildProjectVersion() {
     return options.projectVersion().orElseThrow();
-  }
-
-  public Folders buildFolders() {
-    return Folders.of(options.chrootOrDefault());
   }
 
   public Spaces buildSpaces(Folders folders) {
@@ -241,7 +237,7 @@ public class ProjectBuilder {
         case FXGL -> locators.add(FXGL.of(version));
         case JAVAFX -> locators.add(JavaFX.of(version));
         case JUNIT -> locators.add(JUnit.of(version));
-        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(version));
+        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(version, configuration));
       }
     }
   }

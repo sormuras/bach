@@ -20,7 +20,7 @@ class HttpTraitTests {
   @Test
   void read(@Singleton(VolatileServer.class) WebServer server) {
     var bach = Auxiliary.newEmptyBach();
-    var actual = bach.httpRead(server.uri("index.html").toString());
+    var actual = bach.configuration().httpRead(server.uri("index.html").toString());
     assertLinesMatch("""
         Hello World!
         """.lines(), actual.lines());
@@ -38,7 +38,7 @@ class HttpTraitTests {
       throws Exception {
     var bach = Auxiliary.newEmptyBach();
     var file = temp.resolve("target");
-    bach.httpLoad(server.uri("123.bytes").toString(), file);
+    bach.configuration().httpLoad(server.uri("123.bytes").toString(), file);
     assertLinesMatch(
         """
         Load .+target from http.+
@@ -57,7 +57,7 @@ class HttpTraitTests {
     var file123 = temp.resolve("file123");
     var file456 = temp.resolve("file456");
     var file789 = temp.resolve("file789");
-    bach.httpLoad(
+    bach.configuration().httpLoad(
         Map.of(
             server.uri("123.bytes").toString(), file123,
             server.uri("456.bytes").toString(), file456,

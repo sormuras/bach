@@ -31,11 +31,11 @@ public class Auxiliary {
     var layer = Bach.class.getModule().getLayer();
     var options = Options.of();
     var factory = new Factory();
-    var configuration = new Configuration(logbook, layer, options, factory);
+    var folders = Folders.of("");
+    var configuration = new Configuration(logbook, layer, options, factory, folders);
 
     var name = "empty";
     var version = Version.parse("0");
-    var folders = Folders.of("");
     var spaces = Spaces.of(CodeSpaceMain.empty(), CodeSpaceTest.empty());
     var tools = Tools.of();
     var externals = Externals.of();

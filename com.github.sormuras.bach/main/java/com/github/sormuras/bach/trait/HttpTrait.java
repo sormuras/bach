@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.trait;
 
+import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.Trait;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,10 +12,12 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public interface HttpTrait extends Trait {
+public interface HttpTrait  {
+
+  Configuration configuration();
 
   default void httpLoad(String uri, Path file) {
-    bach().log("Load %s from %s".formatted(file, uri));
+    configuration().logbook().debug("Load %s from %s".formatted(file, uri));
     var request = HttpRequest.newBuilder(URI.create(uri)).build();
     try {
       Files.createDirectories(file.getParent());
@@ -25,13 +28,13 @@ public interface HttpTrait extends Trait {
   }
 
   default void httpLoad(Map<String, Path> map) {
-    bach().log("Load %d file%s".formatted(map.size(), map.size() == 1 ? "" : "s"));
+    configuration().logbook().debug("Load %d file%s".formatted(map.size(), map.size() == 1 ? "" : "s"));
     if (map.isEmpty()) return;
     var futures = new ArrayList<CompletableFuture<Path>>();
     for (var entry : map.entrySet()) {
       var uri = entry.getKey();
       var file = entry.getValue();
-      bach().log("Load %s from %s".formatted( file, uri));
+      configuration().logbook().debug("Load %s from %s".formatted( file, uri));
       try {
         Files.createDirectories(file.getParent());
       } catch (Exception exception) {
@@ -49,7 +52,7 @@ public interface HttpTrait extends Trait {
   }
 
   default String httpRead(URI uri) {
-    bach().log("Read %s".formatted(uri));
+    configuration().logbook().debug("Read %s".formatted(uri));
     var request = HttpRequest.newBuilder(uri).build();
     try {
       return http().send(request, HttpResponse.BodyHandlers.ofString()).body();
@@ -59,6 +62,6 @@ public interface HttpTrait extends Trait {
   }
 
   private HttpClient http() {
-    return bach().configuration().factory().defaultHttpClient(bach());
+    return configuration().factory().defaultHttpClient(configuration());
   }
 }

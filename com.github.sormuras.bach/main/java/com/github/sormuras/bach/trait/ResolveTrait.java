@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.trait;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Trait;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
@@ -17,11 +16,9 @@ import java.util.stream.Stream;
 
 public /*sealed*/ interface ResolveTrait extends Trait {
 
-  @SuppressWarnings("removal")
   private String computeExternalModuleUri(String module) {
     var externals = bach().project().externals();
     for (var locator : externals.locators()) {
-      if (locator instanceof Bach.Acceptor acceptor) acceptor.accept(bach());
       var location = locator.locate(module);
       if (location.isEmpty()) continue;
       var uri = location.get().uri();
@@ -68,9 +65,9 @@ public /*sealed*/ interface ResolveTrait extends Trait {
     UnaryOperator<String> uri = this::computeExternalModuleUri;
     Function<String, Path> jar = this::computeExternalModuleFile;
     if (modules.length == 1) {
-      bach().httpLoad(uri.apply(modules[0]), jar.apply(modules[0]));
+      bach().configuration().httpLoad(uri.apply(modules[0]), jar.apply(modules[0]));
     } else {
-      bach().httpLoad(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
+      bach().configuration().httpLoad(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
     }
     bach().say("%s module%s loaded".formatted(modules.length, s));
   }

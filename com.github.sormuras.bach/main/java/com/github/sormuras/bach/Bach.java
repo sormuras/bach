@@ -1,14 +1,15 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.Strings;
-import com.github.sormuras.bach.trait.HttpTrait;
 import com.github.sormuras.bach.trait.PrintTrait;
 import com.github.sormuras.bach.trait.ResolveTrait;
 import com.github.sormuras.bach.trait.ToolTrait;
 import com.github.sormuras.bach.trait.WorkflowTrait;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -17,10 +18,7 @@ import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
 public record Bach(Configuration configuration, Project project)
-    implements WorkflowTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
-
-  @Deprecated(forRemoval = true)
-  public interface Acceptor extends Consumer<Bach> {}
+    implements WorkflowTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
@@ -51,7 +49,8 @@ public record Bach(Configuration configuration, Project project)
     var logbook = initialLogbook.verbose(options.verbose());
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
-    var configuration = new Configuration(logbook, module.getLayer(), options, factory);
+    var folders = Folders.of(options.chrootOrDefault());
+    var configuration = new Configuration(logbook, module.getLayer(), options, factory, folders);
     var project = factory.newProjectBuilder(configuration).build();
     return new Bach(configuration, project);
   }
@@ -69,11 +68,11 @@ public record Bach(Configuration configuration, Project project)
   }
 
   public void say(String message) {
-    logbook().log(System.Logger.Level.INFO, message);
+    logbook().info(message);
   }
 
   public void log(String message) {
-    logbook().log(System.Logger.Level.DEBUG, message);
+    logbook().debug(message);
   }
 
   public int run() {

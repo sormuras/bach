@@ -20,10 +20,10 @@ public class Factory {
 
   public Factory() {}
 
-  public HttpClient defaultHttpClient(Bach bach) {
+  public HttpClient defaultHttpClient(Configuration configuration) {
     var oldClient = atomicHttpClient.get();
     if (oldClient != null) return oldClient;
-    var newClient = newHttpClientBuilder(bach).build();
+    var newClient = newHttpClientBuilder(configuration).build();
     return atomicHttpClient.compareAndSet(null, newClient) ? newClient : atomicHttpClient.get();
   }
 
@@ -31,10 +31,10 @@ public class Factory {
     return new ProjectBuilder(configuration);
   }
 
-  public HttpClient.Builder newHttpClientBuilder(Bach bach) {
+  public HttpClient.Builder newHttpClientBuilder(Configuration configuration) {
     var timeout = Duration.ofSeconds(9);
     var policy = HttpClient.Redirect.NORMAL;
-    bach.log(
+    configuration.logbook().debug(
         "New HttpClient.Builder with %s connect timeout and %s redirect policy"
             .formatted(Strings.toString(timeout), policy));
     return HttpClient.newBuilder().connectTimeout(timeout).followRedirects(policy);

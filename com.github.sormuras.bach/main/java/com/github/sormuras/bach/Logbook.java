@@ -38,6 +38,14 @@ public record Logbook(
     return new Logbook(printer, verbose, messages, exceptions, runs);
   }
 
+  public void debug(String message) {
+    log(System.Logger.Level.DEBUG, message);
+  }
+
+  public void info(String message) {
+    log(System.Logger.Level.INFO, message);
+  }
+
   public void log(Level level, String text) {
     messages.add(new Message(level, text));
     if (level.getSeverity() >= Level.ERROR.getSeverity()) {
@@ -62,6 +70,7 @@ public record Logbook(
     if (run.isError()) log(Level.ERROR, "Non-zero tool call run: " + run);
     runs.add(run);
   }
+
 
   public Stream<String> lines() {
     return lines(__ -> true);
