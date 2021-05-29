@@ -19,6 +19,9 @@ import java.util.function.Consumer;
 public record Bach(Configuration configuration, Project project)
     implements WorkflowTrait, HttpTrait, PrintTrait, ResolveTrait, ToolTrait {
 
+  @Deprecated(forRemoval = true)
+  public interface Acceptor extends Consumer<Bach> {}
+
   public static Bach of(String... args) {
     return Bach.of(Printer.ofSystem(), args);
   }
