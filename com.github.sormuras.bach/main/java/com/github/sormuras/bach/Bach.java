@@ -26,7 +26,8 @@ public record Bach(Configuration configuration, Project project)
 
   public static Bach of(Printer printer, String... args) {
     var initialOptions = Options.ofCommandLineArguments(args);
-    var initialLogbook = Logbook.of(printer, initialOptions.verbose());
+    var verbose = initialOptions.verbose();
+    var initialLogbook = Logbook.of(printer, verbose != null ? verbose : false);
     initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
     return Bach.of(initialLogbook, initialOptions);
   }
@@ -41,7 +42,7 @@ public record Bach(Configuration configuration, Project project)
     var options =
         initialOptions.underlay(
             Options.ofFile(root.resolve("bach.args")),
-            Options.ofCommandLineArguments(info.arguments()),
+            Options.ofCommandLineArguments(Strings.unroll(info.arguments()).toList()),
             Options.ofProjectInfo(info),
             Options.ofDefaultValues());
 
@@ -133,7 +134,6 @@ public record Bach(Configuration configuration, Project project)
     return 0;
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private <T> boolean isPresent(T optional, Consumer<T> consumer) {
     if (optional == null) return false;
     consumer.accept(optional);

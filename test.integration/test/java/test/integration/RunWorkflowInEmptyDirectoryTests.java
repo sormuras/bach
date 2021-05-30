@@ -15,13 +15,13 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class RunActionInEmptyDirectoryTests {
+public class RunWorkflowInEmptyDirectoryTests {
 
   @ParameterizedTest
   @EnumSource(Workflow.class)
-  void action(Workflow workflow, @TempDir Path temp) throws Exception {
+  void workflow(Workflow workflow, @TempDir Path temp) throws Exception {
     var directory = Files.createDirectory(temp.resolve(workflow.name()));
-    bach(0, ">>>>", "--chroot", directory, "--workflow", workflow.cli());
+    bach(0, ">>>>", "--chroot", directory, "--workflow", workflow.name());
   }
 
   private static void bach(int expectedStatus, String expectedOutput, Object... objects) {

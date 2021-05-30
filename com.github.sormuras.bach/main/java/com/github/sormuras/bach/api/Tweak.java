@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public record Tweak(Set<CodeSpace> spaces, String trigger, List<String> arguments) {
@@ -20,12 +18,14 @@ public record Tweak(Set<CodeSpace> spaces, String trigger, List<String> argument
     return new Tweak(spaces, trigger, List.copyOf(arguments));
   }
 
-  public static Tweak ofCommandLine(String tweaks) {
-    var lines = tweaks.lines().toList();
+  public static Tweak of(String string) {
+    var lines = string.lines().toList();
+    var size = lines.size();
+    if (size < 2) throw new IllegalArgumentException("Too few tweak lines in: " + string);
     var namesOfSpaces = Stream.of(lines.get(0).split(","));
     var spaces = EnumSet.copyOf(namesOfSpaces.map(CodeSpace::ofCli).toList());
     var trigger = lines.get(1);
-    return new Tweak(spaces, trigger, lines.size() <= 2 ? List.of() : lines.subList(2, lines.size()));
+    return new Tweak(spaces, trigger, size == 2 ? List.of() : lines.subList(2, size));
   }
 
   public boolean isForSpace(CodeSpace space) {

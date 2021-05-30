@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.Tweak;
-import java.util.ArrayDeque;
+
 import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class TweakTests {
   @Test
   void cli() {
     var source = new Tweak(EnumSet.allOf(CodeSpace.class), "trigger", List.of("a", "b", "c"));
-    var target = Tweak.ofCommandLine("""
+    var target = Tweak.of("""
         main,test
         trigger
         a

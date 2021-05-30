@@ -6,12 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.ExternalModuleLocation;
 import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import test.base.resource.ResourceManager;
@@ -31,13 +28,12 @@ class ResolveTraitTests {
 
   @Test
   void loadFoo(@Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var foo = new ExternalModuleLocation("foo", server.uri("foo.jar").toString());
     var bach =
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
                 .with("--chroot", temp.toString())
-                .with("--external-module-location", foo.toString()));
+                .with("--external-module-location", "foo=" + server.uri("foo.jar")));
 
     bach.loadExternalModules("foo");
 
@@ -47,16 +43,14 @@ class ResolveTraitTests {
 
   @Test
   void loadMissingExternalModules(@Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var bar = new ExternalModuleLocation("bar", server.uri("bar.jar").toString());
-    var foo = new ExternalModuleLocation("foo", server.uri("foo.jar").toString());
     var bach =
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
                 .with("--chroot", temp.toString())
                 .with("--project-requires", "bar") // bar requires foo
-                .with("--external-module-location", bar.toString())
-                .with("--external-module-location", foo.toString()));
+                .with("--external-module-location", "bar=" + server.uri("bar.jar"))
+                .with("--external-module-location", "foo=" + server.uri("foo.jar")));
 
     bach.loadMissingExternalModules();
 

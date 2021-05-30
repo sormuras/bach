@@ -76,10 +76,12 @@ class JigsawQuickStartWorldWithTestsTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", root.toString())
-                .with("verbose", "true")
-                .with("limitTools", "javac,jar,test")
-                .with("workflows", "build"));
+                .with("--chroot", root.toString())
+                .with("--verbose", "true")
+                .with("--limit-tool", "javac")
+                .with("--limit-tool", "jar")
+                .with("--limit-tool", "test")
+                .with("--workflow", "build"));
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());

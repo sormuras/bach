@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -20,10 +19,9 @@ import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
+import com.github.sormuras.bach.tool.AnyCall;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
@@ -57,17 +55,18 @@ class SimplicissimusTests {
   void build() {
     var name = "Simplicissimus";
     var root = Path.of("test.projects", name);
-    var bach =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.of()
-                .with("chroot", root.toString())
-                .with("verbose", "true")
-                .with("limitTools", "javac,jar")
-                .with("projectVersion", "123")
-                .with("mainJavaRelease", "9")
-                .with("mainJarWithSources", "true")
-                .with("workflows", "build"));
+    var args =
+        new AnyCall("bach")
+            .with("--chroot", root)
+            .with("--verbose")
+            .with("--limit-tool", "javac")
+            .with("--limit-tool", "jar")
+            .with("--project-version", "123")
+            .with("--main-java-release", 9)
+            .with("--main-jar-with-sources")
+            .with("build")
+            .arguments();
+    var bach = Bach.of(Logbook.ofErrorPrinter(), Options.ofCommandLineArguments(args));
 
     var expectedProject = expectedProject();
     assertEquals(expectedProject.name(), bach.project().name());
@@ -77,26 +76,6 @@ class SimplicissimusTests {
     assertEquals(expectedProject.tools(), bach.project().tools());
     assertEquals(expectedProject.externals(), bach.project().externals());
     assertEquals(expectedProject, bach.project());
-
-    var cli =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.ofCommandLineArguments(
-                """
-                --chroot
-                  %s
-                --verbose
-                --limit-tools
-                  javac,jar
-                --project-version
-                  123
-                --main-java-release
-                  9
-                --main-jar-with-sources
-                build
-                """.formatted(root)));
-
-    assertEquals(expectedProject, cli.project());
 
     assertEquals(0, bach.run(), () -> bach.logbook().toString());
     assertLinesMatch(
