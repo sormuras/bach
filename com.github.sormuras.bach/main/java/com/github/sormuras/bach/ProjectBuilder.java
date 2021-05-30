@@ -40,14 +40,14 @@ import java.util.stream.Collectors;
 
 public class ProjectBuilder {
 
-  protected final Configuration configuration;
+  protected final Core core;
   protected final Logbook logbook;
   protected final Options options;
 
-  public ProjectBuilder(Configuration configuration) {
-    this.configuration = configuration;
-    this.logbook = configuration.logbook();
-    this.options = configuration.options();
+  public ProjectBuilder(Core core) {
+    this.core = core;
+    this.logbook = core.logbook();
+    this.options = core.options();
   }
 
   public Project build() {
@@ -55,7 +55,7 @@ public class ProjectBuilder {
     logbook.log(Level.DEBUG, "Read values from options with id: " + options);
     var name = buildProjectName();
     var version = buildProjectVersion();
-    var folders = configuration.folders();
+    var folders = core.folders();
     var spaces = buildSpaces(folders);
     var tools = buildTools();
     var externals = buildExternals();
@@ -217,7 +217,7 @@ public class ProjectBuilder {
   }
 
   public void fillExternalsLocatorsFromServices(List<ExternalModuleLocator> locators) {
-    ServiceLoader.load(configuration.layer(), ExternalModuleLocator.class).forEach(locators::add);
+    ServiceLoader.load(core.layer(), ExternalModuleLocator.class).forEach(locators::add);
   }
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
@@ -238,7 +238,7 @@ public class ProjectBuilder {
         case FXGL -> locators.add(FXGL.of(version));
         case JAVAFX -> locators.add(JavaFX.of(version));
         case JUNIT -> locators.add(JUnit.of(version));
-        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(version, configuration));
+        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(core, version));
       }
     }
   }

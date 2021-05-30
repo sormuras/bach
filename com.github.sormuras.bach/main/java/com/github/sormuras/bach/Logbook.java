@@ -71,7 +71,6 @@ public record Logbook(
     runs.add(run);
   }
 
-
   public Stream<String> lines() {
     return lines(__ -> true);
   }

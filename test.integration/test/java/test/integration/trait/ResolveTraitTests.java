@@ -16,6 +16,7 @@ import test.base.resource.ResourceManager.Singleton;
 import test.base.resource.TempDir;
 import test.base.resource.WebServer;
 import test.integration.Auxiliary;
+import test.integration.VolatileServer;
 
 @ExtendWith(ResourceManager.class)
 class ResolveTraitTests {

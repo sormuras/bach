@@ -65,9 +65,9 @@ public /*sealed*/ interface ResolveTrait extends Trait {
     UnaryOperator<String> uri = this::computeExternalModuleUri;
     Function<String, Path> jar = this::computeExternalModuleFile;
     if (modules.length == 1) {
-      bach().configuration().httpLoad(uri.apply(modules[0]), jar.apply(modules[0]));
+      bach().core().httpLoad(uri.apply(modules[0]), jar.apply(modules[0]));
     } else {
-      bach().configuration().httpLoad(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
+      bach().core().httpLoad(Stream.of(modules).collect(Collectors.toMap(uri, jar)));
     }
     bach().say("%s module%s loaded".formatted(modules.length, s));
   }

@@ -9,7 +9,6 @@ import com.github.sormuras.bach.trait.PrintTrait;
 import com.github.sormuras.bach.trait.ResolveTrait;
 import com.github.sormuras.bach.trait.ToolTrait;
 import com.github.sormuras.bach.trait.WorkflowTrait;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +16,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
-public record Bach(Configuration configuration, Project project)
+public record Bach(Core core, Project project)
     implements WorkflowTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static Bach of(String... args) {
@@ -50,9 +49,9 @@ public record Bach(Configuration configuration, Project project)
     var service = ServiceLoader.load(module.getLayer(), Factory.class);
     var factory = service.findFirst().orElseGet(Factory::new);
     var folders = Folders.of(root);
-    var configuration = new Configuration(logbook, module.getLayer(), options, factory, folders);
-    var project = factory.newProjectBuilder(configuration).build();
-    return new Bach(configuration, project);
+    var core = new Core(logbook, module.getLayer(), options, factory, folders);
+    var project = factory.newProjectBuilder(core).build();
+    return new Bach(core, project);
   }
 
   public Bach bach() {
@@ -60,11 +59,11 @@ public record Bach(Configuration configuration, Project project)
   }
 
   public Logbook logbook() {
-    return configuration.logbook();
+    return core.logbook();
   }
 
   public Options options() {
-    return configuration.options();
+    return core.options();
   }
 
   public void say(String message) {

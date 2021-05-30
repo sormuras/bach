@@ -20,21 +20,21 @@ public class Factory {
 
   public Factory() {}
 
-  public HttpClient defaultHttpClient(Configuration configuration) {
+  public HttpClient defaultHttpClient(Core core) {
     var oldClient = atomicHttpClient.get();
     if (oldClient != null) return oldClient;
-    var newClient = newHttpClientBuilder(configuration).build();
+    var newClient = newHttpClientBuilder(core).build();
     return atomicHttpClient.compareAndSet(null, newClient) ? newClient : atomicHttpClient.get();
   }
 
-  public ProjectBuilder newProjectBuilder(Configuration configuration) {
-    return new ProjectBuilder(configuration);
+  public ProjectBuilder newProjectBuilder(Core core) {
+    return new ProjectBuilder(core);
   }
 
-  public HttpClient.Builder newHttpClientBuilder(Configuration configuration) {
+  public HttpClient.Builder newHttpClientBuilder(Core core) {
     var timeout = Duration.ofSeconds(9);
     var policy = HttpClient.Redirect.NORMAL;
-    configuration.logbook().debug(
+    core.logbook().debug(
         "New HttpClient.Builder with %s connect timeout and %s redirect policy"
             .formatted(Strings.toString(timeout), policy));
     return HttpClient.newBuilder().connectTimeout(timeout).followRedirects(policy);

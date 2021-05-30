@@ -1,7 +1,6 @@
-package com.github.sormuras.bach.trait;
+package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.Configuration;
-import com.github.sormuras.bach.Trait;
+import com.github.sormuras.bach.api.Folders;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,12 +11,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public interface HttpTrait  {
+public record Core(
+    Logbook logbook, ModuleLayer layer, Options options, Factory factory, Folders folders) {
 
-  Configuration configuration();
-
-  default void httpLoad(String uri, Path file) {
-    configuration().logbook().debug("Load %s from %s".formatted(file, uri));
+  public void httpLoad(String uri, Path file) {
+    logbook.debug("Load %s from %s".formatted(file, uri));
     var request = HttpRequest.newBuilder(URI.create(uri)).build();
     try {
       Files.createDirectories(file.getParent());
@@ -27,14 +25,14 @@ public interface HttpTrait  {
     }
   }
 
-  default void httpLoad(Map<String, Path> map) {
-    configuration().logbook().debug("Load %d file%s".formatted(map.size(), map.size() == 1 ? "" : "s"));
+  public void httpLoad(Map<String, Path> map) {
+    logbook.debug("Load %d file%s".formatted(map.size(), map.size() == 1 ? "" : "s"));
     if (map.isEmpty()) return;
     var futures = new ArrayList<CompletableFuture<Path>>();
     for (var entry : map.entrySet()) {
       var uri = entry.getKey();
       var file = entry.getValue();
-      configuration().logbook().debug("Load %s from %s".formatted( file, uri));
+      logbook.debug("Load %s from %s".formatted(file, uri));
       try {
         Files.createDirectories(file.getParent());
       } catch (Exception exception) {
@@ -47,12 +45,12 @@ public interface HttpTrait  {
     CompletableFuture.allOf(futures.toArray(CompletableFuture<?>[]::new)).join();
   }
 
-  default String httpRead(String uri) {
+  public String httpRead(String uri) {
     return httpRead(URI.create(uri));
   }
 
-  default String httpRead(URI uri) {
-    configuration().logbook().debug("Read %s".formatted(uri));
+  public String httpRead(URI uri) {
+    logbook.debug("Read %s".formatted(uri));
     var request = HttpRequest.newBuilder(uri).build();
     try {
       return http().send(request, HttpResponse.BodyHandlers.ofString()).body();
@@ -62,6 +60,6 @@ public interface HttpTrait  {
   }
 
   private HttpClient http() {
-    return configuration().factory().defaultHttpClient(configuration());
+    return factory.defaultHttpClient(this);
   }
 }

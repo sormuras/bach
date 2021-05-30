@@ -276,7 +276,7 @@ public record Options(
       var peeked = arguments.peekFirst().strip();
       if (peeked.startsWith("@")) {
         var file = Path.of(arguments.removeFirst().substring(1));
-        List<String> lines = Strings.lines(file);
+        var lines = Strings.lines(file);
         var iterator = lines.listIterator(lines.size());
         while (iterator.hasPrevious()) arguments.addFirst(iterator.previous().strip());
       }

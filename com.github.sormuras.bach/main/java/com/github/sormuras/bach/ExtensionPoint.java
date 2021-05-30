@@ -12,7 +12,7 @@ public interface ExtensionPoint {
 
     static void fire(Bach bach) {
       var event = new Event(bach);
-      ServiceLoader.load(bach.configuration().layer(), BeginOfWorkflowExecution.class)
+      ServiceLoader.load(bach.core().layer(), BeginOfWorkflowExecution.class)
           .forEach(service -> service.onBeginOfWorkflowExecution(event));
     }
   }
@@ -25,7 +25,7 @@ public interface ExtensionPoint {
 
     static void fire(Bach bach) {
       var context = new Event(bach);
-      ServiceLoader.load(bach.configuration().layer(), EndOfWorkflowExecution.class)
+      ServiceLoader.load(bach.core().layer(), EndOfWorkflowExecution.class)
           .forEach(service -> service.onEndOfWorkflowExecution(context));
     }
   }

@@ -1,10 +1,10 @@
-package test.integration.trait;
+package test.integration;
 
 import java.util.Base64;
 import java.util.Map;
 import test.base.resource.WebServer;
 
-class VolatileServer extends WebServer {
+public class VolatileServer extends WebServer {
 
   @Override
   protected Map<String, Asset> createAssets() {
