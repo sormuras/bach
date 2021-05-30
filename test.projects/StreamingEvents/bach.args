@@ -3,5 +3,4 @@
 --project-requires
   org.junit.platform.jfr
 --external-library-version
-  JUnit
-  5.7.2
+  JUnit=5.7.2

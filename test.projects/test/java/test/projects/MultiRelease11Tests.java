@@ -18,21 +18,16 @@ class MultiRelease11Tests {
     var name = "MultiRelease-11";
     var root = Path.of("test.projects", name);
     var bach =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.ofCommandLineArguments(
-                """
-                --chroot
-                  %s
-                --verbose
-                --limit-tools
-                  javac,jar
-                --main-java-release
-                  9
-                --main-jar-with-sources
-                build
-                """
-                    .formatted(root)));
+            Bach.of(
+                    Logbook.ofErrorPrinter(),
+                    Options.of()
+                            .with("--chroot", root.toString())
+                            .with("--verbose", "true")
+                            .with("--limit-tool", "javac")
+                            .with("--limit-tool", "jar")
+                            .with("--main-java-release", "11")
+                            .with("--main-jar-with-sources", "true")
+                            .with("--workflow", "build"));
 
     assertEquals(0, bach.run(), bach.logbook().toString());
 

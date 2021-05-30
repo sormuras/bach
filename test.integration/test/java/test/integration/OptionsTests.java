@@ -2,25 +2,25 @@ package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Tweak;
+import com.github.sormuras.bach.api.Workflow;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
+
+import com.github.sormuras.bach.tool.AnyCall;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,47 +38,49 @@ class OptionsTests {
     }
 
     @TestFactory
-    Stream<DynamicTest> flagsAreFalse() {
-      return Stream.of(Options.class.getRecordComponents())
-          .filter(component -> component.getType() == boolean.class)
-          .map(this::flagIsFalse);
+    Stream<DynamicTest> componentIsNull() {
+      return Stream.of(Options.class.getRecordComponents()).map(this::componentIsNull);
     }
 
-    DynamicTest flagIsFalse(RecordComponent component) {
+    private DynamicTest componentIsNull(RecordComponent component) {
       return DynamicTest.dynamicTest(
-          "%s flag is false".formatted(component.getName()),
-          () -> assertFalse((boolean) component.getAccessor().invoke(empty)));
+          "%s is null".formatted(component.getName()),
+          () -> assertNull(component.getAccessor().invoke(empty)));
     }
   }
 
   @Nested
-  class ComposeTests {
+  class DefaultOptionsTests {
+    final Options defaults = Options.ofDefaultValues();
 
-    @Test
-    void compose() {
-      var logbook = Logbook.of();
-      var options =Options.of().underlay(
-              Options.of().with("--verbose", "true"),
-              Options.of().with("--project-requires", "foo"));
+    @TestFactory
+    Stream<DynamicTest> flagIsFalse() {
+      return Stream.of(Options.class.getRecordComponents())
+              .filter(component -> component.getType() == Boolean.class)
+              .map(this::flagIsFalse);
+    }
 
-      assertTrue(options.verbose(), options.toString());
-      assertLinesMatch(
-          """
-          Compose options from 3 layers
-          [0] = top layer
-          [1] = 1st layer
-          [2] = 2nd layer
-          >>>>
-          [1] verbose -> true
-          [2] projectRequires -> [foo]
-          """
-              .lines(),
-          logbook.lines());
+    private DynamicTest flagIsFalse(RecordComponent component) {
+      return DynamicTest.dynamicTest(
+              "%s is false".formatted(component.getName()),
+              () -> assertFalse((Boolean) component.getAccessor().invoke(defaults)));
+    }
+
+    @TestFactory
+    Stream<DynamicTest> listIsNotNull() {
+      return Stream.of(Options.class.getRecordComponents())
+              .filter(component -> component.getType() == List.class)
+              .map(this::listIsNotNull);
+    }
+
+    private DynamicTest listIsNotNull(RecordComponent component) {
+      return DynamicTest.dynamicTest(
+              "%s is not null".formatted(component.getName()),
+              () -> assertNotNull(component.getAccessor().invoke(defaults)));
     }
   }
 
-  @Nested
-  class LinesTests {
+
     @Test
     void withEverything() {
 
@@ -99,7 +101,7 @@ class OptionsTests {
               "TOOL",
               "MODULE",
               true,
-              null, // Optional.of(Command.of("TOOL", "ARGS...")),
+              new AnyCall("NAME").with("ARG1", "ARG2"),
               Path.of("PATH"),
               "MODULE",
               "NAME",
@@ -129,19 +131,14 @@ class OptionsTests {
             TOOL
           --dry-run
           --external-library-version
-            JUNIT
-            VERSION
+            JUNIT=VERSION
           --external-module-location
-            M1
-            U1
+            M1=U1
           --external-module-location
-            M2
-            U2
+            M2=U2
           --help
           --help-extra
-          --id
-            ID
-          --limit-tools
+          --limit-tool
             TOOL
           --print-configuration
           --print-modules
@@ -172,7 +169,7 @@ class OptionsTests {
           --project-version
             0-ea+VERSION
           --run-commands-sequentially
-          --skip-tools
+          --skip-tool
             TOOL
           --test-module-path
             PATH
@@ -185,10 +182,7 @@ class OptionsTests {
           --test-module-pattern
             **/test/**
           --tweak
-            main,test
-            TRIGGER
-            1
-            ARGS...
+            main,test\\nTRIGGER\\nARGS...
           --verbose
           --version
           --workflow
@@ -209,10 +203,14 @@ class OptionsTests {
             GENERATE_IMAGE
           --workflow
             WRITE_LOGBOOK
+          --tool
+            NAME
+            ARG1
+            ARG2
           """;
 
-      var actual = Options.ofCommandLineArguments(arguments);
+      var actual = Options.ofCommandLineArguments(arguments.lines().map(String::translateEscapes).toList());
       assertEquals(expected, actual);
     }
-  }
+
 }

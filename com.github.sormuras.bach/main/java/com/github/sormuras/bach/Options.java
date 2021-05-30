@@ -8,7 +8,6 @@ import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.tool.AnyCall;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -22,10 +21,12 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,170 +35,159 @@ public record Options(
     @Help("""
         --verbose
           Output messages about what Bach is doing.""")
-    Boolean verbose,
+        Boolean verbose,
     @Help("""
         --dry-run
           Prevent command execution.
         """)
-    Boolean dry_run,
-    @Help(
-        """
+        Boolean dry_run,
+    @Help("""
 		--run-commands-sequentially
 			Prevent parallel execution of commands.
 		""")
-    Boolean run_commands_sequentially,
+        Boolean run_commands_sequentially,
     // </editor-fold>
 
     // <editor-fold desc="Run'N Exit Command Options">
     @Help("""
         --version
-          Print version information and exit.""")
-    Boolean version,
+          Print version information and exit.""") Boolean version,
     @Help("""
         --help
-          Print this help message and exit.""")
-    Boolean help,
+          Print this help message and exit.""") Boolean help,
     @Help("""
         --help-extra
           Print help on extra options and exit.""")
-    Boolean help_extra,
-    @Help(
-        """
+        Boolean help_extra,
+    @Help("""
 		--print-configuration
 			Print effective configuration and exit.""")
-    Boolean print_configuration,
-    @Help("""
+        Boolean print_configuration,
+    @Help(
+            """
         --print-modules
           List all (declared, external, and system) modules and exit.""")
-    Boolean print_modules,
-    @Help("""
+        Boolean print_modules,
+    @Help(
+            """
         --print-declared-modules
           List declared (main and test) modules and exit.""")
-    Boolean print_declared_modules,
+        Boolean print_declared_modules,
     @Help("""
         --print-external-modules
           List external modules and exit.""")
-    Boolean print_external_modules,
+        Boolean print_external_modules,
     @Help("""
         --print-system-modules
           List system modules and exit.""")
-    Boolean print_system_modules,
+        Boolean print_system_modules,
     @Help("""
         --print-tools
-          List tools and exit.""")
-    Boolean print_tools,
+          List tools and exit.""") Boolean print_tools,
     @Help("""
         --describe-tool TOOL
           Describe tool and exit.""")
-    String describe_tool,
+        String describe_tool,
     @Help("""
         --load-external-module MODULE
           Load an external module.""")
-    String load_external_module,
-    @Help(
-        """
+        String load_external_module,
+    @Help("""
 		--load-missing-external-modules
 			Load all missing external modules.""")
-    Boolean load_missing_external_modules,
+        Boolean load_missing_external_modules,
     @Help(
-        """
+            """
 		--tool NAME [ARGS...]
 			Run the specified tool and exit with its return value.""")
-    AnyCall tool,
+        AnyCall tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
     @Extra
-    @Help(
-        """
+        @Help(
+            """
 						--chroot PATH
 							Change virtually into the specified directory by resolving all generated
 							paths against the given PATH before passing them as arguments to tools.
 						""")
-    Path chroot,
-    @Extra
-    @Help(
-        """
+        Path chroot,
+    @Extra @Help("""
 						--bach-info MODULE
 							Defaults to: bach.info
 						""")
-    String bach_info,
+        String bach_info,
     // </editor-fold>
 
     // <editor-fold desc="Project Options">
     @Help("""
           --project-name NAME
-          """)
-    String project_name,
+          """) String project_name,
     @Help("""
           --project-version VERSION
-          """)
-    Version project_version,
-    @Help(
-        """
+          """) Version project_version,
+    @Help("""
 			--project-requires MODULE
 				This option is repeatable.
 			""")
-    List<String> project_requires,
+        List<String> project_requires,
     // </editor-fold>
 
     // <editor-fold desc="Main Code Space Options">
     @Help(
-        """
+            """
 			--main-module-pattern NAME
 				Specify where to find module-info.java files for the main code space.
 				This option is repeatable.
 			""")
-    List<String> main_module_pattern,
+        List<String> main_module_pattern,
     @Help(
-        """
+            """
 			--main-module-path PATH
 				Specify where to find modules for compiling main modules.
 				This option is repeatable.
 			""")
-    List<String> main_module_path,
+        List<String> main_module_path,
     @Help(
-        """
+            """
 			--main-java-release RELEASE
 				Compile main modules for the specified Java SE release.
 			""")
-    Integer main_java_release,
+        Integer main_java_release,
     @Help(
-        """
+            """
 		--main-jar-with-sources
 			Include all files found in source folders into their modular JAR files.
 		""")
-    Boolean main_jar_with_sources,
+        Boolean main_jar_with_sources,
     // </editor-fold>
 
     // <editor-fold desc="Test Code Space Options">
     @Help(
-        """
+            """
 			--test-module-pattern NAME
 				Specify where to find module-info.java files for the test code space.
 				This option is repeatable.
 			""")
-    List<String> test_module_pattern,
+        List<String> test_module_pattern,
     @Help(
-        """
+            """
 			--test-module-path PATH
 				Specify where to find modules for compiling and running test modules.
 				This option is repeatable.
 			""")
-    List<String> test_module_path,
+        List<String> test_module_path,
     // </editor-fold>
 
     // <editor-fold desc="Tools & Tweaks">
     @Help("""
         --limit-tool TOOL(,TOOL)*
-        """)
-    List<String> limit_tool,
+        """) List<String> limit_tool,
     @Help("""
         --skip-tool TOOL(,TOOL)*
-        """)
-    List<String> skip_tool,
+        """) List<String> skip_tool,
     @Help(
-        """
+            """
 			--tweak SPACE(,SPACE)* TRIGGER COUNT ARG [ARGS...]
 				Additional command-line arguments passed to tool runs matching the specified trigger.
 				Examples:
@@ -205,12 +195,12 @@ public record Options(
 					--tweak main javac 2 -encoding UTF-8
 				This option is repeatable.
 			""")
-    List<Tweak> tweak,
+        List<Tweak> tweak,
     // </editor-fold>
 
     // <editor-fold desc="External Modules and Libraries">
     @Help(
-        """
+            """
 			--external-module-location MODULE LOCATION
 				Specify an external module-location mapping.
 				Example:
@@ -219,9 +209,9 @@ public record Options(
 						org.junit.jupiter:junit-jupiter:5.7.1
 				This option is repeatable.
 			""")
-    List<ExternalModuleLocation> external_module_location,
+        List<ExternalModuleLocation> external_module_location,
     @Help(
-        """
+            """
 			--external-library-version NAME VERSION
 				An external library name and version, providing a set of module-location mappings.
 				Example:
@@ -230,31 +220,20 @@ public record Options(
 						5.7.1
 				This option is repeatable.
 			""")
-    List<ExternalLibraryVersion> external_library_version,
+        List<ExternalLibraryVersion> external_library_version,
     // </editor-fold>
 
     // <editor-fold desc="Workflows">
     @Help(
-        """
+            """
 		--workflow WORKFLOW
 			Execute a workflow specified by its name.
 			This option is repeatable.""")
-    List<Workflow> workflow
+        List<Workflow> workflow
     // </editor-fold>
-) {
+    ) {
 
-	public static final Set<String> FLAGS = Stream.of(Options.class.getRecordComponents())
-			.filter(c -> c.getType() == Boolean.class)
-			.map(RecordComponent::getName)
-			.map(name -> "--"+name.replace('_', '-'))
-			.collect(Collectors.toSet());
-
-	private static final Set<String> VALID_OPTION_KEYS = Stream.of(Options.class.getRecordComponents())
-			.map(RecordComponent::getName)
-			.map(name -> "--"+name.replace('_', '-'))
-			.collect(Collectors.toSet());
-
-	public static String generateHelpMessage(Predicate<RecordComponent> filter) {
+  public static String generateHelpMessage(Predicate<RecordComponent> filter) {
     var options =
         Stream.of(Options.class.getRecordComponents())
             .filter(filter)
@@ -285,119 +264,130 @@ public record Options(
     return Options.ofCommandLineArguments(List.of(args));
   }
 
-	public static Options ofCommandLineArguments(List<String> args) {
-		var arguments = new LinkedList<>(args);
-		var options = EMPTY;
-		while (!arguments.isEmpty()) {
-			var peeked = arguments.peekFirst();
-			if (peeked.startsWith("@")) {
-				var file = Path.of(arguments.removeFirst().substring(1));
-				List<String> lines = Strings.lines(file);
-				var iterator = lines.listIterator(lines.size());
-				while (iterator.hasPrevious())  arguments.addFirst(iterator.previous().strip());
-			}
-			var key = arguments.removeFirst();
-			if (!key.startsWith("--")) {
-				options = options.with("--workflow", key);
-				continue;
-			}
-			if (FLAGS.contains(key)) {
-				options = options.with(key, "true");
-				continue;
-			}
-			options = options.with(key, arguments.removeFirst());
-		}
-		return options;
-	}
+  public static Options of(UnaryOperator<ToolCall<?>> operator) {
+    var call = new AnyCall("bach");
+    return Options.ofCommandLineArguments(operator.apply(call).arguments());
+  }
 
-	public static Options ofFile(Path file) {
-    if (Files.notExists(file)) return Options.of();
-    try {
-      var lines = Files.readAllLines(file);
-      return Options.ofCommandLineArguments(lines);
-    } catch (Exception exception) {
-      throw new BachException("Read all lines failed for: " + file, exception);
+  public static Options ofCommandLineArguments(List<String> args) {
+    var arguments = new LinkedList<>(args);
+    var options = EMPTY;
+    while (!arguments.isEmpty()) {
+      var peeked = arguments.peekFirst().strip();
+      if (peeked.startsWith("@")) {
+        var file = Path.of(arguments.removeFirst().substring(1));
+        List<String> lines = Strings.lines(file);
+        var iterator = lines.listIterator(lines.size());
+        while (iterator.hasPrevious()) arguments.addFirst(iterator.previous().strip());
+      }
+
+      var key = arguments.removeFirst().strip();
+      if (key.isEmpty()) throw new BachException("Option key must not be empty");
+      if (key.lines().count() > 1) throw new BachException("Multi-line key?%n%s", key.indent(2));
+      if (!key.startsWith("--")) {
+        options = options.with("--workflow", key);
+        continue;
+      }
+      if (FLAGS.contains(key)) {
+        options = options.with(key, "true");
+        continue;
+      }
+
+      var value = arguments.removeFirst().strip();
+      if (key.equals("--tool")) {
+        var more = arguments.subList(0, arguments.size()).stream().map(String::strip);
+        options = options.with(key, value, more.toArray(String[]::new));
+        arguments.clear();
+        break;
+      }
+
+      options = options.with(key, value);
     }
+    return options;
+  }
+
+  public static Options ofFile(Path file) {
+    if (Files.notExists(file)) return Options.of();
+    return Options.ofCommandLineArguments(Strings.lines(file));
   }
 
   public static Options ofDefaultValues() {
     return new Options(
-		false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				false,
-				null,
-				null,
-				false,
-				null,
-				Path.of("."),
-				"bach.info",
-				".",
-				Version.parse("0"),
-				List.of(),
-				List.of(),
-				List.of(),
-				null,
-				false,
-				List.of(),
-				List.of(),
-				List.of(),
-				List.of(),
-				List.of(),
-				List.of(),
-				List.of(),
-				List.of()
-    		);
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        null,
+        Path.of("."),
+        "bach.info",
+        ".",
+        Version.parse("0"),
+        List.of(),
+        List.of(),
+        List.of(),
+        null,
+        false,
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
   }
 
-	public static Options ofProjectInfo(ProjectInfo info) {
-		var main = info.main();
-		var test = info.test();
-		var tool = info.tool();
-		var external = info.external();
-		return new Options(
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				info.name(),
-				Version.parse(info.version()),
-				List.of(info.requires()),
-				List.of(main.modulesPatterns()),
-				List.of(main.modulePaths()),
-				main.javaRelease(),
-				main.jarWithSources(),
-				List.of(test.modulesPatterns()),
-				List.of(test.modulePaths()),
-				List.of(tool.limit()),
-				List.of(tool.skip()),
-				Stream.of(tool.tweaks()).map(Tweak::of).toList(),
-				Stream.of(external.modules()).map(ExternalModuleLocation::ofInfo).toList(),
-				Stream.of(external.libraries()).map(ExternalLibraryVersion::ofInfo).toList(),
-				null);
-	}
+  public static Options ofProjectInfo(ProjectInfo info) {
+    var main = info.main();
+    var test = info.test();
+    var tool = info.tool();
+    var external = info.external();
+    return new Options(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        info.name(),
+        Version.parse(info.version()),
+        List.of(info.requires()),
+        List.of(main.modulesPatterns()),
+        List.of(main.modulePaths()),
+        main.javaRelease(),
+        main.jarWithSources(),
+        List.of(test.modulesPatterns()),
+        List.of(test.modulePaths()),
+        List.of(tool.limit()),
+        List.of(tool.skip()),
+        Stream.of(tool.tweaks()).map(Tweak::of).toList(),
+        Stream.of(external.modules()).map(ExternalModuleLocation::ofInfo).toList(),
+        Stream.of(external.libraries()).map(ExternalLibraryVersion::ofInfo).toList(),
+        null);
+  }
 
   public Options underlay(Options... layers) {
     if (layers.length == 0) return this;
@@ -434,8 +424,7 @@ public record Options(
         underlay(tweak, Options::tweak, layers),
         underlay(external_module_location, Options::external_module_location, layers),
         underlay(external_library_version, Options::external_library_version, layers),
-        underlay(workflow, Options::workflow, layers)
-    );
+        underlay(workflow, Options::workflow, layers));
   }
 
   private static <T> T underlay(T initialValue, Function<Options, T> function, Options... layers) {
@@ -457,14 +446,13 @@ public record Options(
 
   private record Value(String text, String... more) {}
 
-	private Options with(Map<String, Value> map) {
-		var nonValid = new LinkedHashSet<>(map.keySet());
-		nonValid.removeAll(VALID_OPTION_KEYS);
-		if (!nonValid.isEmpty())
-			throw new IllegalArgumentException(nonValid.toString());
-		return new Options(
+  private Options with(Map<String, Value> map) {
+    var nonValid = new LinkedHashSet<>(map.keySet());
+    nonValid.removeAll(VALID_OPTION_KEYS);
+    if (!nonValid.isEmpty()) throw new IllegalArgumentException(nonValid.toString());
+    return new Options(
         withFlag(verbose, map.get("--verbose")),
-        withFlag(dry_run, map.get("--dryRun")),
+        withFlag(dry_run, map.get("--dry-run")),
         withFlag(run_commands_sequentially, map.get("--run-commands-sequentially")),
         withFlag(version, map.get("--version")),
         withFlag(help, map.get("--help")),
@@ -490,13 +478,18 @@ public record Options(
         withFlag(main_jar_with_sources, map.get("--main-jar-with-sources")),
         withMerging(test_module_pattern, map.get("--test-module-pattern")),
         withMerging(test_module_path, map.get("--test-module-path")),
-				withMerging(limit_tool,map.get("--limit-tool")),
-				withMerging(skip_tool, map.get("--skip-tool")),
-        withMerging(tweak, map.get("--tweak"), Tweak::ofCommandLine),
-        withMerging(external_module_location, map.get("--external-module-location"), ExternalModuleLocation::ofCommandLine),
-        withMerging(external_library_version, map.get("--external-library-version"), ExternalLibraryVersion::ofCommandLine),
-        withMerging(workflow, map.get("--workflow"), Workflow::valueOf)
-    );
+        withMerging(limit_tool, map.get("--limit-tool")),
+        withMerging(skip_tool, map.get("--skip-tool")),
+        withMerging(tweak, map.get("--tweak"), Tweak::of),
+        withMerging(
+            external_module_location,
+            map.get("--external-module-location"),
+            ExternalModuleLocation::ofCommandLine),
+        withMerging(
+            external_library_version,
+            map.get("--external-library-version"),
+            ExternalLibraryVersion::ofCommandLine),
+        withMerging(workflow, map.get("--workflow"), Workflow.class));
   }
 
   private static Boolean withFlag(Boolean old, Value value) {
@@ -523,6 +516,14 @@ public record Options(
     return withMerging(old, value, Function.identity());
   }
 
+  private static <T extends Enum<T>> List<T> withMerging(
+      List<T> old, Value value, Class<T> enumType) {
+    return withMerging(
+        old,
+        value,
+        string -> Enum.valueOf(enumType, string.toUpperCase(Locale.ROOT).replace('-', '_')));
+  }
+
   private static <T> List<T> withMerging(List<T> old, Value value, Function<String, T> mapper) {
     if (value == null) return old;
     if (value.text == null) return null;
@@ -543,41 +544,24 @@ public record Options(
   @Target(ElementType.RECORD_COMPONENT)
   @interface Extra {}
 
-  private static final Options EMPTY = new Options(
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-  );
+  private static final Set<String> FLAGS =
+      Stream.of(Options.class.getRecordComponents())
+          .filter(component -> component.getType() == Boolean.class)
+          .map(RecordComponent::getName)
+          .map(name -> "--" + name.replace('_', '-'))
+          .collect(Collectors.toSet());
+
+  private static final Set<String> VALID_OPTION_KEYS =
+      Stream.of(Options.class.getRecordComponents())
+          .map(RecordComponent::getName)
+          .map(name -> "--" + name.replace('_', '-'))
+          .collect(Collectors.toSet());
+
+  private static final Options EMPTY =
+      new Options(
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null);
 
   public static boolean isHelp(RecordComponent component) {
     return component.isAnnotationPresent(Help.class) && !component.isAnnotationPresent(Extra.class);

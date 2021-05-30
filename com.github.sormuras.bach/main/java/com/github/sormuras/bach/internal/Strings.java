@@ -1,12 +1,11 @@
 package com.github.sormuras.bach.internal;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.api.BachException;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor.Version;
 import java.math.BigInteger;
@@ -115,7 +114,7 @@ public class Strings {
   public static String hash(String algorithm, Path file) throws Exception {
     var md = MessageDigest.getInstance(algorithm);
     try (var in = new BufferedInputStream(new FileInputStream(file.toFile()));
-         var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+        var out = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
       in.transferTo(out);
     }
     return String.format("%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
@@ -137,14 +136,14 @@ public class Strings {
     return pattern;
   }
 
-	public static List<String> lines(Path file) {
-		try {
-			return Files.readAllLines(file);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+  public static List<String> lines(Path file) {
+    try {
+      return Files.readAllLines(file);
+    } catch (Exception e) {
+      throw new BachException(e);
+    }
+  }
 
-	/** Hidden default constructor. */
+  /** Hidden default constructor. */
   private Strings() {}
 }

@@ -29,9 +29,9 @@ public class Auxiliary {
 
   public static Bach newEmptyBach(Logbook logbook) {
     var layer = Bach.class.getModule().getLayer();
-    var options = Options.of();
+    var options = Options.ofDefaultValues();
     var factory = new Factory();
-    var folders = Folders.of("");
+    var folders = Folders.of(".");
     var configuration = new Configuration(logbook, layer, options, factory, folders);
 
     var name = "empty";

@@ -20,28 +20,29 @@ class ProcessingCodeTests {
     var bach =
         Bach.of(
             Logbook.ofErrorPrinter(),
-            Options.ofCommandLineArguments(
-                """
-                --chroot
-                  %s
-                --verbose
-                --limit-tools
-                  javac,jar
-                --tweak
-                  test
-                  javac
-                  2
-                  --processor-module-path
-                    %s
-                --tweak
-                  test
-                  javac
-                  1
-                  -Xplugin:showPlugin
-                clean
-                build
-                """
-                    .formatted(root, root.resolve(".bach/workspace/modules"))));
+            Options.of(
+                call ->
+                    call.with("--chroot", root)
+                        .with("--verbose")
+                        .with("--limit-tool", "javac")
+                        .with("--limit-tool", "javadoc")
+                        .with("--limit-tool", "jar")
+                        .with(
+                            "--tweak",
+                            """
+                                    test
+                                    javac
+                                    --processor-module-path
+                                    """
+                                + root.resolve(".bach/workspace/modules"))
+                        .with(
+                                "--tweak",
+                            """
+                                  test
+                                  javac
+                                  -Xplugin:showPlugin
+                                  """)
+                        .withAll("clean", "build")));
 
     assertEquals(0, bach.run(), bach.logbook().toString());
 

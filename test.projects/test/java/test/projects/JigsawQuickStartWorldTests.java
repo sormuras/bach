@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -22,8 +21,6 @@ import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartWorldTests {
@@ -67,10 +64,11 @@ class JigsawQuickStartWorldTests {
         Bach.of(
             Logbook.ofErrorPrinter(),
             Options.of()
-                .with("chroot", root.toString())
-                .with("verbose", "true")
-                .with("limitTools", "javac,jar")
-                .with("workflows", "build"));
+                .with("--chroot", root.toString())
+                .with("--verbose", "true")
+                .with("--limit-tool", "javac")
+                .with("--limit-tool", "jar")
+                .with("--workflow", "build"));
 
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());

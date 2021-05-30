@@ -41,7 +41,7 @@ class SetProjectNameTests {
   void viaOption(@TempDir Path temp) {
     var name = "demo";
 
-    var bach = Bach.of(errorLogbook(), chrootOptions(temp).with("projectName", name));
+    var bach = Bach.of(errorLogbook(), chrootOptions(temp).with("--project-name", name));
     assertEquals(name, bach.project().name());
   }
 
@@ -132,7 +132,7 @@ class SetProjectNameTests {
   }
 
   static Options chrootOptions(Path path) {
-    return Options.of().with("chroot", path.toString());
+    return Options.of().with("--chroot", path.toString());
   }
 
   static void scaffold(Path root, Map<String, String> files) throws Exception {

@@ -15,13 +15,6 @@ public record Tools(Set<String> limits, Set<String> skips, Tweaks tweaks) {
     return new Tools(Set.of(limits), Set.of(), Tweaks.of());
   }
 
-  public static Tools of(ProjectInfo info) {
-    var limits = Set.of(info.tool().limit());
-    var skips = Set.of(info.tool().skip());
-    var tweaks = Tweaks.of(info);
-    return new Tools(limits, skips, tweaks);
-  }
-
   /** {@return {@code true} if the given tool is within the configured limits and not skipped} */
   public boolean enabled(String tool) {
     return limit(tool) && !skip(tool);

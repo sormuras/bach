@@ -2,12 +2,15 @@ package com.github.sormuras.bach.api;
 
 import com.github.sormuras.bach.locator.Maven;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public record ExternalModuleLocation(String module, String uri) implements ExternalModuleLocator {
 
-  public static ExternalModuleLocation ofCommandLine(String supplier) {
-    return null;
+  public static ExternalModuleLocation ofCommandLine(String string) {
+    var split = string.split("=");
+    var module = split[0];
+    var link = split[1];
+    var type = detectLinkType(link);
+    return ExternalModuleLocation.of(module, link, type, Maven.CENTRAL_REPOSITORY);
   }
 
   public static ExternalModuleLocation ofInfo(ProjectInfo.ExternalModule info) {
