@@ -11,7 +11,6 @@ import com.github.sormuras.bach.trait.ToolTrait;
 import com.github.sormuras.bach.trait.WorkflowTrait;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
@@ -19,20 +18,28 @@ import java.util.function.Consumer;
 public record Bach(Core core, Project project)
     implements WorkflowTrait, PrintTrait, ResolveTrait, ToolTrait {
 
-  public static Bach of(String... args) {
-    return Bach.of(Printer.ofSystem(), args);
+  public static int run(Printer printer, Options initialOptions) {
+    var options = initialOptions.underlay(Options.ofDefaultValues());
+    if (options.version()) {
+      printer.out().println(Bach.version());
+      return 0;
+    }
+    var bach = Bach.of(printer, initialOptions);
+    return bach.run();
   }
 
-  public static Bach of(Printer printer, String... args) {
-    var initialOptions = Options.ofCommandLineArguments(args);
+  public static Bach of(String... args) {
+    return Bach.of(Printer.ofSystem(), Options.ofCommandLineArguments(args));
+  }
+
+  public static Bach of(Printer printer, Options initialOptions) {
     var verbose = initialOptions.verbose();
     var initialLogbook = Logbook.of(printer, verbose != null ? verbose : false);
-    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(List.of(args)));
     return Bach.of(initialLogbook, initialOptions);
   }
 
   public static Bach of(Logbook initialLogbook, Options initialOptions) {
-    initialLogbook.log(System.Logger.Level.DEBUG, "Bach.of(%s)".formatted(initialOptions));
+    initialLogbook.debug("Bach.of(%s)".formatted(initialOptions));
     var bootOptions = initialOptions.underlay(Options.ofDefaultValues());
     var root = bootOptions.chroot();
     var module = new BachInfoModuleBuilder(initialLogbook, bootOptions).build();
@@ -52,6 +59,12 @@ public record Bach(Core core, Project project)
     var core = new Core(logbook, module.getLayer(), options, factory, folders);
     var project = factory.newProjectBuilder(core).build();
     return new Bach(core, project);
+  }
+
+  public static String version() {
+    var module = Bach.class.getModule();
+    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
+    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
   }
 
   public Bach bach() {
@@ -77,7 +90,7 @@ public record Bach(Core core, Project project)
   public int run() {
     var options = options();
     var logbook = logbook();
-    if (options.version()) return exit(Strings.version());
+    if (options.version()) return exit(Bach.version());
     if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
     if (options.help_extra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
     if (options.print_configuration()) return exit(options.toString());

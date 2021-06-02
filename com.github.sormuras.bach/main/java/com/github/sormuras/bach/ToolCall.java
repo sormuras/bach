@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.tool.AnyCall;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -10,6 +11,10 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 public interface ToolCall<C extends ToolCall<C>> {
+
+  static AnyCall of(String name) {
+    return new AnyCall(name);
+  }
 
   String name();
 

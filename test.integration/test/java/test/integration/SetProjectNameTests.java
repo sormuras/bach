@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -50,7 +49,7 @@ class SetProjectNameTests {
     var name = "demo";
     var args = List.of("--chroot", temp.toString(), "--project-name", name);
 
-    var bach = Bach.of(errorPrinter(), args.toArray(String[]::new));
+    var bach = Bach.of(errorPrinter(), Options.ofCommandLineArguments(args));
     assertEquals(name, bach.project().name());
   }
 
@@ -62,7 +61,7 @@ class SetProjectNameTests {
         """));
     var args = List.of("--chroot", temp.toString(), "@" + temp.resolve("options"));
 
-    var bach = Bach.of(errorPrinter(), args.toArray(String[]::new));
+    var bach = Bach.of(errorPrinter(), Options.ofCommandLineArguments(args));
     assertEquals("demo", bach.project().name());
   }
 

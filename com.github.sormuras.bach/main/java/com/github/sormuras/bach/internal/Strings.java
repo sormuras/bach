@@ -36,7 +36,7 @@ public class Strings {
              The current working directory is: %s
            """
         .formatted(
-            version(),
+            Bach.version(),
             type,
             location.getFileName(),
             directory.relativize(location).getParent().toUri(),
@@ -44,12 +44,6 @@ public class Strings {
             System.getProperty("os.name"),
             directory.toUri())
         .strip();
-  }
-
-  public static String version() {
-    var module = Bach.class.getModule();
-    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
   }
 
   public static Stream<String> unroll(String string) {
