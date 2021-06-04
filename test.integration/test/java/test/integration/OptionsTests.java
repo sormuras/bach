@@ -177,7 +177,7 @@ class OptionsTests {
             M2
           --project-version
             0-ea+VERSION
-          --run-commands-sequentially
+          --sequential
           --skip-tool
             TOOL
           --test-module-path

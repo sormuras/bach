@@ -8,7 +8,7 @@ public record ExternalLibraryVersion(ExternalLibraryName name, String version) {
     return new ExternalLibraryVersion(info.name(), info.version());
   }
 
-  public static ExternalLibraryVersion ofCommandLine(String string) {
+  public static ExternalLibraryVersion of(String string) {
     var split = string.split("=");
     var name = split[0].toUpperCase(Locale.ROOT).replace('-', '_');
     var version = split[1];

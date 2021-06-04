@@ -5,7 +5,7 @@ import java.util.Optional;
 
 public record ExternalModuleLocation(String module, String uri) implements ExternalModuleLocator {
 
-  public static ExternalModuleLocation ofCommandLine(String string) {
+  public static ExternalModuleLocation of(String string) {
     var split = string.split("=");
     var module = split[0];
     var link = split[1];

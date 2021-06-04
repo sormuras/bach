@@ -21,10 +21,7 @@ class StreamingEventsTests {
             Options.of()
                 .with("--chroot", root.toString())
                 .with("--verbose", "true")
-                .with("--limit-tool", "javac")
-                .with("--limit-tool", "jar")
-                .with("--limit-tool", "test")
-                .with("--limit-tool", "junit")
+                .with("--limit-tool", "javac", "jar", "test", "junit")
                 .with("--workflow", "build"));
 
     assertEquals(0, bach.run(), bach.logbook().toString());

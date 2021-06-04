@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import test.base.SwallowSystem;
@@ -17,32 +18,28 @@ class ProcessingCodeTests {
   void build(SwallowSystem.Streams streams) {
     var name = "ProcessingCode";
     var root = Path.of("test.projects", name);
-    var bach =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.of(
-                call ->
-                    call.with("--chroot", root)
-                        .with("--verbose")
-                        .with("--limit-tool", "javac")
-                        .with("--limit-tool", "javadoc")
-                        .with("--limit-tool", "jar")
-                        .with(
-                            "--tweak",
-                            """
-                                    test
-                                    javac
-                                    --processor-module-path
-                                    """
-                                + root.resolve(".bach/workspace/modules"))
-                        .with(
-                                "--tweak",
-                            """
-                                  test
-                                  javac
-                                  -Xplugin:showPlugin
-                                  """)
-                        .withAll("clean", "build")));
+    var call =
+        ToolCall.of("bach")
+            .with("--chroot", root)
+            .with("--verbose")
+            .with("--limit-tool", "javac,javadoc,jar")
+            .with(
+                "--tweak",
+                """
+                    test
+                    javac
+                    --processor-module-path
+                    """
+                    + root.resolve(".bach/workspace/modules"))
+            .with(
+                "--tweak",
+                """
+                  test
+                  javac
+                  -Xplugin:showPlugin
+                  """)
+            .withAll("clean", "build");
+    var bach = Bach.of(Logbook.ofErrorPrinter(), Options.ofCommandLineArguments(call.arguments()));
 
     assertEquals(0, bach.run(), bach.logbook().toString());
 

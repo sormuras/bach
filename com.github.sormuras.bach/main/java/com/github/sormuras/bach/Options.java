@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,14 +37,11 @@ public record Options(
         Boolean verbose,
     @Help("""
         --dry-run
-          Prevent command execution.
-        """)
-        Boolean dry_run,
+          Prevent all tool call executions.""") Boolean dry_run,
     @Help("""
-		--run-commands-sequentially
-			Prevent parallel execution of commands.
-		""")
-        Boolean run_commands_sequentially,
+        --sequential
+          Prevent parallel execution of tool calls.""")
+        Boolean sequential,
     // </editor-fold>
 
     // <editor-fold desc="Run'N Exit Command Options">
@@ -60,13 +56,13 @@ public record Options(
           Print help on extra options and exit.""")
         Boolean help_extra,
     @Help("""
-		--print-configuration
-			Print effective configuration and exit.""")
+        --print-configuration
+          Print effective configuration and exit.""")
         Boolean print_configuration,
     @Help(
             """
         --print-modules
-          List all (declared, external, and system) modules and exit.""")
+          List declared, external, and system modules and exit.""")
         Boolean print_modules,
     @Help(
             """
@@ -92,143 +88,133 @@ public record Options(
         --load-external-module MODULE
           Load an external module.""")
         String load_external_module,
-    @Help("""
-		--load-missing-external-modules
-			Load all missing external modules.""")
+    @Help(
+            """
+        --load-missing-external-modules
+          Load all missing external modules.""")
         Boolean load_missing_external_modules,
     @Help(
             """
-		--tool NAME [ARGS...]
-			Run the specified tool and exit with its return value.""")
+        --tool NAME [ARGS...]
+          Run the specified tool and exit with its return value.""")
         AnyCall tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
-    @Extra
-        @Help(
+    @Help(
             """
-						--chroot PATH
-							Change virtually into the specified directory by resolving all generated
-							paths against the given PATH before passing them as arguments to tools.
-						""")
+        --chroot PATH
+          Change virtually into the specified directory by resolving all generated
+          paths against the given PATH before passing them as arguments to tools.""")
+        @Extra
         Path chroot,
-    @Extra @Help("""
-						--bach-info MODULE
-							Defaults to: bach.info
-						""")
+    @Help(
+            """
+        --bach-info MODULE
+          Defaults to:\s"""
+                + ProjectInfo.BACH_INFO_MODULE_NAME)
+        @Extra
         String bach_info,
     // </editor-fold>
 
     // <editor-fold desc="Project Options">
     @Help("""
-          --project-name NAME
-          """) String project_name,
+        --project-name NAME""") String project_name,
     @Help("""
-          --project-version VERSION
-          """) Version project_version,
+        --project-version VERSION""") Version project_version,
     @Help("""
-			--project-requires MODULE
-				This option is repeatable.
-			""")
+        --project-requires MODULE(,MODULE)*
+          This option is repeatable.""")
+        @CommaSeparatedValue
         List<String> project_requires,
     // </editor-fold>
 
     // <editor-fold desc="Main Code Space Options">
     @Help(
             """
-			--main-module-pattern NAME
-				Specify where to find module-info.java files for the main code space.
-				This option is repeatable.
-			""")
+        --main-module-pattern NAME
+          Specify where to find module-info.java files for the main code space.
+          This option is repeatable.""")
         List<String> main_module_pattern,
     @Help(
             """
-			--main-module-path PATH
-				Specify where to find modules for compiling main modules.
-				This option is repeatable.
-			""")
+        --main-module-path PATH
+          Specify where to find modules for compiling main modules.
+          This option is repeatable.""")
         List<String> main_module_path,
     @Help(
             """
-			--main-java-release RELEASE
-				Compile main modules for the specified Java SE release.
-			""")
+        --main-java-release RELEASE
+          Compile main modules for the specified Java SE release.
+          Supported releases depend on the JDK version being used.
+          Consult `javac --help` for details.""")
         Integer main_java_release,
     @Help(
             """
-		--main-jar-with-sources
-			Include all files found in source folders into their modular JAR files.
-		""")
+        --main-jar-with-sources
+          Include all files found in source folders into their modular JAR files.""")
         Boolean main_jar_with_sources,
     // </editor-fold>
 
     // <editor-fold desc="Test Code Space Options">
     @Help(
             """
-			--test-module-pattern NAME
-				Specify where to find module-info.java files for the test code space.
-				This option is repeatable.
-			""")
+        --test-module-pattern NAME
+          Specify where to find module-info.java files for the test code space.
+          This option is repeatable.""")
         List<String> test_module_pattern,
     @Help(
             """
-			--test-module-path PATH
-				Specify where to find modules for compiling and running test modules.
-				This option is repeatable.
-			""")
+        --test-module-path PATH
+          Specify where to find modules for compiling and running test modules.
+          This option is repeatable.""")
         List<String> test_module_path,
     // </editor-fold>
 
     // <editor-fold desc="Tools & Tweaks">
     @Help("""
-        --limit-tool TOOL(,TOOL)*
-        """) List<String> limit_tool,
+        --limit-tool TOOL(,TOOL)*""") @CommaSeparatedValue List<String> limit_tool,
     @Help("""
-        --skip-tool TOOL(,TOOL)*
-        """) List<String> skip_tool,
+        --skip-tool TOOL(,TOOL)*""") @CommaSeparatedValue List<String> skip_tool,
     @Help(
             """
-			--tweak SPACE(,SPACE)* TRIGGER COUNT ARG [ARGS...]
-				Additional command-line arguments passed to tool runs matching the specified trigger.
-				Examples:
-					--tweak main javac 1 -parameters
-					--tweak main javac 2 -encoding UTF-8
-				This option is repeatable.
-			""")
+        --tweak SPACE(,SPACE)* TRIGGER COUNT ARG [ARGS...]
+          Additional command-line arguments passed to tool runs matching the specified trigger.
+          Examples:
+            --tweak main javac 1 -parameters
+            --tweak main javac 2 -encoding UTF-8
+          This option is repeatable.""")
         List<Tweak> tweak,
     // </editor-fold>
 
     // <editor-fold desc="External Modules and Libraries">
     @Help(
             """
-			--external-module-location MODULE LOCATION
-				Specify an external module-location mapping.
-				Example:
-					--external-module-location
-						org.junit.jupiter
-						org.junit.jupiter:junit-jupiter:5.7.1
-				This option is repeatable.
-			""")
+        --external-module-location MODULE LOCATION
+          Specify an external module-location mapping.
+          Example:
+            --external-module-location
+              org.junit.jupiter=org.junit.jupiter:junit-jupiter:5.7.1
+          This option is repeatable.""")
         List<ExternalModuleLocation> external_module_location,
     @Help(
             """
-			--external-library-version NAME VERSION
-				An external library name and version, providing a set of module-location mappings.
-				Example:
-					--external-library-version
-						JUnit
-						5.7.1
-				This option is repeatable.
-			""")
+        --external-library-version NAME VERSION
+          An external library name and version, providing a set of module-location mappings.
+          Example:
+            --external-library-version
+              JUnit=5.7.1
+          This option is repeatable.""")
         List<ExternalLibraryVersion> external_library_version,
     // </editor-fold>
 
     // <editor-fold desc="Workflows">
     @Help(
             """
-		--workflow WORKFLOW
-			Execute a workflow specified by its name.
-			This option is repeatable.""")
+        --workflow WORKFLOW(,WORKFLOW)*
+          Execute a workflow specified by its name.
+          This option is repeatable.""")
+        @CommaSeparatedValue
         List<Workflow> workflow
     // </editor-fold>
     ) {
@@ -264,11 +250,6 @@ public record Options(
     return Options.ofCommandLineArguments(List.of(args));
   }
 
-  public static Options of(UnaryOperator<ToolCall<?>> operator) {
-    var call = new AnyCall("bach");
-    return Options.ofCommandLineArguments(operator.apply(call).arguments());
-  }
-
   public static Options ofCommandLineArguments(List<String> args) {
     var arguments = new LinkedList<>(args);
     var options = EMPTY;
@@ -294,6 +275,11 @@ public record Options(
       }
 
       var value = arguments.removeFirst().strip();
+      if (CSVS.contains(key)) {
+        var elements = value.split(",");
+        for (var element : elements) options = options.with(key, element);
+        continue;
+      }
       if (key.equals("--tool")) {
         var more = arguments.subList(0, arguments.size()).stream().map(String::strip);
         options = options.with(key, value, more.toArray(String[]::new));
@@ -394,7 +380,7 @@ public record Options(
     return new Options(
         underlay(verbose, Options::verbose, layers),
         underlay(dry_run, Options::dry_run, layers),
-        underlay(run_commands_sequentially, Options::run_commands_sequentially, layers),
+        underlay(sequential, Options::sequential, layers),
         underlay(version, Options::version, layers),
         underlay(help, Options::help, layers),
         underlay(help_extra, Options::help_extra, layers),
@@ -453,7 +439,7 @@ public record Options(
     return new Options(
         withFlag(verbose, map.get("--verbose")),
         withFlag(dry_run, map.get("--dry-run")),
-        withFlag(run_commands_sequentially, map.get("--run-commands-sequentially")),
+        withFlag(sequential, map.get("--sequential")),
         withFlag(version, map.get("--version")),
         withFlag(help, map.get("--help")),
         withFlag(help_extra, map.get("--help-extra")),
@@ -484,11 +470,11 @@ public record Options(
         withMerging(
             external_module_location,
             map.get("--external-module-location"),
-            ExternalModuleLocation::ofCommandLine),
+            ExternalModuleLocation::of),
         withMerging(
             external_library_version,
             map.get("--external-library-version"),
-            ExternalLibraryVersion::ofCommandLine),
+            ExternalLibraryVersion::of),
         withMerging(workflow, map.get("--workflow"), Workflow.class));
   }
 
@@ -543,6 +529,18 @@ public record Options(
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.RECORD_COMPONENT)
   @interface Extra {}
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.RECORD_COMPONENT)
+  @interface CommaSeparatedValue {}
+
+  private static final Set<String> CSVS =
+      Stream.of(Options.class.getRecordComponents())
+          .filter(component -> component.getType() == List.class)
+          .filter(component -> component.isAnnotationPresent(CommaSeparatedValue.class))
+          .map(RecordComponent::getName)
+          .map(name -> "--" + name.replace('_', '-'))
+          .collect(Collectors.toSet());
 
   private static final Set<String> FLAGS =
       Stream.of(Options.class.getRecordComponents())
