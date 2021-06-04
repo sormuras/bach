@@ -9,11 +9,28 @@ import java.lang.annotation.Target;
 @Target(ElementType.MODULE)
 public @interface ProjectInfo {
 
+  String BACH_ROOT = ".";
+  String BACH_FOLDER = ".bach";
+  String BACH_INFO_MODULE_NAME = "bach.info";
+
+  String DEFAULT_NAME = ".";
+  String DEFAULT_VERSION = "0";
+
+  int DEFAULT_MAIN_JAVA_RELEASE = 0;
+
+  String FOLDER_EXTERNAL_MODULES = ".bach/external-modules";
+  String FOLDER_EXTERNAL_TOOLS = ".bach/external-tools";
+  String FOLDER_WORKSPACE = ".bach/workspace";
+  String FOLDER_MAIN_MODULES = ".bach/workspace/modules";
+
+  String[] PATTERN_MAIN_MODULES = {"module-info.java", "*", "**"};
+  String[] PATTERN_TEST_MODULES = {"test", "**/test", "**/test/**"};
+
   String[] arguments() default {};
 
-  String name() default ".";
+  String name() default DEFAULT_NAME;
 
-  String version() default "0";
+  String version() default DEFAULT_VERSION;
 
   String[] requires() default {};
 
@@ -55,11 +72,11 @@ public @interface ProjectInfo {
   @Target({})
   @interface Main {
 
-    int javaRelease() default 0;
+    int javaRelease() default DEFAULT_MAIN_JAVA_RELEASE;
 
     String[] modulesPatterns() default {"module-info.java", "*", "**"};
 
-    String[] modulePaths() default {".bach/external-modules"};
+    String[] modulePaths() default {FOLDER_EXTERNAL_MODULES};
 
     boolean jarWithSources() default false;
   }
@@ -69,7 +86,7 @@ public @interface ProjectInfo {
 
     String[] modulesPatterns() default {"test", "**/test", "**/test/**"};
 
-    String[] modulePaths() default {".bach/workspace/modules", ".bach/external-modules"};
+    String[] modulePaths() default {FOLDER_MAIN_MODULES, FOLDER_EXTERNAL_MODULES};
   }
 
   @Target({})

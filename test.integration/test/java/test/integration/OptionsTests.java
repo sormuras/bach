@@ -1,5 +1,6 @@
 package test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -11,16 +12,16 @@ import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
+import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
+import com.github.sormuras.bach.tool.AnyCall;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
-
-import com.github.sormuras.bach.tool.AnyCall;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,73 +57,81 @@ class OptionsTests {
     @TestFactory
     Stream<DynamicTest> flagIsFalse() {
       return Stream.of(Options.class.getRecordComponents())
-              .filter(component -> component.getType() == Boolean.class)
-              .map(this::flagIsFalse);
+          .filter(component -> component.getType() == Boolean.class)
+          .map(this::flagIsFalse);
     }
 
     private DynamicTest flagIsFalse(RecordComponent component) {
       return DynamicTest.dynamicTest(
-              "%s is false".formatted(component.getName()),
-              () -> assertFalse((Boolean) component.getAccessor().invoke(defaults)));
+          "%s is false".formatted(component.getName()),
+          () -> assertFalse((Boolean) component.getAccessor().invoke(defaults)));
     }
 
     @TestFactory
     Stream<DynamicTest> listIsNotNull() {
       return Stream.of(Options.class.getRecordComponents())
-              .filter(component -> component.getType() == List.class)
-              .map(this::listIsNotNull);
+          .filter(component -> component.getType() == List.class)
+          .map(this::listIsNotNull);
     }
 
     private DynamicTest listIsNotNull(RecordComponent component) {
       return DynamicTest.dynamicTest(
-              "%s is not null".formatted(component.getName()),
-              () -> assertNotNull(component.getAccessor().invoke(defaults)));
+          "%s is not null".formatted(component.getName()),
+          () -> assertNotNull(component.getAccessor().invoke(defaults)));
     }
   }
 
+  @Test
+  void assertProjectInfoAnnotationDefaults() {
+    var annotation = Options.class.getModule().getAnnotation(ProjectInfo.class);
+    var options = Options.ofProjectInfo(annotation);
+    assertArrayEquals(new String[0], annotation.arguments());
+    assertEquals(ProjectInfo.DEFAULT_NAME, options.project_name());
+    assertEquals(Version.parse(ProjectInfo.DEFAULT_VERSION), options.project_version());
+    assertEquals(List.of(), options.project_requires());
+  }
 
-    @Test
-    void withEverything() {
+  @Test
+  void withEverything() {
 
-      var expected =
-          new Options(
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              "TOOL",
-              "MODULE",
-              true,
-              new AnyCall("NAME").with("ARG1", "ARG2"),
-              Path.of("PATH"),
-              "MODULE",
-              "NAME",
-              Version.parse("0-ea+VERSION"),
-              List.of("M1", "M2"),
-              List.of("*", "**"),
-              List.of("PATH", "PATH"),
-              9,
-              true,
-              List.of("test", "**/test", "**/test/**"),
-              List.of("PATH", "PATH"),
-              List.of("TOOL"),
-              List.of("TOOL"),
-              List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
-              List.of(
-                  new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
-              List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
-              List.copyOf(EnumSet.allOf(Workflow.class)));
+    var expected =
+        new Options(
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            "TOOL",
+            "MODULE",
+            true,
+            new AnyCall("NAME").with("ARG1", "ARG2"),
+            Path.of("PATH"),
+            "MODULE",
+            "NAME",
+            Version.parse("0-ea+VERSION"),
+            List.of("M1", "M2"),
+            List.of("*", "**"),
+            List.of("PATH", "PATH"),
+            9,
+            true,
+            List.of("test", "**/test", "**/test/**"),
+            List.of("PATH", "PATH"),
+            List.of("TOOL"),
+            List.of("TOOL"),
+            List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
+            List.of(new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
+            List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
+            List.copyOf(EnumSet.allOf(Workflow.class)));
 
-      var arguments =
-          """
+    var arguments =
+        """
           --bach-info
             MODULE
           --chroot
@@ -209,8 +218,8 @@ class OptionsTests {
             ARG2
           """;
 
-      var actual = Options.ofCommandLineArguments(arguments.lines().map(String::translateEscapes).toList());
-      assertEquals(expected, actual);
-    }
-
+    var actual =
+        Options.ofCommandLineArguments(arguments.lines().map(String::translateEscapes).toList());
+    assertEquals(expected, actual);
+  }
 }
