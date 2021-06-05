@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -23,8 +22,6 @@ import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartWorldWithTestsTests {
@@ -60,7 +57,7 @@ class JigsawQuickStartWorldWithTestsTests {
                     tests,
                     DeclaredModuleReference.of(tests.resolve("test/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(tests.resolve("test/java"))),
-                    SourceFolders.of()) //
+                    SourceFolders.of(SourceFolder.of(tests.resolve("test/java")))) //
                 ),
             ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
     var spaces = Spaces.of(main, test);
@@ -86,7 +83,8 @@ class JigsawQuickStartWorldWithTestsTests {
     assertEquals(expectedProject(), bach.project());
     assertEquals(0, bach.run(), bach.logbook().toString());
 
-    assertLinesMatch("""
+    assertLinesMatch(
+        """
         >> BACH'S INITIALIZATION >>
         Work on project JigsawQuickStartWorldWithTests 0
         >> INFO + BUILD >>
@@ -98,8 +96,8 @@ class JigsawQuickStartWorldWithTestsTests {
         >>>>
         Bach run took .+
         Logbook written to .+
-        """.lines(),
-        bach.logbook().lines()
-    );
+        """
+            .lines(),
+        bach.logbook().lines());
   }
 }

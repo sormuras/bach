@@ -12,6 +12,7 @@ import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
 import com.github.sormuras.bach.api.Project;
+import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
@@ -88,20 +89,20 @@ public class ProjectBuilder {
     var mainMatcher = ComposedPathMatcher.ofGlobModules(options.main_module_pattern());
     var testMatcher = ComposedPathMatcher.ofGlobModules(options.test_module_pattern());
 
-    var jarWithSources = options.main_jar_with_sources();
     for (var path : paths) {
-      if (Paths.countName(path, ".bach") >= 1) {
-        logbook.log(Level.TRACE, "Skip module %s - its path contains `.bach`".formatted(path));
+      var name = ProjectInfo.BACH_FOLDER;
+      if (Paths.countName(path, name) >= 1) {
+        logbook.log(Level.TRACE, "Skip module %s - its path contains %s".formatted(path, name));
         continue;
       }
       if (testMatcher.anyMatch(path)) {
-        var module = buildDeclaredModule(root, path, jarWithSources);
+        var module = buildDeclaredModule(root, path, true);
         logbook.log(Level.DEBUG, "Test module %s declared in %s".formatted(module.name(), path));
         testModules.put(module.name(), module);
         continue;
       }
       if (mainMatcher.anyMatch(path)) {
-        var module = buildDeclaredModule(root, path, jarWithSources);
+        var module = buildDeclaredModule(root, path, options.main_jar_with_sources());
         mainModules.put(module.name(), module);
         logbook.log(Level.DEBUG, "Main module %s declared in %s".formatted(module.name(), path));
         continue;
@@ -109,12 +110,11 @@ public class ProjectBuilder {
       logbook.log(Level.TRACE, "Skip module %s - no match for main nor test space".formatted(path));
     }
 
-    var javaRelease = options.main_java_release();
     var main =
         new CodeSpaceMain(
             new DeclaredModuleFinder(mainModules),
             buildDeclaredModulePaths(root, options.main_module_path()),
-            javaRelease != null ? javaRelease : Runtime.version().feature());
+            options.main_java_release());
     var test =
         new CodeSpaceTest(
             new DeclaredModuleFinder(testModules),
