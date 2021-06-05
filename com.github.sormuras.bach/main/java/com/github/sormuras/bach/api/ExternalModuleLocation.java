@@ -5,19 +5,19 @@ import java.util.Optional;
 
 public record ExternalModuleLocation(String module, String uri) implements ExternalModuleLocator {
 
+  public static ExternalModuleLocation of(ProjectInfo.ExternalModule info) {
+    var module = info.name();
+    var link = info.link();
+    var type = info.type() == LinkType.AUTO ? detectLinkType(link) : info.type();
+    return ExternalModuleLocation.of(module, link, type, info.mavenRepository());
+  }
+
   public static ExternalModuleLocation of(String string) {
     var split = string.split("=");
     var module = split[0];
     var link = split[1];
     var type = detectLinkType(link);
-    return ExternalModuleLocation.of(module, link, type, Maven.CENTRAL_REPOSITORY);
-  }
-
-  public static ExternalModuleLocation ofInfo(ProjectInfo.ExternalModule info) {
-    var module = info.name();
-    var link = info.link();
-    var type = info.type() == LinkType.AUTO ? detectLinkType(link) : info.type();
-    return ExternalModuleLocation.of(module, link, type, info.mavenRepository());
+    return ExternalModuleLocation.of(module, link, type, ProjectInfo.DEFAULT_MAVEN_REPOSITORY);
   }
 
   private static LinkType detectLinkType(String link) {

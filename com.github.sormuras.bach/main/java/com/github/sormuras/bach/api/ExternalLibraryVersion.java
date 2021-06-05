@@ -1,17 +1,17 @@
 package com.github.sormuras.bach.api;
 
-import java.util.Locale;
+import com.github.sormuras.bach.internal.Strings;
 
 public record ExternalLibraryVersion(ExternalLibraryName name, String version) {
 
-  public static ExternalLibraryVersion ofInfo(ProjectInfo.ExternalLibrary info) {
+  public static ExternalLibraryVersion of(ProjectInfo.ExternalLibrary info) {
     return new ExternalLibraryVersion(info.name(), info.version());
   }
 
   public static ExternalLibraryVersion of(String string) {
     var split = string.split("=");
-    var name = split[0].toUpperCase(Locale.ROOT).replace('-', '_');
+    var name = Strings.toEnum(ExternalLibraryName.class, split[0]);
     var version = split[1];
-    return new ExternalLibraryVersion(ExternalLibraryName.valueOf(name), version);
+    return new ExternalLibraryVersion(name, version);
   }
 }

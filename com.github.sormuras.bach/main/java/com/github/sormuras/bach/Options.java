@@ -7,7 +7,6 @@ import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.internal.Strings;
-import com.github.sormuras.bach.tool.AnyCall;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -21,7 +20,6 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -97,7 +95,7 @@ public record Options(
             """
         --tool NAME [ARGS...]
           Run the specified tool and exit with its return value.""")
-        AnyCall tool,
+        ToolCall<?> tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
@@ -246,13 +244,17 @@ public record Options(
     return EMPTY;
   }
 
+  public static Options ofDefaultValues() {
+    return DEFAULTS;
+  }
+
   public static Options ofCommandLineArguments(String... args) {
     return Options.ofCommandLineArguments(List.of(args));
   }
 
   public static Options ofCommandLineArguments(List<String> args) {
     var arguments = new LinkedList<>(args);
-    var options = EMPTY;
+    var options = Options.of();
     while (!arguments.isEmpty()) {
       var peeked = arguments.peekFirst().strip();
       if (peeked.startsWith("@")) {
@@ -269,15 +271,14 @@ public record Options(
         options = options.with("--workflow", key);
         continue;
       }
-      if (FLAGS.contains(key)) {
+      if (FLAG_KEYS.contains(key)) {
         options = options.with(key, "true");
         continue;
       }
 
       var value = arguments.removeFirst().strip();
-      if (CSVS.contains(key)) {
-        var elements = value.split(",");
-        for (var element : elements) options = options.with(key, element);
+      if (COMMA_SEPARATED_KEYS.contains(key)) {
+        for (var string : value.split(",")) options = options.with(key, string);
         continue;
       }
       if (key.equals("--tool")) {
@@ -297,48 +298,7 @@ public record Options(
     return Options.ofCommandLineArguments(Strings.lines(file));
   }
 
-  public static Options ofDefaultValues() {
-    return new Options(
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        null,
-        null,
-        false,
-        null,
-        Path.of(ProjectInfo.BACH_ROOT),
-        ProjectInfo.BACH_INFO_MODULE_NAME,
-        ProjectInfo.DEFAULT_NAME,
-        Version.parse(ProjectInfo.DEFAULT_VERSION),
-        List.of(), // --project-requires
-        List.of(ProjectInfo.PATTERN_MAIN_MODULES),
-        List.of(ProjectInfo.FOLDER_EXTERNAL_MODULES),
-        ProjectInfo.DEFAULT_MAIN_JAVA_RELEASE,
-        false,
-        List.of(ProjectInfo.PATTERN_TEST_MODULES),
-        List.of(ProjectInfo.FOLDER_MAIN_MODULES, ProjectInfo.FOLDER_EXTERNAL_MODULES),
-        List.of(),
-        List.of(),
-        List.of(),
-        List.of(),
-        List.of(),
-        List.of());
-  }
-
   public static Options ofProjectInfo(ProjectInfo info) {
-    var main = info.main();
-    var test = info.test();
-    var tool = info.tool();
-    var external = info.external();
     return new Options(
         null,
         null,
@@ -361,59 +321,60 @@ public record Options(
         info.name(),
         Version.parse(info.version()),
         List.of(info.requires()),
-        List.of(main.modulesPatterns()),
-        List.of(main.modulePaths()),
-        main.javaRelease(),
-        main.jarWithSources(),
-        List.of(test.modulesPatterns()),
-        List.of(test.modulePaths()),
-        List.of(tool.limit()),
-        List.of(tool.skip()),
-        Stream.of(tool.tweaks()).map(Tweak::of).toList(),
-        Stream.of(external.modules()).map(ExternalModuleLocation::ofInfo).toList(),
-        Stream.of(external.libraries()).map(ExternalLibraryVersion::ofInfo).toList(),
+        List.of(info.main().modulesPatterns()),
+        List.of(info.main().modulePaths()),
+        info.main().javaRelease(),
+        info.main().jarWithSources(),
+        List.of(info.test().modulesPatterns()),
+        List.of(info.test().modulePaths()),
+        List.of(info.tool().limit()),
+        List.of(info.tool().skip()),
+        Stream.of(info.tool().tweaks()).map(Tweak::of).toList(),
+        Stream.of(info.external().modules()).map(ExternalModuleLocation::of).toList(),
+        Stream.of(info.external().libraries()).map(ExternalLibraryVersion::of).toList(),
         null);
   }
 
   public Options underlay(Options... layers) {
     if (layers.length == 0) return this;
     return new Options(
-        underlay(verbose, Options::verbose, layers),
-        underlay(dry_run, Options::dry_run, layers),
-        underlay(sequential, Options::sequential, layers),
-        underlay(version, Options::version, layers),
-        underlay(help, Options::help, layers),
-        underlay(help_extra, Options::help_extra, layers),
-        underlay(print_configuration, Options::print_configuration, layers),
-        underlay(print_modules, Options::print_modules, layers),
-        underlay(print_declared_modules, Options::print_declared_modules, layers),
-        underlay(print_external_modules, Options::print_external_modules, layers),
-        underlay(print_system_modules, Options::print_system_modules, layers),
-        underlay(print_tools, Options::print_tools, layers),
-        underlay(describe_tool, Options::describe_tool, layers),
-        underlay(load_external_module, Options::load_external_module, layers),
-        underlay(load_missing_external_modules, Options::load_missing_external_modules, layers),
-        underlay(tool, Options::tool, layers),
-        underlay(chroot, Options::chroot, layers),
-        underlay(bach_info, Options::bach_info, layers),
-        underlay(project_name, Options::project_name, layers),
-        underlay(project_version, Options::project_version, layers),
-        underlay(project_requires, Options::project_requires, layers),
-        underlay(main_module_pattern, Options::main_module_pattern, layers),
-        underlay(main_module_path, Options::main_module_path, layers),
-        underlay(main_java_release, Options::main_java_release, layers),
-        underlay(main_jar_with_sources, Options::main_jar_with_sources, layers),
-        underlay(test_module_pattern, Options::test_module_pattern, layers),
-        underlay(test_module_path, Options::test_module_path, layers),
-        underlay(limit_tool, Options::limit_tool, layers),
-        underlay(skip_tool, Options::skip_tool, layers),
-        underlay(tweak, Options::tweak, layers),
-        underlay(external_module_location, Options::external_module_location, layers),
-        underlay(external_library_version, Options::external_library_version, layers),
-        underlay(workflow, Options::workflow, layers));
+        underlay(Options::verbose, layers),
+        underlay(Options::dry_run, layers),
+        underlay(Options::sequential, layers),
+        underlay(Options::version, layers),
+        underlay(Options::help, layers),
+        underlay(Options::help_extra, layers),
+        underlay(Options::print_configuration, layers),
+        underlay(Options::print_modules, layers),
+        underlay(Options::print_declared_modules, layers),
+        underlay(Options::print_external_modules, layers),
+        underlay(Options::print_system_modules, layers),
+        underlay(Options::print_tools, layers),
+        underlay(Options::describe_tool, layers),
+        underlay(Options::load_external_module, layers),
+        underlay(Options::load_missing_external_modules, layers),
+        underlay(Options::tool, layers),
+        underlay(Options::chroot, layers),
+        underlay(Options::bach_info, layers),
+        underlay(Options::project_name, layers),
+        underlay(Options::project_version, layers),
+        underlay(Options::project_requires, layers),
+        underlay(Options::main_module_pattern, layers),
+        underlay(Options::main_module_path, layers),
+        underlay(Options::main_java_release, layers),
+        underlay(Options::main_jar_with_sources, layers),
+        underlay(Options::test_module_pattern, layers),
+        underlay(Options::test_module_path, layers),
+        underlay(Options::limit_tool, layers),
+        underlay(Options::skip_tool, layers),
+        underlay(Options::tweak, layers),
+        underlay(Options::external_module_location, layers),
+        underlay(Options::external_library_version, layers),
+        underlay(Options::workflow, layers));
   }
 
-  private static <T> T underlay(T initialValue, Function<Options, T> function, Options... layers) {
+  private <T> T underlay(Function<Options, T> function, Options... layers) {
+    var initialValue = function.apply(this);
     if (initialValue != null) return initialValue;
     for (var layer : layers) {
       var value = function.apply(layer);
@@ -434,7 +395,7 @@ public record Options(
 
   private Options with(Map<String, Value> map) {
     var nonValid = new LinkedHashSet<>(map.keySet());
-    nonValid.removeAll(VALID_OPTION_KEYS);
+    nonValid.removeAll(ALL_KEYS);
     if (!nonValid.isEmpty()) throw new IllegalArgumentException(nonValid.toString());
     return new Options(
         withFlag(verbose, map.get("--verbose")),
@@ -452,7 +413,7 @@ public record Options(
         withSetting(describe_tool, map.get("--describe-tool")),
         withSetting(load_external_module, map.get("--load-external-module")),
         withFlag(load_missing_external_modules, map.get("--load-missing-external-modules")),
-        withValue(tool, map.get("--tool"), v -> new AnyCall(v.text).withAll(v.more)),
+        withValue(tool, map.get("--tool"), value -> ToolCall.of(value.text).withAll(value.more)),
         withSetting(chroot, map.get("--chroot"), Path::of),
         withSetting(bach_info, map.get("--bach-info")),
         withSetting(project_name, map.get("--project-name")),
@@ -502,12 +463,8 @@ public record Options(
     return withMerging(old, value, Function.identity());
   }
 
-  private static <T extends Enum<T>> List<T> withMerging(
-      List<T> old, Value value, Class<T> enumType) {
-    return withMerging(
-        old,
-        value,
-        string -> Enum.valueOf(enumType, string.toUpperCase(Locale.ROOT).replace('-', '_')));
+  private static <T extends Enum<T>> List<T> withMerging(List<T> old, Value value, Class<T> type) {
+    return withMerging(old, value, string -> Strings.toEnum(type, string));
   }
 
   private static <T> List<T> withMerging(List<T> old, Value value, Function<String, T> mapper) {
@@ -534,38 +491,74 @@ public record Options(
   @Target(ElementType.RECORD_COMPONENT)
   @interface CommaSeparatedValue {}
 
-  private static final Set<String> CSVS =
-      Stream.of(Options.class.getRecordComponents())
-          .filter(component -> component.getType() == List.class)
-          .filter(component -> component.isAnnotationPresent(CommaSeparatedValue.class))
-          .map(RecordComponent::getName)
-          .map(name -> "--" + name.replace('_', '-'))
-          .collect(Collectors.toSet());
-
-  private static final Set<String> FLAGS =
-      Stream.of(Options.class.getRecordComponents())
-          .filter(component -> component.getType() == Boolean.class)
-          .map(RecordComponent::getName)
-          .map(name -> "--" + name.replace('_', '-'))
-          .collect(Collectors.toSet());
-
-  private static final Set<String> VALID_OPTION_KEYS =
-      Stream.of(Options.class.getRecordComponents())
-          .map(RecordComponent::getName)
-          .map(name -> "--" + name.replace('_', '-'))
-          .collect(Collectors.toSet());
-
   private static final Options EMPTY =
       new Options(
           null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null);
 
-  public static boolean isHelp(RecordComponent component) {
+  private static final Options DEFAULTS =
+      new Options(
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          null,
+          null,
+          false,
+          null,
+          Path.of(ProjectInfo.BACH_ROOT),
+          ProjectInfo.BACH_INFO_MODULE_NAME,
+          ProjectInfo.DEFAULT_NAME,
+          Version.parse(ProjectInfo.DEFAULT_VERSION),
+          List.of(), // --project-requires
+          List.of(ProjectInfo.PATTERN_MAIN_MODULES),
+          List.of(ProjectInfo.FOLDER_EXTERNAL_MODULES),
+          ProjectInfo.DEFAULT_MAIN_JAVA_RELEASE,
+          false,
+          List.of(ProjectInfo.PATTERN_TEST_MODULES),
+          List.of(ProjectInfo.FOLDER_MAIN_MODULES, ProjectInfo.FOLDER_EXTERNAL_MODULES),
+          List.of(),
+          List.of(),
+          List.of(),
+          List.of(),
+          List.of(),
+          List.of());
+
+  private static final Set<String> ALL_KEYS = keys(__ -> true);
+  private static final Set<String> COMMA_SEPARATED_KEYS = keys(Options::isCommaSeparatedValue);
+  private static final Set<String> FLAG_KEYS = keys(Options::isFlag);
+
+  private static Set<String> keys(Predicate<RecordComponent> filter) {
+    return Stream.of(Options.class.getRecordComponents())
+        .filter(filter)
+        .map(RecordComponent::getName)
+        .map(name -> "--" + name.replace('_', '-'))
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private static boolean isCommaSeparatedValue(RecordComponent component) {
+    return component.getType() == List.class
+        && component.isAnnotationPresent(CommaSeparatedValue.class);
+  }
+
+  private static boolean isFlag(RecordComponent component) {
+    return component.getType() == Boolean.class;
+  }
+
+  static boolean isHelp(RecordComponent component) {
     return component.isAnnotationPresent(Help.class) && !component.isAnnotationPresent(Extra.class);
   }
 
-  public static boolean isHelpExtra(RecordComponent component) {
+  static boolean isHelpExtra(RecordComponent component) {
     return component.isAnnotationPresent(Help.class) && component.isAnnotationPresent(Extra.class);
   }
 }

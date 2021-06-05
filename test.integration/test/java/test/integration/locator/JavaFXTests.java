@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.api.ExternalModuleLocator;
+import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.locator.JavaFX;
-import com.github.sormuras.bach.locator.Maven;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,7 +39,7 @@ class JavaFXTests {
     assertTrue(optional.isPresent());
     var location = optional.orElseThrow();
     assertEquals(module, location.module());
-    assertTrue(location.uri().startsWith(Maven.CENTRAL_REPOSITORY));
+    assertTrue(location.uri().startsWith(ProjectInfo.DEFAULT_MAVEN_REPOSITORY));
     assertTrue(location.uri().endsWith("-99-Z.jar"));
   }
 }

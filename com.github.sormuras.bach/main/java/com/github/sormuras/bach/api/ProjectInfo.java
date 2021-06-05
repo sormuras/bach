@@ -26,6 +26,8 @@ public @interface ProjectInfo {
   String[] PATTERN_MAIN_MODULES = {"module-info.java", "*", "**"};
   String[] PATTERN_TEST_MODULES = {"test", "**/test", "**/test/**"};
 
+  String DEFAULT_MAVEN_REPOSITORY = "https://repo.maven.apache.org/maven2";
+
   String[] arguments() default {};
 
   String name() default DEFAULT_NAME;
@@ -59,7 +61,7 @@ public @interface ProjectInfo {
 
     LinkType type() default LinkType.AUTO;
 
-    String mavenRepository() default "https://repo.maven.apache.org/maven2";
+    String mavenRepository() default DEFAULT_MAVEN_REPOSITORY;
   }
 
   @Target({})

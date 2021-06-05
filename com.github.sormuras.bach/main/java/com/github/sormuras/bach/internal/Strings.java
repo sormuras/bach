@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -58,6 +59,14 @@ public class Strings {
 
   public static Stream<String> unroll(Collection<String> strings) {
     return strings.stream().flatMap(String::lines).map(String::strip);
+  }
+
+  public static String toEnumName(String string) {
+    return string.toUpperCase(Locale.ROOT).replace('-', '_');
+  }
+
+  public static <E extends Enum<E>> E toEnum(Class<E> enumClass, String string) {
+    return Enum.valueOf(enumClass, toEnumName(string));
   }
 
   /** {@return a human-readable representation of the given duration} */
