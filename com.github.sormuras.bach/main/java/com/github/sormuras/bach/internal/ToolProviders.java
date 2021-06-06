@@ -43,7 +43,8 @@ public record ToolProviders(ModuleFinder before, ModuleFinder after) {
         };
     return """
        %s
-       %s""".formatted(nameAndModule(provider), info.indent(4).stripTrailing());
+       %s"""
+        .formatted(nameAndModule(provider), info.indent(4).stripTrailing());
   }
 
   public Optional<ToolProvider> find(String name) {
@@ -51,16 +52,11 @@ public record ToolProviders(ModuleFinder before, ModuleFinder after) {
   }
 
   public Stream<ToolProvider> stream(String... roots) {
-    return stream(false,roots);
+    return stream(false, roots);
   }
 
   public Stream<ToolProvider> stream(boolean assertions, String... roots) {
-    var layer =
-        new ModuleLayerBuilder()
-            .before(before)
-            .after(after)
-            .roots(Set.of(roots))
-            .build();
+    var layer = new ModuleLayerBuilder().before(before).after(after).roots(Set.of(roots)).build();
     Stream.of(roots).map(layer::findLoader).forEach(l -> l.setDefaultAssertionStatus(assertions));
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }

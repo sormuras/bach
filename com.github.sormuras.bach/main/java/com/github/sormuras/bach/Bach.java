@@ -5,27 +5,49 @@ import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.internal.BachInfoModuleBuilder;
 import com.github.sormuras.bach.internal.Strings;
+import com.github.sormuras.bach.internal.ToolProviders;
 import com.github.sormuras.bach.trait.PrintTrait;
 import com.github.sormuras.bach.trait.ResolveTrait;
 import com.github.sormuras.bach.trait.ToolTrait;
 import com.github.sormuras.bach.trait.WorkflowTrait;
+import java.lang.module.ModuleFinder;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.function.Consumer;
 
 public record Bach(Core core, Project project)
     implements WorkflowTrait, PrintTrait, ResolveTrait, ToolTrait {
 
   public static int run(Printer printer, Options initialOptions) {
     var options = initialOptions.underlay(Options.ofDefaultValues());
-    if (options.version()) {
-      printer.out().println(Bach.version());
-      return 0;
+    var command = options.command();
+    var out = printer.out();
+    switch (command.name()) {
+      case NOOP -> {
+      }
+      case PRINT_VERSION -> out.println(Bach.version());
+      case PRINT_HELP -> out.println(Options.generateHelpMessage(Options::isHelp));
+      case PRINT_HELP_EXTRA -> out.println(Options.generateHelpMessage(Options::isHelpExtra));
+      case DESCRIBE_TOOL, RUN_TOOL -> {
+        var list = new LinkedList<>(command.arguments());
+        var name = list.removeFirst();
+        var folders = Folders.of(options.chroot());
+        var finder = ModuleFinder.of(folders.externals());
+        var tool = ToolProviders.of(finder).find(name).orElseThrow();
+        if (command.name() == Command.Name.DESCRIBE_TOOL) {
+          out.println(ToolProviders.describe(tool));
+        }
+        if (command.name() == Command.Name.RUN_TOOL) {
+          Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
+          return tool.run(out, printer.err(), list.toArray(String[]::new));
+        }
+      }
+      default -> throw new UnsupportedOperationException("Unsupported command: " + command);
     }
-    var bach = Bach.of(printer, initialOptions);
-    return bach.run();
+    if (command.name() != Command.Name.NOOP) return 0;
+    return Bach.of(printer, initialOptions).run();
   }
 
   public static Bach of(String... args) {
@@ -89,29 +111,17 @@ public record Bach(Core core, Project project)
 
   public int run() {
     var options = options();
-    var logbook = logbook();
-    if (options.version()) return exit(Bach.version());
-    if (options.help()) return exit(Options.generateHelpMessage(Options::isHelp));
-    if (options.help_extra()) return exit(Options.generateHelpMessage(Options::isHelpExtra));
-    if (options.print_configuration()) return exit(options.toString());
-    if (options.print_modules()) return exit(this::printModules);
-    if (options.print_declared_modules()) return exit(this::printDeclaredModules);
-    if (options.print_external_modules()) return exit(this::printExternalModules);
-    if (options.print_system_modules()) return exit(this::printSystemModules);
-    if (options.print_tools()) return exit(this::printTools);
-    if (isPresent(options.describe_tool(), this::printToolDescription)) return 0;
-    if (isPresent(options.load_external_module(), this::loadExternalModules)) return 0;
-    if (options.load_missing_external_modules()) return exit(this::loadMissingExternalModules);
-    if (options.tool() != null) {
-      var tool = options.tool();
-      var name = tool.name();
-      var args = tool.arguments().toArray(String[]::new);
-      var out = logbook.printer().out();
-      var err = logbook.printer().err();
-      var provider = findToolProvider(name).orElseThrow();
-      Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
-      return provider.run(out, err, args);
+    var command = options.command();
+    switch (command.name()) {
+      case PRINT_MODULES -> printModules();
+      case PRINT_DECLARED_MODULES -> printDeclaredModules();
+      case PRINT_EXTERNAL_MODULES -> printExternalModules();
+      case PRINT_SYSTEM_MODULES -> printSystemModules();
+      case PRINT_TOOLS -> printTools();
+      case LOAD_EXTERNAL_MODULE -> loadExternalModules(command.arguments().toArray(String[]::new));
+      case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
     }
+    if (command.name() != Command.Name.NOOP) return 0;
 
     say(Strings.banner());
     if (options.verbose()) {
@@ -127,28 +137,12 @@ public record Bach(Core core, Project project)
       workflows.forEach(this::run);
       ExtensionPoint.EndOfWorkflowExecution.fire(this);
     } catch (Exception exception) {
-      logbook.log(exception);
+      logbook().log(exception);
       return 1;
     } finally {
       say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
       writeLogbook();
     }
     return 0;
-  }
-
-  private int exit(String message) {
-    logbook().printer().out().println(message);
-    return 0;
-  }
-
-  private int exit(Runnable runnable) {
-    runnable.run();
-    return 0;
-  }
-
-  private <T> boolean isPresent(T optional, Consumer<T> consumer) {
-    if (optional == null) return false;
-    consumer.accept(optional);
-    return true;
   }
 }
