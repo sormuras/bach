@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Options(
+    @Help("--command NAME [ARGS...]") Command command,
+
     // <editor-fold desc="Runtime Modifying Options">
     @Help("""
         --verbose
@@ -40,62 +42,6 @@ public record Options(
         --sequential
           Prevent parallel execution of tool calls.""")
         Boolean sequential,
-    // </editor-fold>
-
-    // <editor-fold desc="Run'N Exit Command Options">
-    @Help("""
-        --version
-          Print version information and exit.""") Boolean version,
-    @Help("""
-        --help
-          Print this help message and exit.""") Boolean help,
-    @Help("""
-        --help-extra
-          Print help on extra options and exit.""")
-        Boolean help_extra,
-    @Help("""
-        --print-configuration
-          Print effective configuration and exit.""")
-        Boolean print_configuration,
-    @Help(
-            """
-        --print-modules
-          List declared, external, and system modules and exit.""")
-        Boolean print_modules,
-    @Help(
-            """
-        --print-declared-modules
-          List declared (main and test) modules and exit.""")
-        Boolean print_declared_modules,
-    @Help("""
-        --print-external-modules
-          List external modules and exit.""")
-        Boolean print_external_modules,
-    @Help("""
-        --print-system-modules
-          List system modules and exit.""")
-        Boolean print_system_modules,
-    @Help("""
-        --print-tools
-          List tools and exit.""") Boolean print_tools,
-    @Help("""
-        --describe-tool TOOL
-          Describe tool and exit.""")
-        String describe_tool,
-    @Help("""
-        --load-external-module MODULE
-          Load an external module.""")
-        String load_external_module,
-    @Help(
-            """
-        --load-missing-external-modules
-          Load all missing external modules.""")
-        Boolean load_missing_external_modules,
-    @Help(
-            """
-        --tool NAME [ARGS...]
-          Run the specified tool and exit with its return value.""")
-        ToolCall<?> tool,
     // </editor-fold>
 
     // <editor-fold desc="Primordal Options">
@@ -253,7 +199,14 @@ public record Options(
   }
 
   public static Options ofCommandLineArguments(List<String> args) {
+    if (args.isEmpty()) return Options.of();
     var arguments = new LinkedList<>(args);
+    var name = Command.findName(arguments.peekFirst());
+    if (name.isPresent()) {
+      arguments.removeFirst();
+      var more = arguments.toArray(String[]::new);
+      return Options.of().with("--command", name.get().name(), more);
+    }
     var options = Options.of();
     while (!arguments.isEmpty()) {
       var peeked = arguments.peekFirst().strip();
@@ -281,12 +234,6 @@ public record Options(
         for (var string : value.split(",")) options = options.with(key, string);
         continue;
       }
-      if (key.equals("--tool")) {
-        var more = arguments.subList(0, arguments.size()).stream().map(String::strip);
-        options = options.with(key, value, more.toArray(String[]::new));
-        arguments.clear();
-        break;
-      }
 
       options = options.with(key, value);
     }
@@ -300,18 +247,6 @@ public record Options(
 
   public static Options ofProjectInfo(ProjectInfo info) {
     return new Options(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
         null,
         null,
         null,
@@ -338,22 +273,10 @@ public record Options(
   public Options underlay(Options... layers) {
     if (layers.length == 0) return this;
     return new Options(
+        underlay(Options::command, layers),
         underlay(Options::verbose, layers),
         underlay(Options::dry_run, layers),
         underlay(Options::sequential, layers),
-        underlay(Options::version, layers),
-        underlay(Options::help, layers),
-        underlay(Options::help_extra, layers),
-        underlay(Options::print_configuration, layers),
-        underlay(Options::print_modules, layers),
-        underlay(Options::print_declared_modules, layers),
-        underlay(Options::print_external_modules, layers),
-        underlay(Options::print_system_modules, layers),
-        underlay(Options::print_tools, layers),
-        underlay(Options::describe_tool, layers),
-        underlay(Options::load_external_module, layers),
-        underlay(Options::load_missing_external_modules, layers),
-        underlay(Options::tool, layers),
         underlay(Options::chroot, layers),
         underlay(Options::bach_info, layers),
         underlay(Options::project_name, layers),
@@ -398,22 +321,10 @@ public record Options(
     nonValid.removeAll(ALL_KEYS);
     if (!nonValid.isEmpty()) throw new IllegalArgumentException(nonValid.toString());
     return new Options(
+        withValue(command, map.get("--command"), value -> Command.of(value.text, value.more)),
         withFlag(verbose, map.get("--verbose")),
         withFlag(dry_run, map.get("--dry-run")),
         withFlag(sequential, map.get("--sequential")),
-        withFlag(version, map.get("--version")),
-        withFlag(help, map.get("--help")),
-        withFlag(help_extra, map.get("--help-extra")),
-        withFlag(print_configuration, map.get("--print-configuration")),
-        withFlag(print_modules, map.get("--print-modules")),
-        withFlag(print_declared_modules, map.get("--print-declared-modules")),
-        withFlag(print_external_modules, map.get("--print-external-modules")),
-        withFlag(print_system_modules, map.get("--print-system-modules")),
-        withFlag(print_tools, map.get("--print-tools")),
-        withSetting(describe_tool, map.get("--describe-tool")),
-        withSetting(load_external_module, map.get("--load-external-module")),
-        withFlag(load_missing_external_modules, map.get("--load-missing-external-modules")),
-        withValue(tool, map.get("--tool"), value -> ToolCall.of(value.text).withAll(value.more)),
         withSetting(chroot, map.get("--chroot"), Path::of),
         withSetting(bach_info, map.get("--bach-info")),
         withSetting(project_name, map.get("--project-name")),
@@ -494,27 +405,14 @@ public record Options(
   private static final Options EMPTY =
       new Options(
           null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-          null, null, null);
+          null, null, null, null, null, null);
 
   private static final Options DEFAULTS =
       new Options(
+          Command.of(),
           false,
           false,
           false,
-          false,
-          false,
-          false,
-          false,
-          false,
-          false,
-          false,
-          false,
-          false,
-          null,
-          null,
-          false,
-          null,
           Path.of(ProjectInfo.BACH_ROOT),
           ProjectInfo.BACH_INFO_MODULE_NAME,
           ProjectInfo.DEFAULT_NAME,

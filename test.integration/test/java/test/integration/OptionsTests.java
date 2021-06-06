@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.ExternalLibraryName;
@@ -15,7 +16,6 @@ import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
-import com.github.sormuras.bach.tool.AnyCall;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
@@ -77,7 +77,7 @@ class OptionsTests {
     private DynamicTest listIsNotNull(RecordComponent component) {
       return DynamicTest.dynamicTest(
           "%s is not null".formatted(component.getName()),
-          () -> assertNotNull(component.getAccessor().invoke(defaults)));
+          () -> assertNotNull(component.getAccessor().invoke(defaults), component.toString()));
     }
   }
 
@@ -96,22 +96,10 @@ class OptionsTests {
 
     var expected =
         new Options(
+            null,
             true,
             true,
             true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            "TOOL",
-            "MODULE",
-            true,
-            new AnyCall("NAME").with("ARG1", "ARG2"),
             Path.of("PATH"),
             "MODULE",
             "NAME",
@@ -136,8 +124,6 @@ class OptionsTests {
             MODULE
           --chroot
             PATH
-          --describe-tool
-            TOOL
           --dry-run
           --external-library-version
             JUNIT=VERSION
@@ -145,19 +131,8 @@ class OptionsTests {
             M1=U1
           --external-module-location
             M2=U2
-          --help
-          --help-extra
           --limit-tool
             TOOL
-          --print-configuration
-          --print-modules
-          --print-declared-modules
-          --print-external-modules
-          --print-system-modules
-          --print-tools
-          --load-external-module
-            MODULE
-          --load-missing-external-modules
           --main-jar-with-sources
           --main-java-release
             9
@@ -193,7 +168,6 @@ class OptionsTests {
           --tweak
             main,test\\nTRIGGER\\nARGS...
           --verbose
-          --version
           --workflow
             BUILD
           --workflow
@@ -212,10 +186,6 @@ class OptionsTests {
             GENERATE_IMAGE
           --workflow
             WRITE_LOGBOOK
-          --tool
-            NAME
-            ARG1
-            ARG2
           """;
 
     var actual =
