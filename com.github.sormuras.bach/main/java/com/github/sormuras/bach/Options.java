@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Options(
-    @Help("--command NAME [ARGS...]") Command command,
+    @Help("--command NAME [ARGS...]") Optional<Command> command,
 
     // <editor-fold desc="Runtime Modifying Options">
     @Help("""
@@ -321,7 +322,7 @@ public record Options(
     nonValid.removeAll(ALL_KEYS);
     if (!nonValid.isEmpty()) throw new IllegalArgumentException(nonValid.toString());
     return new Options(
-        withValue(command, map.get("--command"), value -> Command.of(value.text, value.more)),
+        withValue(command, map.get("--command"), v -> Optional.of(Command.of(v.text, v.more))),
         withFlag(verbose, map.get("--verbose")),
         withFlag(dry_run, map.get("--dry-run")),
         withFlag(sequential, map.get("--sequential")),
@@ -409,7 +410,7 @@ public record Options(
 
   private static final Options DEFAULTS =
       new Options(
-          Command.of(),
+          Optional.empty(),
           false,
           false,
           false,

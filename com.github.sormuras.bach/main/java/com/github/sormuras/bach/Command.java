@@ -6,7 +6,6 @@ import java.util.Optional;
 
 public record Command(Name name, List<String> arguments) {
   public enum Name {
-    NOOP,
     PRINT_VERSION,
     PRINT_HELP,
     PRINT_HELP_EXTRA,
@@ -19,10 +18,6 @@ public record Command(Name name, List<String> arguments) {
     PRINT_TOOLS,
     DESCRIBE_TOOL,
     RUN_TOOL
-  }
-
-  public static Command of() {
-    return new Command(Name.NOOP, List.of());
   }
 
   public static Command of(String string, String... args) {

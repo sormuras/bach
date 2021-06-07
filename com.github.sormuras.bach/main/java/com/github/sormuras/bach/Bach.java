@@ -22,32 +22,31 @@ public record Bach(Core core, Project project)
 
   public static int run(Printer printer, Options initialOptions) {
     var options = initialOptions.underlay(Options.ofDefaultValues());
-    var command = options.command();
+    if (options.command().isEmpty()) return Bach.of(printer, initialOptions).run();
+    var command = options.command().get();
+    var name = command.name();
     var out = printer.out();
-    switch (command.name()) {
-      case NOOP -> {
-      }
+    switch (name) {
       case PRINT_VERSION -> out.println(Bach.version());
       case PRINT_HELP -> out.println(Options.generateHelpMessage(Options::isHelp));
       case PRINT_HELP_EXTRA -> out.println(Options.generateHelpMessage(Options::isHelpExtra));
       case DESCRIBE_TOOL, RUN_TOOL -> {
         var list = new LinkedList<>(command.arguments());
-        var name = list.removeFirst();
+        var name2 = list.removeFirst();
         var folders = Folders.of(options.chroot());
         var finder = ModuleFinder.of(folders.externals());
-        var tool = ToolProviders.of(finder).find(name).orElseThrow();
-        if (command.name() == Command.Name.DESCRIBE_TOOL) {
+        var tool = ToolProviders.of(finder).find(name2).orElseThrow();
+        if (name == Command.Name.DESCRIBE_TOOL) {
           out.println(ToolProviders.describe(tool));
         }
-        if (command.name() == Command.Name.RUN_TOOL) {
+        if (name == Command.Name.RUN_TOOL) {
           Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
           return tool.run(out, printer.err(), list.toArray(String[]::new));
         }
       }
       default -> throw new UnsupportedOperationException("Unsupported command: " + command);
     }
-    if (command.name() != Command.Name.NOOP) return 0;
-    return Bach.of(printer, initialOptions).run();
+    return 0;
   }
 
   public static Bach of(String... args) {
@@ -111,17 +110,21 @@ public record Bach(Core core, Project project)
 
   public int run() {
     var options = options();
-    var command = options.command();
-    switch (command.name()) {
-      case PRINT_MODULES -> printModules();
-      case PRINT_DECLARED_MODULES -> printDeclaredModules();
-      case PRINT_EXTERNAL_MODULES -> printExternalModules();
-      case PRINT_SYSTEM_MODULES -> printSystemModules();
-      case PRINT_TOOLS -> printTools();
-      case LOAD_EXTERNAL_MODULE -> loadExternalModules(command.arguments().toArray(String[]::new));
-      case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
+    if (options.command().isPresent()) {
+      var command = options.command().get();
+      var name = command.name();
+      var arguments = command.arguments();
+      switch (name) {
+        case PRINT_MODULES -> printModules();
+        case PRINT_DECLARED_MODULES -> printDeclaredModules();
+        case PRINT_EXTERNAL_MODULES -> printExternalModules();
+        case PRINT_SYSTEM_MODULES -> printSystemModules();
+        case PRINT_TOOLS -> printTools();
+        case LOAD_EXTERNAL_MODULE -> loadExternalModules(arguments.toArray(String[]::new));
+        case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
+      }
+      return 0;
     }
-    if (command.name() != Command.Name.NOOP) return 0;
 
     say(Strings.banner());
     if (options.verbose()) {
