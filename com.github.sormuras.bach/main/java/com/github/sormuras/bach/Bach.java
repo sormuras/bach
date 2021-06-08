@@ -22,31 +22,39 @@ public record Bach(Core core, Project project)
 
   public static int run(Printer printer, Options initialOptions) {
     var options = initialOptions.underlay(Options.ofDefaultValues());
-    if (options.command().isEmpty()) return Bach.of(printer, initialOptions).run();
-    var command = options.command().get();
-    var name = command.name();
-    var out = printer.out();
-    switch (name) {
-      case PRINT_VERSION -> out.println(Bach.version());
-      case PRINT_HELP -> out.println(Options.generateHelpMessage(Options::isHelp));
-      case PRINT_HELP_EXTRA -> out.println(Options.generateHelpMessage(Options::isHelpExtra));
-      case DESCRIBE_TOOL, RUN_TOOL -> {
-        var list = new LinkedList<>(command.arguments());
-        var name2 = list.removeFirst();
-        var folders = Folders.of(options.chroot());
-        var finder = ModuleFinder.of(folders.externals());
-        var tool = ToolProviders.of(finder).find(name2).orElseThrow();
-        if (name == Command.Name.DESCRIBE_TOOL) {
-          out.println(ToolProviders.describe(tool));
+    if (options.command().isPresent()) {
+      var command = options.command().get();
+      var name = command.name();
+      var out = printer.out();
+      switch (name) {
+        case PRINT_VERSION -> {
+          out.println(Bach.version());
+          return 0;
         }
-        if (name == Command.Name.RUN_TOOL) {
-          Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
-          return tool.run(out, printer.err(), list.toArray(String[]::new));
+        case PRINT_HELP -> {
+          out.println(Options.generateHelpMessage(Options::isHelp));
+          return 0;
+        }
+        case PRINT_HELP_EXTRA -> {
+          out.println(Options.generateHelpMessage(Options::isHelpExtra));
+          return 0;
+        }
+        case DESCRIBE_TOOL, RUN_TOOL -> {
+          var list = new LinkedList<>(command.arguments());
+          var tool = list.removeFirst();
+          var folders = Folders.of(options.chroot());
+          var finder = ModuleFinder.of(folders.externals());
+          var provider = ToolProviders.of(finder).find(tool).orElseThrow();
+          if (name == Command.Name.RUN_TOOL) {
+            Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
+            return provider.run(out, printer.err(), list.toArray(String[]::new));
+          }
+          out.println(ToolProviders.describe(provider));
+          return 0;
         }
       }
-      default -> throw new UnsupportedOperationException("Unsupported command: " + command);
     }
-    return 0;
+    return Bach.of(printer, initialOptions).run();
   }
 
   public static Bach of(String... args) {

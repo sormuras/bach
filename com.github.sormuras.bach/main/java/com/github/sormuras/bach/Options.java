@@ -29,7 +29,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Options(
-    @Help("--command NAME [ARGS...]") Optional<Command> command,
+    @Help("""
+        --version
+          Print version information and exit.
+        --help
+          Print this help screen and exit.
+        --run TOOL [ARGS...]
+          Launch a provided (modular) or an external (executable JAR) tool via its name
+          and exit with its status code.
+        """) Optional<Command> command,
 
     // <editor-fold desc="Runtime Modifying Options">
     @Help("""
