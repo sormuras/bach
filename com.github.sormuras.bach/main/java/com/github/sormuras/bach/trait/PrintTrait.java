@@ -61,9 +61,10 @@ public /*sealed*/ interface PrintTrait extends Trait {
   }
 
   default void printTools() {
-    var before = ModuleFinder.of(bach().project().folders().externals());
+    var folders = bach().project().folders();
+    var before = ModuleFinder.of(folders.externals());
     var after = ModuleFinder.ofSystem();
-    var providers = new ToolProviders(before, after);
+    var providers = new ToolProviders(before, after, folders.tools());
     printTools(providers.stream().toList());
   }
 
@@ -80,7 +81,8 @@ public /*sealed*/ interface PrintTrait extends Trait {
 
   default void printToolDescription(String name) {
     var out = bach().logbook().printer().out();
-    ToolProviders.of(ModuleFinder.of(bach().project().folders().externals()))
+    var folders = bach().project().folders();
+    ToolProviders.of(ModuleFinder.of(folders.externals()), folders.tools())
         .find(name)
         .map(ToolProviders::describe)
         .ifPresentOrElse(out::println, () -> out.println(name + " not found"));
