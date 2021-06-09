@@ -221,7 +221,7 @@ public record Options(
       var peeked = arguments.peekFirst().strip();
       if (peeked.startsWith("@")) {
         var file = Path.of(arguments.removeFirst().substring(1));
-        var lines = Strings.lines(file);
+        var lines = Strings.arguments(file);
         var iterator = lines.listIterator(lines.size());
         while (iterator.hasPrevious()) arguments.addFirst(iterator.previous().strip());
       }
@@ -251,7 +251,7 @@ public record Options(
 
   public static Options ofFile(Path file) {
     if (Files.notExists(file)) return Options.of();
-    return Options.ofCommandLineArguments(Strings.lines(file));
+    return Options.ofCommandLineArguments(Strings.arguments(file));
   }
 
   public static Options ofProjectInfo(ProjectInfo info) {

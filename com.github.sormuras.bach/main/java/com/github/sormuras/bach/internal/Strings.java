@@ -147,6 +147,18 @@ public class Strings {
     }
   }
 
+  public static List<String> arguments(Path file) {
+    return arguments(lines(file)).toList();
+  }
+
+  public static Stream<String> arguments(List<String> lines) {
+    return lines.stream()
+        .map(String::strip)
+        .filter(line -> !line.isEmpty())
+        .filter(line -> !line.startsWith("#"))
+        .map(String::translateEscapes);
+  }
+
   /** Hidden default constructor. */
   private Strings() {}
 }
