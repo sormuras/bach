@@ -72,7 +72,7 @@ public class WriteLogbookWorkflow extends BachWorkflow {
 
     var folder = bach().project().folders();
     md.add("- root = `%s`".formatted(folder.root().toAbsolutePath()));
-    md.add("- external-modules = `%s`".formatted(folder.externals()));
+    md.add("- external-modules = `%s`".formatted(folder.externalModules()));
     md.add("- workspace = `%s`".formatted(folder.workspace()));
 
     md.addAll(generateModulesOverview());

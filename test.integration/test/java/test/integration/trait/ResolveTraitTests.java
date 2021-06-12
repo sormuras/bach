@@ -38,7 +38,7 @@ class ResolveTraitTests {
 
     bach.loadExternalModules("foo");
 
-    var finder = ModuleFinder.of(bach.project().folders().externals());
+    var finder = ModuleFinder.of(bach.project().folders().externalModules());
     assertTrue(finder.find("foo").isPresent());
   }
 
@@ -55,7 +55,7 @@ class ResolveTraitTests {
 
     bach.loadMissingExternalModules();
 
-    var finder = ModuleFinder.of(bach.project().folders().externals());
+    var finder = ModuleFinder.of(bach.project().folders().externalModules());
     assertTrue(finder.find("bar").isPresent());
     assertTrue(finder.find("foo").isPresent());
   }

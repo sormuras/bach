@@ -42,7 +42,7 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
     }
 
     var folders = bach().project().folders();
-    var externalsFinder = ModuleFinder.of(folders.externals());
+    var externalsFinder = ModuleFinder.of(folders.externalModules());
     var junitPlatformJFR = externalsFinder.find("org.junit.platform.jfr");
     var start = Instant.now();
     if (junitPlatformJFR.isEmpty()) {
@@ -111,7 +111,7 @@ public class ExecuteTestsWorkflow extends BachWorkflow {
         folders.jar(CodeSpace.TEST, module, bach().project().version()), // module under test
         folders.modules(CodeSpace.MAIN), // main modules
         folders.modules(CodeSpace.TEST), // (more) test modules
-        folders.externals());
+        folders.externalModules());
   }
 
   protected ToolRun runTest(ToolProvider provider, List<String> arguments) {

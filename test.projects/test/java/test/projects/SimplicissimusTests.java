@@ -39,12 +39,12 @@ class SimplicissimusTests {
                     DeclaredModuleReference.of(folders.root("module-info.java")),
                     SourceFolders.of(),
                     SourceFolders.of())),
-            ModulePaths.of(folders.externals()),
+            ModulePaths.of(folders.externalModules()),
             9);
     var test =
         new CodeSpaceTest(
             DeclaredModuleFinder.of(),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
     var spaces = Spaces.of(main, test);
     var externals = Externals.of();
     var tools = Tools.of("javac", "jar");

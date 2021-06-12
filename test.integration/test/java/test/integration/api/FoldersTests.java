@@ -13,8 +13,8 @@ class FoldersTests {
   void canonical() {
     var folders = Folders.of("./WILL-BE-REMOVED-BY-NORMALIZATION/..");
     assertEquals("", folders.root().toString());
-    assertEquals(Path.of(".bach/external-modules"), folders.externals());
-    assertEquals(Path.of(".bach/external-modules/file"), folders.externals("file"));
+    assertEquals(Path.of(".bach/external-modules"), folders.externalModules());
+    assertEquals(Path.of(".bach/external-modules/file"), folders.externalModules("file"));
     assertEquals(Path.of(".bach/workspace"), folders.workspace());
     assertEquals(Path.of(".bach/workspace/modules"), folders.modules(CodeSpace.MAIN));
     assertEquals(Path.of(".bach/workspace/modules-test"), folders.modules(CodeSpace.TEST));

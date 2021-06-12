@@ -39,12 +39,12 @@ class JigsawQuickStartGreetingsTests {
                     DeclaredModuleReference.of(greetings.resolve("module-info.java")),
                     SourceFolders.of(SourceFolder.of(greetings)),
                     SourceFolders.of())),
-            ModulePaths.of(folders.externals()),
+            ModulePaths.of(folders.externalModules()),
             0);
     var test =
         new CodeSpaceTest(
             DeclaredModuleFinder.of(),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
     var spaces = Spaces.of(main, test);
     var tools = Tools.of("javac", "jar");
     var externals = Externals.of();

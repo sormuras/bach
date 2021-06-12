@@ -43,8 +43,8 @@ public record Bach(Core core, Project project)
           var list = new LinkedList<>(command.arguments());
           var tool = list.removeFirst();
           var folders = Folders.of(options.chroot());
-          var finder = ModuleFinder.of(folders.externals());
-          var provider = ToolProviders.of(finder, folders.tools()).find(tool).orElseThrow();
+          var finder = ModuleFinder.of(folders.externalModules());
+          var provider = ToolProviders.of(finder, folders.externalTools()).find(tool).orElseThrow();
           if (name == Command.Name.RUN_TOOL) {
             Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
             return provider.run(out, printer.err(), list.toArray(String[]::new));

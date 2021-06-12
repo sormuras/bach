@@ -24,7 +24,7 @@ public /*sealed*/ interface ToolTrait extends Trait {
   int MAX_DESCRIPTION_LENGTH = 117;
 
   default Stream<ToolProvider> streamToolProviders() {
-    return streamToolProviders(ModuleFinder.of(bach().project().folders().externals()));
+    return streamToolProviders(ModuleFinder.of(bach().project().folders().externalModules()));
   }
 
   default Stream<ToolProvider> streamToolProviders(ModuleFinder finder, String... roots) {

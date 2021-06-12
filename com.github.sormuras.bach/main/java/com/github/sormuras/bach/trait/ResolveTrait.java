@@ -29,7 +29,7 @@ public /*sealed*/ interface ResolveTrait extends Trait {
   }
 
   private Path computeExternalModuleFile(String module) {
-    return bach().project().folders().externals(module + ".jar");
+    return bach().project().folders().externalModules(module + ".jar");
   }
 
   private Set<String> computeMissingExternalModules() {
@@ -42,7 +42,7 @@ public /*sealed*/ interface ResolveTrait extends Trait {
     var requires = new TreeSet<>(project.externals().requires()); // project-requires
     requires.addAll(required(project.spaces().main().modules())); // main module-info
     requires.addAll(required(project.spaces().test().modules())); // test module-info
-    var externalModulesFinder = ModuleFinder.of(project.folders().externals());
+    var externalModulesFinder = ModuleFinder.of(project.folders().externalModules());
     if (includeRequiresOfExternalModules) requires.addAll(required(externalModulesFinder));
 
     bach().log("Computed %d required modules: %s".formatted(requires.size(), requires));

@@ -109,7 +109,7 @@ public class CompileMainCodeSpaceWorkflow extends BachWorkflow {
     var main = project.spaces().main();
     var classPaths = new ArrayList<Path>();
     main.modules().toNames().forEach(name -> classPaths.add(classes.resolve(name)));
-    classPaths.addAll(Paths.list(folders.externals(), Paths::isJarFile));
+    classPaths.addAll(Paths.list(folders.externalModules(), Paths::isJarFile));
     var tweaks = bach().project().tools().tweaks();
     var javacs = new ArrayList<JavacCall>();
     for (var declaration : main.modules().map().values()) {

@@ -4,7 +4,7 @@ import com.github.sormuras.bach.internal.Strings;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 
-public record Folders(Path root, Path workspace, Path externals, Path tools) {
+public record Folders(Path root, Path workspace, Path externalModules, Path externalTools) {
 
   public static Folders of(String root) {
     return Folders.of(Path.of(root));
@@ -22,12 +22,12 @@ public record Folders(Path root, Path workspace, Path externals, Path tools) {
     return root.resolve(Path.of(first, more));
   }
 
-  public Path externals(String first, String... more) {
-    return externals.resolve(Path.of(first, more));
+  public Path externalModules(String first, String... more) {
+    return externalModules.resolve(Path.of(first, more));
   }
 
-  public Path tools(String first, String... more) {
-    return tools.resolve(Path.of(first,more));
+  public Path externalTools(String first, String... more) {
+    return externalTools.resolve(Path.of(first,more));
   }
 
   public Path workspace(String first, String... more) {

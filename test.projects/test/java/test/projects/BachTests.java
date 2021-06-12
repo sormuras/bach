@@ -49,7 +49,7 @@ class BachTests {
                     DeclaredModuleReference.of(modulePath.resolve("main/java/module-info.java")),
                     SourceFolders.of(SourceFolder.of(modulePath.resolve("main/java"))),
                     SourceFolders.of(SourceFolder.of(modulePath.resolve("main/java"))))),
-            ModulePaths.of(folders.externals()),
+            ModulePaths.of(folders.externalModules()),
             0);
     var testBase = folders.root("test.base");
     var testIntegration = folders.root("test.integration");
@@ -85,7 +85,7 @@ class BachTests {
                     SourceFolders.of(
                         SourceFolder.of(testProjects.resolve("test/java")),
                         SourceFolder.of(testProjects.resolve("test/resources"))))),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
     var spaces = Spaces.of(main, test);
     var tools =
         new Tools(

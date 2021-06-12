@@ -48,7 +48,7 @@ class JigsawQuickStartWorldWithTestsTests {
                     SourceFolders.of(SourceFolder.of(astro.resolve("main/java"))),
                     SourceFolders.of()) //
                 ),
-            ModulePaths.of(folders.externals()),
+            ModulePaths.of(folders.externalModules()),
             0);
     var test =
         new CodeSpaceTest(
@@ -59,7 +59,7 @@ class JigsawQuickStartWorldWithTestsTests {
                     SourceFolders.of(SourceFolder.of(tests.resolve("test/java"))),
                     SourceFolders.of(SourceFolder.of(tests.resolve("test/java")))) //
                 ),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externals()));
+            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
     var spaces = Spaces.of(main, test);
     var externals = Externals.of();
     var tools = Tools.of("javac", "jar", "test");
