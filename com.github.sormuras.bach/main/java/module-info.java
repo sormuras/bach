@@ -1,5 +1,3 @@
-import com.github.sormuras.bach.ExtensionPoint;
-
 /**
  * Defines the API of 🎼 Bach, the Java Shell Builder.
  *
@@ -13,8 +11,8 @@ import com.github.sormuras.bach.ExtensionPoint;
  * </ul>
  *
  * @uses com.github.sormuras.bach.Factory
- * @uses ExtensionPoint.BeginOfWorkflowExecution
- * @uses ExtensionPoint.EndOfWorkflowExecution
+ * @uses com.github.sormuras.bach.ExtensionPoint.BeginOfWorkflowExecution
+ * @uses com.github.sormuras.bach.ExtensionPoint.EndOfWorkflowExecution
  * @uses com.github.sormuras.bach.api.ExternalModuleLocator
  * @uses java.util.spi.ToolProvider
  */
@@ -37,8 +35,8 @@ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses com.github.sormuras.bach.Factory;
-  uses ExtensionPoint.BeginOfWorkflowExecution;
-  uses ExtensionPoint.EndOfWorkflowExecution;
+  uses com.github.sormuras.bach.ExtensionPoint.BeginOfWorkflowExecution;
+  uses com.github.sormuras.bach.ExtensionPoint.EndOfWorkflowExecution;
   uses com.github.sormuras.bach.api.ExternalModuleLocator;
   uses java.util.spi.ToolProvider;
 
