@@ -63,7 +63,6 @@ class PathsTests {
     void findModuleInfoJavaFilesOfBach() {
       assertLinesMatch(
           """
-          .bach/bach.info/module-info.java
           com.github.sormuras.bach/main/java/module-info.java
           com.github.sormuras.bach/test/java-module/module-info.java
           test.base/test/java/module-info.java

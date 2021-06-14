@@ -50,8 +50,8 @@ class FilesTests {
     @SuppressWarnings("unused")
     static List<Path> paths() {
       return List.of(
-          // configuration module
-          Path.of(".bach/bach.info/module-info.java"),
+          // build program
+          Path.of("bach/build.java"),
           // main module
           Path.of("com.github.sormuras.bach/main/java/module-info.java"),
           // test modules
