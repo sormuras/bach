@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.locator;
 
-import com.github.sormuras.bach.api.ProjectInfo;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -20,7 +19,7 @@ public final class Maven {
       return new Joiner().group(group).artifact(artifact).version(version);
     }
 
-    private String repository = ProjectInfo.DEFAULT_MAVEN_REPOSITORY;
+    private String repository = "https://repo.maven.apache.org/maven2";
     private String group;
     private String artifact;
     private String version;

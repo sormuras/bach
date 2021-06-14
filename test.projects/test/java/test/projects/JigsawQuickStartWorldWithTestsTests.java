@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
@@ -68,20 +70,17 @@ class JigsawQuickStartWorldWithTestsTests {
 
   @Test
   void build() {
-    var root = Path.of("test.projects", NAME);
-    var bach =
-        Bach.of(
+    var project = expectedProject();
+    var options = Options.ofDefaultValues().with("--verbose", "true").with("--workflow", "build");
+    var core =
+        new Core(
             Logbook.ofErrorPrinter(),
-            Options.of()
-                .with("--chroot", root.toString())
-                .with("--verbose", "true")
-                .with("--limit-tool", "javac")
-                .with("--limit-tool", "jar")
-                .with("--limit-tool", "test")
-                .with("--workflow", "build"));
-
-    assertEquals(expectedProject(), bach.project());
-    assertEquals(0, bach.run(), bach.logbook().toString());
+            ModuleLayer.empty(),
+            options,
+            new Factory(),
+            project.folders());
+    var bach = new Bach(core, project);
+    assertEquals(0, bach.run(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """

@@ -3,7 +3,6 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
-import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.internal.Strings;
@@ -65,7 +64,7 @@ public record Options(
             """
         --bach-info MODULE
           Defaults to:\s"""
-                + ProjectInfo.BACH_INFO_MODULE_NAME)
+                + "bach.info")
         @Extra
         String bach_info,
     // </editor-fold>
@@ -254,31 +253,6 @@ public record Options(
     return Options.ofCommandLineArguments(Strings.arguments(file));
   }
 
-  public static Options ofProjectInfo(ProjectInfo info) {
-    return new Options(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        info.name(),
-        Version.parse(info.version()),
-        List.of(info.requires()),
-        List.of(info.main().modulesPatterns()),
-        List.of(info.main().modulePaths()),
-        info.main().javaRelease(),
-        info.main().jarWithSources(),
-        List.of(info.test().modulesPatterns()),
-        List.of(info.test().modulePaths()),
-        List.of(info.tool().limit()),
-        List.of(info.tool().skip()),
-        Stream.of(info.tool().tweaks()).map(Tweak::of).toList(),
-        Stream.of(info.external().modules()).map(ExternalModuleLocation::of).toList(),
-        Stream.of(info.external().libraries()).map(ExternalLibraryVersion::of).toList(),
-        null);
-  }
-
   public Options underlay(Options... layers) {
     if (layers.length == 0) return this;
     return new Options(
@@ -422,17 +396,17 @@ public record Options(
           false,
           false,
           false,
-          Path.of(ProjectInfo.BACH_ROOT),
-          ProjectInfo.BACH_INFO_MODULE_NAME,
-          ProjectInfo.DEFAULT_NAME,
-          Version.parse(ProjectInfo.DEFAULT_VERSION),
+          Path.of("."),
+          "bach.info",
+          ".",
+          Version.parse("0"),
           List.of(), // --project-requires
-          List.of(ProjectInfo.PATTERN_MAIN_MODULES),
-          List.of(ProjectInfo.FOLDER_EXTERNAL_MODULES),
-          ProjectInfo.DEFAULT_MAIN_JAVA_RELEASE,
+          List.of("module-info.java", "*", "**"),
+          List.of(".bach/external-modules"),
+          0,
           false,
-          List.of(ProjectInfo.PATTERN_TEST_MODULES),
-          List.of(ProjectInfo.FOLDER_MAIN_MODULES, ProjectInfo.FOLDER_EXTERNAL_MODULES),
+          List.of("test", "**/test", "**/test/**"),
+          List.of(".bach/workspace/modules", ".bach/external-modules"),
           List.of(),
           List.of(),
           List.of(),

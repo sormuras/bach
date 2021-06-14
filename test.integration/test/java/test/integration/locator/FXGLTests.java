@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.api.ExternalModuleLocator;
-import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.locator.FXGL;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +43,7 @@ class FXGLTests {
     assertTrue(optional.isPresent());
     var location = optional.orElseThrow();
     assertEquals(module, location.module());
-    assertTrue(location.uri().startsWith(ProjectInfo.DEFAULT_MAVEN_REPOSITORY));
+    assertTrue(location.uri().startsWith("https://repo.maven.apache.org/maven2"));
     assertTrue(location.uri().endsWith("-99.jar"));
   }
 }

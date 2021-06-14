@@ -1,6 +1,5 @@
 package com.github.sormuras.bach.internal;
 
-import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.api.BachException;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -25,27 +24,6 @@ import java.util.stream.Stream;
 
 /** String-related helpers. */
 public class Strings {
-
-  public static String banner() {
-    var location = BachInfoModuleBuilder.location();
-    var type = Files.isDirectory(location) ? "directory" : "modular JAR file";
-    var directory = Path.of("").toAbsolutePath();
-    return """
-           Bach %s
-             Loaded from %s %s in directory: %s
-             Launched by Java %s running on %s.
-             The current working directory is: %s
-           """
-        .formatted(
-            Bach.version(),
-            type,
-            location.getFileName(),
-            directory.relativize(location).getParent().toUri(),
-            Runtime.version(),
-            System.getProperty("os.name"),
-            directory.toUri())
-        .strip();
-  }
 
   public static Stream<String> unroll(String string) {
     return string.lines().map(String::strip);

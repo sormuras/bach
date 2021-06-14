@@ -1,11 +1,12 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.DeclaredModule;
@@ -25,11 +26,10 @@ import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartGreetingsTests {
 
-  static final String NAME = "JigsawQuickStartGreetings";
-
-  private Project expectedProject() {
+  private Project project() {
+    var name = "JigsawQuickStartGreetings";
     var version = ModuleDescriptor.Version.parse("0");
-    var folders = Folders.of(Path.of("test.projects", NAME));
+    var folders = Folders.of(Path.of("test.projects", name));
     var greetings = folders.root("com.greetings");
     var main =
         new CodeSpaceMain(
@@ -41,30 +41,17 @@ class JigsawQuickStartGreetingsTests {
                     SourceFolders.of())),
             ModulePaths.of(folders.externalModules()),
             0);
-    var test =
-        new CodeSpaceTest(
-            DeclaredModuleFinder.of(),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
-    var spaces = Spaces.of(main, test);
+    var spaces = Spaces.of(main, CodeSpaceTest.empty());
     var tools = Tools.of("javac", "jar");
     var externals = Externals.of();
-    return new Project(NAME, version, folders, spaces, tools, externals);
+    return new Project(name, version, folders, spaces, tools, externals);
   }
 
   @Test
   void build() {
-    var root = Path.of("test.projects", NAME);
-    var bach =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.of()
-                .with("--chroot", root.toString())
-                .with("--verbose", "true")
-                .with("--limit-tool", "javac")
-                .with("--limit-tool", "jar")
-                .with("--workflow", "build"));
-
-    assertEquals(expectedProject(), bach.project());
-    assertEquals(0, bach.run(), bach.logbook().toString());
+    var project = project();
+    var core = new Core(Logbook.ofErrorPrinter(), ModuleLayer.empty(), Options.ofDefaultValues(), new Factory(), project.folders());
+    var bach = new Bach(core, project);
+    assertDoesNotThrow(bach::build, () -> bach.logbook().toString());
   }
 }

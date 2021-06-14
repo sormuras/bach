@@ -4,10 +4,6 @@ import com.github.sormuras.bach.internal.Strings;
 
 public record ExternalLibraryVersion(ExternalLibraryName name, String version) {
 
-  public static ExternalLibraryVersion of(ProjectInfo.ExternalLibrary info) {
-    return new ExternalLibraryVersion(info.name(), info.version());
-  }
-
   public static ExternalLibraryVersion of(String string) {
     var split = string.split("=");
     var name = Strings.toEnum(ExternalLibraryName.class, split[0]);

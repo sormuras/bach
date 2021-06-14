@@ -27,10 +27,6 @@ public class Factory {
     return atomicHttpClient.compareAndSet(null, newClient) ? newClient : atomicHttpClient.get();
   }
 
-  public ProjectBuilder newProjectBuilder(Core core) {
-    return new ProjectBuilder(core);
-  }
-
   public HttpClient.Builder newHttpClientBuilder(Core core) {
     var timeout = Duration.ofSeconds(9);
     var policy = HttpClient.Redirect.NORMAL;

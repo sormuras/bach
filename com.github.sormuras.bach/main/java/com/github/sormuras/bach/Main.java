@@ -4,9 +4,7 @@ package com.github.sormuras.bach;
 class Main {
   public static void main(String... args) {
     var printer = Printer.ofSystem();
-    var options = Options.ofCommandLineArguments(args);
-    var code = Bach.run(printer, options);
-    if (code != 0) System.exit(code);
+    printer.out().println("TODO Main.main(...)");
   }
 
   /** Hidden default constructor. */

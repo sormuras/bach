@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
@@ -19,7 +21,6 @@ import com.github.sormuras.bach.api.Project;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
-import com.github.sormuras.bach.tool.AnyCall;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ import test.base.ToolProviders;
 
 class SimplicissimusTests {
 
-  private static Project expectedProject() {
+  private static Project project() {
     var name = "Simplicissimus";
     var version = Version.parse("123");
     var folders = Folders.of(Path.of("test.projects", name));
@@ -41,11 +42,7 @@ class SimplicissimusTests {
                     SourceFolders.of())),
             ModulePaths.of(folders.externalModules()),
             9);
-    var test =
-        new CodeSpaceTest(
-            DeclaredModuleFinder.of(),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
-    var spaces = Spaces.of(main, test);
+    var spaces = Spaces.of(main, CodeSpaceTest.empty());
     var externals = Externals.of();
     var tools = Tools.of("javac", "jar");
     return new Project(name, version, folders, spaces, tools, externals);
@@ -53,30 +50,19 @@ class SimplicissimusTests {
 
   @Test
   void build() {
-    var name = "Simplicissimus";
-    var root = Path.of("test.projects", name);
-    var args =
-        new AnyCall("bach")
-            .with("--chroot", root)
-            .with("--verbose")
-            .with("--limit-tool", "javac")
-            .with("--limit-tool", "jar")
-            .with("--project-version", "123")
-            .with("--main-java-release", 9)
-            .with("--main-jar-with-sources")
-            .with("build")
-            .arguments();
-    var bach = Bach.of(Logbook.ofErrorPrinter(), Options.ofCommandLineArguments(args));
-
-    var expectedProject = expectedProject();
-    assertEquals(expectedProject.name(), bach.project().name());
-    assertEquals(expectedProject.version(), bach.project().version());
-    assertEquals(expectedProject.folders(), bach.project().folders());
-    assertEquals(expectedProject.spaces(), bach.project().spaces());
-    assertEquals(expectedProject.tools(), bach.project().tools());
-    assertEquals(expectedProject.externals(), bach.project().externals());
-    assertEquals(expectedProject, bach.project());
-
+    var project = project();
+    var options = Options.ofDefaultValues()
+        .with("--verbose", "true")
+        .with("--main-jar-with-sources", "true")
+        .with("--workflow", "build");
+    var core =
+        new Core(
+            Logbook.ofErrorPrinter(),
+            ModuleLayer.empty(),
+            options,
+            new Factory(),
+            project.folders());
+    var bach = new Bach(core, project);
     assertEquals(0, bach.run(), () -> bach.logbook().toString());
     assertLinesMatch(
         """

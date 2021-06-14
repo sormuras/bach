@@ -10,13 +10,8 @@
  *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
- * @uses com.github.sormuras.bach.Factory
- * @uses com.github.sormuras.bach.ExtensionPoint.BeginOfWorkflowExecution
- * @uses com.github.sormuras.bach.ExtensionPoint.EndOfWorkflowExecution
- * @uses com.github.sormuras.bach.api.ExternalModuleLocator
  * @uses java.util.spi.ToolProvider
  */
-@com.github.sormuras.bach.api.ProjectInfo
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.api;
@@ -34,10 +29,6 @@ module com.github.sormuras.bach {
   requires jdk.jfr;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.Factory;
-  uses com.github.sormuras.bach.ExtensionPoint.BeginOfWorkflowExecution;
-  uses com.github.sormuras.bach.ExtensionPoint.EndOfWorkflowExecution;
-  uses com.github.sormuras.bach.api.ExternalModuleLocator;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
