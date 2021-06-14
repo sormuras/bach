@@ -25,6 +25,9 @@ class StreamingEventsTests {
             Options.of()
                 .with("--chroot", root.toString())
                 .with("--verbose", "true")
+                .with("--project-requires", "org.junit.platform.console")
+                .with("--project-requires", "org.junit.platform.jfr")
+                .with("--external-library-version", "JUnit=5.7.2")
                 .with("--limit-tool", "javac", "jar", "test", "junit")
                 .with("--workflow", "build")
                 .underlay(Options.ofDefaultValues());
