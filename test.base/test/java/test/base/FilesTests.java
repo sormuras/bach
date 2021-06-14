@@ -51,7 +51,7 @@ class FilesTests {
     static List<Path> paths() {
       return List.of(
           // build program
-          Path.of("bach/build.java"),
+          Path.of(".bach/src/build.java"),
           // main module
           Path.of("com.github.sormuras.bach/main/java/module-info.java"),
           // test modules

@@ -71,15 +71,10 @@ class JigsawQuickStartWorldWithTestsTests {
   @Test
   void build() {
     var project = expectedProject();
-    var options = Options.ofDefaultValues().with("--verbose", "true").with("--workflow", "build");
-    var core =
-        new Core(
-            Logbook.ofErrorPrinter(),
-            options,
-            new Factory(),
-            project.folders());
+    var options = Options.ofDefaultValues().with("--verbose", "true");
+    var core = new Core(Logbook.ofErrorPrinter(), options, new Factory(), project.folders());
     var bach = new Bach(core, project);
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """

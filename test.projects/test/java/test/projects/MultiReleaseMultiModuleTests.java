@@ -30,7 +30,6 @@ class MultiReleaseMultiModuleTests {
             .with("--limit-tool", "jar")
             .with("--main-java-release", "8")
             .with("--main-jar-with-sources", "true")
-            .with("--workflow", "build")
             .underlay(Options.ofDefaultValues());
 
     var core =
@@ -38,7 +37,7 @@ class MultiReleaseMultiModuleTests {
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """
