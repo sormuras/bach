@@ -1,19 +1,16 @@
 package test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
-import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Workflow;
 import java.lang.module.ModuleDescriptor.Version;
@@ -79,16 +76,6 @@ class OptionsTests {
           "%s is not null".formatted(component.getName()),
           () -> assertNotNull(component.getAccessor().invoke(defaults), component.toString()));
     }
-  }
-
-  @Test
-  void assertProjectInfoAnnotationDefaults() {
-    var annotation = Options.class.getModule().getAnnotation(ProjectInfo.class);
-    var options = Options.ofProjectInfo(annotation);
-    assertArrayEquals(new String[0], annotation.arguments());
-    assertEquals(ProjectInfo.DEFAULT_NAME, options.project_name());
-    assertEquals(Version.parse(ProjectInfo.DEFAULT_VERSION), options.project_version());
-    assertEquals(List.of(), options.project_requires());
   }
 
   @Test

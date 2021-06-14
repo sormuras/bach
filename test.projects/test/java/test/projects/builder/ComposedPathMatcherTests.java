@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.internal;
+package test.projects.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

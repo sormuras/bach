@@ -1,8 +1,8 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpace;
@@ -19,9 +19,12 @@ import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
+import org.junit.jupiter.api.Test;
+
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class JigsawQuickStartWorldTests {
 
@@ -59,18 +62,9 @@ class JigsawQuickStartWorldTests {
 
   @Test
   void build() {
-    var root = Path.of("test.projects", NAME);
-    var bach =
-        Bach.of(
-            Logbook.ofErrorPrinter(),
-            Options.of()
-                .with("--chroot", root.toString())
-                .with("--verbose", "true")
-                .with("--limit-tool", "javac")
-                .with("--limit-tool", "jar")
-                .with("--workflow", "build"));
-
-    assertEquals(expectedProject(), bach.project());
-    assertEquals(0, bach.run(), bach.logbook().toString());
+    var project = expectedProject();
+    var core = new Core(Logbook.ofErrorPrinter(), ModuleLayer.empty(), Options.ofDefaultValues(), new Factory(), project.folders());
+    var bach = new Bach(core, project);
+    assertDoesNotThrow(bach::build, () -> bach.logbook().toString());
   }
 }

@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.internal;
+package test.projects.builder;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -26,7 +26,7 @@ public record ComposedPathMatcher(List<PathMatcher> matchers) implements PathMat
   }
 
   public static Stream<String> stream(String syntax, String suffix, String... patterns) {
-    return List.of(patterns).stream()
+    return Stream.of(patterns)
         .map(pattern -> pattern.indexOf(':') > 0 ? pattern : syntax + ':' + pattern)
         .map(pattern -> pattern.endsWith(suffix) ? pattern : pattern + '/' + suffix);
   }

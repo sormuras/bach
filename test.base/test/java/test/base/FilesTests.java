@@ -63,7 +63,6 @@ class FilesTests {
           Path.of("test.projects/JigsawQuickStartGreetings/com.greetings/module-info.java"),
           Path.of("test.projects/JigsawQuickStartWorld/com.greetings/module-info.java"),
           Path.of("test.projects/JigsawQuickStartWorld/org.astro/module-info.java"),
-          Path.of("test.projects/Simple/.bach/bach.info/module-info.java"),
           Path.of("test.projects/Simple/module-info.java"),
           Path.of("test.projects/Simplicissimus/module-info.java"));
     }

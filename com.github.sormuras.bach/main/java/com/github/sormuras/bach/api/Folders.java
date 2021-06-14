@@ -12,9 +12,9 @@ public record Folders(Path root, Path workspace, Path externalModules, Path exte
 
   public static Folders of(Path path) {
     var root = path.normalize();
-    var workspace = root.resolve(ProjectInfo.FOLDER_WORKSPACE);
-    var externals = root.resolve(ProjectInfo.FOLDER_EXTERNAL_MODULES);
-    var tools = root.resolve(ProjectInfo.FOLDER_EXTERNAL_TOOLS);
+    var workspace = root.resolve(".bach/workspace");
+    var externals = root.resolve(".bach/external-modules");
+    var tools = root.resolve(".bach/external-tools");
     return new Folders(root, workspace, externals, tools);
   }
 

@@ -1,5 +1,8 @@
-package com.github.sormuras.bach;
+package test.projects.builder;
 
+import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Logbook;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.DeclaredModule;
@@ -12,15 +15,11 @@ import com.github.sormuras.bach.api.Externals;
 import com.github.sormuras.bach.api.Folders;
 import com.github.sormuras.bach.api.ModulePaths;
 import com.github.sormuras.bach.api.Project;
-import com.github.sormuras.bach.api.ProjectInfo;
 import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweaks;
-import com.github.sormuras.bach.internal.ComposedPathMatcher;
-import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.locator.FXGL;
 import com.github.sormuras.bach.locator.JUnit;
 import com.github.sormuras.bach.locator.JavaFX;
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -66,7 +64,7 @@ public class ProjectBuilder {
   public String buildProjectName() {
     var name = options.project_name();
     if (name == null || name.equals(".")) {
-      return Strings.nameOrElse(options.chroot(), "noname");
+      return Paths.nameOrElse(options.chroot(), "noname");
     }
     return name;
   }
@@ -90,7 +88,7 @@ public class ProjectBuilder {
     var testMatcher = ComposedPathMatcher.ofGlobModules(options.test_module_pattern());
 
     for (var path : paths) {
-      var name = ProjectInfo.BACH_FOLDER;
+      var name = ".bach";
       if (Paths.countName(path, name) >= 1) {
         logbook.log(Level.TRACE, "Skip module %s - its path contains %s".formatted(path, name));
         continue;
@@ -141,7 +139,7 @@ public class ProjectBuilder {
     // assume single source folder, directory and module names are equal
     // "foo.bar/module-info.java" with "module foo.bar {...}"
     var parent = info.getParent();
-    if (Strings.name(parent).equals(reference.name())) {
+    if (Paths.name(parent).equals(reference.name())) {
       var folder = buildDeclaredSourceFolder(parent);
       var sources = SourceFolders.of(folder);
       var resources = jarWithSources ? SourceFolders.of(folder) : SourceFolders.of();
@@ -170,7 +168,7 @@ public class ProjectBuilder {
   public SourceFolders buildDeclaredSourceFolders(Path path, String namePrefix) {
     var list =
         Paths.list(path, Files::isDirectory).stream()
-            .filter(candidate -> Strings.name(candidate).startsWith(namePrefix))
+            .filter(candidate -> Paths.name(candidate).startsWith(namePrefix))
             .map(this::buildDeclaredSourceFolder)
             .sorted(Comparator.comparingInt(SourceFolder::release))
             .toList();
@@ -210,14 +208,9 @@ public class ProjectBuilder {
 
   public List<ExternalModuleLocator> buildExternalsLocators() {
     var locators = new ArrayList<ExternalModuleLocator>();
-    fillExternalsLocatorsFromServices(locators);
     fillExternalsLocatorsFromOptionModuleLocation(locators);
     fillExternalsLocatorsFromOptionLibraryVersion(locators);
     return List.copyOf(locators);
-  }
-
-  public void fillExternalsLocatorsFromServices(List<ExternalModuleLocator> locators) {
-    ServiceLoader.load(core.layer(), ExternalModuleLocator.class).forEach(locators::add);
   }
 
   public void fillExternalsLocatorsFromOptionModuleLocation(List<ExternalModuleLocator> locators) {
