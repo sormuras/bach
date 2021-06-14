@@ -83,7 +83,6 @@ class OptionsTests {
 
     var expected =
         new Options(
-            null,
             true,
             true,
             true,

@@ -40,21 +40,6 @@ public record Bach(Core core, Project project)
 
   public int run() {
     var options = options();
-    if (options.command().isPresent()) {
-      var command = options.command().get();
-      var name = command.name();
-      var arguments = command.arguments();
-      switch (name) {
-        case PRINT_MODULES -> printModules();
-        case PRINT_DECLARED_MODULES -> printDeclaredModules();
-        case PRINT_EXTERNAL_MODULES -> printExternalModules();
-        case PRINT_SYSTEM_MODULES -> printSystemModules();
-        case PRINT_TOOLS -> printTools();
-        case LOAD_EXTERNAL_MODULE -> loadExternalModules(arguments.toArray(String[]::new));
-        case LOAD_MISSING_EXTERNAL_MODULES -> loadMissingExternalModules();
-      }
-      return 0;
-    }
 
     say("Bach " + version());
     if (options.verbose()) {
