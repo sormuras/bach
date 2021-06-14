@@ -11,8 +11,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public record Core(
-    Logbook logbook, ModuleLayer layer, Options options, Factory factory, Folders folders) {
+public record Core(Logbook logbook, Options options, Factory factory, Folders folders) {
 
   public void httpLoad(String uri, Path file) {
     logbook.debug("Load %s from %s".formatted(file, uri));

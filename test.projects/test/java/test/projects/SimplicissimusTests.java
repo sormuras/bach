@@ -58,7 +58,6 @@ class SimplicissimusTests {
     var core =
         new Core(
             Logbook.ofErrorPrinter(),
-            ModuleLayer.empty(),
             options,
             new Factory(),
             project.folders());
