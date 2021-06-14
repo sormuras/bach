@@ -42,7 +42,7 @@ jobs:
           java-version: 16
           distribution: 'zulu'
       - name: 'Bootstrap Bach'
-        run: java --show-version bootstrap.java
+        run: java --show-version bach/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
         run: .bach/bin/bach --project-version ${{ needs.setup.outputs.version }} build
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}'
