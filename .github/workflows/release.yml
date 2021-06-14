@@ -29,9 +29,9 @@ jobs:
           java-version: 16
           distribution: 'zulu'
       - name: 'Bootstrap Bach'
-        run: java --show-version bach/bootstrap.java
+        run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'
-        run: .bach/bin/bach bach/build.java --project-version ${{ env.VERSION }}
+        run: .bach/bin/bach .bach/src/build.java --project-version ${{ env.VERSION }}
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ env.VERSION }}'
         if: always()
         uses: actions/upload-artifact@v2
