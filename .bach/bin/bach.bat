@@ -1,7 +1,8 @@
 @ECHO OFF
 
 IF "%~1" == "boot" (
-  jshell --module-path .bach\bin --add-modules com.github.sormuras.bach
+  REM SHIFT 1
+  jshell --module-path .bach\bin --add-modules ALL-MODULE-PATH %2 %3 %4 %5 %6 %7 %8 %9
   EXIT /B %ERRORLEVEL%
 )
 
@@ -11,6 +12,11 @@ IF "%~1" == "init" (
     EXIT /B 1
   )
   jshell -R-Dbach-version=%2 https://git.io/bach-init
+  EXIT /B %ERRORLEVEL%
+)
+
+IF EXIST %~1 (
+  java --module-path .bach\bin --add-modules ALL-MODULE-PATH %*
   EXIT /B %ERRORLEVEL%
 )
 
