@@ -38,7 +38,7 @@ public record Bach(Core core, Project project)
     logbook().debug(message);
   }
 
-  public int run() {
+  public int buildAndWriteLogbook() {
     var options = options();
 
     say("Bach " + version());
@@ -48,10 +48,9 @@ public record Bach(Core core, Project project)
     }
     say("Work on project %s %s".formatted(project.name(), project.version()));
 
-    var workflows = options.workflow();
     var start = Instant.now();
     try {
-      workflows.forEach(this::run);
+      build();
     } catch (Exception exception) {
       logbook().log(exception);
       return 1;
