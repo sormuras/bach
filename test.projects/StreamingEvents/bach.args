@@ -1,6 +1,0 @@
---project-requires
-  org.junit.platform.console
---project-requires
-  org.junit.platform.jfr
---external-library-version
-  JUnit=5.7.2
