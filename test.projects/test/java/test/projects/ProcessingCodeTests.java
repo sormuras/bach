@@ -49,7 +49,7 @@ class ProcessingCodeTests {
         Options.ofCommandLineArguments(call.arguments()).underlay(Options.ofDefaultValues());
 
     var core =
-        new Core(Logbook.ofErrorPrinter(), ModuleLayer.empty(), options, new Factory(), folders);
+        new Core(Logbook.ofErrorPrinter(), options, new Factory(), folders);
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 

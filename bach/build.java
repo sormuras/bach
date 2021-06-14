@@ -52,12 +52,10 @@ public class build {
   }
 
   static Core core(Options options) {
-    return new Core(
-        Logbook.of(Printer.ofSystem(), options.verbose()),
-        ModuleLayer.empty(),
-        options,
-        new MyFactory(),
-        Folders.of(""));
+    var logbook = Logbook.of(Printer.ofSystem(), options.verbose());
+    var factory = new MyFactory();
+    var folders = Folders.of("");
+    return new Core(logbook, options, factory, folders);
   }
 
   static Project project(Options options) {

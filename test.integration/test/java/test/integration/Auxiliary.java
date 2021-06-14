@@ -28,11 +28,10 @@ public class Auxiliary {
   }
 
   public static Bach newEmptyBach(Logbook logbook) {
-    var layer = Bach.class.getModule().getLayer();
     var options = Options.ofDefaultValues();
     var factory = new Factory();
     var folders = Folders.of(".");
-    var core = new Core(logbook, layer, options, factory, folders);
+    var core = new Core(logbook, options, factory, folders);
 
     var name = "empty";
     var version = Version.parse("0");
