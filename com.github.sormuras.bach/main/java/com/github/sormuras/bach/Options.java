@@ -4,7 +4,6 @@ import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Tweak;
-import com.github.sormuras.bach.api.Workflow;
 import com.github.sormuras.bach.internal.Strings;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,7 +14,6 @@ import java.lang.reflect.RecordComponent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -146,42 +144,9 @@ public record Options(
             --external-library-version
               JUnit=5.7.1
           This option is repeatable.""")
-        List<ExternalLibraryVersion> external_library_version,
-    // </editor-fold>
-
-    // <editor-fold desc="Workflows">
-    @Help(
-            """
-        --workflow WORKFLOW(,WORKFLOW)*
-          Execute a workflow specified by its name.
-          This option is repeatable.""")
-        @CommaSeparatedValue
-        List<Workflow> workflow
+        List<ExternalLibraryVersion> external_library_version
     // </editor-fold>
     ) {
-
-  public static String generateHelpMessage(Predicate<RecordComponent> filter) {
-    var options =
-        Stream.of(Options.class.getRecordComponents())
-            .filter(filter)
-            .sorted(Comparator.comparing(RecordComponent::getName))
-            .map(component -> component.getAnnotation(Help.class).value().strip())
-            .collect(Collectors.joining(System.lineSeparator()));
-
-    return """
-        Usage: bach [OPTIONS] [WORKFLOW...]
-                 to execute one or more workflows in sequence
-
-        Workflows may either be passed via their --workflow <WORKFLOW> option at a random
-        position or by their <WORKFLOW> name at the end of the command-line arguments.
-
-        OPTIONS include:
-
-        {{OPTIONS}}
-        """
-        .replace("{{OPTIONS}}", options.indent(2).stripTrailing())
-        .stripTrailing();
-  }
 
   public static Options of() {
     return EMPTY;
@@ -257,8 +222,7 @@ public record Options(
         underlay(Options::skip_tool, layers),
         underlay(Options::tweak, layers),
         underlay(Options::external_module_location, layers),
-        underlay(Options::external_library_version, layers),
-        underlay(Options::workflow, layers));
+        underlay(Options::external_library_version, layers));
   }
 
   private <T> T underlay(Function<Options, T> function, Options... layers) {
@@ -310,8 +274,7 @@ public record Options(
         withMerging(
             external_library_version,
             map.get("--external-library-version"),
-            ExternalLibraryVersion::of),
-        withMerging(workflow, map.get("--workflow"), Workflow.class));
+            ExternalLibraryVersion::of));
   }
 
   private static Boolean withFlag(Boolean old, Value value) {
@@ -328,18 +291,8 @@ public record Options(
     return mapper.apply(value.text);
   }
 
-  private static <T> T withValue(T old, Value value, Function<Value, T> mapper) {
-    if (value == null) return old;
-    if (value.text == null) return null;
-    return mapper.apply(value);
-  }
-
   private static List<String> withMerging(List<String> old, Value value) {
     return withMerging(old, value, Function.identity());
-  }
-
-  private static <T extends Enum<T>> List<T> withMerging(List<T> old, Value value, Class<T> type) {
-    return withMerging(old, value, string -> Strings.toEnum(type, string));
   }
 
   private static <T> List<T> withMerging(List<T> old, Value value, Function<String, T> mapper) {
@@ -369,7 +322,7 @@ public record Options(
   private static final Options EMPTY =
       new Options(
           null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-          null, null, null, null, null);
+          null, null, null, null);
 
   private static final Options DEFAULTS =
       new Options(
@@ -387,7 +340,6 @@ public record Options(
           false,
           List.of("test", "**/test", "**/test/**"),
           List.of(".bach/workspace/modules", ".bach/external-modules"),
-          List.of(),
           List.of(),
           List.of(),
           List.of(),
@@ -413,13 +365,5 @@ public record Options(
 
   private static boolean isFlag(RecordComponent component) {
     return component.getType() == Boolean.class;
-  }
-
-  static boolean isHelp(RecordComponent component) {
-    return component.isAnnotationPresent(Help.class) && !component.isAnnotationPresent(Extra.class);
-  }
-
-  static boolean isHelpExtra(RecordComponent component) {
-    return component.isAnnotationPresent(Help.class) && component.isAnnotationPresent(Extra.class);
   }
 }

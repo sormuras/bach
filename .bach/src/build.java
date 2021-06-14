@@ -40,7 +40,7 @@ public class build {
   public static void main(String... args) {
     System.out.println("Build with Bach " + Bach.version());
     try {
-      bach(args).build();
+      bach(args).buildAndWriteLogbook();
     } catch (Throwable throwable) {
       System.exit(-1);
     }
