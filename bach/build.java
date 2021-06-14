@@ -30,7 +30,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.lang.module.ModuleDescriptor;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -41,27 +40,28 @@ public class build {
   public static void main(String... args) {
     System.out.println("Build with Bach " + Bach.version());
     try {
-      bach().build();
+      bach(args).build();
     } catch (Throwable throwable) {
       System.exit(-1);
     }
   }
 
-  static Bach bach() {
-    return new Bach(core(), project());
+  static Bach bach(String... args) {
+    var options = Options.ofCommandLineArguments(args).underlay(Options.ofDefaultValues());
+    return new Bach(core(options), project(options));
   }
 
-  static Core core() {
+  static Core core(Options options) {
     return new Core(
-        Logbook.of(Printer.ofSystem(), true),
+        Logbook.of(Printer.ofSystem(), options.verbose()),
         ModuleLayer.empty(),
-        Options.ofDefaultValues(),
+        options,
         new MyFactory(),
         Folders.of(""));
   }
 
-  static Project project() {
-    var version = ModuleDescriptor.Version.parse("17-ea");
+  static Project project(Options options) {
+    var version = options.project_version();
     var folders = Folders.of(".");
     var modulePath = folders.root("com.github.sormuras.bach");
     var main =
