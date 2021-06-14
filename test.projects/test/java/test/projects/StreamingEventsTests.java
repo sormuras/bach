@@ -29,14 +29,13 @@ class StreamingEventsTests {
                 .with("--project-requires", "org.junit.platform.jfr")
                 .with("--external-library-version", "JUnit=5.7.2")
                 .with("--limit-tool", "javac", "jar", "test", "junit")
-                .with("--workflow", "build")
                 .underlay(Options.ofDefaultValues());
 
     var core = new Core(Logbook.ofErrorPrinter(), options, new Factory(), folders);
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """

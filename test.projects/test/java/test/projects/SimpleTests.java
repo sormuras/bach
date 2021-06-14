@@ -34,7 +34,6 @@ class SimpleTests {
             .with("--limit-tool", "javac")
             .with("--limit-tool", "jar")
             .with("--main-jar-with-sources", "true")
-            .with("--workflow", "build")
             .underlay(Options.ofDefaultValues());
 
     var core =
@@ -42,7 +41,7 @@ class SimpleTests {
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """

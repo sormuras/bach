@@ -53,8 +53,7 @@ class SimplicissimusTests {
     var project = project();
     var options = Options.ofDefaultValues()
         .with("--verbose", "true")
-        .with("--main-jar-with-sources", "true")
-        .with("--workflow", "build");
+        .with("--main-jar-with-sources", "true");
     var core =
         new Core(
             Logbook.ofErrorPrinter(),
@@ -62,12 +61,11 @@ class SimplicissimusTests {
             new Factory(),
             project.folders());
     var bach = new Bach(core, project);
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
         Work on project Simplicissimus 123
-        run(BUILD)
         >> BUILD >>
         Bach run took .+
         Logbook written to .+

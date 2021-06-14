@@ -13,6 +13,7 @@ import test.projects.builder.ProjectBuilder;
 
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
@@ -43,8 +44,7 @@ class ProcessingCodeTests {
                   test
                   javac
                   -Xplugin:showPlugin
-                  """)
-            .withAll("clean", "build");
+                  """);
     var options =
         Options.ofCommandLineArguments(call.arguments()).underlay(Options.ofDefaultValues());
 
@@ -53,7 +53,8 @@ class ProcessingCodeTests {
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertDoesNotThrow(bach::clean);
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """

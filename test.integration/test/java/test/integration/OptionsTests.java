@@ -12,7 +12,6 @@ import com.github.sormuras.bach.api.ExternalLibraryName;
 import com.github.sormuras.bach.api.ExternalLibraryVersion;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.Tweak;
-import com.github.sormuras.bach.api.Workflow;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
@@ -101,8 +100,7 @@ class OptionsTests {
             List.of("TOOL"),
             List.of(new Tweak(EnumSet.allOf(CodeSpace.class), "TRIGGER", List.of("ARGS..."))),
             List.of(new ExternalModuleLocation("M1", "U1"), new ExternalModuleLocation("M2", "U2")),
-            List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")),
-            List.copyOf(EnumSet.allOf(Workflow.class)));
+            List.of(new ExternalLibraryVersion(ExternalLibraryName.JUNIT, "VERSION")));
 
     var arguments =
         """
@@ -154,24 +152,6 @@ class OptionsTests {
           --tweak
             main,test\\nTRIGGER\\nARGS...
           --verbose
-          --workflow
-            BUILD
-          --workflow
-            CLEAN
-          --workflow
-            RESOLVE
-          --workflow
-            COMPILE_MAIN
-          --workflow
-            COMPILE_TEST
-          --workflow
-            EXECUTE_TESTS
-          --workflow
-            GENERATE_DOCUMENTATION
-          --workflow
-            GENERATE_IMAGE
-          --workflow
-            WRITE_LOGBOOK
           """;
 
     var actual =

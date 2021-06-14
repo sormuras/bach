@@ -65,6 +65,6 @@ class JigsawQuickStartWorldTests {
     var project = expectedProject();
     var core = new Core(Logbook.ofErrorPrinter(), Options.ofDefaultValues(), new Factory(), project.folders());
     var bach = new Bach(core, project);
-    assertDoesNotThrow(bach::build, () -> bach.logbook().toString());
+    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
   }
 }

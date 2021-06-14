@@ -52,6 +52,6 @@ class JigsawQuickStartGreetingsTests {
     var project = project();
     var core = new Core(Logbook.ofErrorPrinter(), Options.ofDefaultValues(), new Factory(), project.folders());
     var bach = new Bach(core, project);
-    assertDoesNotThrow(bach::build, () -> bach.logbook().toString());
+    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
   }
 }

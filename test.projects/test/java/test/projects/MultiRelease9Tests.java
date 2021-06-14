@@ -30,14 +30,13 @@ class MultiRelease9Tests {
                 .with("--limit-tool", "jar")
                 .with("--main-java-release", "9")
                 .with("--main-jar-with-sources", "true")
-                .with("--workflow", "build")
                 .underlay(Options.ofDefaultValues());
 
     var core = new Core(Logbook.ofErrorPrinter(), options, new Factory(), folders);
     var project = new ProjectBuilder(core).build();
     var bach = new Bach(core, project);
 
-    assertEquals(0, bach.run(), () -> bach.logbook().toString());
+    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
         """
