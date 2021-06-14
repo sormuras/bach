@@ -20,7 +20,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,16 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Options(
-    @Help("""
-        --version
-          Print version information and exit.
-        --help
-          Print this help screen and exit.
-        --run TOOL [ARGS...]
-          Launch a provided (modular) or an external (executable JAR) tool via its name
-          and exit with its status code.
-        """) Optional<Command> command,
-
     // <editor-fold desc="Runtime Modifying Options">
     @Help("""
         --verbose
@@ -209,12 +198,6 @@ public record Options(
   public static Options ofCommandLineArguments(List<String> args) {
     if (args.isEmpty()) return Options.of();
     var arguments = new LinkedList<>(args);
-    var name = Command.findName(arguments.peekFirst());
-    if (name.isPresent()) {
-      arguments.removeFirst();
-      var more = arguments.toArray(String[]::new);
-      return Options.of().with("--command", name.get().name(), more);
-    }
     var options = Options.of();
     while (!arguments.isEmpty()) {
       var peeked = arguments.peekFirst().strip();
@@ -256,7 +239,6 @@ public record Options(
   public Options underlay(Options... layers) {
     if (layers.length == 0) return this;
     return new Options(
-        underlay(Options::command, layers),
         underlay(Options::verbose, layers),
         underlay(Options::dry_run, layers),
         underlay(Options::sequential, layers),
@@ -304,7 +286,6 @@ public record Options(
     nonValid.removeAll(ALL_KEYS);
     if (!nonValid.isEmpty()) throw new IllegalArgumentException(nonValid.toString());
     return new Options(
-        withValue(command, map.get("--command"), v -> Optional.of(Command.of(v.text, v.more))),
         withFlag(verbose, map.get("--verbose")),
         withFlag(dry_run, map.get("--dry-run")),
         withFlag(sequential, map.get("--sequential")),
@@ -388,11 +369,10 @@ public record Options(
   private static final Options EMPTY =
       new Options(
           null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-          null, null, null, null, null, null);
+          null, null, null, null, null);
 
   private static final Options DEFAULTS =
       new Options(
-          Optional.empty(),
           false,
           false,
           false,
