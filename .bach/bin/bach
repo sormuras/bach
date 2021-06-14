@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 if [[ $1 == 'boot' ]]; then
-  jshell --module-path .bach/bin --add-modules com.github.sormuras.bach
+  shift 1
+  jshell --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
   exit $?
 fi
 
@@ -10,7 +11,12 @@ if [[ $1 == 'init' ]]; then
     echo "Usage: bach init VERSION"
     exit 1
   fi
-  jshell -R-Dbach-version=$2 https://git.io/bach-init
+  jshell -R-Dbach-version="$2" https://git.io/bach-init
+  exit $?
+fi
+
+if [[ -f "$1" ]]; then
+  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
   exit $?
 fi
 
