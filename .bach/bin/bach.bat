@@ -20,7 +20,13 @@ IF "%~1" == "init" (
   EXIT /B %ERRORLEVEL%
 )
 
-IF EXIST %~1 (
+IF EXIST ".bach\src\%~1.java" (
+  REM SHIFT 1
+  java --module-path .bach\bin --add-modules ALL-MODULE-PATH .bach\src\%1.java %2 %3 %4 %5 %6 %7 %8 %9
+  EXIT /B %ERRORLEVEL%
+)
+
+IF EXIST "%~1" (
   java --module-path .bach\bin --add-modules ALL-MODULE-PATH %*
   EXIT /B %ERRORLEVEL%
 )
