@@ -20,14 +20,15 @@ if [[ $1 == 'init' ]]; then
   exit $?
 fi
 
-if [[ -f "$1" ]]; then
-  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
+if [[ -f ".bach/src/$1.java" ]]; then
+  PROGRAM=".bach/src/$1.java"
+  shift 1
+  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$PROGRAM" "$@"
   exit $?
 fi
 
-if [[ -f ".bach/src/$1.java" ]]; then
-  shift 1
-  java --module-path .bach/bin --add-modules ALL-MODULE-PATH ".bach/src/$1.java" "$@"
+if [[ -f "$1" ]]; then
+  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
   exit $?
 fi
 

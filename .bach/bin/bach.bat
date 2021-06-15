@@ -7,7 +7,7 @@ IF "%~1" == "boot" (
 )
 
 IF "%~1" == "clean" (
-  rmdir /S /Q .bach\workspace
+  IF EXIST .bach\workspace rmdir /S /Q .bach\workspace
   EXIT /B %ERRORLEVEL%
 )
 
@@ -21,8 +21,9 @@ IF "%~1" == "init" (
 )
 
 IF EXIST ".bach\src\%~1.java" (
+  REM PROGRAM=
   REM SHIFT 1
-  java --module-path .bach\bin --add-modules ALL-MODULE-PATH .bach\src\%1.java %2 %3 %4 %5 %6 %7 %8 %9
+  java --module-path .bach\bin --add-modules ALL-MODULE-PATH ".bach\src\%~1.java" %2 %3 %4 %5 %6 %7 %8 %9
   EXIT /B %ERRORLEVEL%
 )
 
