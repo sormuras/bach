@@ -7,6 +7,7 @@ import com.github.sormuras.bach.Core;
 import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.DeclaredModule;
@@ -51,7 +52,8 @@ class JigsawQuickStartGreetingsTests {
   void build() {
     var project = project();
     var core = new Core(Logbook.ofErrorPrinter(), Options.ofDefaultValues(), new Factory(), project.folders());
-    var bach = new Bach(core, project);
+    var settings = Settings.of();
+    var bach = new Bach(core, settings, project);
     assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
   }
 }

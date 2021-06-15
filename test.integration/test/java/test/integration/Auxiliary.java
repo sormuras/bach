@@ -6,6 +6,7 @@ import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Printer;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.Externals;
@@ -33,6 +34,8 @@ public class Auxiliary {
     var folders = Folders.of(".");
     var core = new Core(logbook, options, factory, folders);
 
+    var settings = Settings.of();
+
     var name = "empty";
     var version = Version.parse("0");
     var spaces = Spaces.of(CodeSpaceMain.empty(), CodeSpaceTest.empty());
@@ -40,7 +43,7 @@ public class Auxiliary {
     var externals = Externals.of();
     var project = new Project(name, version, folders, spaces, tools, externals);
 
-    return new Bach(core, project);
+    return new Bach(core, settings, project);
   }
 
   private Auxiliary() {}

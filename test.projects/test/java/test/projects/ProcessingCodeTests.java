@@ -5,6 +5,7 @@ import com.github.sormuras.bach.Core;
 import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.api.Folders;
 import org.junit.jupiter.api.Test;
@@ -51,9 +52,10 @@ class ProcessingCodeTests {
     var core =
         new Core(Logbook.ofErrorPrinter(), options, new Factory(), folders);
     var project = new ProjectBuilder(core).build();
-    var bach = new Bach(core, project);
+    var settings = Settings.of();
+    var bach = new Bach(core, settings, project);
 
-    assertDoesNotThrow(bach::clean);
+    assertDoesNotThrow(bach.settings().workflows().newCleanWorkflow().with(bach)::clean);
     assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
 
     assertLinesMatch(
