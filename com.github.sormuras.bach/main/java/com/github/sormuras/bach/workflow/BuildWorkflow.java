@@ -10,12 +10,13 @@ public class BuildWorkflow extends BachWorkflow {
 
   public void build() {
     bach().log("Build begin...");
-    bach().resolve();
-    bach().compileMainCodeSpace();
-    bach().compileTestCodeSpace();
-    bach().executeTests();
-    bach().generateDocumentation();
-    bach().generateImage();
+    var workflows = bach().settings().workflows();
+    workflows.newResolveWorkflow().with(bach()).resolve();
+    workflows.newCompileMainCodeSpaceWorkflow().with(bach()).compile();
+    workflows.newCompileTestCodeSpaceWorkflow().with(bach()).compile();
+    workflows.newExecuteTestsWorkflow().with(bach()).execute();
+    workflows.newGenerateDocumentationWorkflow().with(bach()).generate();
+    workflows.newGenerateImageWorkflow().with(bach()).generate();
     bach().log("Build end.");
   }
 }

@@ -4,8 +4,10 @@ import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Printer;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolRun;
+import com.github.sormuras.bach.Workflows;
 import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
@@ -25,7 +27,16 @@ import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Tweaks;
 import com.github.sormuras.bach.locator.JUnit;
+import com.github.sormuras.bach.workflow.BuildWorkflow;
+import com.github.sormuras.bach.workflow.CleanWorkflow;
+import com.github.sormuras.bach.workflow.CompileMainCodeSpaceWorkflow;
+import com.github.sormuras.bach.workflow.CompileTestCodeSpaceWorkflow;
 import com.github.sormuras.bach.workflow.ExecuteTestsWorkflow;
+import com.github.sormuras.bach.workflow.GenerateDocumentationWorkflow;
+import com.github.sormuras.bach.workflow.GenerateImageWorkflow;
+import com.github.sormuras.bach.workflow.ResolveWorkflow;
+import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,7 +47,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
-public class build {
+class build {
   public static void main(String... args) {
     System.out.println("Build with Bach " + Bach.version());
     try {
@@ -48,7 +59,21 @@ public class build {
 
   static Bach bach(String... args) {
     var options = Options.ofCommandLineArguments(args).underlay(Options.ofDefaultValues());
-    return new Bach(core(options), project(options));
+    return new Bach(core(options), settings(options), project(options));
+  }
+
+  static Settings settings(Options options) {
+    var workflows = new Workflows(
+        BuildWorkflow::new,
+        CleanWorkflow::new,
+        CompileMainCodeSpaceWorkflow::new,
+        CompileTestCodeSpaceWorkflow::new,
+        MyExecuteTestsWorkflow::new,
+        GenerateDocumentationWorkflow::new,
+        GenerateImageWorkflow::new,
+        ResolveWorkflow::new,
+        WriteLogbookWorkflow::new);
+    return new Settings(workflows);
   }
 
   static Core core(Options options) {

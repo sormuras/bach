@@ -5,12 +5,11 @@ import com.github.sormuras.bach.internal.Strings;
 import com.github.sormuras.bach.trait.PrintTrait;
 import com.github.sormuras.bach.trait.ResolveTrait;
 import com.github.sormuras.bach.trait.ToolTrait;
-import com.github.sormuras.bach.trait.WorkflowTrait;
 import java.time.Duration;
 import java.time.Instant;
 
-public record Bach(Core core, Project project)
-    implements WorkflowTrait, PrintTrait, ResolveTrait, ToolTrait {
+public record Bach(Core core, Settings settings, Project project)
+    implements PrintTrait, ResolveTrait, ToolTrait {
 
   public static String version() {
     var module = Bach.class.getModule();
@@ -50,13 +49,13 @@ public record Bach(Core core, Project project)
 
     var start = Instant.now();
     try {
-      build();
+      settings.workflows().newBuildWorkflow().with(this).build();
     } catch (Exception exception) {
       logbook().log(exception);
       return 1;
     } finally {
       say("Bach run took " + Strings.toString(Duration.between(start, Instant.now())));
-      writeLogbook();
+      settings.workflows().newWriteLogbookWorkflow().with(this).write();
     }
     return 0;
   }
