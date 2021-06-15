@@ -25,5 +25,11 @@ if [[ -f "$1" ]]; then
   exit $?
 fi
 
+if [[ -f ".bach/src/$1.java" ]]; then
+  shift 1
+  java --module-path .bach/bin --add-modules ALL-MODULE-PATH ".bach/src/$1.java" "$@"
+  exit $?
+fi
+
 java --module-path .bach/bin --module com.github.sormuras.bach "$@"
 exit $?
