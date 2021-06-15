@@ -6,6 +6,11 @@ if [[ $1 == 'boot' ]]; then
   exit $?
 fi
 
+if [[ $1 == 'clean' ]]; then
+  rm -rf .bach/workspace
+  exit $?
+fi
+
 if [[ $1 == 'init' ]]; then
   if [[ -z $2 ]]; then
     echo "Usage: bach init VERSION"
