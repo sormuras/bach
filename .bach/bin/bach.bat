@@ -6,6 +6,11 @@ IF "%~1" == "boot" (
   EXIT /B %ERRORLEVEL%
 )
 
+IF "%~1" == "clean" (
+  rmdir /S /Q .bach\workspace
+  EXIT /B %ERRORLEVEL%
+)
+
 IF "%~1" == "init" (
   IF "%~2" == "" (
     ECHO "Usage: bach init VERSION"
