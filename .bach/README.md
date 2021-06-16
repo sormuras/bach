@@ -15,10 +15,9 @@ The `.bach/bin` directory contains scripts and modules used to build modular Jav
 
 - `com.github.sormuras.bach@VERSION.jar`: 🎼 Bach, the Java Shell Builder
 
-## Directory `.bach/bach.info`
+## Directory `.bach/src`
 
-The `.bach/bach.info` directory contains sources of the configuration module for this project.
-If this directory does not exist, Bach is running in "zero-configuration" mode.
+The `.bach/src` directory contains sources of the configuration module for this project.
 
 ## Directory `.bach/external-modules`
 
