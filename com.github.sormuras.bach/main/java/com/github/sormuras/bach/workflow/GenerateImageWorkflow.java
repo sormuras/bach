@@ -5,6 +5,7 @@ import com.github.sormuras.bach.api.CodeSpace;
 import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.tool.JLinkCall;
 import java.nio.file.Path;
+import java.util.List;
 
 public class GenerateImageWorkflow extends BachWorkflow {
 
@@ -33,12 +34,14 @@ public class GenerateImageWorkflow extends BachWorkflow {
 
   protected JLinkCall jlink(Path image) {
     var project = bach().project();
+    var folders = project.folders();
+    var paths = List.of(folders.modules(CodeSpace.MAIN), folders.externalModules());
     var main = project.spaces().main();
-    var test = project.spaces().test();
     var tweaks = project.tools().tweaks();
     return new JLinkCall()
+        .ifTrue(bach().options().verbose(), args -> args.with("--verbose"))
         .with("--add-modules", main.modules().toNames(","))
-        .ifPresent(test.paths().pruned(), (jlink, paths) -> jlink.with("--module-path", paths))
+        .with("--module-path", paths)
         .withAll(tweaks.arguments(CodeSpace.MAIN, "jlink"))
         .with("--output", image);
   }
