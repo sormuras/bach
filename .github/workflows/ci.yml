@@ -109,7 +109,9 @@ jobs:
           git commit --message 'Update API documentation of ${{ github.event.repository.name }} to ${{ needs.setup.outputs.version }}'
           git push
 
+
   play-prelude:
+    if: ${{ false }}
     needs: [ setup, build, deploy-to-releases ]
     runs-on: ubuntu-latest
     steps:
@@ -144,6 +146,7 @@ jobs:
         run: .bach/workspace/image/bin/java --module air
 
   use-action:
+    if: ${{ false }}
     needs: [ setup, build, deploy-to-releases ]
     runs-on: ubuntu-latest
     steps:
