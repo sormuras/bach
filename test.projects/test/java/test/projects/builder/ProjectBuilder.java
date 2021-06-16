@@ -1,8 +1,8 @@
 package test.projects.builder;
 
-import com.github.sormuras.bach.Core;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.api.CodeSpaceMain;
 import com.github.sormuras.bach.api.CodeSpaceTest;
 import com.github.sormuras.bach.api.DeclaredModule;
@@ -39,14 +39,14 @@ import java.util.stream.Collectors;
 
 public class ProjectBuilder {
 
-  protected final Core core;
-  protected final Logbook logbook;
+  protected final Settings settings;
   protected final Options options;
+  protected final Logbook logbook;
 
-  public ProjectBuilder(Core core) {
-    this.core = core;
-    this.logbook = core.logbook();
-    this.options = core.options();
+  public ProjectBuilder(Settings settings) {
+    this.settings = settings;
+    this.options = settings.options();
+    this.logbook = settings.logbook();
   }
 
   public Project build() {
@@ -54,7 +54,7 @@ public class ProjectBuilder {
     logbook.log(Level.DEBUG, "Read values from options with id: " + options);
     var name = buildProjectName();
     var version = buildProjectVersion();
-    var folders = core.folders();
+    var folders = settings.folders();
     var spaces = buildSpaces(folders);
     var tools = buildTools();
     var externals = buildExternals();
@@ -231,7 +231,7 @@ public class ProjectBuilder {
         case FXGL -> locators.add(FXGL.of(version));
         case JAVAFX -> locators.add(JavaFX.of(version));
         case JUNIT -> locators.add(JUnit.of(version));
-        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(core, version));
+        case SORMURAS_MODULES -> locators.add(new SormurasModulesLocator(settings, version));
       }
     }
   }

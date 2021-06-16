@@ -1,11 +1,9 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Core;
-import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Settings;
@@ -29,11 +27,7 @@ import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartWorldWithTestsTests {
 
-  static final String NAME = "JigsawQuickStartWorldWithTests";
-
-  private Project expectedProject() {
-    var version = ModuleDescriptor.Version.parse("0");
-    var folders = Folders.of(Path.of("test.projects", NAME));
+  private Project project(String name, ModuleDescriptor.Version version, Folders folders) {
     var greetings = folders.root("com.greetings");
     var astro = folders.root("org.astro");
     var tests = folders.root("test.modules");
@@ -66,17 +60,22 @@ class JigsawQuickStartWorldWithTestsTests {
     var spaces = Spaces.of(main, test);
     var externals = Externals.of();
     var tools = Tools.of("javac", "jar", "test");
-    return new Project(NAME, version, folders, spaces, tools, externals);
+    return new Project(name, version, folders, spaces, tools, externals);
   }
 
   @Test
   void build() {
-    var project = expectedProject();
+    var name = "JigsawQuickStartWorldWithTests";
+    var version = ModuleDescriptor.Version.parse("0");
+    var folders = Folders.of(Path.of("test.projects", name));
+    var project = project(name, version, folders);
+
     var options = Options.ofDefaultValues().with("--verbose", "true");
-    var core = new Core(Logbook.ofErrorPrinter(), options, new Factory(), project.folders());
-    var settings = Settings.of();
-    var bach = new Bach(core, settings, project);
-    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
+    var logbook = Logbook.ofErrorPrinter();
+    var settings = Settings.of(options, logbook).with(folders);
+    var bach = new Bach(settings, project);
+
+    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
 
     assertLinesMatch(
         """
