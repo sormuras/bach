@@ -1,6 +1,5 @@
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Core;
-import com.github.sormuras.bach.Factory;
+import com.github.sormuras.bach.Browser;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Printer;
@@ -27,16 +26,7 @@ import com.github.sormuras.bach.api.Tools;
 import com.github.sormuras.bach.api.Tweak;
 import com.github.sormuras.bach.api.Tweaks;
 import com.github.sormuras.bach.locator.JUnit;
-import com.github.sormuras.bach.workflow.BuildWorkflow;
-import com.github.sormuras.bach.workflow.CleanWorkflow;
-import com.github.sormuras.bach.workflow.CompileMainCodeSpaceWorkflow;
-import com.github.sormuras.bach.workflow.CompileTestCodeSpaceWorkflow;
 import com.github.sormuras.bach.workflow.ExecuteTestsWorkflow;
-import com.github.sormuras.bach.workflow.GenerateDocumentationWorkflow;
-import com.github.sormuras.bach.workflow.GenerateImageWorkflow;
-import com.github.sormuras.bach.workflow.ResolveWorkflow;
-import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -59,28 +49,15 @@ class build {
 
   static Bach bach(String... args) {
     var options = Options.ofCommandLineArguments(args).underlay(Options.ofDefaultValues());
-    return new Bach(core(options), settings(options), project(options));
+    return new Bach(settings(options), project(options));
   }
 
   static Settings settings(Options options) {
-    var workflows = new Workflows(
-        BuildWorkflow::new,
-        CleanWorkflow::new,
-        CompileMainCodeSpaceWorkflow::new,
-        CompileTestCodeSpaceWorkflow::new,
-        MyExecuteTestsWorkflow::new,
-        GenerateDocumentationWorkflow::new,
-        GenerateImageWorkflow::new,
-        ResolveWorkflow::new,
-        WriteLogbookWorkflow::new);
-    return new Settings(workflows);
-  }
-
-  static Core core(Options options) {
     var logbook = Logbook.of(Printer.ofSystem(), options.verbose());
-    var factory = new MyFactory();
-    var folders = Folders.of("");
-    return new Core(logbook, options, factory, folders);
+    var folders = Folders.of(".");
+    var browser = Browser.of(options, logbook);
+    var workflows = Workflows.of().with(ExecuteTestsWorkflow.class, MyExecuteTestsWorkflow::new);
+    return new Settings(options, logbook, folders, browser, workflows);
   }
 
   static Project project(Options options) {
@@ -172,16 +149,9 @@ class build {
     return new Project("bach", version, folders, spaces, tools, externals);
   }
 
-  static class MyFactory extends Factory {
-    @Override
-    public ExecuteTestsWorkflow newExecuteTestsWorkflow(Bach bach) {
-      return new MyExecuteTestsWorkflow(bach);
-    }
-  }
-
   static class MyExecuteTestsWorkflow extends ExecuteTestsWorkflow {
 
-    public MyExecuteTestsWorkflow(Bach bach) {
+    MyExecuteTestsWorkflow(Bach bach) {
       super(bach);
     }
 

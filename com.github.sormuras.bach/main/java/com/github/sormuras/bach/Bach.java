@@ -8,8 +8,7 @@ import com.github.sormuras.bach.trait.ToolTrait;
 import java.time.Duration;
 import java.time.Instant;
 
-public record Bach(Core core, Settings settings, Project project)
-    implements PrintTrait, ResolveTrait, ToolTrait {
+public record Bach(Settings settings, Project project) implements PrintTrait, ResolveTrait, ToolTrait {
 
   public static String version() {
     var module = Bach.class.getModule();
@@ -21,12 +20,12 @@ public record Bach(Core core, Settings settings, Project project)
     return this;
   }
 
-  public Logbook logbook() {
-    return core.logbook();
+  public Options options() {
+    return settings.options();
   }
 
-  public Options options() {
-    return core.options();
+  public Logbook logbook() {
+    return settings.logbook();
   }
 
   public void say(String message) {

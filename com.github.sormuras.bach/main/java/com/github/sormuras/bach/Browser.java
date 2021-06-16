@@ -1,17 +1,47 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.api.Folders;
+import com.github.sormuras.bach.internal.Strings;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
-public record Core(Logbook logbook, Options options, Factory factory, Folders folders) {
+public class Browser {
+
+  public static Browser of(Options options, Logbook logbook) {
+    var timeout = Duration.ofSeconds(9);
+    var policy = HttpClient.Redirect.NORMAL;
+    var builder = HttpClient.newBuilder().connectTimeout(timeout).followRedirects(policy);
+    return new Browser(logbook, builder);
+  }
+
+  private final Logbook logbook;
+  private final HttpClient.Builder builder;
+  private final AtomicReference<HttpClient> atomicHttpClient = new AtomicReference<>();
+
+  public Browser(Logbook logbook, HttpClient.Builder builder) {
+    this.logbook = logbook;
+    this.builder = builder;
+  }
+
+  private HttpClient http() {
+    var oldClient = atomicHttpClient.get();
+    if (oldClient != null) return oldClient;
+    var client = builder.build();
+    logbook.debug(
+        "New HttpClient created with %s connect timeout and %s redirect policy"
+            .formatted(
+                client.connectTimeout().map(Strings::toString).orElse("no"),
+                client.followRedirects()));
+    return atomicHttpClient.compareAndSet(null, client) ? client : atomicHttpClient.get();
+  }
 
   public void httpLoad(String uri, Path file) {
     logbook.debug("Load %s from %s".formatted(file, uri));
@@ -56,9 +86,5 @@ public record Core(Logbook logbook, Options options, Factory factory, Folders fo
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
-  }
-
-  private HttpClient http() {
-    return factory.defaultHttpClient(this);
   }
 }
