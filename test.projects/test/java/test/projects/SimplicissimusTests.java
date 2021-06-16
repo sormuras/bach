@@ -1,11 +1,9 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Core;
-import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Settings;
@@ -29,10 +27,7 @@ import test.base.ToolProviders;
 
 class SimplicissimusTests {
 
-  private static Project project() {
-    var name = "Simplicissimus";
-    var version = Version.parse("123");
-    var folders = Folders.of(Path.of("test.projects", name));
+  private static Project project(String name, Version version, Folders folders) {
     var main =
         new CodeSpaceMain(
             DeclaredModuleFinder.of(
@@ -51,19 +46,19 @@ class SimplicissimusTests {
 
   @Test
   void build() {
-    var project = project();
-    var options = Options.ofDefaultValues()
-        .with("--verbose", "true")
-        .with("--main-jar-with-sources", "true");
-    var core =
-        new Core(
-            Logbook.ofErrorPrinter(),
-            options,
-            new Factory(),
-            project.folders());
-    var settings = Settings.of();
-    var bach = new Bach(core, settings, project);
-    assertEquals(0, bach.buildAndWriteLogbook(), () -> bach.logbook().toString());
+    var name = "Simplicissimus";
+    var version = Version.parse("123");
+    var folders = Folders.of(Path.of("test.projects", name));
+    var project = project(name, version, folders);
+
+    var options =
+        Options.ofDefaultValues().with("--verbose", "true").with("--main-jar-with-sources", "true");
+    var logbook = Logbook.ofErrorPrinter();
+    var settings = Settings.of(options, logbook).with(folders);
+    var bach = new Bach(settings, project);
+
+    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
+
     assertLinesMatch(
         """
         >> BACH'S INITIALIZATION >>
@@ -75,7 +70,6 @@ class SimplicissimusTests {
             .lines(),
         bach.logbook().lines());
 
-    var folders = bach.project().folders();
     var jar = folders.modules(CodeSpace.MAIN, "simplicissimus@123.jar");
 
     assertLinesMatch(

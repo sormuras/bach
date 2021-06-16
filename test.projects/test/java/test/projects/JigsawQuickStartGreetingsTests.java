@@ -3,8 +3,6 @@ package test.projects;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Core;
-import com.github.sormuras.bach.Factory;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Settings;
@@ -21,16 +19,13 @@ import com.github.sormuras.bach.api.SourceFolder;
 import com.github.sormuras.bach.api.SourceFolders;
 import com.github.sormuras.bach.api.Spaces;
 import com.github.sormuras.bach.api.Tools;
-import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartGreetingsTests {
 
-  private Project project() {
-    var name = "JigsawQuickStartGreetings";
-    var version = ModuleDescriptor.Version.parse("0");
-    var folders = Folders.of(Path.of("test.projects", name));
+  private Project project(String name, Version version, Folders folders) {
     var greetings = folders.root("com.greetings");
     var main =
         new CodeSpaceMain(
@@ -50,10 +45,16 @@ class JigsawQuickStartGreetingsTests {
 
   @Test
   void build() {
-    var project = project();
-    var core = new Core(Logbook.ofErrorPrinter(), Options.ofDefaultValues(), new Factory(), project.folders());
-    var settings = Settings.of();
-    var bach = new Bach(core, settings, project);
+    var name = "JigsawQuickStartGreetings";
+    var version = Version.parse("0");
+    var folders = Folders.of(Path.of("test.projects", name));
+    var project = project(name, version, folders);
+
+    var options = Options.ofDefaultValues().with("--verbose", "true");
+    var logbook = Logbook.ofErrorPrinter();
+    var settings = Settings.of(options, logbook).with(folders);
+    var bach = new Bach(settings, project);
+
     assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
   }
 }

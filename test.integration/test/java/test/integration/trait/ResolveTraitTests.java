@@ -29,7 +29,7 @@ class ResolveTraitTests {
   @Test
   @Disabled
   void loadFoo(@Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var bach = new Bach(null, null, null);
+    var bach = new Bach(null, null);
     //        Bach.of(
     //            Logbook.ofErrorPrinter(),
     //            Options.of()
@@ -46,7 +46,7 @@ class ResolveTraitTests {
   @Disabled
   void loadMissingExternalModules(
       @Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var bach = new Bach(null, null, null);
+    var bach = new Bach(null, null);
     //        Bach.of(
     //            Logbook.ofErrorPrinter(),
     //            Options.of()
