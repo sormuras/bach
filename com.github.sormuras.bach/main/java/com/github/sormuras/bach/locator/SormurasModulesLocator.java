@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.locator;
 
-import com.github.sormuras.bach.Core;
+import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.api.BachException;
 import com.github.sormuras.bach.api.ExternalModuleLocation;
 import com.github.sormuras.bach.api.ExternalModuleLocator;
@@ -14,13 +14,13 @@ import java.util.TreeMap;
 
 public class SormurasModulesLocator implements ExternalModuleLocator {
 
-  private final Core core;
+  private final Settings settings;
   private final String version;
   private /*-*/ Map<String, String> uris;
 
-  public SormurasModulesLocator(Core core, String version) {
+  public SormurasModulesLocator(Settings settings, String version) {
+    this.settings = settings;
     this.version = version;
-    this.core = core;
     this.uris = null;
   }
 
@@ -43,13 +43,13 @@ public class SormurasModulesLocator implements ExternalModuleLocator {
   }
 
   private synchronized Map<String, String> loadUris() throws Exception {
-    var dir = core.folders().externalTools("sormuras-modules", version);
+    var dir = settings.folders().externalTools("sormuras-modules", version);
     var name = "com.github.sormuras.modules@" + version + ".jar";
     var file = dir.resolve(name);
     if (!Files.exists(file)) {
       var uri = "https://github.com/sormuras/modules/releases/download/" + version + "/" + name;
       Files.createDirectories(dir);
-      core.httpLoad(uri, file);
+      settings.browser().httpLoad(uri, file);
     }
     var jar = FileSystems.newFileSystem(file);
     var lines = Strings.lines(jar.getPath("com/github/sormuras/modules/modules.properties"));
