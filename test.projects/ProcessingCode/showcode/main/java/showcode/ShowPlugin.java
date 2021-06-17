@@ -20,6 +20,7 @@ public class ShowPlugin implements Plugin, TaskListener {
   @Override
   public void init(JavacTask task, String... args) {
     out = new PrintWriter(System.out);
+    out.printf("#%n# ShowPlugin.init%n#%n");
     treeUtils = DocTrees.instance(task);
     task.addTaskListener(this);
   }
@@ -28,7 +29,6 @@ public class ShowPlugin implements Plugin, TaskListener {
   public void finished(TaskEvent e) {
     switch (e.getKind()) {
       case ANALYZE:
-        out.printf("#%n# ShowPlugin.finished%n#%n");
         new ShowCode(treeUtils).show(Set.of(e.getTypeElement()), out);
         out.flush();
     }

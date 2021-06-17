@@ -20,12 +20,12 @@ public class ShowProcessor extends AbstractProcessor {
   @Override
   public void init(ProcessingEnvironment pEnv) {
     out = new PrintWriter(System.out);
+    out.printf("#%n# ShowProcessor.init%n#%n");
     treeUtils = DocTrees.instance(pEnv);
   }
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    out.printf("#%n# ShowProcessor.process%n#%n");
     new ShowCode(treeUtils).show(roundEnv.getRootElements(), out);
     out.flush();
     return false;
