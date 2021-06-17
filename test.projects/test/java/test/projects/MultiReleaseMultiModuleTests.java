@@ -1,54 +1,20 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Logbook;
-import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.api.CodeSpace;
-import com.github.sormuras.bach.api.Folders;
-import com.github.sormuras.bach.tool.JarCall;
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import test.projects.builder.ProjectBuilder;
+import test.base.ToolProviders;
 
 class MultiReleaseMultiModuleTests {
 
   @Test
-  void build() {
-    var name = "MultiReleaseMultiModule";
-    var root = Path.of("test.projects", name);
-    var folders = Folders.of(root);
-    var options =
-        Options.of()
-            .with("--chroot", root.toString())
-            .with("--verbose", "true")
-            .with("--limit-tool", "javac")
-            .with("--limit-tool", "jar")
-            .with("--main-java-release", "8")
-            .with("--main-jar-with-sources", "true")
-            .underlay(Options.ofDefaultValues());
+  void build() throws Exception {
+    var project = TestProject.of("MultiReleaseMultiModule");
+    assertEquals(0, project.build().waitFor());
 
-    var logbook = Logbook.ofErrorPrinter();
-    var settings = Settings.of(options, logbook).with(folders);
-    var bach = new Bach(settings, new ProjectBuilder(settings).build());
-
-    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
-
-    assertLinesMatch(
-        """
-        >> BACH'S INITIALIZATION >>
-        Work on project MultiReleaseMultiModule 0
-        >> INFO + BUILD >>
-        Bach run took .+
-        Logbook written to .+
-        """
-            .lines(),
-        bach.logbook().lines());
-
-    var api = bach.project().folders().modules(CodeSpace.MAIN, "api@0.jar");
+    var api = project.folders().modules(CodeSpace.MAIN, "api@99.jar");
     assertLinesMatch(
         """
         META-INF/
@@ -61,9 +27,9 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        bach.run(new JarCall().with("--list").with("--file", api)).output().lines().sorted());
+        ToolProviders.run("jar", "--list", "--file", api).lines().sorted());
 
-    var engine = bach.project().folders().modules(CodeSpace.MAIN, "engine@0.jar");
+    var engine = project.folders().modules(CodeSpace.MAIN, "engine@99.jar");
     assertLinesMatch(
         """
         META-INF/
@@ -84,6 +50,6 @@ class MultiReleaseMultiModuleTests {
         """
             .lines()
             .sorted(),
-        bach.run(new JarCall().with("--list").with("--file", engine)).output().lines().sorted());
+        ToolProviders.run("jar", "--list", "--file", engine).lines().sorted());
   }
 }

@@ -42,7 +42,6 @@ import java.util.spi.ToolProvider;
 
 class build {
   public static void main(String... args) {
-    System.out.println("Build with Bach " + Bach.version());
     try {
       var bach = bach(args);
       bach.buildAndWriteLogbook();

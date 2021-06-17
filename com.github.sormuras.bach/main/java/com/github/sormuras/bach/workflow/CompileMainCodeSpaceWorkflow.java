@@ -176,17 +176,6 @@ public class CompileMainCodeSpaceWorkflow extends BachWorkflow {
       jar = jar.with("--release", release);
       for (var path : paths) jar = jar.with("-C", path, ".");
     }
-    // force-include sources as resources
-    if (bach().options().main_jar_with_sources()
-        && declared.sources().list().isEmpty()
-        && declared.resources().list().isEmpty()) {
-      var root = declared.root();
-      for (var resource : Paths.find(root, 9, Files::isRegularFile)) {
-        var relativized = root.relativize(resource);
-        if (relativized.toString().startsWith(".")) continue;
-        jar = jar.with("-C", root, relativized);
-      }
-    }
     return jar;
   }
 }

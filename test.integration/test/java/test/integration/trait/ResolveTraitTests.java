@@ -4,10 +4,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Logbook;
+import com.github.sormuras.bach.Options;
+import com.github.sormuras.bach.Settings;
+import com.github.sormuras.bach.api.CodeSpaceMain;
+import com.github.sormuras.bach.api.CodeSpaceTest;
+import com.github.sormuras.bach.api.ExternalModuleLocation;
+import com.github.sormuras.bach.api.Externals;
+import com.github.sormuras.bach.api.Folders;
+import com.github.sormuras.bach.api.Project;
+import com.github.sormuras.bach.api.Spaces;
+import com.github.sormuras.bach.api.Tools;
 import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Disabled;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import test.base.resource.ResourceManager;
@@ -27,33 +40,41 @@ class ResolveTraitTests {
   }
 
   @Test
-  @Disabled
   void loadFoo(@Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var bach = new Bach(null, null);
-    //        Bach.of(
-    //            Logbook.ofErrorPrinter(),
-    //            Options.of()
-    //                .with("--chroot", temp.toString())
-    //                .with("--external-module-location", "foo=" + server.uri("foo.jar")));
+    var project =
+        new Project(
+            "LoadFoo",
+            ModuleDescriptor.Version.parse("99"),
+            Folders.of(temp),
+            Spaces.of(CodeSpaceMain.empty(), CodeSpaceTest.empty()),
+            Tools.of(),
+            new Externals(
+                Set.of(),
+                List.of(new ExternalModuleLocation("foo", server.uri("foo.jar").toString()))));
+    var bach = new Bach(Settings.of(Options.ofDefaultValues(), Logbook.ofErrorPrinter()), project);
 
     bach.loadExternalModules("foo");
 
-    var finder = ModuleFinder.of(bach.project().folders().externalModules());
+    var finder = ModuleFinder.of(project.folders().externalModules());
     assertTrue(finder.find("foo").isPresent());
   }
 
   @Test
-  @Disabled
   void loadMissingExternalModules(
       @Singleton(VolatileServer.class) WebServer server, @TempDir Path temp) {
-    var bach = new Bach(null, null);
-    //        Bach.of(
-    //            Logbook.ofErrorPrinter(),
-    //            Options.of()
-    //                .with("--chroot", temp.toString())
-    //                .with("--project-requires", "bar") // bar requires foo
-    //                .with("--external-module-location", "bar=" + server.uri("bar.jar"))
-    //                .with("--external-module-location", "foo=" + server.uri("foo.jar")));
+    var project =
+        new Project(
+            "LoadFoo",
+            ModuleDescriptor.Version.parse("99"),
+            Folders.of(temp),
+            Spaces.of(CodeSpaceMain.empty(), CodeSpaceTest.empty()),
+            Tools.of(),
+            new Externals(
+                Set.of("bar"), // module bar { requires foo; }
+                List.of(
+                    new ExternalModuleLocation("bar", server.uri("bar.jar").toString()),
+                    new ExternalModuleLocation("foo", server.uri("foo.jar").toString()))));
+    var bach = new Bach(Settings.of(Options.ofDefaultValues(), Logbook.ofErrorPrinter()), project);
 
     bach.loadMissingExternalModules();
 

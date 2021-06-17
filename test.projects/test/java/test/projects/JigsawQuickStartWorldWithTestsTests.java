@@ -1,97 +1,38 @@
 package test.projects;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Logbook;
-import com.github.sormuras.bach.Options;
-import com.github.sormuras.bach.Settings;
-import com.github.sormuras.bach.api.CodeSpace;
-import com.github.sormuras.bach.api.CodeSpaceMain;
-import com.github.sormuras.bach.api.CodeSpaceTest;
-import com.github.sormuras.bach.api.DeclaredModule;
-import com.github.sormuras.bach.api.DeclaredModuleFinder;
-import com.github.sormuras.bach.api.DeclaredModuleReference;
-import com.github.sormuras.bach.api.Externals;
-import com.github.sormuras.bach.api.Folders;
-import com.github.sormuras.bach.api.ModulePaths;
-import com.github.sormuras.bach.api.Project;
-import com.github.sormuras.bach.api.SourceFolder;
-import com.github.sormuras.bach.api.SourceFolders;
-import com.github.sormuras.bach.api.Spaces;
-import com.github.sormuras.bach.api.Tools;
-import java.lang.module.ModuleDescriptor;
-import java.nio.file.Path;
+import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
 
 class JigsawQuickStartWorldWithTestsTests {
 
-  private Project project(String name, ModuleDescriptor.Version version, Folders folders) {
-    var greetings = folders.root("com.greetings");
-    var astro = folders.root("org.astro");
-    var tests = folders.root("test.modules");
-    var main =
-        new CodeSpaceMain(
-            DeclaredModuleFinder.of(
-                new DeclaredModule(
-                    greetings,
-                    DeclaredModuleReference.of(greetings.resolve("main/java/module-info.java")),
-                    SourceFolders.of(SourceFolder.of(greetings.resolve("main/java"))),
-                    SourceFolders.of()),
-                new DeclaredModule(
-                    astro,
-                    DeclaredModuleReference.of(astro.resolve("main/java/module-info.java")),
-                    SourceFolders.of(SourceFolder.of(astro.resolve("main/java"))),
-                    SourceFolders.of()) //
-                ),
-            ModulePaths.of(folders.externalModules()),
-            0);
-    var test =
-        new CodeSpaceTest(
-            DeclaredModuleFinder.of(
-                new DeclaredModule(
-                    tests,
-                    DeclaredModuleReference.of(tests.resolve("test/java/module-info.java")),
-                    SourceFolders.of(SourceFolder.of(tests.resolve("test/java"))),
-                    SourceFolders.of(SourceFolder.of(tests.resolve("test/java")))) //
-                ),
-            ModulePaths.of(folders.modules(CodeSpace.MAIN), folders.externalModules()));
-    var spaces = Spaces.of(main, test);
-    var externals = Externals.of();
-    var tools = Tools.of("javac", "jar", "test");
-    return new Project(name, version, folders, spaces, tools, externals);
-  }
-
   @Test
-  void build() {
-    var name = "JigsawQuickStartWorldWithTests";
-    var version = ModuleDescriptor.Version.parse("0");
-    var folders = Folders.of(Path.of("test.projects", name));
-    var project = project(name, version, folders);
-
-    var options = Options.ofDefaultValues().with("--verbose", "true");
-    var logbook = Logbook.ofErrorPrinter();
-    var settings = Settings.of(options, logbook).with(folders);
-    var bach = new Bach(settings, project);
-
-    assertDoesNotThrow(bach::buildAndWriteLogbook, () -> bach.logbook().toString());
+  void build() throws Exception {
+    var project = TestProject.of("JigsawQuickStartWorldWithTests");
+    assertEquals(0, project.build().waitFor());
 
     assertLinesMatch(
         """
-        >> BACH'S INITIALIZATION >>
-        Work on project JigsawQuickStartWorldWithTests 0
-        >> INFO + BUILD >>
-        Compile 2 main modules: com.greetings, org.astro
+        # Logbook
         >>>>
-        Compile 1 test module: test.modules
+        ## Log Messages
+
+        ```text
         >>>>
-        Test module test.modules
+        [I] Work on project JigsawQuickStartWorldWithTests 99
         >>>>
-        Bach run took .+
-        Logbook written to .+
+        [I] Compile 2 main modules: com.greetings, org.astro
+        >>>>
+        [I] Compile 1 test module: test.modules
+        >>>>
+        [I] Test module test.modules
+        >>>>
+        ```
+        >>>>
         """
             .lines(),
-        bach.logbook().lines());
+        Files.readString(project.folders().workspace("logbook.md")).lines());
   }
 }

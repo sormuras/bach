@@ -2,7 +2,7 @@
 
 if [[ $1 == 'boot' ]]; then
   shift 1
-  jshell --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
+  jshell --module-path .bach/bin --add-modules ALL-MODULE-PATH .bach/bin/bach.jshell "$@"
   exit $?
 fi
 

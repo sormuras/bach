@@ -2,7 +2,7 @@
 
 IF "%~1" == "boot" (
   REM SHIFT 1
-  jshell --module-path .bach\bin --add-modules ALL-MODULE-PATH %2 %3 %4 %5 %6 %7 %8 %9
+  jshell --module-path .bach\bin --add-modules ALL-MODULE-PATH .bach\bin\bach.jshell %2 %3 %4 %5 %6 %7 %8 %9
   EXIT /B %ERRORLEVEL%
 )
 

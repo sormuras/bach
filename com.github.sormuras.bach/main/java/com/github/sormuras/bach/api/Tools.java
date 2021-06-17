@@ -15,6 +15,10 @@ public record Tools(Set<String> limits, Set<String> skips, Tweaks tweaks) {
     return new Tools(Set.of(limits), Set.of(), Tweaks.of());
   }
 
+  public Tools with(Tweak... tweaks) {
+    return new Tools(limits, skips, tweaks().with(tweaks));
+  }
+
   /** {@return {@code true} if the given tool is within the configured limits and not skipped} */
   public boolean enabled(String tool) {
     return limit(tool) && !skip(tool);

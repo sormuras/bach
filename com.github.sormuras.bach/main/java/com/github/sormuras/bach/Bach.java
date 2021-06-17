@@ -12,8 +12,8 @@ public record Bach(Settings settings, Project project) implements PrintTrait, Re
 
   public static String version() {
     var module = Bach.class.getModule();
-    if (!module.isNamed()) throw new IllegalStateException("Bach's module is unnamed?!");
-    return module.getDescriptor().version().map(Object::toString).orElse("exploded");
+    if (!module.isNamed()) return "(unnamed)";
+    return module.getDescriptor().version().map(Object::toString).orElse("(exploded)");
   }
 
   public Bach bach() {

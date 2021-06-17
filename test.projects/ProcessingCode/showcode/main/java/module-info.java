@@ -1,3 +1,4 @@
+/** Defines classes and interfaces of the ShowCode API. */
 module showcode {
   requires java.compiler;
   requires jdk.javadoc;
