@@ -4,8 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.nio.file.Files;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class ProcessingCodeTests {
 
   @Test
@@ -24,6 +27,6 @@ class ProcessingCodeTests {
         >>>>
         """
             .lines(),
-        Files.readString(project.folders().root("build-out.log")).lines());
+        Files.readString(project.root().resolve("build-out.log")).lines());
   }
 }

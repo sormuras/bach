@@ -1,4 +1,4 @@
-package test.projects.builder;
+package test.base;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Path;

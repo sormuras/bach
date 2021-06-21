@@ -2,6 +2,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.spi.ToolProvider;
 
@@ -19,7 +20,6 @@ class bootstrap {
     run(
         "javac",
         "--module=" + module,
-        "--module-version=" + version + "+" + Instant.now(),
         "--module-source-path=./*/main/java",
         "-g",
         "-parameters",
@@ -36,7 +36,7 @@ class bootstrap {
         "jar",
         "--create",
         "--file=" + jar,
-        "--main-class=" + module + ".Main",
+        "--module-version=" + version + "+" + Instant.now().truncatedTo(ChronoUnit.SECONDS),
         "-C",
         classes.resolve(module).toString(),
         ".",
