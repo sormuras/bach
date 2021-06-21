@@ -17,18 +17,6 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
 
 - Install [JDK] 16 or later.
 
-- Open a terminal and verify `java --version` and `jshell --version` reports at least Java 16.
-  ```text
-  > java --version                                          > jshell --version
-  openjdk 16 2021-03-16                                     jshell 16
-  ```
-
-- Clone and change into Bach directory.
-  ```text
-  > git clone https://github.com/sormuras/bach.git
-  > cd bach
-  ```
-
 - Build
   ```text
   > java .bach/src/bootstrap.java
@@ -50,39 +38,6 @@ developers define extra configuration information. Included are project-specific
 that is applied to all modules of the project, a path matcher defining where to find modules, and a lot more. Most of
 these project-specific values have pre-defined default values; some of these values provide an auto-configuration
 feature.
-
-_Yes, Bach builds Bach..._
-
-```text
-> bach build --project-version 17-ea
-Build with Bach 17+BOOTSTRAP+2021-06-16T07:10:47.659733900Z
-Work on project bach 17-ea
-Compile 1 main module: com.github.sormuras.bach
-  javac    --module com.github.sormuras.bach --module-version 17-ea --module-source-path .\*\main\java --module-path .bach\[...]
-  jar      --create --file .bach\workspace\modules\com.github.sormuras.bach@17-ea.jar --module-version 17-ea --main-class c[...]
-Compile 4 test modules: com.github.sormuras.bach, test.base, test.integration, test.projects
-  javac    --module com.github.sormuras.bach,test.base,test.integration,test.projects --module-source-path .\*\test\java;.\[...]
-  jar      --create --file .bach\workspace\modules-test\com.github.sormuras.bach@17-ea-test.jar -C .bach\workspace\classes-[...]
-  jar      --create --file .bach\workspace\modules-test\test.integration@17-ea-test.jar -C .bach\workspace\classes-test-16\[...]
-  jar      --create --file .bach\workspace\modules-test\test.base@17-ea-test.jar -C .bach\workspace\classes-test-16\test.ba[...]
-  jar      --create --file .bach\workspace\modules-test\test.projects@17-ea-test.jar -C .bach\workspace\classes-test-16\tes[...]
-Test module com.github.sormuras.bach
-  java     --show-version -enableassertions --module-path .bach\workspace\modules-test\com.github.sormuras.bach@17-ea-test.[...]
-Test module test.base
-  test     test.base/test.base.TestProvider1
-  test     test.base/test.base.TestProvider2
-  java     --show-version -enableassertions --module-path .bach\workspace\modules-test\test.base@17-ea-test.jar;.bach\works[...]
-Test module test.integration
-  java     --show-version -enableassertions --module-path .bach\workspace\modules-test\test.integration@17-ea-test.jar;.bac[...]
-Test module test.projects
-  java     --show-version -enableassertions --module-path .bach\workspace\modules-test\test.projects@17-ea-test.jar;.bach\w[...]
-Ran test(s) in 6.645s
-Generate API documentation
-  javadoc  --module com.github.sormuras.bach --module-source-path .\*\main\java --module-path .bach\external-modules -encod[...]
-  jar      --create --file .bach\workspace\documentation\bach-api-17-ea.zip --no-manifest -C .bach\workspace\documentation\api .
-Bach run took 8.703s
-Logbook written to file:///D:/dev/github/sormuras/bach/.bach/workspace/logbook.md
-```
 
 ## Goals
 

@@ -3,10 +3,11 @@ package test.projects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.api.CodeSpace;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
+@Disabled
 class MultiRelease11Tests {
 
   @Test
@@ -14,7 +15,7 @@ class MultiRelease11Tests {
     var project = TestProject.of("MultiRelease-11");
     assertEquals(0, project.build().waitFor());
 
-    var jar = project.folders().modules(CodeSpace.MAIN, "foo@11.jar");
+    var jar = project.root().resolve("workspace/modules/foo@11.jar");
     assertLinesMatch(
         """
         META-INF/
