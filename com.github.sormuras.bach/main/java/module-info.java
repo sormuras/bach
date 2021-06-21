@@ -20,6 +20,7 @@ module com.github.sormuras.bach {
   exports com.github.sormuras.bach.trait;
   exports com.github.sormuras.bach.workflow;
 
+  requires java.base;
   requires transitive java.net.http;
   requires jdk.compiler;
   requires jdk.crypto.ec; // https://stackoverflow.com/questions/55439599
@@ -33,4 +34,6 @@ module com.github.sormuras.bach {
 
   provides java.util.spi.ToolProvider with
       com.github.sormuras.bach.internal.BachToolProvider;
+  provides com.sun.source.util.Plugin with
+      com.github.sormuras.bach.internal.ModuleDescriptors.Parser;
 }
