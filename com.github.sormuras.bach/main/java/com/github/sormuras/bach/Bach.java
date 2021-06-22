@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 public interface Bach {
 
-  System.Logger.Level level();
+  Logbook logbook();
 
   Folders folders();
 
@@ -17,10 +17,10 @@ public interface Bach {
   }
 
   static Configuration configureBach() {
-    return new Configuration(System.Logger.Level.INFO, Folders.of(Path.of("")), Builder::new);
+    return new Configuration(Logbook.ofSystem(), Folders.of(Path.of("")), Builder::new);
   }
 
-  record Configuration(System.Logger.Level level, Folders folders, Builder.Factory builderFactory)
+  record Configuration(Logbook logbook, Folders folders, Builder.Factory builderFactory)
       implements Bach {
 
     @Override
@@ -30,7 +30,7 @@ public interface Bach {
 
     public Configuration with(Object component) {
       return new Configuration(
-          component instanceof System.Logger.Level level ? level : level,
+          component instanceof Logbook logbook ? logbook : logbook,
           component instanceof Folders folders ? folders : folders,
           component instanceof Builder.Factory factory ? factory : builderFactory);
     }

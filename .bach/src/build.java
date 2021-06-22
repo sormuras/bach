@@ -1,6 +1,7 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Builder;
 import com.github.sormuras.bach.Folders;
+import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Project;
 
 class build {
@@ -14,7 +15,7 @@ class build {
 
   static Bach bach() {
     return Bach.configureBach()
-        .with(System.Logger.Level.ALL)
+        .with(Logbook.ofErrors())
         .with(Folders.of("."))
         .with(MyBuilder::new);
   }
