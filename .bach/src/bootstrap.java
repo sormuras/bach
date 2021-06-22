@@ -19,8 +19,10 @@ class bootstrap {
     var classes = Path.of(".bach/workspace/.bootstrap");
     run(
         "javac",
-        "--module=" + module,
-        "--module-source-path=./*/main/java",
+        "--module",
+        module,
+        "--module-source-path",
+        "./*/main/java",
         "-g",
         "-parameters",
         "-Werror",
@@ -34,11 +36,15 @@ class bootstrap {
     var jar = Files.createDirectories(bin).resolve(file);
     run(
         "jar",
+        "--verbose",
         "--create",
         "--file=" + jar,
         "--module-version=" + version + "+" + Instant.now().truncatedTo(ChronoUnit.SECONDS),
         "-C",
         classes.resolve(module).toString(),
+        ".",
+        "-C",
+        Path.of(module).resolve("main/resources").toString(),
         ".",
         "-C",
         Path.of(module).resolve("main/java").toString(),
