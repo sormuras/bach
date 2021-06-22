@@ -14,6 +14,11 @@ public class CompileTestModulesWorkflow extends Workflow {
   @Override
   public void execute() {
     var modules = DeclaredModules.of(project.testModules().set());
+    if (modules.isEmpty()) {
+      bach.logbook().info("No tests module present");
+      return;
+    }
+    bach.logbook().info("Compile test modules: " + project);
     System.out.println("javac --module " + String.join(",", modules.names().toList()));
     modules.descriptors().map(this::jar).forEach(System.out::println);
   }
