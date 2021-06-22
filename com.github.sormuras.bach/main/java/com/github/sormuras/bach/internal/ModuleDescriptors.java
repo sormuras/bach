@@ -16,23 +16,22 @@ import java.util.spi.ToolProvider;
 
 public class ModuleDescriptors {
 
-  public static ModuleDescriptor parse(Path path) {
-    if (!Path.of("module-info.java").equals(path.getFileName()))
-      throw new IllegalArgumentException("Path must end with 'module-info.java': " + path);
+  private static final Map<Path, ModuleDescriptor> DESCRIPTORS = new ConcurrentHashMap<>();
+
+  public static ModuleDescriptor parse(Path info) {
+    if (!Path.of("module-info.java").equals(info.getFileName()))
+      throw new IllegalArgumentException("Path must end with 'module-info.java': " + info);
 
     var javac = ToolProvider.findFirst("javac").orElseThrow();
     var text = new StringWriter();
     var writer = new PrintWriter(text);
-    var code = javac.run(writer, writer, "-proc:only", "-Xplugin:" + Parser.NAME, path.toString());
-    if (code != 0) throw new RuntimeException("Parse failed: " + path + "\n" + text);
-    var descriptor = Parser.descriptors.get(path);
-    if (descriptor == null) throw new IllegalStateException("Descriptor not found: " + path);
+    javac.run(writer, writer, "-proc:only", "-Xplugin:" + Parser.NAME, info.toString());
+    var descriptor = DESCRIPTORS.get(info);
+    if (descriptor == null) throw new IllegalStateException("Descriptor not found for: " + info + "\n" + text);
     return descriptor;
   }
 
   public record Parser() implements Plugin, TaskListener {
-
-    private static final Map<Path, ModuleDescriptor> descriptors = new ConcurrentHashMap<>();
 
     public static final String NAME = "ModuleDescriptors.Parser";
 
@@ -53,7 +52,7 @@ public class ModuleDescriptors {
       if (unit == null) return;
       var path = Path.of(unit.getSourceFile().getName());
       for (var declaration : unit.getTypeDecls()) {
-        if (declaration instanceof ModuleTree module) descriptors.put(path, describe(module));
+        if (declaration instanceof ModuleTree module) DESCRIPTORS.put(path, describe(module));
       }
     }
 
@@ -69,4 +68,7 @@ public class ModuleDescriptors {
       return builder.build();
     }
   }
+
+  /** Hidden default constructor. */
+  private ModuleDescriptors() {}
 }
