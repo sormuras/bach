@@ -12,15 +12,24 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-public record DeclaredModules(ModuleFinder finder) {
+public final class DeclaredModules {
+
   public static DeclaredModules of(Set<Project.Module> modules) {
-    var map = new TreeMap<String, Reference>();
-    for (var module : modules) map.put(module.name(), new Reference(module));
-    return new DeclaredModules(new Finder(map));
+    return new DeclaredModules(Finder.of(modules));
+  }
+
+  private final Finder finder;
+
+  public DeclaredModules(Finder finder) {
+    this.finder = finder;
+  }
+
+  public boolean isEmpty() {
+    return finder.map.isEmpty();
   }
 
   public Stream<ModuleDescriptor> descriptors() {
-    return finder().findAll().stream().sorted().map(ModuleReference::descriptor);
+    return finder.map.values().stream().map(ModuleReference::descriptor);
   }
 
   public Stream<String> names() {
@@ -28,6 +37,12 @@ public record DeclaredModules(ModuleFinder finder) {
   }
 
   private record Finder(Map<String, Reference> map) implements ModuleFinder {
+
+    private static Finder of(Set<Project.Module> modules) {
+      var map = new TreeMap<String, Reference>();
+      for (var module : modules) map.put(module.name(), new Reference(module));
+      return new Finder(map);
+    }
 
     @Override
     public Optional<ModuleReference> find(String name) {
@@ -40,15 +55,10 @@ public record DeclaredModules(ModuleFinder finder) {
     }
   }
 
-  private static final class Reference extends ModuleReference implements Comparable<Reference> {
+  private static final class Reference extends ModuleReference {
 
     private Reference(Project.Module module) {
       super(module.descriptor(), module.location());
-    }
-
-    @Override
-    public int compareTo(Reference other) {
-      return descriptor().name().compareTo(other.descriptor().name());
     }
 
     @Override
