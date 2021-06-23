@@ -15,8 +15,8 @@ class build {
 
   static Bach bach() {
     return Bach.configureBach()
-        .with(Logbook.ofErrors())
-        .with(Folders.of("."))
+        .with(Logbook.ofSystem())
+        .with(Folders.of(""))
         .with(MyBuilder::new);
   }
 
