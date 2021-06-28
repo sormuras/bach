@@ -1,4 +1,4 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.settings;
 
 import java.nio.file.Path;
 
@@ -25,7 +25,7 @@ public record Folders(Path root, Path workspace, Path externalModules, Path exte
   }
 
   public Path externalTools(String first, String... more) {
-    return externalTools.resolve(Path.of(first,more));
+    return externalTools.resolve(Path.of(first, more));
   }
 
   public Path workspace(String first, String... more) {

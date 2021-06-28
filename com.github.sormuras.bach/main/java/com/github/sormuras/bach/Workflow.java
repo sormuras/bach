@@ -3,12 +3,14 @@ package com.github.sormuras.bach;
 public abstract class Workflow {
 
   protected final Bach bach;
+  protected final Settings settings;
   protected final Project project;
 
-  protected Workflow(Bach bach, Project project) {
+  protected Workflow(Bach bach) {
     this.bach = bach;
-    this.project = project;
+    this.settings = bach.settings();
+    this.project = bach.project();
   }
 
-  public void execute() {}
+  public abstract void execute();
 }
