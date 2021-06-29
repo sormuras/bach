@@ -34,12 +34,12 @@ public class Bach {
     this.settings = settings;
   }
 
-  public final Settings settings() {
-    return settings;
-  }
-
   public final Project project() {
     return project;
+  }
+
+  public final Settings settings() {
+    return settings;
   }
 
   public final Browser browser() {
