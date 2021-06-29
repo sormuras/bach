@@ -3,9 +3,8 @@ package com.github.sormuras.bach.workflow;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.internal.Durations;
-import com.github.sormuras.bach.internal.Hashes;
+import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.settings.Logbook;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ModuleDescriptor;
@@ -104,8 +103,8 @@ public class WriteLogbookWorkflow extends Workflow {
       for (var path : stream) {
         var size = Files.size(path);
         var descriptor = ModuleFinder.of(path).findAll().iterator().next().descriptor();
-        var md5 = Hashes.hash("MD5", path);
-        var sha = Hashes.hash("SHA-256", path);
+        var md5 = Paths.hash(path, "MD5");
+        var sha = Paths.hash(path, "SHA-256");
         jars.add(new ModularJar(path, size, descriptor, md5, sha));
       }
     } catch (Exception exception) {
