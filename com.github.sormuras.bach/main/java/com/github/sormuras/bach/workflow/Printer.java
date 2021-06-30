@@ -47,7 +47,7 @@ public record Printer(Bach bach) {
     streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
   }
 
-  Stream<String> streamModuleSummaryLines(ModuleFinder finder) {
+  static Stream<String> streamModuleSummaryLines(ModuleFinder finder) {
     return finder.findAll().stream()
         .map(ModuleReference::descriptor)
         .sorted()
