@@ -1,4 +1,4 @@
-package test.integration.settings;
+package test.integration.workflows;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
