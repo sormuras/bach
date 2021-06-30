@@ -7,6 +7,7 @@ import com.github.sormuras.bach.internal.Paths;
 import com.github.sormuras.bach.settings.Logbook;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -33,7 +34,7 @@ public class WriteLogbookWorkflow extends Workflow {
     var lines = generate(now);
     try {
       var file = write(now, lines);
-      settings.logbook().info("Logbook written to %s".formatted(file.toUri()));
+      bach.log(Level.INFO, "Logbook written to %s", file.toUri());
     } catch (IOException exception) {
       throw new UncheckedIOException("Write logbook failed", exception);
     }

@@ -2,6 +2,7 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Workflow;
+import java.lang.System.Logger.Level;
 import java.lang.module.ModuleDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +21,14 @@ public abstract class CompileWorkflow extends Workflow {
   public void execute() {
     var name = space.name();
     if (space.modules().isEmpty()) {
-      settings.logbook().debug("No %s module present, nothing to compile.".formatted(name));
+      bach.log("No %s module present, nothing to compile.", name);
       return;
     }
     var size = space.modules().size();
-    settings.logbook().info("Compile %d %s module%s".formatted(size, name, size == 1 ? "" : "s"));
+    bach.log(Level.INFO, "Compile %d %s module%s", size, name, size == 1 ? "" : "s");
 
     var calls = generateCalls(DeclaredModules.of(space.modules()));
-    calls.forEach(settings.logbook()::info);
+    calls.forEach(call -> bach.log(Level.INFO, call));
   }
 
   public List<String> generateCalls(DeclaredModules modules) {
