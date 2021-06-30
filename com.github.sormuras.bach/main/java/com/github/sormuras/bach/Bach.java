@@ -1,7 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Durations;
-import com.github.sormuras.bach.settings.Browser;
+import com.github.sormuras.bach.workflow.Browser;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
@@ -41,6 +41,10 @@ public class Bach {
 
   public final Settings settings() {
     return settings;
+  }
+
+  public final Printer printer() {
+    return printer;
   }
 
   public final void log(String format, Object... args) {

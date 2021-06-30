@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.settings;
+package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import java.net.URI;
