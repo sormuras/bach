@@ -33,14 +33,6 @@ public record Logbook(
     return Logbook.of(out, err, false);
   }
 
-  public void debug(String message) {
-    log(Level.DEBUG, message);
-  }
-
-  public void info(String message) {
-    log(Level.INFO, message);
-  }
-
   public void log(Level level, String text) {
     messages.add(new Message(level, text));
     if (level.getSeverity() >= Level.ERROR.getSeverity()) {

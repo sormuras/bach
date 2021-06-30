@@ -5,6 +5,7 @@ import com.github.sormuras.bach.settings.Browser;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
+import java.lang.System.Logger.Level;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,24 +43,28 @@ public class Bach {
     return settings;
   }
 
+  public final void log(String format, Object... args) {
+    log(Level.DEBUG, format, args);
+  }
+
+  public final void log(Level level, String format, Object... args) {
+    settings.logbook().log(level, args.length == 0 ? format : String.format(format, args));
+  }
+
   public final Browser browser() {
     var current = browser.get();
     if (current != null) return current;
     var client = settings.browserSettings().newHttpClient();
-    settings
-        .logbook()
-        .debug(
-            "New HttpClient created with %s connect timeout and redirect policy of: %s"
-                .formatted(
-                    client.connectTimeout().map(Durations::beautify).orElse("no"),
-                    client.followRedirects()));
+    log(
+        "New HttpClient created with %s connect timeout and redirect policy of: %s",
+        client.connectTimeout().map(Durations::beautify).orElse("no"), client.followRedirects());
     current = new Browser(this, client);
     return browser.compareAndSet(null, current) ? current : browser.get();
   }
 
   public void build() {
     var logbook = settings.logbook();
-    logbook.info("Project %s".formatted(project.toNameAndVersion()));
+    log(Level.INFO, "Project %s", project.toNameAndVersion());
     var start = Instant.now();
     try {
       compileMainModules();
@@ -67,7 +72,7 @@ public class Bach {
     } catch (Exception exception) {
       logbook.log(exception);
     } finally {
-      logbook.info("Build took %s".formatted(Durations.beautifyBetweenNow(start)));
+      log(Level.INFO, "Build took %s", Durations.beautifyBetweenNow(start));
       writeLogbook();
     }
   }
