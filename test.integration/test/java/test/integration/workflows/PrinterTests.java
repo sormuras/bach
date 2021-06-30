@@ -32,15 +32,15 @@ class PrinterTests {
 
       assertLinesMatch(
           """
-        Declared Modules
-          -
-        External Modules
-          -
-        System Modules
-          java.base@.+
-          >> MORE MODULES >>
-          jdk.zipfs@.+
-        """
+          Declared Modules
+            -
+          External Modules
+            -
+          System Modules
+            java.base@.+
+            >> MORE MODULES >>
+            jdk.zipfs@.+
+          """
               .lines(),
           out.toString().lines());
     }
