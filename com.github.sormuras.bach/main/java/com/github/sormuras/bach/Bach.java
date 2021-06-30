@@ -4,6 +4,7 @@ import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.workflow.Browser;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
+import com.github.sormuras.bach.workflow.Printer;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
 import java.time.Instant;
@@ -28,11 +29,13 @@ public class Bach {
   protected final AtomicReference<Browser> browser;
   protected final Project project;
   protected final Settings settings;
+  protected final Printer printer;
 
   public Bach(Project project, Settings settings) {
     this.browser = new AtomicReference<>();
     this.project = project;
     this.settings = settings;
+    this.printer = new Printer(this);
   }
 
   public final Project project() {
