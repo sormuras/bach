@@ -44,9 +44,6 @@ class bootstrap {
         classes.resolve(module).toString(),
         ".",
         "-C",
-        Path.of(module).resolve("main/resources").toString(),
-        ".",
-        "-C",
         Path.of(module).resolve("main/java").toString(),
         ".");
     System.out.println("<< " + Files.size(jar));
