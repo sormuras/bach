@@ -6,14 +6,15 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public record Module(ModuleDescriptor descriptor, URI location) implements Comparable<Module> {
+public record DeclaredModule(ModuleDescriptor descriptor, URI location)
+    implements Comparable<DeclaredModule> {
 
-  public static Module of(String string) {
+  public static DeclaredModule of(String string) {
     var path = Path.of(string).normalize();
     if (Files.notExists(path)) throw new IllegalArgumentException("Path must exist: " + path);
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     if (Files.notExists(info)) throw new IllegalArgumentException("No module-info in: " + path);
-    return new Module(ModuleDescriptors.parse(info), info.toUri());
+    return new DeclaredModule(ModuleDescriptors.parse(info), info.toUri());
   }
 
   public String name() {
@@ -21,7 +22,7 @@ public record Module(ModuleDescriptor descriptor, URI location) implements Compa
   }
 
   @Override
-  public int compareTo(Module other) {
+  public int compareTo(DeclaredModule other) {
     return name().compareTo(other.name());
   }
 }
