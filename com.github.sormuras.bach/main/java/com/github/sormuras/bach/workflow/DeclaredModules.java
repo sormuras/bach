@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.workflow;
 
-import com.github.sormuras.bach.project.Module;
+import com.github.sormuras.bach.project.DeclaredModule;
 
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -15,13 +15,13 @@ import java.util.stream.Stream;
 
 public final class DeclaredModules implements ModuleFinder {
 
-  public static DeclaredModules of(Set<Module> modules) {
+  public static DeclaredModules of(Set<DeclaredModule> modules) {
     return new DeclaredModules(modules);
   }
 
   private final Map<String, Reference> map;
 
-  private DeclaredModules(Set<Module> modules) {
+  private DeclaredModules(Set<DeclaredModule> modules) {
     this.map = new TreeMap<>();
     for (var module : modules) map.put(module.name(), new Reference(module));
   }
@@ -50,7 +50,7 @@ public final class DeclaredModules implements ModuleFinder {
 
   private static final class Reference extends ModuleReference {
 
-    private Reference(Module module) {
+    private Reference(DeclaredModule module) {
       super(module.descriptor(), module.location());
     }
 

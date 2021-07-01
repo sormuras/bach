@@ -3,7 +3,7 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.RecordComponents;
 import com.github.sormuras.bach.project.JavaRelease;
 import com.github.sormuras.bach.project.MainModules;
-import com.github.sormuras.bach.project.Module;
+import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ProjectName;
 import com.github.sormuras.bach.project.ProjectVersion;
 import com.github.sormuras.bach.project.TestModules;
@@ -28,8 +28,8 @@ public interface Project {
   }
 
   default String toTextBlock() {
-    var mains = mainModules().set().stream().map(Module::descriptor).map(Object::toString);
-    var tests = testModules().set().stream().map(Module::descriptor).map(Object::toString);
+    var mains = mainModules().set().stream().map(DeclaredModule::descriptor).map(Object::toString);
+    var tests = testModules().set().stream().map(DeclaredModule::descriptor).map(Object::toString);
     return """
         Project ${NAME&VERSION}
         Main Modules
@@ -84,10 +84,10 @@ public interface Project {
     }
 
     public NewProject withMainModule(String path) {
-      return withMainModule(Module.of(path));
+      return withMainModule(DeclaredModule.of(path));
     }
 
-    public NewProject withMainModule(Module module) {
+    public NewProject withMainModule(DeclaredModule module) {
       var set = new TreeSet<>(mainModules.set());
       set.add(module);
       return with(new MainModules(set, mainModules.release()));
@@ -98,10 +98,10 @@ public interface Project {
     }
 
     public NewProject withTestModule(String path) {
-      return withTestModule(Module.of(path));
+      return withTestModule(DeclaredModule.of(path));
     }
 
-    public NewProject withTestModule(Module module) {
+    public NewProject withTestModule(DeclaredModule module) {
       var set = new TreeSet<>(testModules.set());
       set.add(module);
       return with(new TestModules(set));
