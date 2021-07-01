@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="All in module test.projects" type="JUnit" factoryName="JUnit">
     <module name="test.projects" />
+    <useClassPathOnly />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.github.sormuras.bach.*" />
