@@ -1,34 +1,61 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.settings.BrowserSettings;
-import com.github.sormuras.bach.settings.Folders;
-import com.github.sormuras.bach.settings.Logbook;
+import com.github.sormuras.bach.internal.RecordComponents;
+import java.io.PrintWriter;
+import java.net.http.HttpClient;
+import java.nio.file.Path;
+import java.time.Duration;
 
 public interface Settings {
 
-  Logbook logbook();
-
-  Folders folders();
-
-  BrowserSettings browserSettings();
-
   static NewSettings newSettings() {
     return new NewSettings(
-        Logbook.ofSystem(),
-        Folders.of(""),
+        LogbookSettings.ofSystem(),
+        FolderSettings.ofCurrentWorkingDirectory(),
         BrowserSettings.ofConnectTimeoutSeconds(10));
   }
 
+  LogbookSettings logbookSettings();
+
+  FolderSettings folderSettings();
+
+  BrowserSettings browserSettings();
+
+  record LogbookSettings(PrintWriter out, PrintWriter err, boolean verbose) {
+    public static LogbookSettings ofSystem() {
+      var out = new PrintWriter(System.out, true);
+      var err = new PrintWriter(System.err, true);
+      return new LogbookSettings(out, err, false);
+    }
+  }
+
+  record FolderSettings(Path root) {
+    public static FolderSettings ofCurrentWorkingDirectory() {
+      return new FolderSettings(Path.of(""));
+    }
+  }
+
+  record BrowserSettings(HttpClient.Builder httpClientBuilder) {
+    public static BrowserSettings ofConnectTimeoutSeconds(int seconds) {
+      var builder =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(seconds))
+              .followRedirects(HttpClient.Redirect.NORMAL);
+      return new BrowserSettings(builder);
+    }
+  }
+
   record NewSettings(
-      Logbook logbook,
-      Folders folders,
+      LogbookSettings logbookSettings,
+      FolderSettings folderSettings,
       BrowserSettings browserSettings)
       implements Settings {
 
     public NewSettings with(Object component) {
+      RecordComponents.of(NewSettings.class).findUnique(component.getClass()).orElseThrow();
       return new NewSettings(
-          component instanceof Logbook logbook ? logbook : logbook,
-          component instanceof Folders folders ? folders : folders,
+          component instanceof LogbookSettings settings ? settings : logbookSettings,
+          component instanceof FolderSettings settings ? settings : folderSettings,
           component instanceof BrowserSettings settings ? settings : browserSettings);
     }
 

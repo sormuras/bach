@@ -1,11 +1,11 @@
-package test.integration.settings;
+package test.integration.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.sormuras.bach.settings.Logbook;
+import com.github.sormuras.bach.workflow.Logbook;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;

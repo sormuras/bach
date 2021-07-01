@@ -1,5 +1,6 @@
-package com.github.sormuras.bach.settings;
+package com.github.sormuras.bach.workflow;
 
+import com.github.sormuras.bach.Settings.LogbookSettings;
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
 import java.time.Duration;
@@ -17,6 +18,10 @@ public record Logbook(
     Queue<Exception> exceptions,
     Queue<Run> runs) {
 
+  public static Logbook of(LogbookSettings settings) {
+    return Logbook.of(settings.out(), settings.err(), settings.verbose());
+  }
+
   public static Logbook of(PrintWriter out, PrintWriter err, boolean verbose) {
     return new Logbook(
         out,
@@ -25,12 +30,6 @@ public record Logbook(
         new ConcurrentLinkedQueue<>(),
         new ConcurrentLinkedQueue<>(),
         new ConcurrentLinkedQueue<>());
-  }
-
-  public static Logbook ofSystem() {
-    var out = new PrintWriter(System.out, true);
-    var err = new PrintWriter(System.err, true);
-    return Logbook.of(out, err, false);
   }
 
   public void log(Level level, String text) {

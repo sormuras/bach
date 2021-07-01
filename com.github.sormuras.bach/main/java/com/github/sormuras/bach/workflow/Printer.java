@@ -14,7 +14,7 @@ public record Printer(Bach bach) {
   }
 
   public void printDeclaredModules() {
-    var out = bach.settings().logbook().out();
+    var out = bach.logbook().out();
     out.println("Declared Modules");
     var main = DeclaredModules.of(bach.project().mainModules().set());
     var test = DeclaredModules.of(bach.project().testModules().set());
@@ -33,8 +33,8 @@ public record Printer(Bach bach) {
   }
 
   public void printExternalModules() {
-    var finder = ModuleFinder.of(bach.settings().folders().externalModules());
-    var out = bach.settings().logbook().out();
+    var finder = ModuleFinder.of(bach.folders().externalModules());
+    var out = bach.logbook().out();
     out.println("External Modules");
     if (finder.findAll().isEmpty()) out.println("  -");
     else streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
@@ -42,7 +42,7 @@ public record Printer(Bach bach) {
 
   public void printSystemModules() {
     var finder = ModuleFinder.ofSystem();
-    var out = bach.settings().logbook().out();
+    var out = bach.logbook().out();
     out.println("System Modules");
     streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
   }

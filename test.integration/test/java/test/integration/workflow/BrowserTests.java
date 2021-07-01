@@ -1,4 +1,4 @@
-package test.integration.workflows;
+package test.integration.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
@@ -60,7 +60,7 @@ class BrowserTests {
     assertLinesMatch("""
         New HttpClient created with 10s connect timeout and redirect policy of: NORMAL
         Read http://.+/index.html
-        """.lines(), bach.settings().logbook().lines());
+        """.lines(), bach.logbook().lines());
   }
 
   @Test
@@ -74,7 +74,7 @@ class BrowserTests {
     assertLinesMatch("""
         New HttpClient created with 10s connect timeout and redirect policy of: NORMAL
         Load .+target from http://.+123.bytes
-        """.lines(), bach.settings().logbook().lines());
+        """.lines(), bach.logbook().lines());
   }
 
   @Test
@@ -99,6 +99,6 @@ class BrowserTests {
         Load .+file... from http://.+....bytes
         Load .+file... from http://.+....bytes
         Load .+file... from http://.+....bytes
-        """.lines(), bach.settings().logbook().lines());
+        """.lines(), bach.logbook().lines());
   }
 }

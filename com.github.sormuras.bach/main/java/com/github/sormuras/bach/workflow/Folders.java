@@ -1,11 +1,12 @@
-package com.github.sormuras.bach.settings;
+package com.github.sormuras.bach.workflow;
 
+import com.github.sormuras.bach.Settings.FolderSettings;
 import java.nio.file.Path;
 
 public record Folders(Path root, Path workspace, Path externalModules, Path externalTools) {
 
-  public static Folders of(String root) {
-    return Folders.of(Path.of(root));
+  public static Folders of(FolderSettings settings) {
+    return Folders.of(settings.root());
   }
 
   public static Folders of(Path path) {

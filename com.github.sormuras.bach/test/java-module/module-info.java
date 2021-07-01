@@ -5,7 +5,6 @@ open /*test*/ module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.call;
   exports com.github.sormuras.bach.project;
-  exports com.github.sormuras.bach.settings;
   exports com.github.sormuras.bach.workflow;
 
   requires java.base;
