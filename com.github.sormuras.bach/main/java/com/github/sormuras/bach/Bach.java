@@ -1,10 +1,11 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Durations;
-import com.github.sormuras.bach.settings.Logbook;
 import com.github.sormuras.bach.workflow.Browser;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
+import com.github.sormuras.bach.workflow.Folders;
+import com.github.sormuras.bach.workflow.Logbook;
 import com.github.sormuras.bach.workflow.Printer;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
@@ -31,19 +32,23 @@ public class Bach {
   protected final AtomicReference<Browser> browser;
   protected final Project project;
   protected final Settings settings;
+  protected final Logbook logbook;
+  protected final Folders folders;
   protected final Printer printer;
 
   public Bach(Project project, Settings settings) {
     this.browser = new AtomicReference<>();
     this.project = project;
     this.settings = settings;
+    this.logbook = Logbook.of(settings.logbookSettings());
+    this.folders = Folders.of(settings.folderSettings());
     this.printer = new Printer(this);
   }
 
   public final Browser browser() {
     var current = browser.get();
     if (current != null) return current;
-    var client = settings.browserSettings().newHttpClient();
+    var client = settings.browserSettings().httpClientBuilder().build();
     log(
         "New HttpClient created with %s connect timeout and redirect policy of: %s",
         client.connectTimeout().map(Durations::beautify).orElse("no"), client.followRedirects());
@@ -59,6 +64,14 @@ public class Bach {
     return settings;
   }
 
+  public final Logbook logbook() {
+    return logbook;
+  }
+
+  public final Folders folders() {
+    return folders;
+  }
+
   public final Printer printer() {
     return printer;
   }
@@ -68,14 +81,22 @@ public class Bach {
   }
 
   public final void log(Level level, String format, Object... args) {
-    settings.logbook().log(level, args.length == 0 ? format : String.format(format, args));
+    logbook.log(level, args.length == 0 ? format : String.format(format, args));
   }
 
   public void execute(Call call) {
     log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(101));
 
-    var run = new Logbook.Run(call.name(), call.arguments(), Thread.currentThread().getId(), Duration.ZERO, 0, "", "");
-    settings.logbook().log(run);
+    var run =
+        new Logbook.Run(
+            call.name(),
+            call.arguments(),
+            Thread.currentThread().getId(),
+            Duration.ZERO,
+            0,
+            "",
+            "");
+    logbook.log(run);
   }
 
   public void execute(Call.Tree tree) {
@@ -89,7 +110,6 @@ public class Bach {
   }
 
   public void build() {
-    var logbook = settings.logbook();
     log(Level.INFO, "Project %s", project.toNameAndVersion());
     var start = Instant.now();
     try {

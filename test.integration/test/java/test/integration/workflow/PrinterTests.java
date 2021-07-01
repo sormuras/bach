@@ -1,12 +1,12 @@
-package test.integration.workflows;
+package test.integration.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
-import com.github.sormuras.bach.settings.Folders;
-import com.github.sormuras.bach.settings.Logbook;
+import com.github.sormuras.bach.Settings.FolderSettings;
+import com.github.sormuras.bach.Settings.LogbookSettings;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -22,11 +22,12 @@ class PrinterTests {
     @Test
     void empty(@TempDir Path temp) {
       var out = new StringWriter();
-      var log = Logbook.of(new PrintWriter(out), new PrintWriter(out), true);
       var bach =
           Bach.of(
               Project.newProject("empty", "0"),
-              Settings.newSettings().with(Folders.of(temp)).with(log));
+              Settings.newSettings()
+                  .with(new FolderSettings(temp))
+                  .with(new LogbookSettings(new PrintWriter(out), new PrintWriter(out), true)));
 
       bach.printer().printAllModules();
 

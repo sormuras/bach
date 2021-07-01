@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.RecordComponents;
 import com.github.sormuras.bach.project.JavaRelease;
 import com.github.sormuras.bach.project.MainModules;
 import com.github.sormuras.bach.project.Module;
@@ -66,6 +67,7 @@ public interface Project {
     }
 
     public NewProject with(Object component) {
+      RecordComponents.of(NewProject.class).findUnique(component.getClass()).orElseThrow();
       return new NewProject(
           component instanceof ProjectName name ? name : name,
           component instanceof ProjectVersion version ? version : version,

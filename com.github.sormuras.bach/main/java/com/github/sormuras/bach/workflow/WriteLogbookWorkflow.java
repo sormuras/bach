@@ -4,7 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.internal.Paths;
-import com.github.sormuras.bach.settings.Logbook;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
@@ -42,7 +42,7 @@ public class WriteLogbookWorkflow extends Workflow {
 
   private Path write(LocalDateTime now, List<String> lines) throws IOException {
     // Write file in workspace directory
-    var folders = settings.folders();
+    var folders = bach.folders();
     Files.createDirectories(folders.workspace());
     var file =
         Files.write(
@@ -72,7 +72,7 @@ public class WriteLogbookWorkflow extends Workflow {
     var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     md.add("- %s".formatted(formatter.format(now)));
 
-    var folders = settings.folders();
+    var folders = bach.folders();
     md.add("- root = `%s`".formatted(folders.root().toAbsolutePath()));
     md.add("- external-modules = `%s`".formatted(folders.externalModules()));
     md.add("- workspace = `%s`".formatted(folders.workspace()));
@@ -97,7 +97,7 @@ public class WriteLogbookWorkflow extends Workflow {
     md.add("## Modules");
     md.add("");
 
-    var directory = settings.folders().workspace("modules");
+    var directory = bach.folders().workspace("modules");
     record ModularJar(Path path, long size, ModuleDescriptor descriptor, String md5, String sha) {}
     var jars = new ArrayList<ModularJar>();
     try (var stream = Files.newDirectoryStream(directory, "*.jar")) {
@@ -153,7 +153,7 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   public List<String> generateToolRunOverview() {
-    var results = settings.logbook().runs();
+    var results = bach.logbook().runs();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Run Overview");
@@ -177,7 +177,7 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   public List<String> generateToolRunDetails() {
-    var results = settings.logbook().runs();
+    var results = bach.logbook().runs();
     if (results.isEmpty()) return List.of();
 
     var md = new ArrayList<String>();
@@ -217,7 +217,7 @@ public class WriteLogbookWorkflow extends Workflow {
     md.add("## Log Messages");
     md.add("");
     md.add("```text");
-    for (var message : settings.logbook().messages()) {
+    for (var message : bach.logbook().messages()) {
       var level = message.level().name().toCharArray()[0];
       var text = message.text();
       md.add("[%s] %s".formatted(level, text));

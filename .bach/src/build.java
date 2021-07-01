@@ -42,11 +42,10 @@ class build {
 
     @Override
     public void build() {
-      var out = settings.logbook().out();
-      out.println("| BEGIN");
-      project.toTextBlock().lines().map(line -> "| " + line).forEach(out::println);
+      logbook.out().println("| BEGIN");
+      project.toTextBlock().lines().map(line -> "| " + line).forEach(logbook.out()::println);
       super.build();
-      out.println("| END.");
+      logbook.out().println("| END.");
     }
   }
 }
