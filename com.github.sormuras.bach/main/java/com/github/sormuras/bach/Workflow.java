@@ -13,4 +13,8 @@ public abstract class Workflow {
   }
 
   public abstract void execute();
+
+  public Call.Tree generateCallTree() {
+    return Call.tree(getClass().getSimpleName());
+  }
 }

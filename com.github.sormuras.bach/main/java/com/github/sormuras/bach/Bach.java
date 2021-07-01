@@ -1,12 +1,14 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Durations;
+import com.github.sormuras.bach.settings.Logbook;
 import com.github.sormuras.bach.workflow.Browser;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
 import com.github.sormuras.bach.workflow.Printer;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,6 +40,17 @@ public class Bach {
     this.printer = new Printer(this);
   }
 
+  public final Browser browser() {
+    var current = browser.get();
+    if (current != null) return current;
+    var client = settings.browserSettings().newHttpClient();
+    log(
+        "New HttpClient created with %s connect timeout and redirect policy of: %s",
+        client.connectTimeout().map(Durations::beautify).orElse("no"), client.followRedirects());
+    current = new Browser(this, client);
+    return browser.compareAndSet(null, current) ? current : browser.get();
+  }
+
   public final Project project() {
     return project;
   }
@@ -58,15 +71,21 @@ public class Bach {
     settings.logbook().log(level, args.length == 0 ? format : String.format(format, args));
   }
 
-  public final Browser browser() {
-    var current = browser.get();
-    if (current != null) return current;
-    var client = settings.browserSettings().newHttpClient();
-    log(
-        "New HttpClient created with %s connect timeout and redirect policy of: %s",
-        client.connectTimeout().map(Durations::beautify).orElse("no"), client.followRedirects());
-    current = new Browser(this, client);
-    return browser.compareAndSet(null, current) ? current : browser.get();
+  public void execute(Call call) {
+    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(101));
+
+    var run = new Logbook.Run(call.name(), call.arguments(), Thread.currentThread().getId(), Duration.ZERO, 0, "", "");
+    settings.logbook().log(run);
+  }
+
+  public void execute(Call.Tree tree) {
+    log(Level.INFO, tree.caption());
+    tree.calls().forEach(this::execute);
+    tree.trees().forEach(this::execute);
+  }
+
+  public void execute(Workflow workflow) {
+    workflow.execute();
   }
 
   public void build() {
@@ -85,14 +104,14 @@ public class Bach {
   }
 
   public void compileMainModules() {
-    new CompileMainModulesWorkflow(this).execute();
+    execute(new CompileMainModulesWorkflow(this));
   }
 
   public void compileTestModules() {
-    new CompileTestModulesWorkflow(this).execute();
+    execute(new CompileTestModulesWorkflow(this));
   }
 
   public void writeLogbook() {
-    new WriteLogbookWorkflow(this).execute();
+    execute(new WriteLogbookWorkflow(this));
   }
 }
