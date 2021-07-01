@@ -4,7 +4,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/com.github.sormuras.bach">
       <sourceFolder url="file://$MODULE_DIR$/com.github.sormuras.bach/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/com.github.sormuras.bach/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/com.github.sormuras.bach/test/java" isTestSource="true" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />

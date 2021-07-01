@@ -29,7 +29,4 @@ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses java.util.spi.ToolProvider;
-
-  provides com.sun.source.util.Plugin with
-      com.github.sormuras.bach.internal.ModuleDescriptors.Parser;
 }
