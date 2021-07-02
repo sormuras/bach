@@ -117,6 +117,7 @@ public class Bach {
       compileTestModules();
     } catch (Exception exception) {
       logbook.log(exception);
+      throw new RuntimeException("Build failed!", exception);
     } finally {
       log(Level.INFO, "Build took %s", Durations.beautifyBetweenNow(start));
       writeLogbook();
