@@ -7,9 +7,9 @@ import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
 import com.github.sormuras.bach.workflow.Folders;
 import com.github.sormuras.bach.workflow.Logbook;
 import com.github.sormuras.bach.workflow.Printer;
+import com.github.sormuras.bach.workflow.Runner;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,6 +35,7 @@ public class Bach {
   protected final Logbook logbook;
   protected final Folders folders;
   protected final Printer printer;
+  protected final Runner runner;
 
   public Bach(Project project, Settings settings) {
     this.browser = new AtomicReference<>();
@@ -43,6 +44,7 @@ public class Bach {
     this.logbook = Logbook.of(settings.logbookSettings());
     this.folders = Folders.of(settings.folderSettings());
     this.printer = new Printer(this);
+    this.runner = new Runner(this);
   }
 
   public final Browser browser() {
@@ -76,6 +78,10 @@ public class Bach {
     return printer;
   }
 
+  public final Runner runner() {
+    return runner;
+  }
+
   public final void log(String format, Object... args) {
     log(Level.DEBUG, format, args);
   }
@@ -85,18 +91,12 @@ public class Bach {
   }
 
   public void execute(Call call) {
-    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(101));
-
-    var run =
-        new Logbook.Run(
-            call.name(),
-            call.arguments(),
-            Thread.currentThread().getId(),
-            Duration.ZERO,
-            0,
-            "",
-            "");
+    log(Level.INFO, "  %-9s %s".formatted(call.name(), call.toDescription(117)));
+    var provider = runner.findToolProvider(call.name()).orElseThrow();
+    var arguments = call.arguments();
+    var run = runner.run(provider, arguments);
     logbook.log(run);
+    run.requireSuccessful();
   }
 
   public void execute(Call.Tree tree) {
