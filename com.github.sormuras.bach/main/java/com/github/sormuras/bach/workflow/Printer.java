@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 public record Printer(Bach bach) {
@@ -45,6 +46,11 @@ public record Printer(Bach bach) {
     var out = bach.logbook().out();
     out.println("System Modules");
     streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
+  }
+
+  public void printTools() {
+    var out = bach.logbook().out();
+    bach.runner().streamToolProviders().map(ToolProvider::name).sorted().forEach(out::println);
   }
 
   static Stream<String> streamModuleSummaryLines(ModuleFinder finder) {
