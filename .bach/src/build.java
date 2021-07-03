@@ -1,6 +1,13 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
+import com.github.sormuras.bach.call.JarCall;
+import com.github.sormuras.bach.call.JavacCall;
+import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
+import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
+import java.lang.module.ModuleDescriptor;
+import java.nio.file.Path;
+import java.util.List;
 
 class build {
   public static void main(String... args) {
@@ -12,7 +19,7 @@ class build {
     }
   }
 
-  static Bach bach(String projectVersion) {
+  static MyBach bach(String projectVersion) {
     return new MyBach(project(projectVersion), settings());
   }
 
@@ -35,7 +42,6 @@ class build {
   }
 
   static class MyBach extends Bach {
-
     MyBach(Project project, Settings settings) {
       super(project, settings);
     }
@@ -46,6 +52,44 @@ class build {
       project.toTextBlock().lines().map(line -> "| " + line).forEach(logbook.out()::println);
       super.build();
       logbook.out().println("| END.");
+    }
+
+    @Override
+    public void compileMainModules() {
+      new CompileMainModulesWorkflow(this) {
+        @Override
+        public JavacCall generateJavacCall(List<String> modules, Path classes) {
+          return super.generateJavacCall(modules, classes)
+              .with("--module-source-path", "./*/main/java")
+              .with("-g")
+              .with("-parameters")
+              .with("-Werror")
+              .with("-Xlint")
+              .with("-encoding", "UTF-8");
+        }
+      }.execute();
+    }
+
+    @Override
+    public void compileTestModules() {
+      new CompileTestModulesWorkflow(this) {
+        final Path patch = Path.of(".bach/workspace/classes-main-16/com.github.sormuras.bach");
+
+        @Override
+        public JavacCall generateJavacCall(List<String> modules, Path classes) {
+          return super.generateJavacCall(modules, classes)
+              .with("--module-source-path", "./*/test/java;./*/test/java-module")
+              .with("--patch-module", "com.github.sormuras.bach=" + patch)
+              .with(
+                  "--module-path",
+                  List.of(Path.of(".bach/workspace/modules"), Path.of(".bach/external-modules")));
+        }
+
+        @Override
+        public JarCall generateJarCall(ModuleDescriptor module, Path classes, Path destination) {
+          return super.generateJarCall(module, classes, destination).with("-C", patch, ".");
+        }
+      }.execute();
     }
   }
 }
