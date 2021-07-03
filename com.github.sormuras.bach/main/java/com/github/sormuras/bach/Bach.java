@@ -12,6 +12,7 @@ import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.spi.ToolProvider;
 
 public class Bach {
 
@@ -92,9 +93,12 @@ public class Bach {
 
   public void execute(Call call) {
     log(Level.INFO, "  %-9s %s".formatted(call.name(), call.toDescription(117)));
-    var provider = runner.findToolProvider(call.name()).orElseThrow();
+    var tool =
+        call instanceof ToolProvider provider
+            ? provider
+            : runner.findToolProvider(call.name()).orElseThrow();
     var arguments = call.arguments();
-    var run = runner.run(provider, arguments);
+    var run = runner.run(tool, arguments);
     logbook.log(run);
     run.requireSuccessful();
   }
