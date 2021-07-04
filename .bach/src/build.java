@@ -29,8 +29,10 @@ class build {
         .assertJDK(Runtime.version().feature())
         .withName("bach")
         .withVersion(projectVersion)
-        .withCompileMainModulesForJavaRelease(16)
+        .withMainJavaRelease(16)
+        .withMainModuleSourcePaths("./*/main/java")
         .withMainModule("com.github.sormuras.bach/main/java/module-info.java")
+        .withTestModuleSourcePaths("./*/test/java", "./*/test/java-module")
         .withTestModule("com.github.sormuras.bach/test/java-module/module-info.java")
         .withTestModule("test.base/test/java/module-info.java")
         .withTestModule("test.integration/test/java/module-info.java")
@@ -60,7 +62,6 @@ class build {
         @Override
         public JavacCall generateJavacCall(List<String> modules, Path classes) {
           return super.generateJavacCall(modules, classes)
-              .with("--module-source-path", "./*/main/java")
               .with("-g")
               .with("-parameters")
               .with("-Werror")
@@ -78,11 +79,11 @@ class build {
         @Override
         public JavacCall generateJavacCall(List<String> modules, Path classes) {
           return super.generateJavacCall(modules, classes)
-              .with("--module-source-path", "./*/test/java;./*/test/java-module")
               .with("--patch-module", "com.github.sormuras.bach=" + patch)
               .with(
                   "--module-path",
-                  List.of(Path.of(".bach/workspace/modules"), Path.of(".bach/external-modules")));
+                  List.of(Path.of(".bach/workspace/modules"), Path.of(".bach/external-modules")))
+              .with("-encoding", "UTF-8");
         }
 
         @Override
