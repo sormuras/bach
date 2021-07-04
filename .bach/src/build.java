@@ -6,6 +6,7 @@ import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
 import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
 import java.lang.module.ModuleDescriptor;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -40,7 +41,9 @@ class build {
   }
 
   static Settings settings() {
-    return Settings.newSettings().withBrowserConnectTimeout(9);
+    return Settings.newSettings()
+        .withSourceEncoding(StandardCharsets.UTF_8)
+        .withBrowserConnectTimeout(9);
   }
 
   static class MyBach extends Bach {
@@ -65,8 +68,7 @@ class build {
               .with("-g")
               .with("-parameters")
               .with("-Werror")
-              .with("-Xlint")
-              .with("-encoding", "UTF-8");
+              .with("-Xlint");
         }
       }.execute();
     }
@@ -82,8 +84,7 @@ class build {
               .with("--patch-module", "com.github.sormuras.bach=" + patch)
               .with(
                   "--module-path",
-                  List.of(Path.of(".bach/workspace/modules"), Path.of(".bach/external-modules")))
-              .with("-encoding", "UTF-8");
+                  List.of(Path.of(".bach/workspace/modules"), Path.of(".bach/external-modules")));
         }
 
         @Override
