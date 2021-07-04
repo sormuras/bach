@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.call;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,10 @@ public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
   /** @param directory Specify where to place generated class files */
   public JavacCall withDirectoryForClasses(Path directory) {
     return with("-d", directory);
+  }
+
+  public JavacCall withEncoding(Charset charset) {
+    return with("-encoding", charset);
   }
 
   public JavacCall withModule(List<String> modules) {
