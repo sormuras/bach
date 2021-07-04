@@ -1,3 +1,10 @@
 package com.github.sormuras.bach.project;
 
-public record JavaRelease(int feature) {}
+import java.util.function.IntSupplier;
+
+public record JavaRelease(int feature) implements IntSupplier {
+  @Override
+  public int getAsInt() {
+    return feature;
+  }
+}
