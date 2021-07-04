@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -64,6 +65,11 @@ public interface AnyCall<C extends AnyCall<C>> extends Call {
   @SuppressWarnings("unchecked")
   default <T extends Collection<?>> C ifPresent(T collection, BiFunction<C, T, C> function) {
     return collection.isEmpty() ? (C) this : function.apply((C) this, collection);
+  }
+
+  @SuppressWarnings("unchecked")
+  default <T extends Map<?, ?>> C ifPresent(T map, BiFunction<C, T, C> function) {
+    return map.isEmpty() ? (C) this : function.apply((C) this, map);
   }
 
   @SuppressWarnings({"unchecked", "OptionalUsedAsFieldOrParameterType"})
