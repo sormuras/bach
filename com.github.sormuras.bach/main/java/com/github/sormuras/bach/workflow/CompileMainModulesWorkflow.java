@@ -56,6 +56,7 @@ public class CompileMainModulesWorkflow extends Workflow {
         .withModule(modules)
         .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
         .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
+        .with("-encoding", settings.sourceSettings().encoding())
         .withDirectoryForClasses(classes);
   }
 
