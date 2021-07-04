@@ -51,7 +51,7 @@ public final class DeclaredModules implements ModuleFinder {
   private static final class Reference extends ModuleReference {
 
     private Reference(DeclaredModule module) {
-      super(module.descriptor(), module.location());
+      super(module.descriptor(), module.path().toUri());
     }
 
     @Override
