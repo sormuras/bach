@@ -47,9 +47,12 @@ public class CompileTestModulesWorkflow extends Workflow {
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
+    var moduleSourcePaths = project.testModules().moduleSourcePaths();
     return new JavacCall()
-        .with("--module", String.join(",", modules))
-        .with("-d", classes);
+        .withModule(modules)
+        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
+        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
+        .withDirectoryForClasses(classes);
   }
 
   public JarCall generateJarCall(ModuleDescriptor module, Path classes, Path destination) {

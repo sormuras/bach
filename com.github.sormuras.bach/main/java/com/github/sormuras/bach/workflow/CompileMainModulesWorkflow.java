@@ -50,10 +50,13 @@ public class CompileMainModulesWorkflow extends Workflow {
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
     var main = bach.project().mainModules();
+    var moduleSourcePaths = main.moduleSourcePaths();
     return new JavacCall()
-        .ifPresent(main.release(), (call, release) -> call.with("--release", release.feature()))
-        .with("--module", String.join(",", modules))
-        .with("-d", classes);
+        .ifPresent(main.release(), JavacCall::withRelease)
+        .withModule(modules)
+        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
+        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
+        .withDirectoryForClasses(classes);
   }
 
   public JarCall generateJarCall(ModuleDescriptor module, Path classes, Path destination) {

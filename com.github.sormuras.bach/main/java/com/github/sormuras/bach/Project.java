@@ -1,9 +1,10 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.RecordComponents;
+import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.JavaRelease;
 import com.github.sormuras.bach.project.MainModules;
-import com.github.sormuras.bach.project.DeclaredModule;
+import com.github.sormuras.bach.project.ModuleSourcePaths;
 import com.github.sormuras.bach.project.ProjectName;
 import com.github.sormuras.bach.project.ProjectVersion;
 import com.github.sormuras.bach.project.TestModules;
@@ -47,8 +48,8 @@ public interface Project {
     return new NewProject(
         new ProjectName(name),
         new ProjectVersion(ModuleDescriptor.Version.parse(version)),
-        new MainModules(Set.of(), Optional.empty()),
-        new TestModules(Set.of()));
+        new MainModules(Set.of(), Optional.empty(), ModuleSourcePaths.EMPTY),
+        new TestModules(Set.of(), ModuleSourcePaths.EMPTY));
   }
 
   record NewProject(
@@ -83,6 +84,14 @@ public interface Project {
       return with(new ProjectVersion(ModuleDescriptor.Version.parse(version)));
     }
 
+    public NewProject withMainModuleSourcePaths(String... patterns) {
+      return withMainModuleSourcePaths(ModuleSourcePaths.ofPatterns(patterns));
+    }
+
+    public NewProject withMainModuleSourcePaths(ModuleSourcePaths moduleSourcePaths) {
+      return with(new MainModules(mainModules.set(), mainModules.release(), moduleSourcePaths));
+    }
+
     public NewProject withMainModule(String path) {
       return withMainModule(DeclaredModule.of(path));
     }
@@ -90,11 +99,19 @@ public interface Project {
     public NewProject withMainModule(DeclaredModule module) {
       var set = new TreeSet<>(mainModules.set());
       set.add(module);
-      return with(new MainModules(set, mainModules.release()));
+      return with(new MainModules(set, mainModules.release(), mainModules.moduleSourcePaths()));
     }
 
-    public NewProject withCompileMainModulesForJavaRelease(int feature) {
-      return with(new MainModules(mainModules.set(), Optional.of(new JavaRelease(feature))));
+    public NewProject withMainJavaRelease(int feature) {
+      return with(
+          new MainModules(
+              mainModules.set(),
+              Optional.of(new JavaRelease(feature)),
+              mainModules.moduleSourcePaths()));
+    }
+
+    public NewProject withTestModuleSourcePaths(String... patterns) {
+      return with(new TestModules(mainModules.set(), ModuleSourcePaths.ofPatterns(patterns)));
     }
 
     public NewProject withTestModule(String path) {
@@ -104,7 +121,7 @@ public interface Project {
     public NewProject withTestModule(DeclaredModule module) {
       var set = new TreeSet<>(testModules.set());
       set.add(module);
-      return with(new TestModules(set));
+      return with(new TestModules(set, testModules.moduleSourcePaths()));
     }
   }
 }
