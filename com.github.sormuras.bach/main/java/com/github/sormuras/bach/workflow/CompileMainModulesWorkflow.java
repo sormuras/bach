@@ -7,14 +7,18 @@ import com.github.sormuras.bach.call.CreateDirectoriesCall;
 import com.github.sormuras.bach.call.JarCall;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.project.JavaRelease;
+import com.github.sormuras.bach.project.MainModules;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 
 public class CompileMainModulesWorkflow extends Workflow {
 
+  protected final MainModules main;
+
   public CompileMainModulesWorkflow(Bach bach) {
     super(bach);
+    this.main = bach.project().mainModules();
   }
 
   @Override
@@ -23,25 +27,22 @@ public class CompileMainModulesWorkflow extends Workflow {
   }
 
   public Call.Tree generateCallTree() {
-    var main = bach.project().mainModules();
     if (main.set().isEmpty()) return Call.tree("No main module present");
     return generateCallTree(DeclaredModules.of(main.set()));
   }
 
   public Call.Tree generateCallTree(DeclaredModules modules) {
-    var main = bach.project().mainModules();
     var feature = main.release().map(JavaRelease::feature).orElse(Runtime.version().feature());
     var classes = bach.folders().workspace("classes-main-" + feature);
     var destination = bach.folders().workspace("modules");
 
     var size = modules.descriptors().count();
-    var suffix = "%d main module%s".formatted(size, size == 1 ? "" : "s");
     return Call.tree(
-        "Compile " + suffix,
+        "Compile %d main module%s".formatted(size, size == 1 ? "" : "s"),
         generateJavacCall(modules.names().toList(), classes),
         Call.tree("Create main archive directory", new CreateDirectoriesCall(destination)),
         Call.tree(
-            "Archive " + suffix,
+            "Archive %d main module%s".formatted(size, size == 1 ? "" : "s"),
             modules
                 .descriptors()
                 .parallel()
@@ -49,14 +50,13 @@ public class CompileMainModulesWorkflow extends Workflow {
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
-    var main = bach.project().mainModules();
     var moduleSourcePaths = main.moduleSourcePaths();
     return new JavacCall()
         .ifPresent(main.release(), JavacCall::withRelease)
         .withModule(modules)
         .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
         .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
-        .withEncoding(settings.sourceSettings().encoding())
+        .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
   }
 
