@@ -38,7 +38,7 @@ public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
     return with("--module", String.join(",", modules));
   }
 
-  public JavacCall withModuleSourcePath(List<String> patterns) {
+  public JavacCall withModuleSourcePathPatterns(List<String> patterns) {
     var joined =
         patterns.stream()
             .map(pattern -> pattern.replace('/', File.separatorChar))
@@ -52,7 +52,7 @@ public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
     return with("--module-source-path", module + '=' + joined);
   }
 
-  public JavacCall withModuleSourcePaths(Map<String, List<Path>> map) {
+  public JavacCall withModuleSourcePathSpecifics(Map<String, List<Path>> map) {
     return forEach(map.entrySet(), (c, e) -> c.withModuleSourcePath(e.getKey(), e.getValue()));
   }
 
