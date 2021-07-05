@@ -30,6 +30,7 @@ class build {
         .assertJDK(Runtime.version().feature())
         .withName("bach")
         .withVersion(projectVersion)
+        .withDefaultSourceFileEncoding(StandardCharsets.UTF_8)
         .withMainJavaRelease(16)
         .withMainModuleSourcePaths("./*/main/java")
         .withMainModule("com.github.sormuras.bach/main/java/module-info.java")
@@ -41,9 +42,7 @@ class build {
   }
 
   static Settings settings() {
-    return Settings.newSettings()
-        .withSourceEncoding(StandardCharsets.UTF_8)
-        .withBrowserConnectTimeout(9);
+    return Settings.newSettings().withBrowserConnectTimeout(9);
   }
 
   static class MyBach extends Bach {

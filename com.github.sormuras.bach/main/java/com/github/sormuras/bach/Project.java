@@ -5,10 +5,13 @@ import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.JavaRelease;
 import com.github.sormuras.bach.project.MainModules;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
+import com.github.sormuras.bach.project.ProjectDefaults;
 import com.github.sormuras.bach.project.ProjectName;
 import com.github.sormuras.bach.project.ProjectVersion;
 import com.github.sormuras.bach.project.TestModules;
 import java.lang.module.ModuleDescriptor;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -19,6 +22,8 @@ public interface Project {
   ProjectName name();
 
   ProjectVersion version();
+
+  ProjectDefaults defaults();
 
   MainModules mainModules();
 
@@ -48,12 +53,17 @@ public interface Project {
     return new NewProject(
         new ProjectName(name),
         new ProjectVersion(ModuleDescriptor.Version.parse(version)),
+        new ProjectDefaults(StandardCharsets.UTF_8),
         new MainModules(Set.of(), Optional.empty(), ModuleSourcePaths.EMPTY),
         new TestModules(Set.of(), ModuleSourcePaths.EMPTY));
   }
 
   record NewProject(
-      ProjectName name, ProjectVersion version, MainModules mainModules, TestModules testModules)
+      ProjectName name,
+      ProjectVersion version,
+      ProjectDefaults defaults,
+      MainModules mainModules,
+      TestModules testModules)
       implements Project {
 
     public NewProject assertJDK(int feature) {
@@ -72,6 +82,7 @@ public interface Project {
       return new NewProject(
           component instanceof ProjectName name ? name : name,
           component instanceof ProjectVersion version ? version : version,
+          component instanceof ProjectDefaults defaults ? defaults : defaults,
           component instanceof MainModules mainModules ? mainModules : mainModules,
           component instanceof TestModules testModules ? testModules : testModules);
     }
@@ -82,6 +93,10 @@ public interface Project {
 
     public NewProject withVersion(String version) {
       return with(new ProjectVersion(ModuleDescriptor.Version.parse(version)));
+    }
+
+    public NewProject withDefaultSourceFileEncoding(Charset encoding) {
+      return with(new ProjectDefaults(encoding));
     }
 
     public NewProject withMainModuleSourcePaths(String... patterns) {

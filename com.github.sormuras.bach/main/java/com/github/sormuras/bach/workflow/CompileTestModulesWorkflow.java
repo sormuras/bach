@@ -22,7 +22,7 @@ public class CompileTestModulesWorkflow extends Workflow {
   }
 
   public Call.Tree generateCallTree() {
-    var test = bach.project().testModules();
+    var test = project.testModules();
     if (test.set().isEmpty()) return Call.tree("No test module present");
     return generateCallTree(DeclaredModules.of(test.set()));
   }
@@ -33,13 +33,12 @@ public class CompileTestModulesWorkflow extends Workflow {
     var destination = bach.folders().workspace("modules-test");
 
     var size = modules.descriptors().count();
-    var suffix = "%d test module%s".formatted(size, size == 1 ? "" : "s");
     return Call.tree(
-        "Compile " + suffix,
+        "Compile %d test module%s".formatted(size, size == 1 ? "" : "s"),
         generateJavacCall(modules.names().toList(), classes),
         Call.tree("Create test archive directory", new CreateDirectoriesCall(destination)),
         Call.tree(
-            "Archive " + suffix,
+            "Archive %d test module%s".formatted(size, size == 1 ? "" : "s"),
             modules
                 .descriptors()
                 .parallel()
@@ -52,7 +51,7 @@ public class CompileTestModulesWorkflow extends Workflow {
         .withModule(modules)
         .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
         .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
-        .withEncoding(settings.sourceSettings().encoding())
+        .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
   }
 

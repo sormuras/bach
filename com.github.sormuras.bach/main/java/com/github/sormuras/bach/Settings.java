@@ -3,8 +3,6 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.RecordComponents;
 import java.io.PrintWriter;
 import java.net.http.HttpClient;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -14,8 +12,7 @@ public interface Settings {
     return new NewSettings(
         LogbookSettings.ofSystem(),
         FolderSettings.ofCurrentWorkingDirectory(),
-        BrowserSettings.ofConnectTimeoutSeconds(10),
-        SourceSettings.of(StandardCharsets.UTF_8));
+        BrowserSettings.ofConnectTimeoutSeconds(10));
   }
 
   LogbookSettings logbookSettings();
@@ -23,8 +20,6 @@ public interface Settings {
   FolderSettings folderSettings();
 
   BrowserSettings browserSettings();
-
-  SourceSettings sourceSettings();
 
   record LogbookSettings(PrintWriter out, PrintWriter err, boolean verbose) {
     public static LogbookSettings ofSystem() {
@@ -50,17 +45,10 @@ public interface Settings {
     }
   }
 
-  record SourceSettings(Charset encoding) {
-    public static SourceSettings of(Charset encoding) {
-      return new SourceSettings(encoding);
-    }
-  }
-
   record NewSettings(
       LogbookSettings logbookSettings,
       FolderSettings folderSettings,
-      BrowserSettings browserSettings,
-      SourceSettings sourceSettings)
+      BrowserSettings browserSettings)
       implements Settings {
 
     public NewSettings with(Object component) {
@@ -68,12 +56,7 @@ public interface Settings {
       return new NewSettings(
           component instanceof LogbookSettings settings ? settings : logbookSettings,
           component instanceof FolderSettings settings ? settings : folderSettings,
-          component instanceof BrowserSettings settings ? settings : browserSettings,
-          component instanceof SourceSettings settings ? settings : sourceSettings);
-    }
-
-    public NewSettings withSourceEncoding(Charset encoding) {
-      return with(SourceSettings.of(encoding));
+          component instanceof BrowserSettings settings ? settings : browserSettings);
     }
 
     public NewSettings withBrowserConnectTimeout(int seconds) {
