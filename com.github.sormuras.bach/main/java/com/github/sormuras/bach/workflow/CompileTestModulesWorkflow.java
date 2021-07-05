@@ -49,8 +49,8 @@ public class CompileTestModulesWorkflow extends Workflow {
     var moduleSourcePaths = project.testModules().moduleSourcePaths();
     return new JavacCall()
         .withModule(modules)
-        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
-        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
+        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
+        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
         .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
   }

@@ -50,12 +50,11 @@ public class CompileMainModulesWorkflow extends Workflow {
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
-    var moduleSourcePaths = main.moduleSourcePaths();
     return new JavacCall()
         .ifPresent(main.release(), JavacCall::withRelease)
         .withModule(modules)
-        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePath)
-        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePaths)
+        .ifPresent(main.moduleSourcePaths().patterns(), JavacCall::withModuleSourcePathPatterns)
+        .ifPresent(main.moduleSourcePaths().specifics(), JavacCall::withModuleSourcePathSpecifics)
         .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
   }
