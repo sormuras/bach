@@ -66,6 +66,10 @@ public interface Project {
       return with(new ProjectVersion(ModuleDescriptor.Version.parse(version)));
     }
 
+    public NewProject withDefaultSourceFileEncoding(String encoding) {
+      return withDefaultSourceFileEncoding(Charset.forName(encoding));
+    }
+
     public NewProject withDefaultSourceFileEncoding(Charset encoding) {
       return with(new ProjectDefaults(encoding));
     }
