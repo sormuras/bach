@@ -15,37 +15,25 @@ public record Printer(Bach bach) {
   }
 
   public void printDeclaredModules() {
-    var out = bach.logbook().out();
-    out.println("Declared Modules");
-    var main = DeclaredModules.of(bach.project().mainModules().set());
-    var test = DeclaredModules.of(bach.project().testModules().set());
-    if (main.isEmpty() && test.isEmpty()) {
-      out.println("  -");
-      return;
-    }
-    if (!main.isEmpty()) {
-      out.println("  Main Code Space");
-      streamModuleSummaryLines(main).forEach(line -> out.printf("    %s%n", line));
-    }
-    if (!test.isEmpty()) {
-      out.println("  Test Code Space");
-      streamModuleSummaryLines(test).forEach(line -> out.printf("    %s%n", line));
+    for (var space : bach.project().spaces().stream().toList()) {
+      var finder = DeclaredModules.of(space.modules());
+      printModules("Declared Modules in Project Space: " + space.name(), finder);
     }
   }
 
   public void printExternalModules() {
-    var finder = ModuleFinder.of(bach.folders().externalModules());
-    var out = bach.logbook().out();
-    out.println("External Modules");
-    if (finder.findAll().isEmpty()) out.println("  -");
-    else streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
+    printModules("External Modules", ModuleFinder.of(bach.folders().externalModules()));
   }
 
   public void printSystemModules() {
-    var finder = ModuleFinder.ofSystem();
+    printModules("System Modules", ModuleFinder.ofSystem());
+  }
+
+  public void printModules(String caption, ModuleFinder finder) {
     var out = bach.logbook().out();
-    out.println("System Modules");
-    streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
+    out.println(caption);
+    if (finder.findAll().isEmpty()) out.println("  -");
+    else streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
   }
 
   public void printTools() {

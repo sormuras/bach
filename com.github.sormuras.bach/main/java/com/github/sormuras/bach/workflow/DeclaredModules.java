@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.project.DeclaredModule;
-
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReader;
