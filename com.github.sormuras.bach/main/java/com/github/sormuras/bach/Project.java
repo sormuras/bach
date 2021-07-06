@@ -1,21 +1,16 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.RecordComponents;
-import com.github.sormuras.bach.project.DeclaredModule;
-import com.github.sormuras.bach.project.JavaRelease;
-import com.github.sormuras.bach.project.MainModules;
-import com.github.sormuras.bach.project.ModuleSourcePaths;
 import com.github.sormuras.bach.project.ProjectDefaults;
 import com.github.sormuras.bach.project.ProjectName;
+import com.github.sormuras.bach.project.ProjectSpace;
+import com.github.sormuras.bach.project.ProjectSpaces;
 import com.github.sormuras.bach.project.ProjectVersion;
-import com.github.sormuras.bach.project.TestModules;
 import java.lang.module.ModuleDescriptor;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 public interface Project {
 
@@ -25,28 +20,10 @@ public interface Project {
 
   ProjectDefaults defaults();
 
-  MainModules mainModules();
-
-  TestModules testModules();
+  ProjectSpaces spaces();
 
   default String toNameAndVersion() {
     return "%s %s".formatted(name().value(), version().value().toString());
-  }
-
-  default String toTextBlock() {
-    var mains = mainModules().set().stream().map(DeclaredModule::descriptor).map(Object::toString);
-    var tests = testModules().set().stream().map(DeclaredModule::descriptor).map(Object::toString);
-    return """
-        Project ${NAME&VERSION}
-        Main Modules
-        ${MAIN MODULES}
-        Test Modules
-        ${TEST MODULES}
-        """
-        .replace("${NAME&VERSION}", toNameAndVersion())
-        .replace("${MAIN MODULES}", String.join("\n", mains.toList()).indent(2).stripTrailing())
-        .replace("${TEST MODULES}", String.join("\n", tests.toList()).indent(2).stripTrailing())
-        .strip();
   }
 
   static NewProject newProject(String name, String version) {
@@ -54,16 +31,11 @@ public interface Project {
         new ProjectName(name),
         new ProjectVersion(ModuleDescriptor.Version.parse(version)),
         new ProjectDefaults(StandardCharsets.UTF_8),
-        new MainModules(Set.of(), Optional.empty(), ModuleSourcePaths.EMPTY),
-        new TestModules(Set.of(), ModuleSourcePaths.EMPTY));
+        new ProjectSpaces(new ProjectSpace("main", ""), new ProjectSpace("test", "-test")));
   }
 
   record NewProject(
-      ProjectName name,
-      ProjectVersion version,
-      ProjectDefaults defaults,
-      MainModules mainModules,
-      TestModules testModules)
+      ProjectName name, ProjectVersion version, ProjectDefaults defaults, ProjectSpaces spaces)
       implements Project {
 
     public NewProject assertJDK(int feature) {
@@ -83,8 +55,7 @@ public interface Project {
           component instanceof ProjectName name ? name : name,
           component instanceof ProjectVersion version ? version : version,
           component instanceof ProjectDefaults defaults ? defaults : defaults,
-          component instanceof MainModules mainModules ? mainModules : mainModules,
-          component instanceof TestModules testModules ? testModules : testModules);
+          component instanceof ProjectSpaces spaces ? spaces : spaces);
     }
 
     public NewProject withName(String name) {
@@ -99,44 +70,12 @@ public interface Project {
       return with(new ProjectDefaults(encoding));
     }
 
-    public NewProject withMainModuleSourcePaths(String... patterns) {
-      return withMainModuleSourcePaths(ModuleSourcePaths.ofPatterns(patterns));
+    public NewProject withMainProjectSpace(UnaryOperator<ProjectSpace> operator) {
+      return with(new ProjectSpaces(operator.apply(spaces.main()), spaces.test()));
     }
 
-    public NewProject withMainModuleSourcePaths(ModuleSourcePaths moduleSourcePaths) {
-      return with(new MainModules(mainModules.set(), mainModules.release(), moduleSourcePaths));
-    }
-
-    public NewProject withMainModule(String path) {
-      return withMainModule(DeclaredModule.of(path));
-    }
-
-    public NewProject withMainModule(DeclaredModule module) {
-      var set = new TreeSet<>(mainModules.set());
-      set.add(module);
-      return with(new MainModules(set, mainModules.release(), mainModules.moduleSourcePaths()));
-    }
-
-    public NewProject withMainJavaRelease(int feature) {
-      return with(
-          new MainModules(
-              mainModules.set(),
-              Optional.of(new JavaRelease(feature)),
-              mainModules.moduleSourcePaths()));
-    }
-
-    public NewProject withTestModuleSourcePaths(String... patterns) {
-      return with(new TestModules(mainModules.set(), ModuleSourcePaths.ofPatterns(patterns)));
-    }
-
-    public NewProject withTestModule(String path) {
-      return withTestModule(DeclaredModule.of(path));
-    }
-
-    public NewProject withTestModule(DeclaredModule module) {
-      var set = new TreeSet<>(testModules.set());
-      set.add(module);
-      return with(new TestModules(set, testModules.moduleSourcePaths()));
+    public NewProject withTestProjectSpace(UnaryOperator<ProjectSpace> operator) {
+      return with(new ProjectSpaces(spaces.main(), operator.apply(spaces.test())));
     }
   }
 }

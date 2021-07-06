@@ -2,7 +2,6 @@ package test.integration.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
@@ -13,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -22,9 +22,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class ModuleSourcePathsTests {
   @Test
-  void emptyIsEmpty() {
-    assertTrue(ModuleSourcePaths.EMPTY.patterns().isEmpty());
-    assertTrue(ModuleSourcePaths.EMPTY.specifics().isEmpty());
+  void emptyIsIllegal() {
+    assertThrows(IllegalArgumentException.class, () -> new ModuleSourcePaths(List.of(), Map.of()));
   }
 
   @Test

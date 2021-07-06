@@ -2,8 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.workflow.Browser;
-import com.github.sormuras.bach.workflow.CompileMainModulesWorkflow;
-import com.github.sormuras.bach.workflow.CompileTestModulesWorkflow;
+import com.github.sormuras.bach.workflow.CompileWorkflow;
 import com.github.sormuras.bach.workflow.Folders;
 import com.github.sormuras.bach.workflow.Logbook;
 import com.github.sormuras.bach.workflow.Printer;
@@ -117,8 +116,8 @@ public class Bach {
     log(Level.INFO, "Project %s", project.toNameAndVersion());
     var start = Instant.now();
     try {
-      compileMainModules();
-      compileTestModules();
+      compileMainSpace();
+      compileTestSpace();
     } catch (Exception exception) {
       logbook.log(exception);
       throw new RuntimeException("Build failed!", exception);
@@ -128,12 +127,12 @@ public class Bach {
     }
   }
 
-  public void compileMainModules() {
-    execute(new CompileMainModulesWorkflow(this));
+  public void compileMainSpace() {
+    execute(new CompileWorkflow(this, project.spaces().main()));
   }
 
-  public void compileTestModules() {
-    execute(new CompileTestModulesWorkflow(this));
+  public void compileTestSpace() {
+    execute(new CompileWorkflow(this, project.spaces().test()));
   }
 
   public void writeLogbook() {
