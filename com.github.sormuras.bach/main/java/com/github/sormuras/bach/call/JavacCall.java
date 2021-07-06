@@ -38,6 +38,10 @@ public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
     return with("--module", String.join(",", modules));
   }
 
+  public JavacCall withModulePath(List<Path> paths) {
+    return with("--module-path", paths);
+  }
+
   public JavacCall withModuleSourcePathPatterns(List<String> patterns) {
     var joined =
         patterns.stream()
@@ -54,6 +58,15 @@ public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
 
   public JavacCall withModuleSourcePathSpecifics(Map<String, List<Path>> map) {
     return forEach(map.entrySet(), (c, e) -> c.withModuleSourcePath(e.getKey(), e.getValue()));
+  }
+
+  public JavacCall withPatchModule(String module, List<Path> paths) {
+    var joined = paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    return with("--patch-module", module + '=' + joined);
+  }
+
+  public JavacCall withPatchModules(Map<String, List<Path>> map) {
+    return forEach(map.entrySet(), (c, e) -> c.withPatchModule(e.getKey(), e.getValue()));
   }
 
   public JavacCall withRelease(IntSupplier release) {
