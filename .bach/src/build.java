@@ -3,7 +3,6 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.workflow.CompileWorkflow;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -27,7 +26,7 @@ class build {
         .assertJDK(Runtime.version().feature())
         .withName("bach")
         .withVersion(projectVersion)
-        .withDefaultSourceFileEncoding(StandardCharsets.UTF_8)
+        .withDefaultSourceFileEncoding("UTF-8")
         .withMainProjectSpace(
             main ->
                 main.withJavaRelease(16)
