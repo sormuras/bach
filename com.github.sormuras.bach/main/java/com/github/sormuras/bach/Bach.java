@@ -11,9 +11,29 @@ import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 public class Bach {
+
+  public static void build(UnaryOperator<Project> projector) {
+    var project = projector.apply(Project.of("project", "0"));
+    var settings = Settings.newSettings();
+    Bach.build(project, settings);
+  }
+
+  public static void build(Project project, Settings settings) {
+    build(new Bach(project, settings));
+  }
+
+  public static void build(Bach bach) {
+    try {
+      bach.build();
+    } catch (Throwable cause) {
+      if (cause instanceof Error) throw cause;
+      throw new Error("Caught unhandled throwable", cause);
+    }
+  }
 
   public static String version() {
     var module = Bach.class.getModule();

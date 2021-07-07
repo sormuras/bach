@@ -9,12 +9,7 @@ import java.util.List;
 
 class build {
   public static void main(String... args) {
-    try {
-      bach("17-ea").build();
-    } catch (Throwable cause) {
-      if (cause instanceof Error) throw cause;
-      throw new Error("Caught unhandled throwable", cause);
-    }
+    Bach.build(bach("17-ea"));
   }
 
   static MyBach bach(String projectVersion) {
@@ -22,7 +17,7 @@ class build {
   }
 
   static Project project(String projectVersion) {
-    return Project.newProject("bach", projectVersion)
+    return Project.of("bach", projectVersion)
         .assertJDK(version -> version.feature() >= 16, "JDK 16+ is required")
         .assertJDK(Runtime.version().feature())
         .withName("bach")
