@@ -27,7 +27,7 @@ class PrinterTests {
       var bach =
           Bach.of(
               Project.of("empty", "0"),
-              Settings.newSettings()
+              Settings.of()
                   .with(new FolderSettings(temp))
                   .with(new LogbookSettings(new PrintWriter(out), new PrintWriter(out), true)));
 
@@ -59,7 +59,7 @@ class PrinterTests {
       var bach =
           Bach.of(
               Project.of("empty", "0"),
-              Settings.newSettings()
+              Settings.of()
                   .with(new FolderSettings(temp))
                   .with(new LogbookSettings(new PrintWriter(out), new PrintWriter(out), true)));
 
@@ -80,7 +80,7 @@ class PrinterTests {
       var bach =
           Bach.of(
               Project.of("empty", "0"),
-              Settings.newSettings()
+              Settings.of()
                   .with(new FolderSettings(Path.of("")))
                   .with(new LogbookSettings(new PrintWriter(out), new PrintWriter(out), true)));
 
