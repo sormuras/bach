@@ -12,15 +12,15 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-public final class DeclaredModules implements ModuleFinder {
+public final class DeclaredModuleFinder implements ModuleFinder {
 
-  public static DeclaredModules of(Set<DeclaredModule> modules) {
-    return new DeclaredModules(modules);
+  public static DeclaredModuleFinder of(Set<DeclaredModule> modules) {
+    return new DeclaredModuleFinder(modules);
   }
 
   private final Map<String, Reference> map;
 
-  private DeclaredModules(Set<DeclaredModule> modules) {
+  private DeclaredModuleFinder(Set<DeclaredModule> modules) {
     this.map = new TreeMap<>();
     for (var module : modules) map.put(module.name(), new Reference(module));
   }

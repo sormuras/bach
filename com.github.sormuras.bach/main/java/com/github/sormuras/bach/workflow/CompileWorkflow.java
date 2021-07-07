@@ -32,22 +32,22 @@ public class CompileWorkflow extends Workflow {
 
   public Call.Tree generateCallTree() {
     if (space.modules().isEmpty()) return Call.tree("No %s module present".formatted(space.name()));
-    return generateCallTree(DeclaredModules.of(space.modules()));
+    return generateCallTree(DeclaredModuleFinder.of(space.modules()));
   }
 
-  public Call.Tree generateCallTree(DeclaredModules declaredModules) {
+  public Call.Tree generateCallTree(DeclaredModuleFinder finder) {
     var feature = space.release().map(JavaRelease::feature).orElse(Runtime.version().feature());
     var classes = bach.folders().workspace("classes" + space.suffix() + "-" + feature);
     var modules = bach.folders().workspace("modules" + space.suffix());
 
-    var size = declaredModules.descriptors().count();
+    var size = finder.descriptors().count();
     return Call.tree(
         "Compile %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
-        generateJavacCall(declaredModules.names().toList(), classes),
+        generateJavacCall(finder.names().toList(), classes),
         Call.tree("Create main archive directory", new CreateDirectoriesCall(modules)),
         Call.tree(
             "Archive %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
-            declaredModules
+            finder
                 .descriptors()
                 .parallel()
                 .map(module -> generateJarCall(module, classes, modules))));

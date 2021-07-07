@@ -16,7 +16,7 @@ public record Printer(Bach bach) {
 
   public void printDeclaredModules() {
     for (var space : bach.project().spaces().stream().toList()) {
-      var finder = DeclaredModules.of(space.modules());
+      var finder = DeclaredModuleFinder.of(space.modules());
       printModules("Declared Modules in Project Space: " + space.name(), finder);
     }
   }
