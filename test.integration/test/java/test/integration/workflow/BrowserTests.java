@@ -52,7 +52,7 @@ class BrowserTests {
 
   @Test
   void read(@Singleton(VolatileServer.class) WebServer server) {
-    var bach = Bach.of(Project.newProject("Test", "99"));
+    var bach = Bach.of(Project.of("Test", "99"));
     var actual = bach.browser().read(server.uri("index.html").toString());
     assertLinesMatch("""
         Hello World!
@@ -66,7 +66,7 @@ class BrowserTests {
   @Test
   void load1(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
       throws Exception {
-    var bach = Bach.of(Project.newProject("Test", "99"));
+    var bach = Bach.of(Project.of("Test", "99"));
     var file = temp.resolve("target");
     bach.browser().load(server.uri("123.bytes").toString(), file);
     var actual = Files.readAllBytes(file);
@@ -80,7 +80,7 @@ class BrowserTests {
   @Test
   void load3(@TempDir Path temp, @Singleton(VolatileServer.class) WebServer server)
       throws Exception {
-    var bach = Bach.of(Project.newProject("Test", "99"));
+    var bach = Bach.of(Project.of("Test", "99"));
     var file123 = temp.resolve("file123");
     var file456 = temp.resolve("file456");
     var file789 = temp.resolve("file789");
