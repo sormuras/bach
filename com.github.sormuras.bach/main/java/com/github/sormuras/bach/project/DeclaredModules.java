@@ -18,4 +18,8 @@ public record DeclaredModules(Set<DeclaredModule> set) {
     set.add(module);
     return new DeclaredModules(set);
   }
+
+  public ModuleSourcePaths toModuleSourcePaths() {
+    return isEmpty() ? ModuleSourcePaths.ofPatterns(".") : ModuleSourcePaths.of(this);
+  }
 }
