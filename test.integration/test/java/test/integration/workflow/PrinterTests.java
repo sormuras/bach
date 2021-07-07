@@ -35,13 +35,15 @@ class PrinterTests {
 
       assertLinesMatch(
           """
-          Declared Modules
+          Declared Modules in Project Space: main
+            -
+          Declared Modules in Project Space: test
             -
           External Modules
             -
           System Modules
             java.base@.+
-            >> MORE MODULES >>
+          >> MORE MODULES >>
             jdk.zipfs@.+
           """
               .lines(),

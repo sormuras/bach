@@ -1,13 +1,11 @@
 package com.github.sormuras.bach.project;
 
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 
 public record ProjectSpace(
     String name,
     String suffix,
-    Set<DeclaredModule> modules,
+    DeclaredModules modules,
     Optional<JavaRelease> release,
     Optional<ModuleSourcePaths> moduleSourcePaths,
     Optional<ModulePatches> modulePatches,
@@ -17,7 +15,7 @@ public record ProjectSpace(
     this(
         name,
         suffix,
-        Set.of(),
+        DeclaredModules.of(),
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
@@ -25,10 +23,8 @@ public record ProjectSpace(
   }
 
   public ProjectSpace with(DeclaredModule module) {
-    var modules = new TreeSet<>(this.modules);
-    modules.add(module);
     return new ProjectSpace(
-        name, suffix, modules, release, moduleSourcePaths, modulePatches, modulePaths);
+        name, suffix, modules.with(module), release, moduleSourcePaths, modulePatches, modulePaths);
   }
 
   public ProjectSpace with(JavaRelease release) {
