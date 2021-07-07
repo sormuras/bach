@@ -6,12 +6,12 @@ import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.call.CreateDirectoriesCall;
 import com.github.sormuras.bach.call.JarCall;
 import com.github.sormuras.bach.call.JavacCall;
+import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.JavaRelease;
 import com.github.sormuras.bach.project.ModulePatches;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
 import com.github.sormuras.bach.project.ProjectSpace;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -40,17 +40,14 @@ public class CompileWorkflow extends Workflow {
     var classes = bach.folders().workspace("classes" + space.suffix() + "-" + feature);
     var modules = bach.folders().workspace("modules" + space.suffix());
 
-    var size = finder.descriptors().count();
+    var size = finder.size();
     return Call.tree(
         "Compile %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
         generateJavacCall(finder.names().toList(), classes),
         Call.tree("Create main archive directory", new CreateDirectoriesCall(modules)),
         Call.tree(
             "Archive %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
-            finder
-                .descriptors()
-                .parallel()
-                .map(module -> generateJarCall(module, classes, modules))));
+            finder.modules().parallel().map(module -> generateJarCall(module, classes, modules))));
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
@@ -70,10 +67,11 @@ public class CompileWorkflow extends Workflow {
         .withDirectoryForClasses(classes);
   }
 
-  public JarCall generateJarCall(ModuleDescriptor module, Path classes, Path destination) {
-    var name = module.name();
-    var version = module.version().orElse(project.version().value());
-    var file = destination.resolve(name + "@" + version + ".jar");
+  public JarCall generateJarCall(DeclaredModule module, Path classes, Path destination) {
+    var descriptor = module.descriptor();
+    var name = descriptor.name();
+    var version = descriptor.version().orElse(project.version().value());
+    var file = destination.resolve(name + "@" + version + space.suffix() + ".jar");
     var modulePatches =
         space
             .modulePatches()
@@ -85,7 +83,7 @@ public class CompileWorkflow extends Workflow {
         .with("--create")
         .with("--file", file)
         .with("--module-version", version + space.suffix())
-        .ifPresent(module.mainClass(), (call, main) -> call.with("--main-class", main))
+        .ifPresent(descriptor.mainClass(), (call, main) -> call.with("--main-class", main))
         .with("-C", classes.resolve(name), ".")
         .forEach(modulePatches, (call, path) -> call.with("-C", path, "."));
   }
