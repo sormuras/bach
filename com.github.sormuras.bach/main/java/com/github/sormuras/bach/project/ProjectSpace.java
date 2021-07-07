@@ -71,8 +71,8 @@ public record ProjectSpace(
         Optional.ofNullable(modulePaths));
   }
 
-  public ProjectSpace withModule(String path) {
-    return with(DeclaredModule.of(path));
+  public ProjectSpace withModule(String info, String... additionalSourcePaths) {
+    return with(DeclaredModule.of(info, additionalSourcePaths));
   }
 
   public ProjectSpace withJavaRelease(int feature) {

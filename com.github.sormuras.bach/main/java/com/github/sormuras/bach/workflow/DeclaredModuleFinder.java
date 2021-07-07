@@ -52,7 +52,7 @@ public final class DeclaredModuleFinder implements ModuleFinder {
     private final DeclaredModule module;
 
     Reference(DeclaredModule module) {
-      super(module.descriptor(), module.path().toUri());
+      super(module.descriptor(), module.info().toUri());
       this.module = module;
     }
 
