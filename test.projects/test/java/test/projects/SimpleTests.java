@@ -3,11 +3,9 @@ package test.projects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
-@Disabled
 class SimpleTests {
 
   @Test
@@ -15,7 +13,7 @@ class SimpleTests {
     var project = TestProject.of("Simple");
     assertEquals(0, project.build().waitFor());
 
-    var jar =  project.root().resolve("workspace/modules/simple@1.0.1.jar");
+    var jar =  project.root().resolve(".bach/workspace/modules/simple@1.0.1.jar");
     assertLinesMatch(
         """
         META-INF/
