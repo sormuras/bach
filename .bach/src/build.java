@@ -43,7 +43,7 @@ class build {
   }
 
   static Settings settings() {
-    return Settings.newSettings().withBrowserConnectTimeout(9);
+    return Settings.of().withBrowserConnectTimeout(9);
   }
 
   static class MyBach extends Bach {

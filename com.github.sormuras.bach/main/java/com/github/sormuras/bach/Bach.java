@@ -16,14 +16,10 @@ import java.util.spi.ToolProvider;
 
 public class Bach {
 
-  public static void build(UnaryOperator<Project> projector) {
-    var project = projector.apply(Project.of("project", "0"));
-    var settings = Settings.newSettings();
-    Bach.build(project, settings);
-  }
-
-  public static void build(Project project, Settings settings) {
-    build(new Bach(project, settings));
+  public static void build(UnaryOperator<Project> composer) {
+    var project = composer.apply(Project.of("project", "0"));
+    var settings = Settings.of();
+    Bach.build(new Bach(project, settings));
   }
 
   public static void build(Bach bach) {
@@ -42,7 +38,7 @@ public class Bach {
   }
 
   public static Bach of(Project project) {
-    return Bach.of(project, Settings.newSettings());
+    return Bach.of(project, Settings.of());
   }
 
   public static Bach of(Project project, Settings settings) {
