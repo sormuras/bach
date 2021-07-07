@@ -2,7 +2,6 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.DeclaredModules;
-import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
@@ -36,22 +35,29 @@ public final class DeclaredModuleFinder implements ModuleFinder {
     return Set.copyOf(map.values());
   }
 
-  public boolean isEmpty() {
-    return map.isEmpty();
+  public int size() {
+    return map.size();
   }
 
-  public Stream<ModuleDescriptor> descriptors() {
-    return map.values().stream().map(ModuleReference::descriptor);
+  public Stream<DeclaredModule> modules() {
+    return map.values().stream().map(Reference::module);
   }
 
   public Stream<String> names() {
-    return descriptors().map(ModuleDescriptor::name);
+    return map.keySet().stream();
   }
 
   private static final class Reference extends ModuleReference {
 
-    private Reference(DeclaredModule module) {
+    private final DeclaredModule module;
+
+    Reference(DeclaredModule module) {
       super(module.descriptor(), module.path().toUri());
+      this.module = module;
+    }
+
+    DeclaredModule module() {
+      return module;
     }
 
     @Override
