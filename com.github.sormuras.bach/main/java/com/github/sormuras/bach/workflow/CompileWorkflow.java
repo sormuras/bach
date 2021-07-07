@@ -8,22 +8,39 @@ import com.github.sormuras.bach.call.JarCall;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.JavaRelease;
-import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.project.ModulePatches;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
+import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.project.ProjectSpace;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 public class CompileWorkflow extends Workflow {
 
   protected final ProjectSpace space;
+  protected final ModuleSourcePaths computedModuleSourcePaths;
+  protected final ModulePatches computedModulePatches;
+  protected final ModulePaths computedModulePaths;
 
   public CompileWorkflow(Bach bach, ProjectSpace space) {
     super(bach);
     this.space = space;
+    this.computedModuleSourcePaths = computeModuleSourcePaths();
+    this.computedModulePatches = computeModulePatches();
+    this.computedModulePaths = computeModulePaths();
+  }
+
+  protected ModuleSourcePaths computeModuleSourcePaths() {
+    return space.moduleSourcePaths().orElseGet(space.modules()::toModuleSourcePaths);
+  }
+
+  protected ModulePatches computeModulePatches() {
+    return space.modulePatches().orElseGet(ModulePatches::of);
+  }
+
+  protected ModulePaths computeModulePaths() {
+    return space.modulePaths().orElseGet(ModulePaths::of);
   }
 
   @Override
@@ -52,17 +69,13 @@ public class CompileWorkflow extends Workflow {
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
-    var moduleSourcePaths =
-        space.moduleSourcePaths().orElseGet(() -> ModuleSourcePaths.of(space.modules()));
-    var modulePatches = space.modulePatches().map(ModulePatches::map).orElseGet(Map::of);
     var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElseGet(List::of);
-
     return new JavacCall()
         .ifPresent(space.release(), JavacCall::withRelease)
         .withModule(modules)
-        .ifPresent(moduleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
-        .ifPresent(moduleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
-        .ifPresent(modulePatches, JavacCall::withPatchModules)
+        .ifPresent(computedModuleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
+        .ifPresent(computedModuleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
+        .ifPresent(computedModulePatches.map(), JavacCall::withPatchModules)
         .ifPresent(modulePaths, JavacCall::withModulePath)
         .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
@@ -82,15 +95,9 @@ public class CompileWorkflow extends Workflow {
             .ifPresent(descriptor.mainClass(), (call, main) -> call.with("--main-class", main))
             .with("-C", classes.resolve(name), ".");
 
-    var mode = space.modulePatches().map(ModulePatches::mode).orElse(PatchMode.SOURCES);
-    if (mode == PatchMode.CLASSES) {
-      var modulePatches =
-          space
-              .modulePatches()
-              .map(ModulePatches::map)
-              .orElseGet(Map::of)
-              .getOrDefault(name, List.of());
-      jar = jar.forEach(modulePatches, (call, path) -> call.with("-C", path, "."));
+    if (computedModulePatches.mode() == PatchMode.CLASSES) {
+      var list = computedModulePatches.map().getOrDefault(name, List.of());
+      jar = jar.forEach(list, (call, path) -> call.with("-C", path, "."));
     }
 
     return jar;
