@@ -18,6 +18,7 @@ public record ModuleSourcePaths(List<String> patterns, Map<String, List<Path>> s
   }
 
   public ModuleSourcePaths {
-    if (patterns.isEmpty() && specifics.isEmpty()) throw new IllegalArgumentException();
+    if (patterns.isEmpty() && specifics.isEmpty())
+      throw new IllegalArgumentException("At least one module source path is required");
   }
 }
