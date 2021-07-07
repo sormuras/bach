@@ -2,6 +2,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.call.JavacCall;
+import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.workflow.CompileWorkflow;
 import java.nio.file.Path;
 import java.util.List;
@@ -34,15 +35,16 @@ class build {
                     .withModule("com.github.sormuras.bach/main/java/module-info.java"))
         .withTestProjectSpace(
             test ->
-                test.withModuleSourcePaths("./*/test/java", "./*/test/java-module")
-                    .withModule("com.github.sormuras.bach/test/java-module/module-info.java")
-                    .withPatchModule(
-                        "com.github.sormuras.bach",
-                        ".bach/workspace/classes-16/com.github.sormuras.bach")
+                test.withModule(
+                        "com.github.sormuras.bach/test/java-module/module-info.java",
+                        "com.github.sormuras.bach/test/java")
                     .withModule("test.base/test/java/module-info.java")
                     .withModule("test.integration/test/java/module-info.java")
                     .withModule("test.projects/test/java/module-info.java")
-                    .withModulePaths(".bach/workspace/modules", ".bach/external-modules"));
+                    .withModulePaths(".bach/workspace/modules", ".bach/external-modules")
+                    .with(PatchMode.SOURCES)
+                    .withPatchModule(
+                        "com.github.sormuras.bach", "com.github.sormuras.bach/main/java"));
   }
 
   static Settings settings() {

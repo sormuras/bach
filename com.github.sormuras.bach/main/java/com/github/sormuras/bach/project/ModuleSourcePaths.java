@@ -13,8 +13,7 @@ public record ModuleSourcePaths(List<String> patterns, Map<String, List<Path>> s
 
   public static ModuleSourcePaths of(DeclaredModules modules) {
     var specifics = new TreeMap<String, List<Path>>();
-    for (var module : modules.set())
-      specifics.put(module.name(), List.of(module.path().getParent()));
+    for (var module : modules.set()) specifics.put(module.name(), module.paths());
     return new ModuleSourcePaths(List.of(), specifics);
   }
 
