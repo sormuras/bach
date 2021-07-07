@@ -11,9 +11,10 @@ public record ModuleSourcePaths(List<String> patterns, Map<String, List<Path>> s
     return new ModuleSourcePaths(List.of(patterns), Map.of());
   }
 
-  public static ModuleSourcePaths of(Iterable<DeclaredModule> modules) {
+  public static ModuleSourcePaths of(DeclaredModules modules) {
     var specifics = new TreeMap<String, List<Path>>();
-    for (var module : modules) specifics.put(module.name(), List.of(module.path().getParent()));
+    for (var module : modules.set())
+      specifics.put(module.name(), List.of(module.path().getParent()));
     return new ModuleSourcePaths(List.of(), specifics);
   }
 
