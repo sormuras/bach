@@ -83,6 +83,10 @@ public record ProjectSpace(
     return with(ModuleSourcePaths.ofPatterns(patterns));
   }
 
+  public ProjectSpace with(PatchMode mode) {
+    return with(modulePatches.orElseGet(ModulePatches::of).with(mode));
+  }
+
   public ProjectSpace withPatchModule(String module, String... paths) {
     return with(modulePatches.orElseGet(ModulePatches::of).with(module, paths));
   }

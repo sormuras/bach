@@ -8,6 +8,7 @@ import com.github.sormuras.bach.call.JarCall;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.JavaRelease;
+import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.project.ModulePatches;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
@@ -53,8 +54,8 @@ public class CompileWorkflow extends Workflow {
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
     var moduleSourcePaths =
         space.moduleSourcePaths().orElseGet(() -> ModuleSourcePaths.of(space.modules()));
-    var modulePatches = space.modulePatches().map(ModulePatches::map).orElse(Map.of());
-    var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElse(List.of());
+    var modulePatches = space.modulePatches().map(ModulePatches::map).orElseGet(Map::of);
+    var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElseGet(List::of);
 
     return new JavacCall()
         .ifPresent(space.release(), JavacCall::withRelease)
@@ -72,19 +73,26 @@ public class CompileWorkflow extends Workflow {
     var name = descriptor.name();
     var version = descriptor.version().orElse(project.version().value());
     var file = destination.resolve(name + "@" + version + space.suffix() + ".jar");
-    var modulePatches =
-        space
-            .modulePatches()
-            .map(ModulePatches::map)
-            .orElse(Map.of())
-            .getOrDefault(name, List.of());
 
-    return new JarCall()
-        .with("--create")
-        .with("--file", file)
-        .with("--module-version", version + space.suffix())
-        .ifPresent(descriptor.mainClass(), (call, main) -> call.with("--main-class", main))
-        .with("-C", classes.resolve(name), ".")
-        .forEach(modulePatches, (call, path) -> call.with("-C", path, "."));
+    var jar =
+        new JarCall()
+            .with("--create")
+            .with("--file", file)
+            .with("--module-version", version + space.suffix())
+            .ifPresent(descriptor.mainClass(), (call, main) -> call.with("--main-class", main))
+            .with("-C", classes.resolve(name), ".");
+
+    var mode = space.modulePatches().map(ModulePatches::mode).orElse(PatchMode.SOURCES);
+    if (mode == PatchMode.CLASSES) {
+      var modulePatches =
+          space
+              .modulePatches()
+              .map(ModulePatches::map)
+              .orElseGet(Map::of)
+              .getOrDefault(name, List.of());
+      jar = jar.forEach(modulePatches, (call, path) -> call.with("-C", path, "."));
+    }
+
+    return jar;
   }
 }
