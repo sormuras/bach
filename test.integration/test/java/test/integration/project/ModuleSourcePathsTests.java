@@ -68,7 +68,7 @@ class ModuleSourcePathsTests {
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
     for (var declared : modules) {
-      var sourcePaths = declared.paths();
+      var sourcePaths = declared.paths().list(0);
       if (forceModuleSpecificForm) {
         specific.put(declared.name(), sourcePaths);
         continue;

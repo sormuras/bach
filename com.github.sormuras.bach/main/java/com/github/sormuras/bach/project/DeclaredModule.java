@@ -4,10 +4,9 @@ import com.github.sormuras.bach.internal.ModuleDescriptors;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.stream.Stream;
 
-public record DeclaredModule(ModuleDescriptor descriptor, Path info, List<Path> paths)
+public record DeclaredModule(ModuleDescriptor descriptor, Path info, DeclaredPaths paths)
     implements Comparable<DeclaredModule> {
 
   public static DeclaredModule of(String location, String... additionalSourcePaths) {
@@ -21,9 +20,10 @@ public record DeclaredModule(ModuleDescriptor descriptor, Path info, List<Path> 
         Stream.concat(
                 Stream.of(parent != null ? parent : Path.of(".")),
                 Stream.of(additionalSourcePaths).map(Path::of).map(Path::normalize))
+            .map(DeclaredPath::of)
             .distinct()
             .toList();
-    return new DeclaredModule(descriptor, info, paths);
+    return new DeclaredModule(descriptor, info, new DeclaredPaths(paths));
   }
 
   public String name() {
