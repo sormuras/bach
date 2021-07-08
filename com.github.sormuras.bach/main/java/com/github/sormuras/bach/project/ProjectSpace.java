@@ -1,6 +1,7 @@
 package com.github.sormuras.bach.project;
 
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 public record ProjectSpace(
     String name,
@@ -71,8 +72,12 @@ public record ProjectSpace(
         Optional.ofNullable(modulePaths));
   }
 
-  public ProjectSpace withModule(String info, String... additionalSourcePaths) {
-    return with(DeclaredModule.of(info, additionalSourcePaths));
+  public ProjectSpace withModule(String info) {
+    return withModule(info, UnaryOperator.identity());
+  }
+
+  public ProjectSpace withModule(String info, UnaryOperator<DeclaredModule> composer) {
+    return with(composer.apply(DeclaredModule.of(info)));
   }
 
   public ProjectSpace withJavaRelease(int feature) {

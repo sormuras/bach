@@ -27,19 +27,21 @@ class build {
             main ->
                 main.withJavaRelease(16)
                     .withModuleSourcePaths("./*/main/java")
-                    .withModule("com.github.sormuras.bach/main/java/module-info.java"))
+                    .withModule(
+                        "com.github.sormuras.bach/main/java/module-info.java",
+                        module -> module.withResources("com.github.sormuras.bach/main/java")))
         .withTestProjectSpace(
             test ->
-                test.withModule(
-                        "com.github.sormuras.bach/test/java-module/module-info.java",
-                        "com.github.sormuras.bach/test/java")
-                    .withModule("test.base/test/java/module-info.java")
+                test.withModule("test.base/test/java/module-info.java")
                     .withModule("test.integration/test/java/module-info.java")
                     .withModule("test.projects/test/java/module-info.java")
-                    .withModulePaths(".bach/workspace/modules", ".bach/external-modules")
+                    .withModule(
+                        "com.github.sormuras.bach/test/java-module/module-info.java",
+                        module -> module.withSources("com.github.sormuras.bach/test/java"))
                     .with(PatchMode.SOURCES)
                     .withPatchModule(
-                        "com.github.sormuras.bach", "com.github.sormuras.bach/main/java"));
+                        "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
+                    .withModulePaths(".bach/workspace/modules", ".bach/external-modules"));
   }
 
   static Settings settings() {

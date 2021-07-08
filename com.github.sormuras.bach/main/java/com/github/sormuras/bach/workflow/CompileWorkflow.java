@@ -12,7 +12,9 @@ import com.github.sormuras.bach.project.ModulePatches;
 import com.github.sormuras.bach.project.ModulePaths;
 import com.github.sormuras.bach.project.ModuleSourcePaths;
 import com.github.sormuras.bach.project.PatchMode;
+import com.github.sormuras.bach.project.PathType;
 import com.github.sormuras.bach.project.ProjectSpace;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -89,6 +91,7 @@ public class CompileWorkflow extends Workflow {
 
     var jar =
         new JarCall()
+            .with("--verbose")
             .with("--create")
             .with("--file", file)
             .with("--module-version", version + space.suffix())
@@ -98,6 +101,19 @@ public class CompileWorkflow extends Workflow {
     if (computedModulePatches.mode() == PatchMode.CLASSES) {
       var list = computedModulePatches.map().getOrDefault(name, List.of());
       jar = jar.forEach(list, (call, path) -> call.with("-C", path, "."));
+    }
+
+    for (var release = 0; release <= Runtime.version().feature(); release++) {
+      if (1 <= release && release <= 8) continue;
+      var resources = module.paths().list(release, PathType.RESOURCES);
+      if (resources.isEmpty()) continue;
+      if (release != 0) {
+        jar = jar.with("--release", release);
+      }
+      for (var resource : resources) {
+        if (Files.isDirectory(resource)) jar = jar.with("-C", resource, ".");
+        else jar = jar.with(resource.toString());
+      }
     }
 
     return jar;

@@ -19,10 +19,14 @@ class SimpleTests {
         META-INF/
         META-INF/MANIFEST.MF
         module-info.class
+        module-info.java
         simple/
         simple/Main.class
+        simple/Main.java
+        simple/Main.txt
         simple/internal/
         simple/internal/Interface.class
+        simple/internal/Interface.java
         """
             .lines()
             .sorted(),
