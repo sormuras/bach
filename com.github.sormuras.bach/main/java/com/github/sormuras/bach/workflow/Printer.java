@@ -36,6 +36,11 @@ public record Printer(Bach bach) {
     else streamModuleSummaryLines(finder).forEach(line -> out.printf("  %s%n", line));
   }
 
+  public void printMissingExternalModules() {
+    var out = bach.logbook().out();
+    bach.resolver().computeMissingExternalModules().forEach(out::println);
+  }
+
   public void printTools() {
     var out = bach.logbook().out();
     bach.runner().streamToolProviders().map(ToolProvider::name).sorted().forEach(out::println);
