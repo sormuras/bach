@@ -107,6 +107,7 @@ public class CompileWorkflow extends Workflow {
             new JavacCall()
                 .withRelease(8)
                 .with("--class-path", classPaths)
+                .with("-implicit:none")
                 .withDirectoryForClasses(classes.resolve(name))
                 .withAll(java8Files);
         calls.add(javac);
@@ -115,7 +116,7 @@ public class CompileWorkflow extends Workflow {
       }
     }
     if (calls.isEmpty()) return Call.tree("No Java 8 javac calls");
-    return Call.tree("Compile Java 8 classes", calls.stream().parallel());
+    return Call.tree("Compile Java 8 classes", calls.stream());
   }
 
   public Call.Tree generateTargetedCallTree(DeclaredModuleFinder finder, Path classes) {
