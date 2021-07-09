@@ -12,10 +12,14 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
 
 @SupportedAnnotationTypes("*")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class ShowProcessor extends AbstractProcessor {
   PrintWriter out;
   DocTrees treeUtils;
+
+  @Override
+  public SourceVersion getSupportedSourceVersion() {
+    return SourceVersion.latest();
+  }
 
   @Override
   public void init(ProcessingEnvironment pEnv) {
