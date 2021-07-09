@@ -1,3 +1,3 @@
-# Project Streaming Events
+# Project Recording Events
 
-<https://openjdk.java.net/jeps/349>
+<https://openjdk.java.net/jeps/328>
