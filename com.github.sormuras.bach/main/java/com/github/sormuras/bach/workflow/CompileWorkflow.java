@@ -47,6 +47,10 @@ public class CompileWorkflow extends Workflow {
     return space.modulePaths().orElseGet(ModulePaths::of);
   }
 
+  protected Path computeMultiReleaseClassesDirectory(String module, int release) {
+    return bach.folders().workspace("classes-mr-" + release, module);
+  }
+
   @Override
   public void execute() {
     bach.execute(generateCallTree());
@@ -76,14 +80,13 @@ public class CompileWorkflow extends Workflow {
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
     var release = space.release().map(it -> it.feature() != 8 ? it : new JavaRelease(9));
-    var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElseGet(List::of);
     return new JavacCall()
         .ifPresent(release, JavacCall::withRelease)
         .withModule(modules)
         .ifPresent(computedModuleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
         .ifPresent(computedModuleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
         .ifPresent(computedModulePatches.map(), JavacCall::withPatchModules)
-        .ifPresent(modulePaths, JavacCall::withModulePath)
+        .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath)
         .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
   }
@@ -149,18 +152,13 @@ public class CompileWorkflow extends Workflow {
 
   public JavacCall generateTargetedJavacCall(
       int release, String module, Path classes, List<Path> javaSourceFiles) {
-    var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElseGet(List::of);
     return new JavacCall()
         .withRelease(release)
         .with("--class-path", classes.resolve(module))
-        .ifPresent(modulePaths, JavacCall::withModulePath)
+        .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath)
         .with("-implicit:none") // generate classes for explicitly referenced source files
         .withDirectoryForClasses(computeMultiReleaseClassesDirectory(module, release))
         .withAll(javaSourceFiles);
-  }
-
-  private Path computeMultiReleaseClassesDirectory(String module, int release) {
-    return bach.folders().workspace("classes-mr-" + release, module);
   }
 
   public JarCall generateJarCall(DeclaredModule module, Path classes, Path destination) {
