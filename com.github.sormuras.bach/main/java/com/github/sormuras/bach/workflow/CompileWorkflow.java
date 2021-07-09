@@ -66,6 +66,7 @@ public class CompileWorkflow extends Workflow {
     return Call.tree(
         "Compile %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
         generateJavacCall(finder.names().toList(), classes),
+        generateJava8CallTree(finder, classes),
         generateTargetedCallTree(finder, classes),
         Call.tree("Create archive directory", new CreateDirectoriesCall(modules)),
         Call.tree(
@@ -74,9 +75,10 @@ public class CompileWorkflow extends Workflow {
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
+    var release = space.release().map(it -> it.feature() != 8 ? it : new JavaRelease(9));
     var modulePaths = space.modulePaths().map(ModulePaths::pruned).orElseGet(List::of);
     return new JavacCall()
-        .ifPresent(space.release(), JavacCall::withRelease)
+        .ifPresent(release, JavacCall::withRelease)
         .withModule(modules)
         .ifPresent(computedModuleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
         .ifPresent(computedModuleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
@@ -84,6 +86,36 @@ public class CompileWorkflow extends Workflow {
         .ifPresent(modulePaths, JavacCall::withModulePath)
         .withEncoding(project.defaults().encoding())
         .withDirectoryForClasses(classes);
+  }
+
+  public Call.Tree generateJava8CallTree(DeclaredModuleFinder finder, Path classes) {
+    if (space.release().map(JavaRelease::feature).orElse(0) != 8)
+      return Call.tree("No Java 8, no calls.");
+
+    var classPaths = new ArrayList<Path>();
+    finder.names().forEach(name -> classPaths.add(classes.resolve(name)));
+    classPaths.addAll(Paths.list(bach.folders().externalModules(), Paths::isJarFile));
+
+    var calls = new ArrayList<JavacCall>();
+    for (var module : finder.modules().toList()) {
+      var name = module.name();
+      var sources = module.paths().list(0, PathType.SOURCES);
+      try {
+        var java8Files = Paths.find(sources, 99, Paths::isJava8File);
+        if (java8Files.isEmpty()) continue; // skip aggregator module
+        var javac =
+            new JavacCall()
+                .withRelease(8)
+                .with("--class-path", classPaths)
+                .withDirectoryForClasses(classes.resolve(name))
+                .withAll(java8Files);
+        calls.add(javac);
+      } catch (Exception exception) {
+        throw new RuntimeException("Find Java 8 source files failed", exception);
+      }
+    }
+    if (calls.isEmpty()) return Call.tree("No Java 8 javac calls");
+    return Call.tree("Compile Java 8 classes", calls.stream().parallel());
   }
 
   public Call.Tree generateTargetedCallTree(DeclaredModuleFinder finder, Path classes) {

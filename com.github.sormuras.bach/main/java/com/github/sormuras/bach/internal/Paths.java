@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -16,10 +17,24 @@ import java.util.function.Predicate;
 /** {@link Path}-related utilities. */
 public class Paths {
 
+  /** Test supplied path for pointing to a Java Archive file. */
+  public static boolean isJarFile(Path path) {
+    var name = path.getFileName().toString();
+    return name.endsWith(".jar") && Files.isRegularFile(path);
+  }
+
   /** Test supplied path for pointing to a Java compilation unit. */
   public static boolean isJavaFile(Path path) {
     var name = path.getFileName().toString();
     return name.endsWith(".java") && Files.isRegularFile(path);
+  }
+
+  /** Test supplied path for pointing to a Java 8 compilation unit. */
+  public static boolean isJava8File(Path path) {
+    var name = path.getFileName().toString();
+    return name.endsWith(".java")
+        && !name.equals("module-info.java") // ignore module declaration compilation units
+        && Files.isRegularFile(path);
   }
 
   /** Walk all trees to find matching paths the given filter starting at given root path. */
@@ -30,6 +45,18 @@ public class Paths {
       try (var stream = Files.walk(root, maxDepth)) {
         stream.filter(filter).forEach(paths::add);
       }
+    }
+    return List.copyOf(paths);
+  }
+
+  /** {@return a listing of the directory in natural order with the given filter applied} */
+  public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+    if (Files.notExists(directory)) return List.of();
+    var paths = new TreeSet<>(Comparator.comparing(Path::toString));
+    try (var stream = Files.newDirectoryStream(directory, filter)) {
+      stream.forEach(paths::add);
+    } catch (Exception e) {
+      throw new RuntimeException("Stream directory '" + directory + "' failed: " + e, e);
     }
     return List.copyOf(paths);
   }
