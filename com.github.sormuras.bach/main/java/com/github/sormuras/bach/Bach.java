@@ -6,6 +6,7 @@ import com.github.sormuras.bach.workflow.CompileWorkflow;
 import com.github.sormuras.bach.workflow.Folders;
 import com.github.sormuras.bach.workflow.Logbook;
 import com.github.sormuras.bach.workflow.Printer;
+import com.github.sormuras.bach.workflow.Resolver;
 import com.github.sormuras.bach.workflow.Runner;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
@@ -52,6 +53,7 @@ public class Bach {
   protected final Folders folders;
   protected final Printer printer;
   protected final Runner runner;
+  protected final Resolver resolver;
 
   public Bach(Project project, Settings settings) {
     this.browser = new AtomicReference<>();
@@ -61,6 +63,7 @@ public class Bach {
     this.folders = Folders.of(settings.folderSettings());
     this.printer = new Printer(this);
     this.runner = new Runner(this);
+    this.resolver = new Resolver(this);
   }
 
   public final Browser browser() {
@@ -98,6 +101,10 @@ public class Bach {
     return runner;
   }
 
+  public final Resolver resolver() {
+    return resolver;
+  }
+
   public final void log(String format, Object... args) {
     log(Level.DEBUG, format, args);
   }
@@ -132,6 +139,7 @@ public class Bach {
     log(Level.INFO, "Project %s", project.toNameAndVersion());
     var start = Instant.now();
     try {
+      resolver.resolveMissingExternalModules();
       compileMainSpace();
       compileTestSpace();
     } catch (Exception exception) {
