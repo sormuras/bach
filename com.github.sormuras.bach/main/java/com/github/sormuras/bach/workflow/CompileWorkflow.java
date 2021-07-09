@@ -94,7 +94,11 @@ public class CompileWorkflow extends Workflow {
 
     var classPaths = new ArrayList<Path>();
     finder.names().forEach(name -> classPaths.add(classes.resolve(name)));
-    classPaths.addAll(Paths.list(bach.folders().externalModules(), Paths::isJarFile));
+    try {
+      classPaths.addAll(Paths.list(bach.folders().externalModules(), Paths::isJarFile));
+    } catch (Exception exception) {
+      throw new RuntimeException("Listing external modules failed", exception);
+    }
 
     var calls = new ArrayList<JavacCall>();
     for (var module : finder.modules().toList()) {

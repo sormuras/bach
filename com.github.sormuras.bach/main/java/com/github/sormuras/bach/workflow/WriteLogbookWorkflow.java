@@ -100,8 +100,8 @@ public class WriteLogbookWorkflow extends Workflow {
     var directory = bach.folders().workspace("modules");
     record ModularJar(Path path, long size, ModuleDescriptor descriptor, String md5, String sha) {}
     var jars = new ArrayList<ModularJar>();
-    try (var stream = Files.newDirectoryStream(directory, "*.jar")) {
-      for (var path : stream) {
+    try {
+      for (var path : Paths.list(directory, Paths::isJarFile)) {
         var size = Files.size(path);
         var descriptor = ModuleFinder.of(path).findAll().iterator().next().descriptor();
         var md5 = Paths.hash(path, "MD5");
