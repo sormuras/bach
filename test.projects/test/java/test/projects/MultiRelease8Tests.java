@@ -3,11 +3,9 @@ package test.projects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import test.base.ToolProviders;
 
-@Disabled
 class MultiRelease8Tests {
 
   @Test
@@ -15,7 +13,7 @@ class MultiRelease8Tests {
     var project = TestProject.of("MultiRelease-8");
     assertEquals(0, project.build().waitFor());
 
-    var jar = project.root().resolve("workspace/modules/foo@8.jar");
+    var jar = project.root().resolve(".bach/workspace/modules/foo@8.jar");
     assertLinesMatch(
         """
         META-INF/
