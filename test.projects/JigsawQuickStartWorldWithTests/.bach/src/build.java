@@ -5,11 +5,11 @@ class build {
             project
                 .withName("JigsawQuickStartWorldWithTests")
                 .withVersion("99")
-                .withMainProjectSpace(
+                .withMainSpace(
                     main ->
                         main.withModule("com.greetings/main/java")
                             .withModule("org.astro/main/java"))
-                .withTestProjectSpace(
+                .withTestSpace(
                     test ->
                         test.withModule("test.modules/test/java")
                             .withModulePaths(".bach/workspace/modules")));

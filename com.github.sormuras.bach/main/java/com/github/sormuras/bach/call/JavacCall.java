@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
-public record JavacCall(List<String> arguments) implements AnyCall<JavacCall> {
+public record JavacCall(List<String> arguments) implements CallWith<JavacCall> {
 
   public JavacCall() {
     this(List.of());

@@ -5,7 +5,7 @@ class build {
             project
                 .withName("Simple")
                 .withVersion("1.0.1")
-                .withMainProjectSpace(
+                .withMainSpace(
                     main ->
                         main.withModule(
                             "module-info.java",

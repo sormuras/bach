@@ -1,9 +1,14 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.call.ToolCall;
 import java.util.List;
 import java.util.stream.Stream;
 
 public interface Call {
+
+  static ToolCall tool(String name, Object... arguments) {
+    return new ToolCall(name, List.of()).withAll(arguments);
+  }
 
   String name();
 

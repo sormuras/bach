@@ -4,11 +4,9 @@ import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.external.JUnit;
 import com.github.sormuras.bach.project.PatchMode;
-import com.github.sormuras.bach.project.ProjectExternals;
 import com.github.sormuras.bach.workflow.CompileWorkflow;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 
 class build {
   public static void main(String... args) {
@@ -26,14 +24,14 @@ class build {
         .withName("bach")
         .withVersion(projectVersion)
         .withDefaultSourceFileEncoding("UTF-8")
-        .withMainProjectSpace(
+        .withMainSpace(
             main ->
                 main.withJavaRelease(16)
                     .withModuleSourcePaths("./*/main/java")
                     .withModule(
                         "com.github.sormuras.bach/main/java/module-info.java",
                         module -> module.withResources("com.github.sormuras.bach/main/java")))
-        .withTestProjectSpace(
+        .withTestSpace(
             test ->
                 test.withModule("test.base/test/java/module-info.java")
                     .withModule("test.integration/test/java/module-info.java")
@@ -45,8 +43,8 @@ class build {
                     .withPatchModule(
                         "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
                     .withModulePaths(".bach/workspace/modules", ".bach/external-modules"))
-        .with(
-            new ProjectExternals(Set.of("org.junit.platform.console"), List.of(JUnit.V_5_8_0_M1)));
+        .withRequiresExternalModules("org.junit.platform.console")
+        .withExternalModuleLocators(JUnit.V_5_8_0_M1);
   }
 
   static Settings settings() {

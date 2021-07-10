@@ -9,7 +9,7 @@ class build {
   }
 
   static Project project(Project project) {
-    return project.withName("MultiReleaseMultiModule").withVersion("99").withMainProjectSpace(build::main);
+    return project.withName("MultiReleaseMultiModule").withVersion("99").withMainSpace(build::main);
   }
 
   static ProjectSpace main(ProjectSpace main) {
