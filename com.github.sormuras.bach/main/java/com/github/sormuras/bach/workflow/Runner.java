@@ -62,6 +62,8 @@ public record Runner(Bach bach) {
     var tid = currentThread.getId();
     var output = out.toString().trim();
     var errors = err.toString().trim();
-    return new Logbook.Run(name, arguments, tid, duration, code, output, errors);
+    var run = new Logbook.Run(name, arguments, tid, duration, code, output, errors);
+    bach.logbook().log(run);
+    return run;
   }
 }
