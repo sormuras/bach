@@ -85,12 +85,12 @@ public class CompileWorkflow extends Workflow {
     return new JavacCall()
         .ifPresent(release, JavacCall::withRelease)
         .withModule(modules)
+        .withDirectoryForClasses(classes)
         .ifPresent(computedModuleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
         .ifPresent(computedModuleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
         .ifPresent(computedModulePatches.map(), JavacCall::withPatchModules)
-        .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath)
         .withEncoding(project.defaults().encoding())
-        .withDirectoryForClasses(classes);
+        .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath);
   }
 
   public Call.Tree generateJava8CallTree(DeclaredModuleFinder finder, Path classes) {
@@ -115,9 +115,10 @@ public class CompileWorkflow extends Workflow {
         var javac =
             new JavacCall()
                 .withRelease(8)
-                .with("--class-path", classPaths)
-                .with("-implicit:none")
                 .withDirectoryForClasses(classes.resolve(name))
+                .with("--class-path", classPaths)
+                .withEncoding(project.defaults().encoding())
+                .with("-implicit:none")
                 .withAll(java8Files);
         calls.add(javac);
       } catch (Exception exception) {
@@ -155,10 +156,11 @@ public class CompileWorkflow extends Workflow {
       int release, String module, Path classes, List<Path> javaSourceFiles) {
     return new JavacCall()
         .withRelease(release)
+        .withDirectoryForClasses(computeMultiReleaseClassesDirectory(module, release))
         .with("--class-path", classes.resolve(module))
         .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath)
-        .with("-implicit:none") // generate classes for explicitly referenced source files
-        .withDirectoryForClasses(computeMultiReleaseClassesDirectory(module, release))
+        .withEncoding(project.defaults().encoding())
+        .with("-implicit:none")
         .withAll(javaSourceFiles);
   }
 
