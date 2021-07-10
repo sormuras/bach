@@ -121,7 +121,6 @@ public class Bach {
             : runner.findToolProvider(call.name()).orElseThrow();
     var arguments = call.arguments();
     var run = runner.run(tool, arguments);
-    logbook.log(run);
     run.requireSuccessful();
   }
 
