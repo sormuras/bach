@@ -35,10 +35,6 @@ public interface Call {
       return calls.isEmpty() && trees.isEmpty();
     }
 
-    public Tree withParallel(boolean parallel) {
-      return new Tree(caption, parallel, calls, trees);
-    }
-
     public Tree with(Call call, Call... more) {
       var calls = new ArrayList<>(this.calls);
       calls.add(call);
