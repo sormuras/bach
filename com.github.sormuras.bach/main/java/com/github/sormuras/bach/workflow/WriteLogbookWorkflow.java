@@ -4,7 +4,6 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.internal.Paths;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.System.Logger.Level;
@@ -153,23 +152,23 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   public List<String> generateToolRunOverview() {
-    var results = bach.logbook().runs();
+    var runs = bach.logbook().runs();
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Run Overview");
     md.add("");
-    var size = results.size();
+    var size = runs.size();
     md.add("Recorded %d tool run result%s.".formatted(size, size == 1 ? "" : "s"));
     if (size < 1) return md;
 
     md.add("");
     md.add("|Thread| Duration |Tool|Arguments");
     md.add("|-----:|---------:|----|---------");
-    for (var result : results) {
-      var thread = result.thread();
-      var duration = Durations.beautify(result.duration());
-      var tool = "[" + result.name() + "](#" + markdownAnchor(result) + ")";
-      var arguments = "`" + String.join("` `", result.args()) + "`";
+    for (var run : runs) {
+      var thread = run.thread();
+      var duration = Durations.beautify(run.duration());
+      var tool = "[" + run.name() + "](#" + markdownAnchor(run) + ")";
+      var arguments = markdownJoin("<br>", false, run.args());
       var row = "|%6X|%10s|%s|%s".formatted(thread, duration, tool, arguments);
       md.add(row);
     }
@@ -177,34 +176,37 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   public List<String> generateToolRunDetails() {
-    var results = bach.logbook().runs();
-    if (results.isEmpty()) return List.of();
+    var runs = bach.logbook().runs();
+    if (runs.isEmpty()) return List.of();
 
     var md = new ArrayList<String>();
     md.add("");
     md.add("## Tool Run Details");
     md.add("");
-    var size = results.size();
+    var size = runs.size();
     md.add("%d recording%s".formatted(size, size == 1 ? "" : "s"));
-    for (var result : results) {
+    for (var run : runs) {
       md.add("");
-      md.add("### " + markdownAnchor(result));
+      md.add("### " + markdownAnchor(run));
       md.add("");
-      md.add("- tool = `" + result.name() + '`');
-      md.add("- args = `" + String.join("` `", result.args()) + '`');
-      md.add("- thread = " + result.thread());
-      md.add("- duration = " + Durations.beautify(result.duration()));
-      md.add("- code = " + result.code());
-      if (!result.output().isEmpty()) {
+      md.add("```");
+      if (run.args().isEmpty()) md.add(run.name());
+      else md.add(run.name() + " " + String.join(" ", run.args()));
+      md.add("```");
+      md.add("");
+      md.add("- thread = " + run.thread());
+      md.add("- duration = " + Durations.beautify(run.duration()));
+      md.add("- code = " + run.code());
+      if (!run.output().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(markdown(result.output()));
+        md.add(markdown(run.output()));
         md.add("```");
       }
-      if (!result.errors().isEmpty()) {
+      if (!run.errors().isEmpty()) {
         md.add("");
         md.add("```text");
-        md.add(markdown(result.errors()));
+        md.add(markdown(run.errors()));
         md.add("```");
       }
     }
@@ -219,7 +221,7 @@ public class WriteLogbookWorkflow extends Workflow {
     md.add("```text");
     for (var message : bach.logbook().messages()) {
       var level = message.level().name().toCharArray()[0];
-      var text = message.text();
+      var text = markdown(message.text());
       md.add("[%s] %s".formatted(level, text));
     }
     md.add("```");
@@ -231,11 +233,14 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   private static String markdownJoin(Collection<?> collection) {
+    return markdownJoin(", ", true, collection);
+  }
+
+  private static String markdownJoin(String delimiter, boolean sorted, Collection<?> collection) {
     if (collection.isEmpty()) return "`-`";
-    return collection.stream()
-        .map(Object::toString)
-        .sorted()
-        .collect(Collectors.joining("`, `", "`", "`"));
+    var strings = collection.stream().map(Object::toString);
+    return (sorted ? strings.sorted() : strings)
+        .collect(Collectors.joining("`" + delimiter + "`", "`", "`"));
   }
 
   private static String markdownAnchor(Logbook.Run run) {

@@ -124,12 +124,12 @@ public class CompileWorkflow extends Workflow {
         throw new RuntimeException("Find Java 8 source files failed", exception);
       }
     }
-    return Call.tree("Compile classed for Java 8", calls.stream());
+    return Call.tree("Compile sources for Java 8", calls.stream());
   }
 
   public Call.Tree generateTargetedCallTree(DeclaredModuleFinder finder, Path classes) {
     return Call.tree(
-        "Compile targeted sources",
+        "Compile sources for specified Java release",
         finder
             .modules()
             .parallel()
