@@ -15,7 +15,6 @@ import com.github.sormuras.bach.project.ModuleSourcePaths;
 import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.project.PathType;
 import com.github.sormuras.bach.project.ProjectSpace;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,15 +66,18 @@ public class CompileWorkflow extends Workflow {
     var modules = bach.folders().workspace("modules" + space.suffix());
 
     var size = finder.size();
-    return Call.tree(
-        "Compile %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
-        generateJavacCall(finder.names().toList(), classes),
-        generateJava8CallTree(finder, classes),
-        generateTargetedCallTree(finder, classes),
-        Call.tree("Create archive directory", new CreateDirectoriesCall(modules)),
-        Call.tree(
-            "Archive %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
-            finder.modules().parallel().map(module -> generateJarCall(module, classes, modules))));
+    return Call.tree("Compile %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"))
+        .with(generateJavacCall(finder.names().toList(), classes))
+        .with(generateJava8CallTree(finder, classes))
+        .with(generateTargetedCallTree(finder, classes))
+        .with(Call.tree("Create archive directory", new CreateDirectoriesCall(modules)))
+        .with(
+            Call.tree(
+                "Archive %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
+                finder
+                    .modules()
+                    .parallel()
+                    .map(module -> generateJarCall(module, classes, modules))));
   }
 
   public JavacCall generateJavacCall(List<String> modules, Path classes) {
@@ -103,7 +105,7 @@ public class CompileWorkflow extends Workflow {
       throw new RuntimeException("Listing external modules failed", exception);
     }
 
-    var calls = new ArrayList<JavacCall>();
+    var calls = new ArrayList<Call>();
     for (var module : finder.modules().toList()) {
       var name = module.name();
       var sources = module.paths().list(0, PathType.SOURCES);
@@ -122,8 +124,7 @@ public class CompileWorkflow extends Workflow {
         throw new RuntimeException("Find Java 8 source files failed", exception);
       }
     }
-    if (calls.isEmpty()) return Call.tree("No Java 8 javac calls");
-    return Call.tree("Compile Java 8 classes", calls.stream());
+    return Call.tree("Compile classed for Java 8", calls.stream());
   }
 
   public Call.Tree generateTargetedCallTree(DeclaredModuleFinder finder, Path classes) {
@@ -169,14 +170,13 @@ public class CompileWorkflow extends Workflow {
 
     var jar =
         new JarCall()
-            .with("--verbose")
             .with("--create")
             .with("--file", file)
             .with("--module-version", version + space.suffix())
             .ifPresent(descriptor.mainClass(), (call, main) -> call.with("--main-class", main));
 
-    var baseClasses = classes.resolve(name);
-    if (Files.isDirectory(baseClasses)) jar = jar.with(baseClasses);
+    var baseSources = module.paths().list(0, PathType.SOURCES);
+    if (!baseSources.isEmpty()) jar = jar.withAllIn(classes.resolve(name));
     var baseResources = module.paths().list(0, PathType.RESOURCES);
     for (var resource : baseResources) jar = jar.with(resource);
     if (computedModulePatches.mode() == PatchMode.CLASSES) {
@@ -189,7 +189,8 @@ public class CompileWorkflow extends Workflow {
       var resources = module.paths().list(release, PathType.RESOURCES);
       if (sources.isEmpty() && resources.isEmpty()) continue;
       jar = jar.with("--release", release);
-      if (!sources.isEmpty()) jar = jar.with(computeMultiReleaseClassesDirectory(name, release));
+      if (!sources.isEmpty())
+        jar = jar.withAllIn(computeMultiReleaseClassesDirectory(name, release));
       for (var resource : resources) jar = jar.with(resource);
     }
 

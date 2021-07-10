@@ -126,8 +126,10 @@ public class Bach {
   }
 
   public void execute(Call.Tree tree) {
+    if (tree.isEmpty()) return;
     log(Level.INFO, tree.caption());
-    tree.calls().forEach(this::execute);
+    var calls = tree.parallel() ? tree.calls().parallelStream() : tree.calls().stream();
+    calls.forEach(this::execute);
     tree.trees().forEach(this::execute);
   }
 
