@@ -22,7 +22,11 @@ public record JarCall(List<String> arguments) implements CallWith<JarCall> {
   }
 
   public JarCall with(Path path) {
-    if (Files.isDirectory(path)) return with("-C", path, ".");
+    if (Files.isDirectory(path)) return withAllIn(path);
     return with(path.toString());
+  }
+
+  public JarCall withAllIn(Path path) {
+    return with("-C", path, ".");
   }
 }
