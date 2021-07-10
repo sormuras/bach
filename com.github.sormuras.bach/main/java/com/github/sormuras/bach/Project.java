@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.external.ExternalModuleLocator;
 import com.github.sormuras.bach.internal.RecordComponents;
 import com.github.sormuras.bach.project.ProjectDefaults;
 import com.github.sormuras.bach.project.ProjectExternals;
@@ -72,11 +73,23 @@ public record Project(
     return with(new ProjectDefaults(encoding));
   }
 
-  public Project withMainProjectSpace(UnaryOperator<ProjectSpace> operator) {
+  public Project withMainSpace(UnaryOperator<ProjectSpace> operator) {
     return with(new ProjectSpaces(operator.apply(spaces.main()), spaces.test()));
   }
 
-  public Project withTestProjectSpace(UnaryOperator<ProjectSpace> operator) {
+  public Project withTestSpace(UnaryOperator<ProjectSpace> operator) {
     return with(new ProjectSpaces(spaces.main(), operator.apply(spaces.test())));
+  }
+
+  public Project withExternals(UnaryOperator<ProjectExternals> operator) {
+    return with(operator.apply(externals));
+  }
+
+  public Project withRequiresExternalModules(String module, String... more) {
+    return with(externals.withRequires(module, more));
+  }
+
+  public Project withExternalModuleLocators(ExternalModuleLocator locator, ExternalModuleLocator... more) {
+    return with(externals.with(locator, more));
   }
 }

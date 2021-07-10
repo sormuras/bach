@@ -5,6 +5,6 @@ class build {
             project
                 .withName("Simplicissimus")
                 .withVersion("99")
-                .withMainProjectSpace(main -> main.withModule("module-info.java")));
+                .withMainSpace(main -> main.withModule("module-info.java")));
   }
 }

@@ -5,6 +5,6 @@ class build {
             project
                 .withName("JigsawQuickStartGreetings")
                 .withVersion("99")
-                .withMainProjectSpace(main -> main.withModule("com.greetings")));
+                .withMainSpace(main -> main.withModule("com.greetings")));
   }
 }

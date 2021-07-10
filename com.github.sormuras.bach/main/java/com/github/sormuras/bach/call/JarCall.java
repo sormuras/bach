@@ -4,7 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-public record JarCall(List<String> arguments) implements AnyCall<JarCall> {
+public record JarCall(List<String> arguments) implements CallWith<JarCall> {
 
   public JarCall() {
     this(List.of());

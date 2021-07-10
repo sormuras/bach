@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
-public interface AnyCall<C extends AnyCall<C>> extends Call {
+public interface CallWith<C extends CallWith<C>> extends Call {
 
   C arguments(List<String> arguments);
 

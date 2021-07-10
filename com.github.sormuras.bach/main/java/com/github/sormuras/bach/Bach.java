@@ -2,15 +2,17 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.workflow.Browser;
+import com.github.sormuras.bach.workflow.BuildWorkflow;
 import com.github.sormuras.bach.workflow.CompileWorkflow;
+import com.github.sormuras.bach.workflow.ExecuteTestsWorkflow;
 import com.github.sormuras.bach.workflow.Folders;
 import com.github.sormuras.bach.workflow.Logbook;
+import com.github.sormuras.bach.workflow.ManageExternalModulesWorkflow;
 import com.github.sormuras.bach.workflow.Printer;
 import com.github.sormuras.bach.workflow.Resolver;
 import com.github.sormuras.bach.workflow.Runner;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
@@ -18,9 +20,7 @@ import java.util.spi.ToolProvider;
 public class Bach {
 
   public static void build(UnaryOperator<Project> composer) {
-    var project = composer.apply(Project.of("project", "0"));
-    var settings = Settings.of();
-    Bach.build(new Bach(project, settings));
+    Bach.build(Bach.of(composer.apply(Project.of("unnamed", "0"))));
   }
 
   public static void build(Bach bach) {
@@ -114,7 +114,7 @@ public class Bach {
   }
 
   public void execute(Call call) {
-    log(Level.INFO, "  %-9s %s".formatted(call.name(), call.toDescription(117)));
+    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
     var tool =
         call instanceof ToolProvider provider
             ? provider
@@ -136,19 +136,11 @@ public class Bach {
   }
 
   public void build() {
-    log(Level.INFO, "Project %s", project.toNameAndVersion());
-    var start = Instant.now();
-    try {
-      resolver.resolveMissingExternalModules();
-      compileMainSpace();
-      compileTestSpace();
-    } catch (Exception exception) {
-      logbook.log(exception);
-      throw new RuntimeException("Build failed!", exception);
-    } finally {
-      log(Level.INFO, "Build took %s", Durations.beautifyBetweenNow(start));
-      writeLogbook();
-    }
+    execute(new BuildWorkflow(this));
+  }
+
+  public void manageExternalModules() {
+    execute(new ManageExternalModulesWorkflow(this));
   }
 
   public void compileMainSpace() {
@@ -157,6 +149,10 @@ public class Bach {
 
   public void compileTestSpace() {
     execute(new CompileWorkflow(this, project.spaces().test()));
+  }
+
+  public void executeTests() {
+    execute(new ExecuteTestsWorkflow(this));
   }
 
   public void writeLogbook() {

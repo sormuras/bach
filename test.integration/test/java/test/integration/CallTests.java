@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.github.sormuras.bach.Call;
-import com.github.sormuras.bach.call.AnyCall;
+import com.github.sormuras.bach.call.CallWith;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class CallTests {
 
-  record MyCall(String name, List<String> arguments) implements AnyCall<MyCall> {
+  record MyCall(String name, List<String> arguments) implements CallWith<MyCall> {
     @Override
     public MyCall arguments(List<String> arguments) {
       if (this.arguments == arguments) return this;

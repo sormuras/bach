@@ -1,7 +1,7 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Call;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
-import com.github.sormuras.bach.call.AnyCall;
 import com.github.sormuras.bach.call.DeleteDirectoriesCall;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.project.ProjectSpace;
@@ -16,8 +16,8 @@ class build {
 
   static Project project() {
     return Project.of("ProcessingCode", "99")
-        .withMainProjectSpace(build::main)
-        .withTestProjectSpace(build::test);
+        .withMainSpace(build::main)
+        .withTestSpace(build::test);
   }
 
   static ProjectSpace main(ProjectSpace main) {
@@ -51,18 +51,10 @@ class MyBach extends Bach {
       }
     }.execute();
     execute(
-        new MyCall("javadoc", List.of())
+        Call.tool("javadoc")
             .with("--module", "showcode")
             .with("--module-source-path", "./*/main/java")
             .with("-docletpath", folders.workspace("modules", "showcode@99.jar"))
             .with("-doclet", "showcode.ShowDoclet"));
-  }
-}
-
-record MyCall(String name, List<String> arguments) implements AnyCall<MyCall> {
-  @Override
-  public MyCall arguments(List<String> arguments) {
-    if (this.arguments == arguments) return this;
-    return new MyCall(name, arguments);
   }
 }
