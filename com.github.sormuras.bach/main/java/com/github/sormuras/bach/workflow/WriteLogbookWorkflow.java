@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public class WriteLogbookWorkflow extends Workflow {
@@ -168,7 +169,7 @@ public class WriteLogbookWorkflow extends Workflow {
       var thread = run.thread();
       var duration = Durations.beautify(run.duration());
       var tool = "[" + run.name() + "](#" + markdownAnchor(run) + ")";
-      var arguments = markdownJoin("<br>", false, run.args());
+      var arguments = markdownJoin(run.args(), 6, false, " ");
       var row = "|%6X|%10s|%s|%s".formatted(thread, duration, tool, arguments);
       md.add(row);
     }
@@ -199,15 +200,27 @@ public class WriteLogbookWorkflow extends Workflow {
       md.add("- code = " + run.code());
       if (!run.output().isEmpty()) {
         md.add("");
-        md.add("```text");
-        md.add(markdown(run.output()));
-        md.add("```");
+        md.add(
+            markdownDetails(
+                "Normal (expected) output",
+                """
+                ```text
+                %s
+                ```
+                """
+                    .formatted(markdown(run.output()))));
       }
       if (!run.errors().isEmpty()) {
         md.add("");
-        md.add("```text");
-        md.add(markdown(run.errors()));
-        md.add("```");
+        md.add(
+            markdownDetails(
+                "Error messages",
+                """
+                ```text
+                %s
+                ```
+                """
+                    .formatted(markdown(run.errors()))));
       }
     }
     return md;
@@ -218,13 +231,16 @@ public class WriteLogbookWorkflow extends Workflow {
     md.add("");
     md.add("## Log Messages");
     md.add("");
-    md.add("```text");
+
+    var lines = new StringJoiner("\n");
+    lines.add("```text");
     for (var message : bach.logbook().messages()) {
       var level = message.level().name().toCharArray()[0];
       var text = markdown(message.text());
-      md.add("[%s] %s".formatted(level, text));
+      lines.add("[%s] %s".formatted(level, text));
     }
-    md.add("```");
+    lines.add("```");
+    md.add(markdownDetails("Messages", lines.toString()));
     return md;
   }
 
@@ -233,17 +249,30 @@ public class WriteLogbookWorkflow extends Workflow {
   }
 
   private static String markdownJoin(Collection<?> collection) {
-    return markdownJoin(", ", true, collection);
+    return markdownJoin(collection, Long.MAX_VALUE, true, ", ");
   }
 
-  private static String markdownJoin(String delimiter, boolean sorted, Collection<?> collection) {
+  private static String markdownJoin(Collection<?> collection, long limit, boolean sorted, String delimiter) {
     if (collection.isEmpty()) return "`-`";
-    var strings = collection.stream().map(Object::toString);
-    return (sorted ? strings.sorted() : strings)
+    var strings = collection.stream().limit(limit).map(Object::toString);
+    var collected = (sorted ? strings.sorted() : strings)
         .collect(Collectors.joining("`" + delimiter + "`", "`", "`"));
+    return limit < collection.size() ? collected + " [...]" : collected;
   }
 
   private static String markdownAnchor(Logbook.Run run) {
     return run.name() + '-' + Integer.toHexString(System.identityHashCode(run));
+  }
+
+  private static String markdownDetails(String label, String contents) {
+    return """
+        <details>
+        <summary>%s</summary>
+        
+        %s
+        
+        </details>
+        """
+        .formatted(label, contents.strip());
   }
 }
