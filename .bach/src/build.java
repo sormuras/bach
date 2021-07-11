@@ -36,7 +36,9 @@ class build {
             test ->
                 test.withModule("test.base/test/java/module-info.java")
                     .withModule("test.integration/test/java/module-info.java")
-                    .withModule("test.projects/test/java/module-info.java")
+                    .withModule(
+                        "test.projects/test/java/module-info.java",
+                        module -> module.withResources("test.projects/test/resources"))
                     .withModule(
                         "com.github.sormuras.bach/test/java-module/module-info.java",
                         module -> module.withSources("com.github.sormuras.bach/test/java"))
