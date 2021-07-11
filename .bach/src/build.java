@@ -10,6 +10,7 @@ import java.util.List;
 
 class build {
   public static void main(String... args) {
+    System.setProperty("java.util.logging.config.file", ".bach/src/logging.properties");
     Bach.build(bach("17-ea"));
   }
 
