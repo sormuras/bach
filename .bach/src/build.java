@@ -2,9 +2,11 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
+import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.external.JUnit;
 import com.github.sormuras.bach.project.PatchMode;
+import com.github.sormuras.bach.workflow.BuildWorkflow;
 import com.github.sormuras.bach.workflow.CompileWorkflow;
 import java.nio.file.Path;
 import java.util.List;
@@ -52,7 +54,18 @@ class build {
   }
 
   static Settings settings(Options options) {
-    return Settings.of().withBrowserConnectTimeout(9).with(options);
+    return Settings.of()
+        .withBrowserConnectTimeout(9)
+        .withWorkflowCheckpointListener(build::smile)
+        .with(options);
+  }
+
+  static void smile(Workflow.Checkpoint checkpoint) {
+    if (checkpoint instanceof BuildWorkflow.ErrorCheckpoint) {
+      System.err.println(")-:");
+      return;
+    }
+    System.out.println("(-:");
   }
 
   static class MyBach extends Bach {
