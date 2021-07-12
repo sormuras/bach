@@ -3,7 +3,6 @@ package com.github.sormuras.bach.workflow;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Workflow;
 import com.github.sormuras.bach.internal.Durations;
-
 import java.lang.System.Logger.Level;
 import java.time.Instant;
 
@@ -26,8 +25,12 @@ public class BuildWorkflow extends Workflow {
       bach.logbook().log(exception);
       throw new RuntimeException("Build failed!", exception);
     } finally {
-      bach.log(Level.INFO, "Build took %s", Durations.beautifyBetweenNow(start));
       bach.writeLogbook();
+      bach.log(
+          Level.INFO,
+          "Build of project %s took %s",
+          project.toNameAndVersion(),
+          Durations.beautifyBetweenNow(start));
     }
   }
 }
