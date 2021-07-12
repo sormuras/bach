@@ -17,12 +17,12 @@ public class BuildWorkflow extends Workflow {
     bach.log(Level.INFO, "Build project %s", project.toNameAndVersion());
     var start = Instant.now();
     try {
-      checkpoint(new BeginCheckpoint(bach));
+      checkpoint(new StartCheckpoint(bach));
       bach.manageExternalModules();
       bach.compileMainSpace();
       bach.compileTestSpace();
       bach.executeTests();
-      checkpoint(new EndCheckpoint(bach));
+      checkpoint(new SuccessCheckpoint(bach));
     } catch (Exception exception) {
       bach.logbook().log(exception);
       checkpoint(new ErrorCheckpoint(bach, exception));
@@ -38,9 +38,9 @@ public class BuildWorkflow extends Workflow {
     }
   }
 
-  public record BeginCheckpoint(Bach bach) implements Checkpoint {}
+  public record StartCheckpoint(Bach bach) implements Checkpoint {}
 
-  public record EndCheckpoint(Bach bach) implements Checkpoint {}
+  public record SuccessCheckpoint(Bach bach) implements Checkpoint {}
 
   public record ErrorCheckpoint(Bach bach, Exception exception) implements Checkpoint {}
 
