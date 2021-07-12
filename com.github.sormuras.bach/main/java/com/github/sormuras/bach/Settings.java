@@ -5,8 +5,6 @@ import java.io.PrintWriter;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -21,7 +19,7 @@ public record Settings(
         LogbookSettings.ofSystem(),
         FolderSettings.ofCurrentWorkingDirectory(),
         BrowserSettings.ofConnectTimeoutSeconds(10),
-        WorkflowSettings.ofEmpty());
+        WorkflowSettings.ofIdentity());
   }
 
   public Settings with(Object component) {
@@ -52,10 +50,12 @@ public record Settings(
     return with(BrowserSettings.ofConnectTimeoutSeconds(seconds));
   }
 
-  public Settings withWorkflowCheckpointListener(Workflow.CheckpointListener consumer) {
-    var listeners = new ArrayList<>(workflowSettings.listeners);
-    listeners.add(consumer);
-    return with(new WorkflowSettings(listeners));
+  public Settings withWorkflowCheckpointListener(Workflow.CheckpointListener listener) {
+    return with(new WorkflowSettings(listener, workflowSettings.tweak));
+  }
+
+  public Settings withWorkflowTweak(Workflow.Tweak tweak) {
+    return with(new WorkflowSettings(workflowSettings.listener, tweak));
   }
 
   public record LogbookSettings(PrintWriter out, PrintWriter err, boolean verbose) {
@@ -86,9 +86,9 @@ public record Settings(
     }
   }
 
-  public record WorkflowSettings(List<Workflow.CheckpointListener> listeners) {
-    public static WorkflowSettings ofEmpty() {
-      return new WorkflowSettings(List.of());
+  public record WorkflowSettings(Workflow.CheckpointListener listener, Workflow.Tweak tweak) {
+    public static WorkflowSettings ofIdentity() {
+      return new WorkflowSettings(__ -> {}, __ -> __);
     }
   }
 }

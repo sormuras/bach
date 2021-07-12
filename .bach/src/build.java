@@ -1,15 +1,13 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Call;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.Workflow;
-import com.github.sormuras.bach.call.JavacCall;
+import com.github.sormuras.bach.call.CompileMainSpaceJavacCall;
 import com.github.sormuras.bach.external.JUnit;
 import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.workflow.BuildWorkflow;
-import com.github.sormuras.bach.workflow.CompileWorkflow;
-import java.nio.file.Path;
-import java.util.List;
 
 class build {
   public static void main(String... args) {
@@ -57,6 +55,7 @@ class build {
     return Settings.of()
         .withBrowserConnectTimeout(9)
         .withWorkflowCheckpointListener(build::smile)
+        .withWorkflowTweak(build::tweak)
         .with(options);
   }
 
@@ -65,7 +64,14 @@ class build {
       System.err.println(")-:");
       return;
     }
-    System.out.println("(-:");
+    System.out.printf("(-: %s%n", checkpoint.getClass());
+  }
+
+  static Call tweak(Call call) {
+    if (call instanceof CompileMainSpaceJavacCall javac) {
+      return javac.with("-g").with("-parameters").with("-Werror").with("-Xlint");
+    }
+    return call;
   }
 
   static class MyBach extends Bach {
@@ -78,20 +84,6 @@ class build {
       logbook.out().println("| BEGIN");
       super.build();
       logbook.out().println("| END.");
-    }
-
-    @Override
-    public void compileMainSpace() {
-      new CompileWorkflow(this, project.spaces().main()) {
-        @Override
-        public JavacCall generateJavacCall(List<String> modules, Path classes) {
-          return super.generateJavacCall(modules, classes)
-              .with("-g")
-              .with("-parameters")
-              .with("-Werror")
-              .with("-Xlint");
-        }
-      }.execute();
     }
   }
 }
