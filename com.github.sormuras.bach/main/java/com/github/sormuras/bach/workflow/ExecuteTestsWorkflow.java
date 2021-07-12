@@ -36,7 +36,7 @@ public class ExecuteTestsWorkflow extends Workflow {
     if (junitPlatformJFR.isEmpty()) {
       execute(modules, true, true);
       var duration = Durations.beautifyBetweenNow(start);
-      bach.log(Level.INFO, "Ran test(s) in %s".formatted(duration));
+      bach.log(Level.INFO, "Execution of all tests took %s".formatted(duration));
     } else {
       var file = folders.workspace("junit-platform.jfr");
       try (var recording = new Recording()) {
@@ -59,8 +59,9 @@ public class ExecuteTestsWorkflow extends Workflow {
       } catch (Exception exception) {
         bach.logbook().log(exception);
       }
+      var s = count == 1 ? "" : "s";
       var duration = Durations.beautifyBetweenNow(start);
-      bach.log(Level.INFO, "Ran %d test%s in %s".formatted(count, count == 1 ? "" : "s", duration));
+      bach.log(Level.INFO, "Execution of %d test%s took %s".formatted(count, s, duration));
     }
   }
 
