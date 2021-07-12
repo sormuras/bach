@@ -115,7 +115,8 @@ public class Bach {
     logbook.log(level, args.length == 0 ? format : String.format(format, args));
   }
 
-  public void execute(Call call) {
+  public void execute(Call call0) {
+    var call = settings.workflowSettings().tweak().tweak(call0);
     log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
     var tool =
         call instanceof ToolProvider provider

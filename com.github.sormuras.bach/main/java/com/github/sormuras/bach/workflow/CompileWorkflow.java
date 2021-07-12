@@ -3,7 +3,10 @@ package com.github.sormuras.bach.workflow;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Call;
 import com.github.sormuras.bach.Workflow;
+import com.github.sormuras.bach.call.CompileMainSpaceJavacCall;
+import com.github.sormuras.bach.call.CompileTestSpaceJavacCall;
 import com.github.sormuras.bach.call.CreateDirectoriesCall;
+import com.github.sormuras.bach.call.DefaultJavacCall;
 import com.github.sormuras.bach.call.JarCall;
 import com.github.sormuras.bach.call.JavacCall;
 import com.github.sormuras.bach.internal.Paths;
@@ -80,12 +83,20 @@ public class CompileWorkflow extends Workflow {
                     .map(module -> generateJarCall(module, classes, modules))));
   }
 
-  public JavacCall generateJavacCall(List<String> modules, Path classes) {
+  protected JavacCall<?> newJavacCall() {
+    return switch (space.name()) {
+      case "main" -> new CompileMainSpaceJavacCall();
+      case "test" -> new CompileTestSpaceJavacCall();
+      default -> new DefaultJavacCall();
+    };
+  }
+
+  public JavacCall<?> generateJavacCall(List<String> modules, Path classes) {
     var release = space.release().map(it -> it.feature() != 8 ? it : new JavaRelease(9));
-    return new JavacCall()
+    return newJavacCall()
         .ifPresent(release, JavacCall::withRelease)
         .withModule(modules)
-        .withDirectoryForClasses(classes)
+        .withDestinationDirectory(classes)
         .ifPresent(computedModuleSourcePaths.patterns(), JavacCall::withModuleSourcePathPatterns)
         .ifPresent(computedModuleSourcePaths.specifics(), JavacCall::withModuleSourcePathSpecifics)
         .ifPresent(computedModulePatches.map(), JavacCall::withPatchModules)
@@ -113,9 +124,9 @@ public class CompileWorkflow extends Workflow {
         var java8Files = Paths.find(sources, 99, Paths::isJava8File);
         if (java8Files.isEmpty()) continue; // skip aggregator module
         var javac =
-            new JavacCall()
+            new DefaultJavacCall()
                 .withRelease(8)
-                .withDirectoryForClasses(classes.resolve(name))
+                .withDestinationDirectory(classes.resolve(name))
                 .with("--class-path", classPaths)
                 .withEncoding(project.defaults().encoding())
                 .with("-implicit:none")
@@ -137,8 +148,8 @@ public class CompileWorkflow extends Workflow {
             .flatMap(module -> generateTargetedJavacCalls(module, classes).stream()));
   }
 
-  public List<JavacCall> generateTargetedJavacCalls(DeclaredModule module, Path classes) {
-    var javacCalls = new ArrayList<JavacCall>();
+  public List<JavacCall<?>> generateTargetedJavacCalls(DeclaredModule module, Path classes) {
+    var javacCalls = new ArrayList<JavacCall<?>>();
     for (var release = 9; release <= Runtime.version().feature(); release++) {
       var paths = module.paths().list(release, PathType.SOURCES);
       if (paths.isEmpty()) continue;
@@ -152,11 +163,11 @@ public class CompileWorkflow extends Workflow {
     return javacCalls;
   }
 
-  public JavacCall generateTargetedJavacCall(
+  public JavacCall<?> generateTargetedJavacCall(
       int release, String module, Path classes, List<Path> javaSourceFiles) {
-    return new JavacCall()
+    return new DefaultJavacCall()
         .withRelease(release)
-        .withDirectoryForClasses(computeMultiReleaseClassesDirectory(module, release))
+        .withDestinationDirectory(computeMultiReleaseClassesDirectory(module, release))
         .with("--class-path", classes.resolve(module))
         .ifPresent(computedModulePaths.pruned(), JavacCall::withModulePath)
         .withEncoding(project.defaults().encoding())
