@@ -46,7 +46,7 @@ class build {
                     .withPatchModule(
                         "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
                     .withModulePaths(".bach/workspace/modules", ".bach/external-modules"))
-        .withRequiresExternalModules("org.junit.platform.console")
+        .withRequiresExternalModules("org.junit.platform.console", "org.junit.platform.jfr")
         .withExternalModuleLocators(JUnit.V_5_8_0_M1)
         .with(options);
   }
