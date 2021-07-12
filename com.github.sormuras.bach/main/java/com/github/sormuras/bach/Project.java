@@ -12,7 +12,9 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -57,12 +59,26 @@ public record Project(
         component instanceof ProjectExternals externals ? externals : externals);
   }
 
+  public Project with(Options options) {
+    var project = options.project();
+    return with(project.name(), this::withName).with(project.version(), this::withVersion);
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private <T> Project with(Optional<T> option, Function<T, Project> with) {
+    return option.isEmpty() ? this : with.apply(option.get());
+  }
+
   public Project withName(String name) {
     return with(new ProjectName(name));
   }
 
   public Project withVersion(String version) {
-    return with(new ProjectVersion(ModuleDescriptor.Version.parse(version)));
+    return withVersion(ModuleDescriptor.Version.parse(version));
+  }
+
+  public Project withVersion(ModuleDescriptor.Version version) {
+    return with(new ProjectVersion(version));
   }
 
   public Project withDefaultSourceFileEncoding(String encoding) {
@@ -89,7 +105,8 @@ public record Project(
     return with(externals.withRequires(module, more));
   }
 
-  public Project withExternalModuleLocators(ExternalModuleLocator locator, ExternalModuleLocator... more) {
+  public Project withExternalModuleLocators(
+      ExternalModuleLocator locator, ExternalModuleLocator... more) {
     return with(externals.with(locator, more));
   }
 }

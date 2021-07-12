@@ -5,6 +5,8 @@ import java.io.PrintWriter;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.function.Function;
 
 public record Settings(
     LogbookSettings logbookSettings,
@@ -26,6 +28,21 @@ public record Settings(
         component instanceof BrowserSettings settings ? settings : browserSettings);
   }
 
+  public Settings with(Options options) {
+    var settings = options.settings();
+    return with(settings.verbose(), this::withVerbose)
+        .with(settings.timeout(), this::withBrowserConnectTimeout);
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private <T> Settings with(Optional<T> option, Function<T, Settings> with) {
+    return option.isEmpty() ? this : with.apply(option.get());
+  }
+
+  public Settings withVerbose(boolean verbose) {
+    return with(logbookSettings.withVerbose(verbose));
+  }
+
   public Settings withBrowserConnectTimeout(int seconds) {
     return with(BrowserSettings.ofConnectTimeoutSeconds(seconds));
   }
@@ -35,6 +52,10 @@ public record Settings(
       var out = new PrintWriter(System.out, true);
       var err = new PrintWriter(System.err, true);
       return new LogbookSettings(out, err, false);
+    }
+
+    public LogbookSettings withVerbose(boolean verbose) {
+      return new LogbookSettings(out, err, verbose);
     }
   }
 

@@ -19,8 +19,10 @@ import java.util.spi.ToolProvider;
 
 public class Bach {
 
-  public static void build(UnaryOperator<Project> composer) {
-    Bach.build(Bach.of(composer.apply(Project.of("unnamed", "0"))));
+  public static void build(UnaryOperator<Project> composer, String... args) {
+    var options = Options.of(args);
+    var project = Project.of("unnamed", "0").with(options);
+    Bach.build(Bach.of(composer.apply(project)));
   }
 
   public static void build(Bach bach) {
