@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.call.JavacCall;
@@ -11,19 +12,18 @@ import java.util.List;
 class build {
   public static void main(String... args) {
     System.setProperty("java.util.logging.config.file", ".bach/src/logging.properties");
-    Bach.build(bach("17-ea"));
+    Bach.build(bach(args));
   }
 
-  static MyBach bach(String projectVersion) {
-    return new MyBach(project(projectVersion), settings());
+  static MyBach bach(String... args) {
+    var options = Options.of(args);
+    return new MyBach(project(options), settings(options));
   }
 
-  static Project project(String projectVersion) {
-    return Project.of("bach", projectVersion)
+  static Project project(Options options) {
+    return Project.of("bach", "17-ea")
         .assertJDK(version -> version.feature() >= 16, "JDK 16+ is required")
         .assertJDK(Runtime.version().feature())
-        .withName("bach")
-        .withVersion(projectVersion)
         .withDefaultSourceFileEncoding("UTF-8")
         .withMainSpace(
             main ->
@@ -47,11 +47,12 @@ class build {
                         "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
                     .withModulePaths(".bach/workspace/modules", ".bach/external-modules"))
         .withRequiresExternalModules("org.junit.platform.console")
-        .withExternalModuleLocators(JUnit.V_5_8_0_M1);
+        .withExternalModuleLocators(JUnit.V_5_8_0_M1)
+        .with(options);
   }
 
-  static Settings settings() {
-    return Settings.of().withBrowserConnectTimeout(9);
+  static Settings settings(Options options) {
+    return Settings.of().withBrowserConnectTimeout(9).with(options);
   }
 
   static class MyBach extends Bach {
