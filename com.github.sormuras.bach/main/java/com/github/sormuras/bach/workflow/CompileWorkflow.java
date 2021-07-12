@@ -70,7 +70,7 @@ public class CompileWorkflow extends Workflow {
         .with(generateJavacCall(finder.names().toList(), classes))
         .with(generateJava8CallTree(finder, classes))
         .with(generateTargetedCallTree(finder, classes))
-        .with(Call.tree("Create archive directory", new CreateDirectoriesCall(modules)))
+        .with(Call.tree("Create empty archive directory", new CreateDirectoriesCall(modules, true)))
         .with(
             Call.tree(
                 "Archive %d %s module%s".formatted(size, space.name(), size == 1 ? "" : "s"),
