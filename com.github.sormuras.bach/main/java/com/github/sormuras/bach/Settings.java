@@ -5,19 +5,23 @@ import java.io.PrintWriter;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
 public record Settings(
     LogbookSettings logbookSettings,
     FolderSettings folderSettings,
-    BrowserSettings browserSettings) {
+    BrowserSettings browserSettings,
+    WorkflowSettings workflowSettings) {
 
   public static Settings of() {
     return new Settings(
         LogbookSettings.ofSystem(),
         FolderSettings.ofCurrentWorkingDirectory(),
-        BrowserSettings.ofConnectTimeoutSeconds(10));
+        BrowserSettings.ofConnectTimeoutSeconds(10),
+        WorkflowSettings.ofEmpty());
   }
 
   public Settings with(Object component) {
@@ -25,7 +29,8 @@ public record Settings(
     return new Settings(
         component instanceof LogbookSettings settings ? settings : logbookSettings,
         component instanceof FolderSettings settings ? settings : folderSettings,
-        component instanceof BrowserSettings settings ? settings : browserSettings);
+        component instanceof BrowserSettings settings ? settings : browserSettings,
+        component instanceof WorkflowSettings settings ? settings : workflowSettings);
   }
 
   public Settings with(Options options) {
@@ -45,6 +50,12 @@ public record Settings(
 
   public Settings withBrowserConnectTimeout(int seconds) {
     return with(BrowserSettings.ofConnectTimeoutSeconds(seconds));
+  }
+
+  public Settings withWorkflowCheckpointListener(Workflow.CheckpointListener consumer) {
+    var listeners = new ArrayList<>(workflowSettings.listeners);
+    listeners.add(consumer);
+    return with(new WorkflowSettings(listeners));
   }
 
   public record LogbookSettings(PrintWriter out, PrintWriter err, boolean verbose) {
@@ -72,6 +83,12 @@ public record Settings(
               .connectTimeout(Duration.ofSeconds(seconds))
               .followRedirects(HttpClient.Redirect.NORMAL);
       return new BrowserSettings(builder);
+    }
+  }
+
+  public record WorkflowSettings(List<Workflow.CheckpointListener> listeners) {
+    public static WorkflowSettings ofEmpty() {
+      return new WorkflowSettings(List.of());
     }
   }
 }

@@ -11,4 +11,17 @@ public abstract class Workflow {
   }
 
   public abstract void execute();
+
+  protected void checkpoint(Checkpoint checkpoint) {
+    bach.settings().workflowSettings().listeners().forEach(listener -> listener.at(checkpoint));
+  }
+
+  public interface Checkpoint {
+    Bach bach();
+  }
+
+  @FunctionalInterface
+  public interface CheckpointListener {
+    void at(Checkpoint checkpoint);
+  }
 }
