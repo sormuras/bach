@@ -50,12 +50,12 @@ public record Settings(
     return with(BrowserSettings.ofConnectTimeoutSeconds(seconds));
   }
 
-  public Settings withWorkflowCheckpointListener(Workflow.CheckpointListener listener) {
-    return with(new WorkflowSettings(listener, workflowSettings.tweak));
+  public Settings withWorkflowCheckpointHandler(Checkpoint.Handler handler) {
+    return with(new WorkflowSettings(handler, workflowSettings.tweakHandler));
   }
 
-  public Settings withWorkflowTweak(Workflow.Tweak tweak) {
-    return with(new WorkflowSettings(workflowSettings.listener, tweak));
+  public Settings withWorkflowTweakHandler(Tweak.Handler handler) {
+    return with(new WorkflowSettings(workflowSettings.checkpointHandler, handler));
   }
 
   public record LogbookSettings(PrintWriter out, PrintWriter err, boolean verbose) {
@@ -86,9 +86,9 @@ public record Settings(
     }
   }
 
-  public record WorkflowSettings(Workflow.CheckpointListener listener, Workflow.Tweak tweak) {
+  public record WorkflowSettings(Checkpoint.Handler checkpointHandler, Tweak.Handler tweakHandler) {
     public static WorkflowSettings ofIdentity() {
-      return new WorkflowSettings(__ -> {}, __ -> __);
+      return new WorkflowSettings(__ -> {}, Tweak::call);
     }
   }
 }

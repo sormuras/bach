@@ -10,23 +10,13 @@ public abstract class Workflow {
     this.project = bach.project();
   }
 
+  public final Bach bach() {
+    return bach;
+  }
+
   public abstract void execute();
 
   protected void checkpoint(Checkpoint checkpoint) {
-    bach.settings().workflowSettings().listener().at(checkpoint);
-  }
-
-  public interface Checkpoint {
-    Bach bach();
-  }
-
-  @FunctionalInterface
-  public interface CheckpointListener {
-    void at(Checkpoint checkpoint);
-  }
-
-  @FunctionalInterface
-  public interface Tweak {
-    Call tweak(Call call);
+    bach.settings().workflowSettings().checkpointHandler().handle(checkpoint);
   }
 }
