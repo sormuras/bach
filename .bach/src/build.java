@@ -3,11 +3,15 @@ import com.github.sormuras.bach.Call;
 import com.github.sormuras.bach.Options;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
-import com.github.sormuras.bach.Workflow;
+import com.github.sormuras.bach.Tweak;
 import com.github.sormuras.bach.call.CompileMainSpaceJavacCall;
+import com.github.sormuras.bach.external.ExternalModuleLocation;
 import com.github.sormuras.bach.external.JUnit;
+import com.github.sormuras.bach.external.Maven;
 import com.github.sormuras.bach.project.PatchMode;
 import com.github.sormuras.bach.workflow.BuildWorkflow;
+import com.github.sormuras.bach.Checkpoint;
+import java.util.Optional;
 
 class build {
   public static void main(String... args) {
@@ -47,19 +51,29 @@ class build {
                         "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
                     .withModulePaths(".bach/workspace/modules", ".bach/external-modules"))
         .withRequiresExternalModules("org.junit.platform.console", "org.junit.platform.jfr")
-        .withExternalModuleLocators(JUnit.V_5_8_0_M1)
+        .withExternalModuleLocators(JUnit.V_5_8_0_M1, build::locate)
         .with(options);
+  }
+
+  static Optional<ExternalModuleLocation> locate(String module) {
+    var central =
+        switch (module) {
+          case "junit" -> Maven.central("junit", "junit", "4.13.2");
+          case "org.hamcrest" -> Maven.central("org.hamcrest", "hamcrest", "2.2");
+          default -> null;
+        };
+    return Optional.ofNullable(central).map(uri -> new ExternalModuleLocation(module, uri));
   }
 
   static Settings settings(Options options) {
     return Settings.of()
         .withBrowserConnectTimeout(9)
-        .withWorkflowCheckpointListener(build::smile)
-        .withWorkflowTweak(build::tweak)
+        .withWorkflowCheckpointHandler(build::smile)
+        .withWorkflowTweakHandler(build::tweak)
         .with(options);
   }
 
-  static void smile(Workflow.Checkpoint checkpoint) {
+  static void smile(Checkpoint checkpoint) {
     if (checkpoint instanceof BuildWorkflow.ErrorCheckpoint) {
       System.err.println(")-:");
       return;
@@ -67,11 +81,11 @@ class build {
     System.out.printf("(-: %s%n", checkpoint.getClass());
   }
 
-  static Call tweak(Call call) {
-    if (call instanceof CompileMainSpaceJavacCall javac) {
+  static Call tweak(Tweak tweak) {
+    if (tweak.call() instanceof CompileMainSpaceJavacCall javac) {
       return javac.with("-g").with("-parameters").with("-Werror").with("-Xlint");
     }
-    return call;
+    return tweak.call();
   }
 
   static class MyBach extends Bach {

@@ -115,16 +115,22 @@ public class Bach {
     logbook.log(level, args.length == 0 ? format : String.format(format, args));
   }
 
-  public void execute(Call call0) {
-    var call = settings.workflowSettings().tweak().tweak(call0);
+  public void execute(Call call) {
+    var handler = settings.workflowSettings().tweakHandler();
+    var tweak = new Tweak(this, call);
+    executeTweaked(handler.handle(tweak));
+  }
+
+  private void executeTweaked(Call call) {
     log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
-    var tool =
-        call instanceof ToolProvider provider
-            ? provider
-            : runner.findToolProvider(call.name()).orElseThrow();
+    var tool = provider(call);
     var arguments = call.arguments();
-    var run = runner.run(tool, arguments);
-    run.requireSuccessful();
+    runner.run(tool, arguments).requireSuccessful();
+  }
+
+  private ToolProvider provider(Call call) {
+    if (call instanceof ToolProvider provider) return provider;
+    return runner.findToolProvider(call.name()).orElseThrow();
   }
 
   public void execute(Call.Tree tree) {
