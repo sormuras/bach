@@ -116,21 +116,7 @@ public class Bach {
   }
 
   public void execute(Call call) {
-    var handler = settings.workflowSettings().tweakHandler();
-    var tweak = new Tweak(this, call);
-    executeTweaked(handler.handle(tweak));
-  }
-
-  private void executeTweaked(Call call) {
-    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
-    var tool = provider(call);
-    var arguments = call.arguments();
-    runner.run(tool, arguments).requireSuccessful();
-  }
-
-  private ToolProvider provider(Call call) {
-    if (call instanceof ToolProvider provider) return provider;
-    return runner.findToolProvider(call.name()).orElseThrow();
+    tweakAndRun(call).requireSuccessful();
   }
 
   public void execute(Call.Tree tree) {
@@ -143,6 +129,28 @@ public class Bach {
 
   public void execute(Workflow workflow) {
     workflow.execute();
+  }
+
+  public Call tweak(Call call) {
+    var handler = settings.workflowSettings().tweakHandler();
+    var tweak = new Tweak(this, call);
+    return handler.handle(tweak);
+  }
+
+  public Logbook.Run tweakAndRun(Call call) {
+    return run(tweak(call));
+  }
+
+  private Logbook.Run run(Call call) {
+    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
+    var tool = provider(call);
+    var arguments = call.arguments();
+    return runner.run(tool, arguments);
+  }
+
+  private ToolProvider provider(Call call) {
+    if (call instanceof ToolProvider provider) return provider;
+    return runner.findToolProvider(call.name()).orElseThrow();
   }
 
   public void build() {
