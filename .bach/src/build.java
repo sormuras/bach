@@ -5,6 +5,8 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.Settings;
 import com.github.sormuras.bach.Tweak;
 import com.github.sormuras.bach.call.CompileMainSpaceJavacCall;
+import com.github.sormuras.bach.call.JUnitCall;
+import com.github.sormuras.bach.call.TestCall;
 import com.github.sormuras.bach.external.ExternalModuleLocation;
 import com.github.sormuras.bach.external.JUnit;
 import com.github.sormuras.bach.external.Maven;
@@ -50,7 +52,7 @@ class build {
                     .withPatchModule(
                         "com.github.sormuras.bach", "com.github.sormuras.bach/main/java")
                     .withModulePaths(".bach/workspace/modules", ".bach/external-modules"))
-        .withRequiresExternalModules("org.junit.platform.console", "org.junit.platform.jfr")
+        .withRequiresExternalModules("org.junit.platform.console")
         .withExternalModuleLocators(JUnit.V_5_8_0_M1, build::locate)
         .with(options);
   }
@@ -84,6 +86,12 @@ class build {
   static Call tweak(Tweak tweak) {
     if (tweak.call() instanceof CompileMainSpaceJavacCall javac) {
       return javac.with("-g").with("-parameters").with("-Werror").with("-Xlint");
+    }
+    if (tweak.call() instanceof TestCall test) {
+      return test.with("1", "2", "3");
+    }
+    if (tweak.call() instanceof JUnitCall junit) {
+      return junit.with("--fail-if-no-tests");
     }
     return tweak.call();
   }
