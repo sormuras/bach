@@ -1,8 +1,9 @@
 package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
 import com.github.sormuras.bach.Workflow;
+import com.github.sormuras.bach.call.JUnitCall;
+import com.github.sormuras.bach.call.TestCall;
 import com.github.sormuras.bach.internal.Durations;
 import com.github.sormuras.bach.project.DeclaredModule;
 import java.lang.System.Logger.Level;
@@ -11,7 +12,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.spi.ToolProvider;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordingFile;
 
@@ -80,7 +80,8 @@ public class ExecuteTestsWorkflow extends Workflow {
             .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
             .filter(provider -> provider.getClass().getModule().getName().equals(name))
             .filter(provider -> provider.name().equals("test"))
-            .map(provider -> runTest(provider, List.of()))
+            .map(TestCall::of)
+            .map(bach::tweakAndRun)
             .forEach(runs::add);
       // "junit"
       if (junitEnabled && junitPresent)
@@ -88,7 +89,12 @@ public class ExecuteTestsWorkflow extends Workflow {
             .streamToolProviders(finder, ModuleFinder.ofSystem(), true, name)
             .filter(provider -> provider.name().equals("junit"))
             .findFirst()
-            .map(provider -> runJUnit(provider, name))
+            //.map(provider -> runJUnit(provider, name))
+            .map(JUnitCall::of)
+            .map(junit -> junit
+                .with("--select-module", name)
+                .with("--reports-dir", bach.folders().workspace("reports", "junit", name)))
+            .map(bach::tweakAndRun)
             .map(runs::add);
     }
 
@@ -105,21 +111,5 @@ public class ExecuteTestsWorkflow extends Workflow {
         bach.folders().workspace("modules"), // main modules
         bach.folders().workspace("modules-test"), // (more) test modules
         bach.folders().externalModules());
-  }
-
-  public Logbook.Run runTest(ToolProvider provider, List<String> arguments) {
-    var providerClass = provider.getClass();
-    var description = providerClass.getModule().getName() + "/" + providerClass.getName();
-    bach.log(Level.INFO, "  %-9s %s", "test", description);
-    return bach.runner().run(provider, arguments);
-  }
-
-  public Logbook.Run runJUnit(ToolProvider provider, String module) {
-    var junit =
-        Call.tool("junit")
-            .with("--select-module", module)
-            .with("--reports-dir", bach.folders().workspace("reports", "junit", module));
-    bach.log(Level.INFO, "  %-9s %s", provider.name(), junit.toDescription(117));
-    return bach.runner().run(provider, junit.arguments());
   }
 }
