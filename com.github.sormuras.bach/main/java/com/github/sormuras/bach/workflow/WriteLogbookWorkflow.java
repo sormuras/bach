@@ -260,7 +260,7 @@ public class WriteLogbookWorkflow extends Workflow {
     return limit < collection.size() ? collected + " [...]" : collected;
   }
 
-  private static String markdownAnchor(Logbook.Run run) {
+  private static String markdownAnchor(Run run) {
     return run.name() + '-' + Integer.toHexString(System.identityHashCode(run));
   }
 

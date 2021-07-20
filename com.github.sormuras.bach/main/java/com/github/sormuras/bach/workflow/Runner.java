@@ -41,7 +41,7 @@ public record Runner(Bach bach) {
     return ServiceLoader.load(layer, ToolProvider.class).stream().map(ServiceLoader.Provider::get);
   }
 
-  public Logbook.Run run(ToolProvider provider, List<String> arguments) {
+  public Run run(ToolProvider provider, List<String> arguments) {
     var name = provider.name();
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
@@ -62,7 +62,7 @@ public record Runner(Bach bach) {
     var tid = currentThread.getId();
     var output = out.toString().trim();
     var errors = err.toString().trim();
-    var run = new Logbook.Run(name, arguments, tid, duration, code, output, errors);
+    var run = new Run(name, arguments, tid, duration, code, output, errors);
     bach.logbook().log(run);
     return run;
   }

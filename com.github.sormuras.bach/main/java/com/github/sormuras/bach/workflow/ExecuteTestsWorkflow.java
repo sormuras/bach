@@ -69,7 +69,7 @@ public class ExecuteTestsWorkflow extends Workflow {
     bach.log("Execute each test module");
     var junitPresent = bach.runner().findToolProvider("junit").isPresent();
 
-    var runs = new ArrayList<Logbook.Run>();
+    var runs = new ArrayList<Run>();
     for (var module : modules.modules().toList()) {
       var name = module.name();
       bach.log(Level.INFO, "Execute tests in module %s".formatted(name));
@@ -98,7 +98,7 @@ public class ExecuteTestsWorkflow extends Workflow {
             .map(runs::add);
     }
 
-    runs.forEach(Logbook.Run::requireSuccessful);
+    runs.forEach(Run::requireSuccessful);
   }
 
   public List<Path> computeModulePaths(DeclaredModule module) {
