@@ -10,6 +10,7 @@ import com.github.sormuras.bach.workflow.Logbook;
 import com.github.sormuras.bach.workflow.ManageExternalModulesWorkflow;
 import com.github.sormuras.bach.workflow.Printer;
 import com.github.sormuras.bach.workflow.Resolver;
+import com.github.sormuras.bach.workflow.Run;
 import com.github.sormuras.bach.workflow.Runner;
 import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
 import java.lang.System.Logger.Level;
@@ -137,11 +138,11 @@ public class Bach {
     return handler.handle(tweak);
   }
 
-  public Logbook.Run tweakAndRun(Call call) {
+  public Run tweakAndRun(Call call) {
     return run(tweak(call));
   }
 
-  private Logbook.Run run(Call call) {
+  private Run run(Call call) {
     log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
     var tool = provider(call);
     var arguments = call.arguments();

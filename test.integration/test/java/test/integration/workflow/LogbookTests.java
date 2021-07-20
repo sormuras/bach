@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.sormuras.bach.workflow.Run;
 import com.github.sormuras.bach.workflow.Logbook;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -75,7 +76,7 @@ class LogbookTests {
     }
   }
 
-  static Logbook.Run newRun(int code, String tool, String... args) {
-    return new Logbook.Run(tool, List.of(args), 123L, Duration.ZERO, code, "out", "err");
+  static Run newRun(int code, String tool, String... args) {
+    return new Run(tool, List.of(args), 123L, Duration.ZERO, code, "out", "err");
   }
 }
