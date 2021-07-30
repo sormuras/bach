@@ -79,7 +79,7 @@ jobs:
 
   deploy-to-api-repository:
     needs: [ setup, build ]
-    if: github.event_name == 'push' && github.repository == 'sormuras/bach' && github.ref == 'refs/heads/main'
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out sormuras/api repository'
