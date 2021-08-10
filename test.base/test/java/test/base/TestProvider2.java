@@ -3,11 +3,12 @@ package test.base;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 
+@Name("test")
 public record TestProvider2() implements ToolProvider {
 
   @Override
   public String name() {
-    return "test";
+    return new Name.Support(TestProvider2.class).name();
   }
 
   @Override
