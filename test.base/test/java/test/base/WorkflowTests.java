@@ -1,8 +1,11 @@
 package test.base;
 
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static test.base.WorkflowTests.Bach.*;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -10,84 +13,101 @@ import org.junit.jupiter.api.Test;
 class WorkflowTests {
   @Test
   void test() {
-    var bach = new Bach(new ArrayList<>());
-    try (bach) {
-      bach.say("BEGIN");
-      bach.run(
-          new Sequence(
-              __ -> __.say("a"),
-              new Parallel(new Say("b 1"), __ -> __.say("b 2"), new Say("b 3")),
-              __ -> __.say("c")));
+    say("BEGIN");
+    run(
+        () -> say("a"),
+        new Parallel(new Say("b 1"), () -> say("b 2"), new Say("b 3")),
+        () -> say("c"));
 
-      var project = new Project("Unnamed");
-      bach.run(new Build(project));
-      bach.say("END.");
-    }
+    var project = new ProjectWither(new Project("Unnamed")).withName("Noname").project();
+    run(new CompileWorkflow(project), new DocumentWorkflow(project));
+    say("END.");
 
     assertLinesMatch(
         """
-        [1] BEGIN
-        [1] a
-        \\[.+\\] b .
-        \\[.+\\] b .
-        \\[.+\\] b .
-        [1] c
-        [1] Build Project[name=Unnamed]
-        [1] END.
+         1: BEGIN
+         1: a
+        .+: b .
+        .+: b .
+        .+: b .
+         1: c
+         1: Compile Project[name=Noname]
+         1: Generate Noname's API documentation
+         1: END.
         """
             .lines(),
-        bach.lines().stream());
+        Bach.lines.stream());
   }
 
-  record Bach(List<String> lines) implements AutoCloseable {
-    void say(String text) {
-      lines.add("[" + Thread.currentThread().getId() + "] " + text);
+  record Bach() {
+
+    static List<String> lines = new ArrayList<>();
+    static Deque<Runnable> runnables = new ArrayDeque<>();
+
+    static void say(String text) {
+      var thread = Thread.currentThread().getId();
+      lines.add("%2s: %s".formatted(thread, text));
     }
 
-    void run(Workflow workflow) {
+    static void run(Runnable... runnables) {
+      run(new Sequence(runnables));
+    }
+
+    static void run(Runnable runnable) {
+      runnables.push(runnable);
       try {
-        workflow.run(this);
+        runnable.run();
       } catch (Exception e) {
         throw new IllegalStateException(e);
+      } finally {
+        runnables.pop();
+        if (runnables.isEmpty()) {
+          lines.add("TODO Write lines to disk");
+        }
       }
     }
-
-    @Override
-    public void close() {}
   }
 
-  @FunctionalInterface
-  interface Workflow {
-    void run(Bach bach);
-  }
-
-  record Parallel(Workflow... workflows) implements Workflow {
+  record Parallel(Runnable... runnables) implements Runnable {
     @Override
-    public void run(Bach bach) {
-      Stream.of(workflows).parallel().forEach(workflow -> workflow.run(bach));
+    public void run() {
+      Stream.of(runnables).parallel().forEach(Runnable::run);
     }
   }
 
-  record Sequence(Workflow... workflows) implements Workflow {
+  record Sequence(Runnable... runnables) implements Runnable {
     @Override
-    public void run(Bach bach) {
-      Stream.of(workflows).forEach(workflow -> workflow.run(bach));
+    public void run() {
+      Stream.of(runnables).forEach(Runnable::run);
     }
   }
 
-  record Say(String text) implements Workflow {
+  record Say(String text) implements Runnable {
     @Override
-    public void run(Bach bach) {
-      bach.say(text);
+    public void run() {
+      Bach.say(text);
     }
   }
 
   record Project(String name) {}
 
-  record Build(Project project) implements Workflow {
+  record ProjectWither(Project project) {
+    ProjectWither withName(String name) {
+      return new ProjectWither(new Project(name));
+    }
+  }
+
+  record CompileWorkflow(Project project) implements Runnable {
     @Override
-    public void run(Bach bach) {
-      bach.say("Build " + project);
+    public void run() {
+      Bach.say("Compile " + project);
+    }
+  }
+
+  record DocumentWorkflow(Project project) implements Runnable {
+    @Override
+    public void run() {
+      Bach.say("Generate %s's API documentation".formatted(project.name));
     }
   }
 }
