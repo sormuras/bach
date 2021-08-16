@@ -31,8 +31,10 @@ class WorkflowTests {
         .+: b .
         .+: b .
          1: c
+        TODO Write lines to disk
          1: Compile Project[name=Noname]
          1: Generate Noname's API documentation
+        TODO Write lines to disk
          1: END.
         """
             .lines(),

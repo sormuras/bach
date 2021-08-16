@@ -6,7 +6,7 @@
  * <ul>
  *   <li>Bach's <a href="https://github.com/sormuras/bach">Code &amp; Issues</a>
  *   <li>Bach's <a href="https://sormuras.github.io/api/#bach">API</a>
- *   <li>Java® Development Kit Version 16 <a
+ *   <li>Java® Development Kit Version 17 <a
  *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
@@ -14,15 +14,9 @@
  */
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
-  exports com.github.sormuras.bach.call;
-  exports com.github.sormuras.bach.external;
-  exports com.github.sormuras.bach.project;
-  exports com.github.sormuras.bach.workflow;
 
   requires java.base;
-  requires transitive java.net.http;
   requires jdk.compiler;
-  requires jdk.crypto.ec; // https://stackoverflow.com/questions/55439599
   requires jdk.jartool;
   requires jdk.javadoc;
   requires jdk.jdeps;

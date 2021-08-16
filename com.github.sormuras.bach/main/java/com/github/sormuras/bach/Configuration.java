@@ -1,0 +1,56 @@
+package com.github.sormuras.bach;
+
+import java.io.PrintWriter;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+public record Configuration(
+    boolean verbose,
+    boolean lenient,
+    int timeout,
+    Printing printing,
+    Factoring factoring,
+    Tooling tooling,
+    Options.ProjectOptions projectOptions) {
+
+  public static Configuration of() {
+    return new Configuration(
+        false,
+        false,
+        9,
+        new Printing(new PrintWriter(System.out, true), new PrintWriter(System.err, true)),
+        new Factoring(Logbook::new),
+        new Tooling(ToolFinder.compose(ToolFinder.ofSystem(), ToolFinder.ofBach())),
+        new Options.ProjectOptions(Optional.empty(), Optional.empty()));
+  }
+
+  static final String TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss";
+
+  static final String LOGBOOK_MARKDOWN_FILE = ".bach/workspace/logbook.md";
+
+  static final String LOGBOOK_ARCHIVE_FILE = ".bach/workspace/logbooks/logbook-{TIMESTAMP}.md";
+
+  public record Printing(PrintWriter out, PrintWriter err) {}
+
+  public record Factoring(LogbookFactory logbookFactory) {
+    @FunctionalInterface
+    public interface LogbookFactory extends Supplier<Logbook> {}
+  }
+
+  public record Tooling(ToolFinder finder) {}
+
+  Logbook newLogbook() {
+    return factoring().logbookFactory().get();
+  }
+
+  public Configuration with(Options options) {
+    return new Configuration(
+        options.configurationOptions().verbose().orElse(verbose),
+        options.configurationOptions().verbose().orElse(lenient),
+        options.configurationOptions().timeout().orElse(timeout),
+        printing,
+        factoring,
+        tooling,
+        options.projectOptions());
+  }
+}

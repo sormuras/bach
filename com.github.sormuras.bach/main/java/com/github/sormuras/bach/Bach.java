@@ -1,180 +1,240 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.Durations;
-import com.github.sormuras.bach.workflow.Browser;
-import com.github.sormuras.bach.workflow.BuildWorkflow;
-import com.github.sormuras.bach.workflow.CompileWorkflow;
-import com.github.sormuras.bach.workflow.ExecuteTestsWorkflow;
-import com.github.sormuras.bach.workflow.Folders;
-import com.github.sormuras.bach.workflow.Logbook;
-import com.github.sormuras.bach.workflow.ManageExternalModulesWorkflow;
-import com.github.sormuras.bach.workflow.Printer;
-import com.github.sormuras.bach.workflow.Resolver;
-import com.github.sormuras.bach.workflow.Run;
-import com.github.sormuras.bach.workflow.Runner;
-import com.github.sormuras.bach.workflow.WriteLogbookWorkflow;
+import static com.github.sormuras.bach.Note.caption;
+import static com.github.sormuras.bach.Note.message;
+
+import com.github.sormuras.bach.internal.DurationSupport;
+import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
+import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
+import com.github.sormuras.bach.internal.ModuleSupport;
+import com.github.sormuras.bach.internal.ToolProviderSupport;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 
-public class Bach {
-
-  public static void build(UnaryOperator<Project> composer, String... args) {
-    var options = Options.of(args);
-    var project = Project.of("unnamed", "0").with(options);
-    Bach.build(Bach.of(composer.apply(project)));
-  }
-
-  public static void build(Bach bach) {
-    try {
-      bach.build();
-    } catch (Throwable cause) {
-      if (cause instanceof Error) throw cause;
-      throw new Error("Caught unhandled throwable", cause);
-    }
-  }
+public class Bach implements AutoCloseable {
 
   public static String version() {
-    var module = Bach.class.getModule();
-    if (!module.isNamed()) return "(unnamed)";
-    return module.getDescriptor().version().map(Object::toString).orElse("(exploded)");
+    return ModuleSupport.version(Bach.class.getModule());
   }
 
-  public static Bach of(Project project) {
-    return Bach.of(project, Settings.of());
+  private final Configuration configuration;
+  private final Logbook logbook;
+
+  public Bach(String... args) {
+    this(Configuration.of().with(Options.of(args)));
   }
 
-  public static Bach of(Project project, Settings settings) {
-    return new Bach(project, settings);
-  }
-
-  protected final AtomicReference<Browser> browser;
-  protected final Project project;
-  protected final Settings settings;
-  protected final Logbook logbook;
-  protected final Folders folders;
-  protected final Printer printer;
-  protected final Runner runner;
-  protected final Resolver resolver;
-
-  public Bach(Project project, Settings settings) {
-    this.browser = new AtomicReference<>();
-    this.project = project;
-    this.settings = settings;
-    this.logbook = Logbook.of(settings.logbookSettings());
-    this.folders = Folders.of(settings.folderSettings());
-    this.printer = new Printer(this);
-    this.runner = new Runner(this);
-    this.resolver = new Resolver(this);
-  }
-
-  public final Browser browser() {
-    var current = browser.get();
-    if (current != null) return current;
-    var client = settings.browserSettings().httpClientBuilder().build();
+  public Bach(Configuration configuration) {
+    this.configuration = configuration;
+    this.logbook = configuration.newLogbook();
     log(
-        "New HttpClient created with %s connect timeout and redirect policy of: %s",
-        client.connectTimeout().map(Durations::beautify).orElse("no"), client.followRedirects());
-    current = new Browser(this, client);
-    return browser.compareAndSet(null, current) ? current : browser.get();
+        "Initialized Bach %s (Java %s, %s, %s)"
+            .formatted(
+                version(),
+                System.getProperty("java.version"),
+                System.getProperty("os.name"),
+                Path.of(System.getProperty("user.dir")).toUri()));
+    log(message(Level.DEBUG, configuration.toString()));
   }
 
-  public final Project project() {
-    return project;
+  public Configuration configuration() {
+    return configuration;
   }
 
-  public final Settings settings() {
-    return settings;
-  }
-
-  public final Logbook logbook() {
+  public Logbook logbook() {
     return logbook;
   }
 
-  public final Folders folders() {
-    return folders;
+  @Override
+  public void close() {
+    writeLogbook();
+    log("Total uptime was %s".formatted(DurationSupport.toHumanReadableString(logbook().uptime())));
   }
 
-  public final Printer printer() {
-    return printer;
+  public PrintWriter out() {
+    return configuration().printing().out();
   }
 
-  public final Runner runner() {
-    return runner;
+  public PrintWriter err() {
+    return configuration().printing().out();
   }
 
-  public final Resolver resolver() {
-    return resolver;
+  protected Optional<String> computeRunMessageLine(ToolProvider provider, List<String> arguments) {
+    var name = provider.name();
+    var args = String.join(" ", arguments);
+    var line = "%16s %s".formatted(name, args).stripTrailing();
+    return Optional.of(line.length() <= 111 ? line : line.substring(0, 111 - 3) + "...");
   }
 
-  public final void log(String format, Object... args) {
-    log(Level.DEBUG, format, args);
+  public void log(String text) {
+    if (text.toLowerCase(Locale.ROOT).startsWith("caption:")) {
+      log(caption(text.substring("caption:".length())));
+      return;
+    }
+    log(message(text));
   }
 
-  public final void log(Level level, String format, Object... args) {
-    logbook.log(level, args.length == 0 ? format : String.format(format, args));
+  public void log(Note note) {
+    logbook.add(note);
+
+    if (note instanceof Logbook.CaptionNote caption) {
+      print(caption);
+      return;
+    }
+    if (note instanceof Logbook.MessageNote message) {
+      print(message);
+      return;
+    }
+    if (note instanceof Logbook.RunNote run) {
+      print(run);
+      return;
+    }
+    // default -> { ... }
+    out().println(note);
   }
 
-  public void execute(Call call) {
-    tweakAndRun(call).requireSuccessful();
+  protected void print(Logbook.CaptionNote note) {
+    out().println();
+    out().println(note.line());
   }
 
-  public void execute(Call.Tree tree) {
-    if (tree.isEmpty()) return;
-    log(Level.INFO, tree.caption());
-    var calls = tree.parallel() ? tree.calls().parallelStream() : tree.calls().stream();
-    calls.forEach(this::execute);
-    tree.trees().forEach(this::execute);
+  protected void print(Logbook.MessageNote note) {
+    var severity = note.level().getSeverity();
+    var text = note.text();
+    if (severity >= Level.ERROR.getSeverity()) {
+      err().println(text);
+      return;
+    }
+    if (severity >= Level.WARNING.getSeverity()) {
+      out().println(text);
+      return;
+    }
+    if (severity >= Level.INFO.getSeverity() || configuration().verbose()) {
+      out().println(text);
+    }
   }
 
-  public void execute(Workflow workflow) {
-    workflow.execute();
+  protected void print(Logbook.RunNote note) {
+    var run = note.run();
+    var printer = run.isError() ? err() : out();
+    if (run.isError() || configuration().verbose()) {
+      var output = run.output();
+      var errors = run.errors();
+      if (!output.isEmpty()) printer.println(output.indent(4).stripTrailing());
+      if (!errors.isEmpty()) printer.println(errors.indent(4).stripTrailing());
+      printer.printf(
+          "Tool '%s' run with %d argument%s took %s and finished with exit code %d%n",
+          run.name(),
+          run.args().size(),
+          run.args().size() == 1 ? "" : "s",
+          DurationSupport.toHumanReadableString(run.duration()),
+          run.code());
+    }
   }
 
-  public Call tweak(Call call) {
-    var handler = settings.workflowSettings().tweakHandler();
-    var tweak = new Tweak(this, call);
-    return handler.handle(tweak);
+  public Run run(Call call) {
+    if (call instanceof Call.ToolCall tool) {
+      var finder = tool.finder().orElse(configuration().tooling().finder());
+      var provider = finder.find(tool.name());
+      if (provider.isEmpty())
+        throw new RuntimeException("Tool '%s' not found".formatted(tool.name()));
+      return run(provider.get(), tool.arguments());
+    }
+    if (call instanceof Call.ProcessCall process) {
+      var tool = new ExecuteProcessToolProvider();
+      var command =
+          Stream.concat(Stream.of(process.executable().toString()), process.arguments().stream())
+              .toList();
+      return run(tool, command);
+    }
+    if (call instanceof Call.ModuleCall module) {
+      var tool = new ExecuteModuleToolProvider(module.finder());
+      var arguments =
+          Stream.concat(Stream.of(module.module()), module.arguments().stream()).toList();
+      return run(tool, arguments);
+    }
+    throw new AssertionError("Where art thou, switch o' patterns?");
   }
 
-  public Run tweakAndRun(Call call) {
-    return run(tweak(call));
+  public Run run(String tool, Object... args) {
+    return run(Call.tool(tool, args));
   }
 
-  private Run run(Call call) {
-    log(Level.INFO, "  %-9s %s", call.name(), call.toDescription(117));
-    var tool = provider(call);
-    var arguments = call.arguments();
-    return runner.run(tool, arguments);
+  public Run run(ToolFinder finder, String name, Object... args) {
+    return run(Call.tool(finder, name, args));
   }
 
-  private ToolProvider provider(Call call) {
-    if (call instanceof ToolProvider provider) return provider;
-    return runner.findToolProvider(call.name()).orElseThrow();
+  public Run run(Path executable, Object... args) {
+    return run(Call.process(executable, args));
   }
 
-  public void build() {
-    execute(new BuildWorkflow(this));
+  public Run run(ModuleFinder finder, String module, Object... args) {
+    return run(Call.module(finder, module, args));
   }
 
-  public void manageExternalModules() {
-    execute(new ManageExternalModulesWorkflow(this));
+  public Run run(ToolProvider provider, Object... args) {
+    return run(provider, Call.tool(provider.name(), args).arguments());
   }
 
-  public void compileMainSpace() {
-    execute(new CompileWorkflow(this, project.spaces().main()));
+  public Run run(ToolProvider provider, List<String> arguments) {
+    computeRunMessageLine(provider, arguments).ifPresent(this::log);
+
+    var currentThread = Thread.currentThread();
+    var currentLoader = currentThread.getContextClassLoader();
+    currentThread.setContextClassLoader(provider.getClass().getClassLoader());
+
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var start = Instant.now();
+    int code;
+    try {
+      var strings = arguments.toArray(String[]::new);
+      code = provider.run(new PrintWriter(out), new PrintWriter(err), strings);
+    } finally {
+      currentThread.setContextClassLoader(currentLoader);
+    }
+
+    var name = provider.name();
+    var duration = Duration.between(start, Instant.now());
+    var thread = currentThread.getId();
+    var output = out.toString().strip();
+    var errors = err.toString().strip();
+
+    var run = new Run(name, arguments, thread, duration, code, output, errors);
+    var description = ToolProviderSupport.describe(provider);
+    log(new Logbook.RunNote(run, description));
+
+    return configuration().lenient() ? run : run.requireSuccessful();
   }
 
-  public void compileTestSpace() {
-    execute(new CompileWorkflow(this, project.spaces().test()));
+  public void run(Stream<Call> calls) {
+    calls.forEach(this::run);
   }
 
-  public void executeTests() {
-    execute(new ExecuteTestsWorkflow(this));
+  public void run(Call... calls) {
+    run(Stream.of(calls));
+  }
+
+  public void runParallel(Call... calls) {
+    run(Stream.of(calls).parallel());
   }
 
   public void writeLogbook() {
-    execute(new WriteLogbookWorkflow(this));
+    try {
+      var file = logbook().write();
+      log("caption:Wrote logbook to %s".formatted(file.toUri()));
+    } catch (Exception exception) {
+      exception.printStackTrace(err());
+    }
   }
 }

@@ -61,7 +61,7 @@ jobs:
             .bach/workspace/deploy
             .bach/workspace/documentation
             .bach/workspace/modules
-            .bach/workspace/reports
+            .bach/workspace/test-reports
 
   deploy-to-releases:
     needs: [ setup, build ]
