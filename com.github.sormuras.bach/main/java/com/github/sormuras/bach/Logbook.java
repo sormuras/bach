@@ -1,7 +1,6 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.DurationSupport;
-
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,7 +64,7 @@ public class Logbook {
         var duration = DurationSupport.toHumanReadableString(run.duration());
         md.add(
             """
-            
+
             <details>
             <summary>%s (%s):<code>%s</code></summary>
             """
@@ -96,8 +95,9 @@ public class Logbook {
       }
       md.add("- `" + sanitize(note) + "`");
     }
-    md.add("""
-        
+    md.add(
+        """
+
         ## Thanks for using Bach
 
         Support its development at <https://github.com/sponsors/sormuras>
@@ -105,14 +105,15 @@ public class Logbook {
     return String.join("\n", md);
   }
 
-  Path write() throws Exception {
-    var file = Path.of(Configuration.LOGBOOK_MARKDOWN_FILE);
-    var archive = Path.of(Configuration.LOGBOOK_ARCHIVE_FILE.replace("{TIMESTAMP}", timestamp));
-    Files.createDirectories(file.getParent());
-    Files.writeString(file, toMarkdown());
-    Files.createDirectories(archive.getParent());
-    Files.copy(file, archive, StandardCopyOption.COPY_ATTRIBUTES);
-    return file;
+  Path write(Path directory) throws Exception {
+    var logbookFile = directory.resolve(Configuration.LOGBOOK_MARKDOWN_FILE);
+    var archiveName = Configuration.LOGBOOK_ARCHIVE_FILE.replace("{TIMESTAMP}", timestamp);
+    var archiveFile = directory.resolve(archiveName);
+    Files.createDirectories(logbookFile.getParent());
+    Files.writeString(logbookFile, toMarkdown());
+    Files.createDirectories(archiveFile.getParent());
+    Files.copy(logbookFile, archiveFile, StandardCopyOption.COPY_ATTRIBUTES);
+    return logbookFile;
   }
 
   public static String sanitize(Object object) {

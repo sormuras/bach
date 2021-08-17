@@ -60,6 +60,10 @@ public class Bach implements AutoCloseable {
     log("Total uptime was %s".formatted(DurationSupport.toHumanReadableString(logbook().uptime())));
   }
 
+  public Configuration.Pathing path() {
+    return configuration().pathing();
+  }
+
   public PrintWriter out() {
     return configuration().printing().out();
   }
@@ -94,6 +98,7 @@ public class Bach implements AutoCloseable {
         return;
       }
     }
+    log(Note.message(typeColonText));
   }
 
   public void log(Note note) {
@@ -243,7 +248,7 @@ public class Bach implements AutoCloseable {
 
   public void writeLogbook() {
     try {
-      var file = logbook().write();
+      var file = logbook().write(path().workspace());
       log("CAPTION:Wrote logbook to %s".formatted(file.toUri()));
     } catch (Exception exception) {
       exception.printStackTrace(err());
