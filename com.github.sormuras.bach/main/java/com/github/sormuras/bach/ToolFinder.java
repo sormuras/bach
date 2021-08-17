@@ -7,8 +7,8 @@ import com.github.sormuras.bach.internal.DirectoriesToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
 import com.github.sormuras.bach.internal.RestoreToolProvider;
 import com.github.sormuras.bach.internal.ToolFinderSupport;
-
 import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -51,6 +51,14 @@ public interface ToolFinder {
 
   static ToolFinder of(ServiceLoader<ToolProvider> loader) {
     return new ToolFinderSupport.ServiceLoaderToolFinder(loader);
+  }
+
+  static ToolFinder ofPrograms(Path directory) {
+    return new ToolFinderSupport.ProgramsToolFinder(directory);
+  }
+
+  static ToolFinder ofProviders(Path directory) {
+    return new ToolFinderSupport.ProvidersToolFinder(directory);
   }
 
   static ToolFinder ofBach() {

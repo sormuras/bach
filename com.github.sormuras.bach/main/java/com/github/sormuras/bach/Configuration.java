@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -20,7 +21,13 @@ public record Configuration(
         9,
         new Printing(new PrintWriter(System.out, true), new PrintWriter(System.err, true)),
         new Factoring(Logbook::new),
-        new Tooling(ToolFinder.compose(ToolFinder.ofSystem(), ToolFinder.ofBach())),
+        new Tooling(
+            ToolFinder.compose(
+                ToolFinder.ofSystem(),
+                ToolFinder.ofBach(),
+                ToolFinder.ofProviders(Path.of(".bach", "external-tool-providers")),
+                ToolFinder.ofPrograms(Path.of(".bach", "external-tool-programs"))
+                )),
         new Options.ProjectOptions(Optional.empty(), Optional.empty()));
   }
 
