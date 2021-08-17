@@ -10,7 +10,6 @@ public record Configuration(
     boolean lenient,
     int timeout,
     Printing printing,
-    Factoring factoring,
     Tooling tooling,
     Options.ProjectOptions projectOptions) {
 
@@ -20,7 +19,6 @@ public record Configuration(
         false,
         9,
         new Printing(new PrintWriter(System.out, true), new PrintWriter(System.err, true)),
-        new Factoring(Logbook::new),
         new Tooling(
             ToolFinder.compose(
                 ToolFinder.ofSystem(),
@@ -46,17 +44,12 @@ public record Configuration(
 
   public record Tooling(ToolFinder finder) {}
 
-  Logbook newLogbook() {
-    return factoring().logbookFactory().get();
-  }
-
   public Configuration with(Options options) {
     return new Configuration(
         options.configurationOptions().verbose().orElse(verbose),
         options.configurationOptions().verbose().orElse(lenient),
         options.configurationOptions().timeout().orElse(timeout),
         printing,
-        factoring,
         tooling,
         options.projectOptions());
   }

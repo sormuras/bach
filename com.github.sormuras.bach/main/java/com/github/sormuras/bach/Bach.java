@@ -36,7 +36,7 @@ public class Bach implements AutoCloseable {
 
   public Bach(Configuration configuration) {
     this.configuration = configuration;
-    this.logbook = configuration.newLogbook();
+    this.logbook = constructLogbook();
     log(
         "Initialized Bach %s (Java %s, %s, %s)"
             .formatted(
@@ -44,7 +44,10 @@ public class Bach implements AutoCloseable {
                 System.getProperty("java.version"),
                 System.getProperty("os.name"),
                 Path.of(System.getProperty("user.dir")).toUri()));
-    log(message(Level.DEBUG, configuration.toString()));
+  }
+
+  protected Logbook constructLogbook() {
+    return new Logbook();
   }
 
   public Configuration configuration() {
