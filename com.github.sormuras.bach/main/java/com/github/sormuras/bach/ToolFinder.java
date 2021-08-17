@@ -53,8 +53,8 @@ public interface ToolFinder {
     return new ToolFinderSupport.ServiceLoaderToolFinder(loader);
   }
 
-  static ToolFinder ofPrograms(Path directory) {
-    return new ToolFinderSupport.ProgramsToolFinder(directory);
+  static ToolFinder ofPrograms(Path directory, Path java) {
+    return new ToolFinderSupport.ProgramsToolFinder(directory, java);
   }
 
   static ToolFinder ofProviders(Path directory) {

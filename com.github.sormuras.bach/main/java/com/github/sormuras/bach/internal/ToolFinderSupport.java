@@ -50,7 +50,7 @@ public sealed interface ToolFinderSupport permits ConstantInterface {
     }
   }
 
-  record ProgramToolFinder(Path path) implements ToolFinder {
+  record ProgramToolFinder(Path path, Path java) implements ToolFinder {
 
     @Override
     public List<ToolProvider> findAll() {
@@ -64,7 +64,7 @@ public sealed interface ToolFinderSupport permits ConstantInterface {
       if (!Files.isDirectory(directory)) return Optional.empty();
       if (!name.equals(directory.getFileName().toString())) return Optional.empty();
       var command = new ArrayList<String>();
-      command.add("java"); // TODO Get configured path to Java executable
+      command.add(java.toString());
       var args = directory.resolve("java.args");
       if (Files.isRegularFile(args)) {
         command.add("@" + args);
@@ -85,11 +85,11 @@ public sealed interface ToolFinderSupport permits ConstantInterface {
     }
   }
 
-  record ProgramsToolFinder(Path path) implements ToolFinder {
+  record ProgramsToolFinder(Path path, Path java) implements ToolFinder {
     @Override
     public List<ToolProvider> findAll() {
       return PathSupport.list(path, Files::isDirectory).stream()
-          .map(ProgramToolFinder::new)
+          .map(directory -> new ProgramToolFinder(path, java))
           .map(ToolFinder::findAll)
           .flatMap(List::stream)
           .toList();

@@ -19,13 +19,17 @@ public record Configuration(
     var pathing = Pathing.ofCurrentWorkingDirectory();
     var printing =
         new Printing(new PrintWriter(System.out, true), new PrintWriter(System.err, true));
+    return Configuration.of(pathing, printing);
+  }
+
+  public static Configuration of(Pathing pathing, Printing printing) {
     var tooling =
         new Tooling(
             ToolFinder.compose(
                 ToolFinder.ofSystem(),
                 ToolFinder.ofBach(),
                 ToolFinder.ofProviders(pathing.externalToolProviders()),
-                ToolFinder.ofPrograms(pathing.externalToolPrograms())));
+                ToolFinder.ofPrograms(pathing.externalToolPrograms(), pathing.javaExecutable())));
     return new Configuration(
         false,
         false,
@@ -42,6 +46,14 @@ public record Configuration(
 
   static final String LOGBOOK_ARCHIVE_FILE = "logbooks/logbook-{TIMESTAMP}.md";
 
+  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules";
+
+  static final String EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs";
+
+  static final String EXTERNAL_TOOL_PROVIDERS_DIRECTORY =".bach/external-tool-providers";
+
+  static final String WORKSPACE_DIRECTORY = ".bach/workspace";
+
   public static record Pathing(
       Path root,
       Path externalModules,
@@ -53,10 +65,10 @@ public record Configuration(
     public static Pathing of(Path root) {
       return new Pathing(
           root,
-          root.resolve(".bach/external-modules"),
-          root.resolve(".bach/external-tool-programs"),
-          root.resolve(".bach/external-tool-providers"),
-          root.resolve(".bach/workspace"),
+          root.resolve(EXTERNAL_MODULES_DIRECTORY),
+          root.resolve(EXTERNAL_TOOL_PROGRAMS_DIRECTORY),
+          root.resolve(EXTERNAL_TOOL_PROVIDERS_DIRECTORY),
+          root.resolve(WORKSPACE_DIRECTORY),
           Path.of(System.getProperty("java.home"), "bin", "java"));
     }
 
