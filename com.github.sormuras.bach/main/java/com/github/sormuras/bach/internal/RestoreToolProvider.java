@@ -85,8 +85,11 @@ public record RestoreToolProvider() implements ToolProvider {
     }
 
     static Asset of(String property) {
-      var split = property.split("=");
-      return Asset.of(split[1].strip(), Path.of(split[0].strip()));
+      int separator = property.indexOf('=');
+      if (separator <= 0) throw new AssertionError("`TARGET=SCHEME:SOURCE` expected: " + property);
+      var target = property.substring(0, separator);
+      var source = property.substring(separator + 1);
+      return Asset.of(source.strip(), Path.of(target.strip()));
     }
 
     static Asset of(String value, Path target) {
