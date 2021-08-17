@@ -15,6 +15,8 @@ class build {
   static final Path EXTERNAL_MODULES = Path.of(".bach", "external-modules");
 
   public static void main(String... args) {
+    System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
+    System.out.println("BEGIN");
     try (var bach = new Bach(args)) {
       var version = version(bach);
 
@@ -32,6 +34,7 @@ class build {
       executeTests(bach, "test.integration", mainModules, testModules);
       executeTests(bach, "test.projects", mainModules, testModules);
     }
+    System.out.println("END.");
   }
 
   static Version version(Bach bach) {
