@@ -1,8 +1,5 @@
 package com.github.sormuras.bach;
 
-import static com.github.sormuras.bach.Note.caption;
-import static com.github.sormuras.bach.Note.message;
-
 import com.github.sormuras.bach.internal.DurationSupport;
 import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
@@ -16,7 +13,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -79,12 +75,25 @@ public class Bach implements AutoCloseable {
     return Optional.of(line.length() <= 111 ? line : line.substring(0, 111 - 3) + "...");
   }
 
-  public void log(String text) {
-    if (text.toLowerCase(Locale.ROOT).startsWith("caption:")) {
-      log(caption(text.substring("caption:".length())));
+  public void log(String typeColonText) {
+    var colon = typeColonText.indexOf(':');
+    if (colon <= 0) {
+      log(Note.message(typeColonText));
       return;
     }
-    log(message(text));
+    var type = typeColonText.substring(0, colon);
+    var text = typeColonText.substring(colon + 1);
+    if (type.equals("CAPTION")) {
+      log(Note.caption(text));
+      return;
+    }
+    for (var level : Level.values()) {
+      if (level == Level.ALL || level == Level.OFF) continue;
+      if (type.equals(level.name())) {
+        log(Note.message(level, text));
+        return;
+      }
+    }
   }
 
   public void log(Note note) {
@@ -235,7 +244,7 @@ public class Bach implements AutoCloseable {
   public void writeLogbook() {
     try {
       var file = logbook().write();
-      log("caption:Wrote logbook to %s".formatted(file.toUri()));
+      log("CAPTION:Wrote logbook to %s".formatted(file.toUri()));
     } catch (Exception exception) {
       exception.printStackTrace(err());
     }
