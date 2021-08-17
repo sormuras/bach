@@ -1,4 +1,5 @@
 /workspace/
 
-*.args
+/external*/**/*.args
+/external*/**/*.java
 *.jar
