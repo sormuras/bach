@@ -89,7 +89,7 @@ public sealed interface ToolFinderSupport permits ConstantInterface {
     @Override
     public List<ToolProvider> findAll() {
       return PathSupport.list(path, Files::isDirectory).stream()
-          .map(directory -> new ProgramToolFinder(path, java))
+          .map(directory -> new ProgramToolFinder(directory, java))
           .map(ToolFinder::findAll)
           .flatMap(List::stream)
           .toList();
