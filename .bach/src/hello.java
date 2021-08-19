@@ -4,11 +4,11 @@ import com.github.sormuras.bach.Call;
 class hello {
   public static void main(String... args) throws Exception {
     try (var bach = new Bach()) {
-      bach.log("CAPTION:Restore external tool providers");
+      bach.log("CAPTION:Restore external tool layers");
       bach.run(
           "restore",
           bach.path()
-                  .externalToolProvider(
+                  .externalToolLayer(
                       "sormuras-hello@1-ea+1", "com.github.sormuras.hello@1-ea+1.jar")
               + "=https://github.com/sormuras/hello/releases/download/1-ea+1/com.github.sormuras.hello@1-ea+1.jar#SIZE=1803");
 

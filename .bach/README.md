@@ -24,6 +24,12 @@ The `.bach/src` directory contains sources of the build programs for this projec
 The `.bach/external-modules` directory contains all external modules required to build this project.
 An external module is a module that neither is declared by this project, nor a module that is provided by the Java Runtime.
 
+## Directory `.bach/external-tool-layers`
+
+The `.bach/external-layers` directory contains external modular tool providers helping to build this project.
+Each set of external modular tool providers has its own subdirectory.
+The names of the tools are defined by the `java.util.spi.ToolProvider` SPI implementations.
+
 ## Directory `.bach/external-tool-programs`
 
 The `.bach/external-tool-programs` directory contains external tool programs helping to build this project.
@@ -34,12 +40,6 @@ An external tool program is either:
 - a single-file source-code program as described by (JEP 330)[https://openjdk.java.net/jeps/330],
 - or a single executable JAR file,
 - or a customly packaged Java program that is launched by a `java.launch` configuration file.
-
-## Directory `.bach/external-tool-providers`
-
-The `.bach/external-tools` directory contains external modular tool providers helping to build this project.
-Each set of external modular tool providers has its own subdirectory.
-The names of the tools are defined by the `ToolProvider` implementations.
 
 ## Directory `.bach/workspace`
 

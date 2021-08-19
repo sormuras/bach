@@ -53,12 +53,12 @@ public interface ToolFinder {
     return new ToolFinderSupport.ServiceLoaderToolFinder(loader);
   }
 
-  static ToolFinder ofPrograms(Path directory, Path java) {
-    return new ToolFinderSupport.ProgramsToolFinder(directory, java);
+  static ToolFinder ofPrograms(Path directory, Path java, String argsfile) {
+    return new ToolFinderSupport.ProgramsToolFinder(directory, java, argsfile);
   }
 
-  static ToolFinder ofProviders(Path directory) {
-    return new ToolFinderSupport.ProvidersToolFinder(directory);
+  static ToolFinder ofLayers(Path directory) {
+    return new ToolFinderSupport.LayersToolFinder(directory);
   }
 
   static ToolFinder ofBach() {

@@ -15,6 +15,15 @@ public record Configuration(
     Tooling tooling,
     Options.ProjectOptions projectOptions) {
 
+  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-archives";
+  static final String EXTERNAL_TOOL_LAYERS_DIRECTORY = ".bach/external-tool-layers";
+  static final String EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs";
+  static final String EXTERNAL_TOOL_PROGRAM_ARGSFILE = "java.args";
+  static final String LOGBOOK_ARCHIVE_FILE = "logbooks/logbook-{TIMESTAMP}.md";
+  static final String LOGBOOK_MARKDOWN_FILE = "logbook.md";
+  static final String TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss";
+  static final String WORKSPACE_DIRECTORY = ".bach/workspace";
+
   public static Configuration of() {
     var pathing = Pathing.ofCurrentWorkingDirectory();
     var printing =
@@ -28,8 +37,11 @@ public record Configuration(
             ToolFinder.compose(
                 ToolFinder.ofSystem(),
                 ToolFinder.ofBach(),
-                ToolFinder.ofProviders(pathing.externalToolProviders()),
-                ToolFinder.ofPrograms(pathing.externalToolPrograms(), pathing.javaExecutable())));
+                ToolFinder.ofLayers(pathing.externalToolLayers()),
+                ToolFinder.ofPrograms(
+                    pathing.externalToolPrograms(),
+                    pathing.javaExecutable(),
+                    EXTERNAL_TOOL_PROGRAM_ARGSFILE)));
     return new Configuration(
         false,
         false,
@@ -40,25 +52,11 @@ public record Configuration(
         new Options.ProjectOptions(Optional.empty(), Optional.empty()));
   }
 
-  static final String TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss";
-
-  static final String LOGBOOK_MARKDOWN_FILE = "logbook.md";
-
-  static final String LOGBOOK_ARCHIVE_FILE = "logbooks/logbook-{TIMESTAMP}.md";
-
-  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules";
-
-  static final String EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs";
-
-  static final String EXTERNAL_TOOL_PROVIDERS_DIRECTORY =".bach/external-tool-providers";
-
-  static final String WORKSPACE_DIRECTORY = ".bach/workspace";
-
   public static record Pathing(
       Path root,
       Path externalModules,
+      Path externalToolLayers,
       Path externalToolPrograms,
-      Path externalToolProviders,
       Path workspace,
       Path javaExecutable) {
 
@@ -66,8 +64,8 @@ public record Configuration(
       return new Pathing(
           root,
           root.resolve(EXTERNAL_MODULES_DIRECTORY),
+          root.resolve(EXTERNAL_TOOL_LAYERS_DIRECTORY),
           root.resolve(EXTERNAL_TOOL_PROGRAMS_DIRECTORY),
-          root.resolve(EXTERNAL_TOOL_PROVIDERS_DIRECTORY),
           root.resolve(WORKSPACE_DIRECTORY),
           Path.of(System.getProperty("java.home"), "bin", "java"));
     }
@@ -92,12 +90,12 @@ public record Configuration(
       return externalModules.resolve(Path.of(jar));
     }
 
-    public Path externalToolProgram(String name, String... more) {
-      return externalToolPrograms.resolve(Path.of(name, more));
+    public Path externalToolLayer(String name, String... more) {
+      return externalToolLayers.resolve(Path.of(name, more));
     }
 
-    public Path externalToolProvider(String name, String... more) {
-      return externalToolProviders.resolve(Path.of(name, more));
+    public Path externalToolProgram(String name, String... more) {
+      return externalToolPrograms.resolve(Path.of(name, more));
     }
 
     public Path workspace(String first, String... more) {
