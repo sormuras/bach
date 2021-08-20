@@ -24,8 +24,10 @@ class describe {
       var externalModulesFinder = ModuleFinder.of(bach.path().externalModules());
       System.out.println();
       System.out.println("## Modules");
-      //      System.out.println();
-      //      System.out.println(bach.explorer().describeDeclaredModules());
+      System.out.println();
+      System.out.println("### Declared Modules");
+      System.out.println();
+      System.out.println(describeModules(explorer.newModuleInfoFinder(bach.path().root())));
       System.out.println();
       System.out.println("### External Modules");
       System.out.println();
@@ -39,7 +41,7 @@ class describe {
       System.out.println();
       System.out.println("### System Modules");
       System.out.println();
-      list(ModuleFinder.ofSystem()).stream().map(describe::item).forEach(System.out::println);
+      System.out.println(describeModules(ModuleFinder.ofSystem()));
     }
 
     if (arguments.isEmpty() || arguments.contains("tools")) {
@@ -47,7 +49,9 @@ class describe {
       System.out.println("## Tools");
       System.out.println();
       var finder = bach.configuration().tooling().finder();
-      list(finder).stream().map(describe::item).forEach(System.out::println);
+      var tools = list(finder);
+      tools.stream().map(describe::item).forEach(System.out::println);
+      System.out.printf("  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
     }
   }
 

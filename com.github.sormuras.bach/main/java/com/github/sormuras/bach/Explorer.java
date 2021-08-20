@@ -1,9 +1,11 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.ModuleInfoFinder;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -11,6 +13,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Explorer(Bach bach) {
+
+  public ModuleFinder newModuleInfoFinder(Path root) {
+    return ModuleInfoFinder.of(root);
+  }
 
   public List<String> listMissingExternalModules(String... more) {
     return listMissingExternalModules(ModuleFinder.of(bach.path().externalModules()), more);
