@@ -71,7 +71,11 @@ public record GrabToolProvider() implements ToolProvider {
         Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
       }
     }
-    out.println(">> " + target);
+    if (asset.isPresent()) {
+      out.println(">> " + target);
+      return;
+    }
+    throw new RuntimeException("Checksum mismatch? " + asset);
   }
 
   sealed interface Asset permits StringAsset, HttpsAsset {
