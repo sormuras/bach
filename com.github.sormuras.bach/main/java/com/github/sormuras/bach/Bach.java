@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Bach implements AutoCloseable {
@@ -54,6 +55,10 @@ public class Bach implements AutoCloseable {
     return logbook;
   }
 
+  public Restorer restorer() {
+    return new Restorer(this);
+  }
+
   @Override
   public void close() {
     writeLogbook();
@@ -73,9 +78,11 @@ public class Bach implements AutoCloseable {
   }
 
   protected Optional<String> computeRunMessageLine(ToolProvider provider, List<String> arguments) {
-    var name = provider.name();
-    var args = String.join(" ", arguments);
-    var line = "%16s %s".formatted(name, args).stripTrailing();
+    var builder = new StringBuilder("%16s".formatted(provider.name()));
+    for (var argument : arguments) {
+      builder.append(" ").append(argument.lines().collect(Collectors.joining("\\n")));
+    }
+    var line = builder.toString();
     return Optional.of(line.length() <= 111 ? line : line.substring(0, 111 - 3) + "...");
   }
 
