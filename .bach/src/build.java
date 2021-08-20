@@ -18,8 +18,13 @@ class build {
     try (var bach = new Bach(args)) {
       var version = version(bach);
 
-      bach.log(caption("Grab external assets"));
-      bach.run(Call.tool("grab", ".bach/external.properties"));
+      bach.log(caption("Grab required and missing external modules"));
+      var grabber = bach.grabber();
+      grabber.grabExternalModules(build::locate, "org.junit.jupiter", "org.junit.platform.console");
+      grabber.grabMissingExternalModules(build::locate);
+
+      bach.log(caption("Grab external tools"));
+      grabber.grab(".bach/external.properties");
 
       bach.log(caption("Build main code space"));
       var mainModules = buildMainModules(bach, version);
@@ -33,6 +38,23 @@ class build {
       executeTests(bach, "test.projects", mainModules, testModules);
     }
     System.out.println("END.");
+  }
+
+  static String locate(String module) {
+    return switch (module) {
+      case "org.apiguardian.api" -> "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar#SIZE=6806";
+      case "org.junit.jupiter" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.8.0-RC1/junit-jupiter-5.8.0-RC1.jar#SIZE=6374";
+      case "org.junit.jupiter.api" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.8.0-RC1/junit-jupiter-api-5.8.0-RC1.jar#SIZE=192751";
+      case "org.junit.jupiter.engine" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.8.0-RC1/junit-jupiter-engine-5.8.0-RC1.jar#SIZE=224308";
+      case "org.junit.jupiter.params" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.8.0-RC1/junit-jupiter-params-5.8.0-RC1.jar#SIZE=575548";
+      case "org.junit.platform.commons" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.8.0-RC1/junit-platform-commons-1.8.0-RC1.jar#SIZE=100449";
+      case "org.junit.platform.console" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console/1.8.0-RC1/junit-platform-console-1.8.0-RC1.jar#SIZE=488177";
+      case "org.junit.platform.engine" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.8.0-RC1/junit-platform-engine-1.8.0-RC1.jar#SIZE=185793";
+      case "org.junit.platform.launcher" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.8.0-RC1/junit-platform-launcher-1.8.0-RC1.jar#SIZE=159616";
+      case "org.junit.platform.reporting" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-reporting/1.8.0-RC1/junit-platform-reporting-1.8.0-RC1.jar#SIZE=26190";
+      case "org.opentest4j" -> "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar#SIZE=7653";
+      default -> null;
+    };
   }
 
   static Version version(Bach bach) {
