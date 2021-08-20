@@ -56,7 +56,7 @@ public record Grabber(Bach bach) {
   }
 
   public void grabMissingExternalModules(ModuleLocators locators) {
-    bach.log("INFO:Grab missing external modules");
+    bach.log("DEBUG:Grab missing external modules");
     var explorer = bach.explorer();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
@@ -69,7 +69,7 @@ public record Grabber(Bach bach) {
       grabExternalModules(locators, missing.toArray(String[]::new));
       loaded.addAll(missing);
     }
-    bach.log("Grabbed %d missing module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
+    bach.log("DEBUG:Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
   }
 
   public record Asset(String name, String source) {}
