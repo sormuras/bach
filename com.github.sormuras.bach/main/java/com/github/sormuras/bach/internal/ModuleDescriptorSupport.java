@@ -30,7 +30,7 @@ public sealed interface ModuleDescriptorSupport permits ConstantInterface {
     var compiler = ToolProvider.getSystemJavaCompiler();
     var writer = new PrintWriter(Writer.nullWriter());
     var fileManager = compiler.getStandardFileManager(null, null, null);
-    var units = List.of(new ModuleInfoJavaFileObject(info));
+    var units = List.of(new ModuleInfoFileObject(info));
     var javacTask = (JavacTask) compiler.getTask(writer, fileManager, null, null, null, units);
 
     try {

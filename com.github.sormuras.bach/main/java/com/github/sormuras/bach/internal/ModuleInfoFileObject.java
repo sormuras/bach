@@ -5,8 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.tools.SimpleJavaFileObject;
 
-public class ModuleInfoJavaFileObject extends SimpleJavaFileObject {
-  ModuleInfoJavaFileObject(Path path) {
+public class ModuleInfoFileObject extends SimpleJavaFileObject {
+  ModuleInfoFileObject(Path path) {
     super(path.toUri(), Kind.SOURCE);
   }
 
