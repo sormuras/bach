@@ -16,7 +16,7 @@ public record Configuration(
     Tooling tooling,
     Options.ProjectOptions projectOptions) {
 
-  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-archives";
+  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules";
   static final String EXTERNAL_TOOL_LAYERS_DIRECTORY = ".bach/external-tool-layers";
   static final String EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs";
   static final String EXTERNAL_TOOL_PROGRAM_ARGSFILE = "java.args";

@@ -9,11 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.spi.ToolProvider;
 
-public record RestoreToolProvider() implements ToolProvider {
+public record GrabToolProvider() implements ToolProvider {
 
   @Override
   public String name() {
-    return "restore";
+    return "grab";
   }
 
   @Override
@@ -21,11 +21,11 @@ public record RestoreToolProvider() implements ToolProvider {
     if (args.length == 0) {
       out.println(
           """
-          Usage: restore ASSET ASSET...
-    
+          Usage: grab ASSET ASSET...
+
           An ASSET is either of from TARGET=SCHEME:SOURCE form or denotes a Java `.properties` file
           containing key-value pairs of the former form. Supported schemes are `string` and `https`.
-    
+
           Examples:
             lines.txt=string:First line\\nMiddle line\\nLast line
             lib/foo.jar=https://.../foo.jar#SIZE=789
@@ -37,14 +37,14 @@ public record RestoreToolProvider() implements ToolProvider {
     try {
       for (var arg : args) {
         if (arg.contains("=")) {
-          restore(out, Asset.of(arg));
+          grab(out, Asset.of(arg));
           continue;
         }
         var properties = PathSupport.properties(Path.of(arg));
         for (var name : properties.stringPropertyNames()) {
           var target = Path.of(name);
           var value = properties.getProperty(name);
-          restore(out, Asset.of(target, value));
+          grab(out, Asset.of(target, value));
         }
       }
     } catch (Exception exception) {
@@ -54,7 +54,7 @@ public record RestoreToolProvider() implements ToolProvider {
     return 0;
   }
 
-  void restore(PrintWriter out, Asset asset) throws Exception {
+  void grab(PrintWriter out, Asset asset) throws Exception {
     if (asset.isPresent()) return;
     var target = asset.target();
     var parent = target.getParent();

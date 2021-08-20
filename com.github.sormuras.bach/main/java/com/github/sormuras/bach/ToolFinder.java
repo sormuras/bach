@@ -5,7 +5,7 @@ import static java.lang.module.Configuration.resolveAndBind;
 
 import com.github.sormuras.bach.internal.DirectoriesToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
-import com.github.sormuras.bach.internal.RestoreToolProvider;
+import com.github.sormuras.bach.internal.GrabToolProvider;
 import com.github.sormuras.bach.internal.ToolFinderSupport;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -63,9 +63,7 @@ public interface ToolFinder {
 
   static ToolFinder ofBach() {
     return ToolFinder.of(
-        new DirectoriesToolProvider(),
-        new ExecuteProcessToolProvider(),
-        new RestoreToolProvider());
+        new DirectoriesToolProvider(), new ExecuteProcessToolProvider(), new GrabToolProvider());
   }
 
   static ToolFinder ofSystem() {

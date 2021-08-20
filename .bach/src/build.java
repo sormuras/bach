@@ -12,16 +12,14 @@ import java.util.List;
 
 class build {
 
-  static final Path EXTERNAL_MODULES = Path.of(".bach", "external-modules");
-
   public static void main(String... args) {
     System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
     System.out.println("BEGIN");
     try (var bach = new Bach(args)) {
       var version = version(bach);
 
-      bach.log(caption("Restore external assets"));
-      bach.run(Call.tool("restore", ".bach/external.properties"));
+      bach.log(caption("Grab external assets"));
+      bach.run(Call.tool("grab", ".bach/external.properties"));
 
       bach.log(caption("Build main code space"));
       var mainModules = buildMainModules(bach, version);
@@ -52,28 +50,28 @@ class build {
     var names = List.of("com.github.sormuras.bach");
     var classes = Path.of(".bach/workspace/classes");
     bach.run(
-            Call.tool("javac")
-                .with("--release", "17")
-                .with("--module", String.join(",", names))
-                .with("--module-source-path", "./*/main/java")
-                .with("-g")
-                .with("-parameters")
-                .with("-Werror")
-                .with("-Xlint")
-                .with("-encoding", "UTF-8")
-                .with("-d", classes));
+        Call.tool("javac")
+            .with("--release", "17")
+            .with("--module", String.join(",", names))
+            .with("--module-source-path", "./*/main/java")
+            .with("-g")
+            .with("-parameters")
+            .with("-Werror")
+            .with("-Xlint")
+            .with("-encoding", "UTF-8")
+            .with("-d", classes));
     var modules = Path.of(".bach/workspace/modules");
     bach.run(Call.tool("directories", "create", modules));
     for (var name : names) {
       var file = name + "@" + version + ".jar";
       bach.run(
-              Call.tool("jar")
-                  .with("--verbose")
-                  .with("--create")
-                  .with("--file", modules.resolve(file))
-                  .with("--module-version", version)
-                  .with("-C", classes.resolve(name).toString(), ".")
-                  .with("-C", Path.of(name).resolve("main/java").toString(), "."));
+          Call.tool("jar")
+              .with("--verbose")
+              .with("--create")
+              .with("--file", modules.resolve(file))
+              .with("--module-version", version)
+              .with("-C", classes.resolve(name).toString(), ".")
+              .with("-C", Path.of(name).resolve("main/java").toString(), "."));
     }
     return modules;
   }
@@ -83,20 +81,19 @@ class build {
         List.of("test.base", "test.integration", "test.projects", "com.github.sormuras.bach");
     var classes = Path.of(".bach/workspace/test-classes");
     bach.run(
-            Call.tool("javac")
-                .with("--module", String.join(",", names))
-                .with(
-                    "--module-source-path",
-                    String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module"))
-                .with("--module-path", List.of(mainModules, EXTERNAL_MODULES))
-                .with(
-                    "--patch-module", "com.github.sormuras.bach=com.github.sormuras.bach/main/java")
-                .with("-g")
-                .with("-parameters")
-                .with("-Werror")
-                .with("-Xlint")
-                .with("-encoding", "UTF-8")
-                .with("-d", classes));
+        Call.tool("javac")
+            .with("--module", String.join(",", names))
+            .with(
+                "--module-source-path",
+                String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module"))
+            .with("--module-path", List.of(mainModules, bach.path().externalModules()))
+            .with("--patch-module", "com.github.sormuras.bach=com.github.sormuras.bach/main/java")
+            .with("-g")
+            .with("-parameters")
+            .with("-Werror")
+            .with("-Xlint")
+            .with("-encoding", "UTF-8")
+            .with("-d", classes));
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(Call.tool("directories", "create", modules));
     for (var name : names) {
@@ -123,11 +120,11 @@ class build {
             testModules.resolve(module + "@" + version(bach) + "+test.jar"),
             mainModules,
             testModules,
-            EXTERNAL_MODULES);
+            bach.path().externalModules());
     var toolFinder = ToolFinder.of(moduleFinder, true, module);
     bach.run(
-            Call.tool(toolFinder, "junit")
-                .with("--select-module", module)
-                .with("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module)));
+        Call.tool(toolFinder, "junit")
+            .with("--select-module", module)
+            .with("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module)));
   }
 }

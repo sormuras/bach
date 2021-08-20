@@ -9,26 +9,26 @@ import java.nio.file.Path;
 class build {
   public static void main(String... args) {
     try (var bach = new Bach(args)) {
-      bach.log(caption("Restore External Assets"));
-      bach.run("restore", ".bach/external.properties");
+      bach.log(caption("Grab External Assets"));
+      bach.run("grab", ".bach/external.properties");
 
       bach.log(caption("Compile Test Space"));
       var testModules = compileTestModules(bach);
 
       bach.log(caption("Execute Test Modules"));
-      executeTestModules(bach, ModuleFinder.of(testModules, Path.of(".bach/external-modules")));
+      executeTestModules(bach, ModuleFinder.of(testModules, bach.path().externalModules()));
     }
   }
 
   private static Path compileTestModules(Bach bach) {
-    var classes = Path.of(".bach/workspace/test-classes");
-    var modules = Path.of(".bach/workspace/test-modules");
+    var classes = bach.path().workspace("test-classes");
+    var modules = bach.path().workspace("test-modules");
     bach.run(
         Call.tool("javac")
             .with("--module", "foo,bar")
             .with("--module-source-path", "./*/test/java")
-            .with("--module-path", ".bach/external-modules")
-            .with("-d", ".bach/workspace/test-classes"));
+            .with("--module-path", bach.path().externalModules())
+            .with("-d", classes));
     bach.run(Call.tool("directories", "clean", modules));
     bach.run(
         Call.tool("jar")
@@ -49,10 +49,10 @@ class build {
     bach.run(
         Call.tool(ToolFinder.of(finder, true, "foo"), "junit")
             .with("--select-module", "foo")
-            .with("--reports-dir", Path.of(".bach/workspace/junit-foo")));
+            .with("--reports-dir", bach.path().workspace("junit-foo")));
     bach.run(
         Call.tool(ToolFinder.of(finder, true, "bar"), "junit")
             .with("--select-module", "bar")
-            .with("--reports-dir", Path.of(".bach/workspace/junit-bar")));
+            .with("--reports-dir", bach.path().workspace("junit-bar")));
   }
 }

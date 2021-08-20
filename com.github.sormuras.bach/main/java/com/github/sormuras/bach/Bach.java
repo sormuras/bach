@@ -55,8 +55,8 @@ public class Bach implements AutoCloseable {
     return logbook;
   }
 
-  public Restorer restorer() {
-    return new Restorer(this);
+  public Grabber grabber() {
+    return new Grabber(this);
   }
 
   @Override
