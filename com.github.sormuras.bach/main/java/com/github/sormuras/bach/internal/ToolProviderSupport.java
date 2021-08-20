@@ -3,6 +3,7 @@ package com.github.sormuras.bach.internal;
 import java.nio.file.Path;
 import java.util.spi.ToolProvider;
 
+/** Static utility methods for operating on instances of {@link ToolProvider}. */
 public sealed interface ToolProviderSupport permits ConstantInterface {
   /** {@return } */
   static String describe(ToolProvider provider) {

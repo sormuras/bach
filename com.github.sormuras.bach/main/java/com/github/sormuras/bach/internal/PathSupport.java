@@ -20,9 +20,9 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /** Static utility methods for operating on instances of {@link Path}. */
-public final class PathSupport {
+public sealed interface PathSupport permits ConstantInterface {
 
-  public static String computeChecksum(Path path, String algorithm) {
+  static String computeChecksum(Path path, String algorithm) {
     if (Files.notExists(path)) throw new RuntimeException(path.toString());
     try {
       if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
@@ -39,7 +39,7 @@ public final class PathSupport {
     }
   }
 
-  public static Properties properties(Path path) {
+  static Properties properties(Path path) {
     var properties = new Properties();
     try {
     properties.load(new FileInputStream(path.toFile()));
@@ -50,7 +50,7 @@ public final class PathSupport {
   }
 
   /** Walk the file tree starting at the root path and return paths matching the given filter. */
-  public static List<Path> find(Path root, int limit, Predicate<Path> filter) {
+  static List<Path> find(Path root, int limit, Predicate<Path> filter) {
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
     try (var stream = Files.walk(root, limit)) {
       stream.filter(filter).forEach(paths::add);
@@ -61,22 +61,22 @@ public final class PathSupport {
   }
 
   /** Test supplied path for pointing to a regular Java Archive file. */
-  public static boolean isJarFile(Path path) {
+  static boolean isJarFile(Path path) {
     return nameOrElse(path, "").endsWith(".jar") && Files.isRegularFile(path);
   }
 
   /** Test supplied path for pointing to a regular Java compilation unit file. */
-  public static boolean isJavaFile(Path path) {
+  static boolean isJavaFile(Path path) {
     return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
   }
 
   /** Test supplied path for pointing to a regular Java module declaration compilation unit file. */
-  public static boolean isModuleInfoJavaFile(Path path) {
+  static boolean isModuleInfoJavaFile(Path path) {
     return "module-info.java".equals(name(path)) && Files.isRegularFile(path);
   }
 
   /** {@return a listing of the directory in natural order with the given filter applied} */
-  public static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+  static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
     if (Files.notExists(directory)) return List.of();
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
     try (var stream = Files.newDirectoryStream(directory, filter)) {
@@ -88,18 +88,15 @@ public final class PathSupport {
   }
 
   /** {@return the file name of the path as a string, or {@code null}} */
-  public static String name(Path path) {
+  static String name(Path path) {
     return nameOrElse(path, null);
   }
 
   /** {@return the file name of the path as a string, or the given default name} */
-  public static String nameOrElse(Path path, String defautName) {
+  static String nameOrElse(Path path, String defautName) {
     var normalized = path.normalize();
     var candidate = normalized.getNameCount() == 0 ? normalized.toAbsolutePath() : normalized;
     var name = candidate.getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
   }
-
-  /** Hidden default constructor. */
-  private PathSupport() {}
 }

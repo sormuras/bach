@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.internal;
 
+/** Static utility methods for operating on instances of {@link String}. */
 public sealed interface StringSupport permits ConstantInterface {
 
   record Property(String key, String value) {}

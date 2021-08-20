@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
+/** Static utility methods for operating on instances of {@link ToolFinder}. */
 public sealed interface ToolFinderSupport permits ConstantInterface {
   record ToolProviderToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
 
