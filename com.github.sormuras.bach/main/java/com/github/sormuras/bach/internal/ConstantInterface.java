@@ -1,4 +1,8 @@
 package com.github.sormuras.bach.internal;
 
 public record ConstantInterface()
-    implements DurationSupport, StringSupport, ToolFinderSupport, ToolProviderSupport {}
+    implements DurationSupport,
+        ModuleDescriptorSupport,
+        StringSupport,
+        ToolFinderSupport,
+        ToolProviderSupport {}

@@ -8,14 +8,12 @@ import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 
 /** Static utility methods for operating on instances of {@link ModuleDescriptor}. */
-public final class ModuleDescriptorSupport {
+public sealed interface ModuleDescriptorSupport permits ConstantInterface {
 
   /**
    * Reads the source form of a module declaration from a file as a module descriptor.
@@ -25,14 +23,14 @@ public final class ModuleDescriptorSupport {
    * @implNote For the time being, only the {@code name} of a module and its {@code requires}
    *     directives are parsed.
    */
-  public static ModuleDescriptor parse(Path info) {
+  static ModuleDescriptor parse(Path info) {
     if (!Path.of("module-info.java").equals(info.getFileName()))
       throw new IllegalArgumentException("Path must end with 'module-info.java': " + info);
 
     var compiler = ToolProvider.getSystemJavaCompiler();
     var writer = new PrintWriter(Writer.nullWriter());
     var fileManager = compiler.getStandardFileManager(null, null, null);
-    var units = List.of(new ModuleInfoFileObject(info));
+    var units = List.of(new ModuleInfoJavaFileObject(info));
     var javacTask = (JavacTask) compiler.getTask(writer, fileManager, null, null, null, units);
 
     try {
@@ -47,18 +45,7 @@ public final class ModuleDescriptorSupport {
     throw new IllegalArgumentException("Module tree not found in " + info);
   }
 
-  static class ModuleInfoFileObject extends SimpleJavaFileObject {
-    ModuleInfoFileObject(Path path) {
-      super(path.toUri(), Kind.SOURCE);
-    }
-
-    @Override
-    public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
-      return Files.readString(Path.of(uri));
-    }
-  }
-
-  static ModuleDescriptor parse(ModuleTree moduleTree) {
+  private static ModuleDescriptor parse(ModuleTree moduleTree) {
     var moduleName = moduleTree.getName().toString();
     var builder = ModuleDescriptor.newModule(moduleName);
     for (var directive : moduleTree.getDirectives()) {
@@ -69,7 +56,4 @@ public final class ModuleDescriptorSupport {
     }
     return builder.build();
   }
-
-  /** Hidden default constructor. */
-  private ModuleDescriptorSupport() {}
 }
