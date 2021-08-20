@@ -4,6 +4,7 @@ import com.github.sormuras.bach.internal.PathSupport;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public record Configuration(
@@ -23,6 +24,11 @@ public record Configuration(
   static final String LOGBOOK_MARKDOWN_FILE = "logbook.md";
   static final String TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss";
   static final String WORKSPACE_DIRECTORY = ".bach/workspace";
+
+  public static Path computeJavaExecutablePath(String name) {
+    var windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("win");
+    return Path.of(System.getProperty("java.home"), "bin", name + (windows ? ".exe" : ""));
+  }
 
   public static Configuration of() {
     var pathing = Pathing.ofCurrentWorkingDirectory();
@@ -67,7 +73,7 @@ public record Configuration(
           root.resolve(EXTERNAL_TOOL_LAYERS_DIRECTORY),
           root.resolve(EXTERNAL_TOOL_PROGRAMS_DIRECTORY),
           root.resolve(WORKSPACE_DIRECTORY),
-          Path.of(System.getProperty("java.home"), "bin", "java"));
+          computeJavaExecutablePath("java"));
     }
 
     public static Pathing ofCurrentWorkingDirectory() {
