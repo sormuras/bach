@@ -44,7 +44,7 @@ public record RestoreToolProvider() implements ToolProvider {
         for (var name : properties.stringPropertyNames()) {
           var target = Path.of(name);
           var value = properties.getProperty(name);
-          restore(out, Asset.of(value, target));
+          restore(out, Asset.of(target, value));
         }
       }
     } catch (Exception exception) {
@@ -59,13 +59,13 @@ public record RestoreToolProvider() implements ToolProvider {
     var target = asset.target();
     var parent = target.getParent();
     if (parent != null) Files.createDirectories(parent);
-    if (asset instanceof StringAsset a) {
-      var string = a.source();
+    if (asset instanceof StringAsset casted) {
+      var string = casted.source();
       out.println("<< " + string.length() + " unicode units");
       Files.writeString(target, string);
     }
-    if (asset instanceof UriAsset a) {
-      var uri = a.source();
+    if (asset instanceof HttpsAsset casted) {
+      var uri = casted.source();
       out.println("<< " + uri);
       try (var stream = uri.toURL().openStream()) {
         Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
@@ -74,7 +74,7 @@ public record RestoreToolProvider() implements ToolProvider {
     out.println(">> " + target);
   }
 
-  sealed interface Asset permits StringAsset, UriAsset {
+  sealed interface Asset permits StringAsset, HttpsAsset {
 
     Object source();
 
@@ -84,22 +84,19 @@ public record RestoreToolProvider() implements ToolProvider {
       return Files.exists(target());
     }
 
-    static Asset of(String property) {
-      int separator = property.indexOf('=');
-      if (separator <= 0) throw new AssertionError("`TARGET=SCHEME:SOURCE` expected: " + property);
-      var target = property.substring(0, separator);
-      var source = property.substring(separator + 1);
-      return Asset.of(source.strip(), Path.of(target.strip()));
+    static Asset of(String string) {
+      var property = StringSupport.parseProperty(string);
+      return Asset.of(Path.of(property.key()), property.value());
     }
 
-    static Asset of(String value, Path target) {
-      if (value.startsWith("string:")) return new StringAsset(value.substring(7), target);
-      if (value.startsWith("https:")) return new UriAsset(URI.create(value), target);
+    static Asset of(Path target, String value) {
+      if (value.startsWith("string:")) return new StringAsset(target, value.substring(7));
+      if (value.startsWith("https:")) return new HttpsAsset(target, URI.create(value));
       throw new IllegalArgumentException(value);
     }
   }
 
-  record StringAsset(String source, Path target) implements Asset {
+  record StringAsset(Path target, String source) implements Asset {
     @Override
     public boolean isPresent() {
       if (Files.notExists(target)) return false;
@@ -111,17 +108,16 @@ public record RestoreToolProvider() implements ToolProvider {
     }
   }
 
-  record UriAsset(URI source, Path target) implements Asset {
+  record HttpsAsset(Path target, URI source) implements Asset {
     @Override
     public boolean isPresent() {
       if (Files.notExists(target)) return false;
       var fragment = source.getFragment();
       if (fragment == null) return true;
-      for (var pair : fragment.split("&")) {
-        int separator = pair.indexOf('=');
-        if (separator <= 0) throw new AssertionError("`algorithm=value` pattern expected: " + pair);
-        var algorithm = pair.substring(0, separator);
-        var expected = pair.substring(separator + 1);
+      for (var element : fragment.split("&")) {
+        var property = StringSupport.parseProperty(element);
+        var algorithm = property.key();
+        var expected = property.value();
         var computed = PathSupport.computeChecksum(target, algorithm);
         if (!expected.equalsIgnoreCase(computed)) {
           return false;
