@@ -55,6 +55,10 @@ public class Bach implements AutoCloseable {
     return logbook;
   }
 
+  public Explorer explorer() {
+    return new Explorer(this);
+  }
+
   public Grabber grabber() {
     return new Grabber(this);
   }
