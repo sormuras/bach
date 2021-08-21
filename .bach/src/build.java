@@ -91,7 +91,8 @@ class build {
     var modules = Path.of(".bach/workspace/modules");
     bach.run(Call.tool("directories", "create", modules));
     for (var name : names) {
-      var file = name + "@" + version + ".jar";
+      var tag = version.toString().split("\\+")[0];
+      var file = name + "@" + tag + ".jar";
       bach.run(
           Call.tool("jar")
               .with("--verbose")
