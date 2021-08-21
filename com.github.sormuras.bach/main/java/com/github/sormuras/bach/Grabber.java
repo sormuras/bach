@@ -31,6 +31,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
       for (var asset : directory.assets()) grab(root, asset);
     }
   }
+
   public void grabExternalModules(String... modules) {
     var directory = bach.path().externalModules();
     module_loop:

@@ -27,8 +27,10 @@ public record JUnit(String version) implements ExternalModuleLocator {
     var opentestVersion = "1.2.0";
 
     return switch (module) {
-      case "org.apiguardian.api" -> Maven.central("org.apiguardian", "apiguardian-api", guardianVersion);
-      case "org.junit.jupiter" -> Maven.central("org.junit.jupiter", "junit-jupiter", jupiterVersion);
+      case "org.apiguardian.api" -> Maven.central(
+          "org.apiguardian", "apiguardian-api", guardianVersion);
+      case "org.junit.jupiter" -> Maven.central(
+          "org.junit.jupiter", "junit-jupiter", jupiterVersion);
       case "org.opentest4j" -> Maven.central("org.opentest4j", "opentest4j", opentestVersion);
       default -> {
         if (module.startsWith("org.junit.jupiter")) {

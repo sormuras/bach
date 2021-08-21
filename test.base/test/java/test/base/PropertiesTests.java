@@ -10,8 +10,7 @@ class PropertiesTests {
 
   @Test
   void loadMultiLineValuesFromTextBlock() throws Exception {
-    var expected =
-        """
+    var expected = """
         1
         2""";
 

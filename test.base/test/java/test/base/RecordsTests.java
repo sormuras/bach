@@ -1,10 +1,9 @@
 package test.base;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class RecordsTests {
 
@@ -72,16 +71,17 @@ class RecordsTests {
   void samePrimitiveTypes() {
     record Point(int x, int y) {
       private static final Point WITH = new Point(0, 1);
+
       public <T> Point with(Function<Point, T> accessor, T value) {
         var hint = accessor.apply(WITH);
         return new Point(
-            hint.equals(WITH.x) ? (int) value : x,
-            hint.equals(WITH.y) ? (int) value : y
-        );
+            hint.equals(WITH.x) ? (int) value : x, hint.equals(WITH.y) ? (int) value : y);
       }
+
       public Point x(int x) {
         return new Point(x, y);
       }
+
       public Point y(int y) {
         return with(Point::y, y);
       }

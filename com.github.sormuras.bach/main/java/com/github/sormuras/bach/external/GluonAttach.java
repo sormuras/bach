@@ -25,16 +25,17 @@ public record GluonAttach(String version) implements ExternalModuleLocator {
   @Override
   public String locate(String module) {
     if (!module.startsWith(MODULE_PREFIX)) return null;
-    var artifact = switch (module) {
-      case "com.gluonhq.attach.audiorecording" -> "audio-recording";
-      case "com.gluonhq.attach.augmentedreality" -> "augmented-reality";
-      case "com.gluonhq.attach.barcodescan" -> "barcode-scan";
-      case "com.gluonhq.attach.inappbilling" -> "in-app-billing";
-      case "com.gluonhq.attach.localnotifications" -> "local-notifications";
-      case "com.gluonhq.attach.pushnotifications" -> "push-notifications";
-      case "com.gluonhq.attach.runtimeargs" -> "runtime-args";
-      default -> module.substring(19).replace('.', '-');
-    };
+    var artifact =
+        switch (module) {
+          case "com.gluonhq.attach.audiorecording" -> "audio-recording";
+          case "com.gluonhq.attach.augmentedreality" -> "augmented-reality";
+          case "com.gluonhq.attach.barcodescan" -> "barcode-scan";
+          case "com.gluonhq.attach.inappbilling" -> "in-app-billing";
+          case "com.gluonhq.attach.localnotifications" -> "local-notifications";
+          case "com.gluonhq.attach.pushnotifications" -> "push-notifications";
+          case "com.gluonhq.attach.runtimeargs" -> "runtime-args";
+          default -> module.substring(19).replace('.', '-');
+        };
     return Maven.central(MAVEN_GROUP, artifact, version);
   }
 }

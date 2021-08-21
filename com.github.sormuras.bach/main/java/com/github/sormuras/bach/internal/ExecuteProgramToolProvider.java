@@ -5,7 +5,8 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.spi.ToolProvider;
 
-public record ExecuteProgramToolProvider(String name, List<String> command) implements ToolProvider {
+public record ExecuteProgramToolProvider(String name, List<String> command)
+    implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... arguments) {

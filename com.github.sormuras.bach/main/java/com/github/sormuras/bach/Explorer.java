@@ -2,7 +2,6 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleInfoFinder;
 import com.github.sormuras.bach.internal.PathSupport;
-
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;

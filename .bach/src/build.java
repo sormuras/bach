@@ -1,6 +1,6 @@
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ExternalModuleLocators;
+import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.external.JUnit;
 import java.io.File;
@@ -20,7 +20,8 @@ class build {
 
       bach.log("CAPTION:Grab required and missing external modules");
       var grabber = bach.grabber(locators());
-      grabber.grabExternalModules("org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
+      grabber.grabExternalModules(
+          "org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
       grabber.grabMissingExternalModules();
 
       bach.log("CAPTION:Grab external tools");

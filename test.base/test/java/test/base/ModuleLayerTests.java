@@ -64,12 +64,11 @@ class ModuleLayerTests {
     var configuration = parentLayer.configuration().resolveAndBind(before, after, Set.of());
     var parentLoader = ClassLoader.getSystemClassLoader();
     var layer = parentLayer.defineModulesWithOneLoader(configuration, parentLoader);
-    return
-        ServiceLoader.load(layer, ToolProvider.class).stream()
-            .filter(provider -> provider.type().getModule().getLayer() == layer)
-            .map(ServiceLoader.Provider::get)
-            .map(ToolProvider::name)
-            .sorted()
-            .toList();
+    return ServiceLoader.load(layer, ToolProvider.class).stream()
+        .filter(provider -> provider.type().getModule().getLayer() == layer)
+        .map(ServiceLoader.Provider::get)
+        .map(ToolProvider::name)
+        .sorted()
+        .toList();
   }
 }

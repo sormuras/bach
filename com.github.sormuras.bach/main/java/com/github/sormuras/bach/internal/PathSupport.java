@@ -28,7 +28,7 @@ public sealed interface PathSupport permits ConstantInterface {
       if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
       var md = MessageDigest.getInstance(algorithm);
       try (var source = new BufferedInputStream(new FileInputStream(path.toFile()));
-           var target = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+          var target = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
         source.transferTo(target);
       }
       return String.format("%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
@@ -42,8 +42,8 @@ public sealed interface PathSupport permits ConstantInterface {
   static Properties properties(Path path) {
     var properties = new Properties();
     try {
-    properties.load(new FileInputStream(path.toFile()));
-    return properties;
+      properties.load(new FileInputStream(path.toFile()));
+      return properties;
     } catch (IOException exception) {
       throw new UncheckedIOException(exception);
     }

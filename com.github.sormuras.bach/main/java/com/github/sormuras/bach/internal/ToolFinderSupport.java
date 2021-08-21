@@ -30,7 +30,8 @@ public sealed interface ToolFinderSupport permits ConstantInterface {
     }
   }
 
-  record ModuleLayerToolFinder(ModuleLayer layer, ServiceLoader<ToolProvider> loader) implements ToolFinder {
+  record ModuleLayerToolFinder(ModuleLayer layer, ServiceLoader<ToolProvider> loader)
+      implements ToolFinder {
     @Override
     public List<ToolProvider> findAll() {
       synchronized (loader) {

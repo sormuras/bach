@@ -13,7 +13,7 @@ class SimplicissimusTests {
     var project = TestProject.of("Simplicissimus");
     assertEquals(0, project.build().waitFor());
 
-    var jar =  project.root().resolve(".bach/workspace/modules/simplicissimus@99.jar");
+    var jar = project.root().resolve(".bach/workspace/modules/simplicissimus@99.jar");
 
     assertLinesMatch(
         """

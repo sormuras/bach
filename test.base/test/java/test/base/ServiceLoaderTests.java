@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
 class ServiceLoaderTests {
 
   static final ServiceLoader<ToolProvider> loader =
-      ServiceLoader.load(ToolProvider.class,
-          Thread.currentThread().getContextClassLoader());
+      ServiceLoader.load(ToolProvider.class, Thread.currentThread().getContextClassLoader());
 
   @Test
   void findToolProviderTypesNotAnnotatedWithName() {

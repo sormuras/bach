@@ -13,7 +13,7 @@ class SimpleTests {
     var project = TestProject.of("Simple");
     assertEquals(0, project.build().waitFor());
 
-    var jar =  project.root().resolve(".bach/workspace/modules/simple@1.0.1.jar");
+    var jar = project.root().resolve(".bach/workspace/modules/simple@1.0.1.jar");
     assertLinesMatch(
         """
         META-INF/
