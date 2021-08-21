@@ -12,7 +12,7 @@ class describe {
     var bach = new Bach();
     var explorer = bach.explorer();
 
-    var arguments = java.util.List.of(args);
+    var arguments = List.of(args);
     if (arguments.isEmpty()) {
       System.out.println();
       System.out.printf("# Describe Bach %s%n", Bach.version());
