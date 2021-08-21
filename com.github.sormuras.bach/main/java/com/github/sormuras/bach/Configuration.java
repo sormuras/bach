@@ -1,9 +1,7 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.PathSupport;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -79,14 +77,6 @@ public record Configuration(
 
     public static Pathing ofCurrentWorkingDirectory() {
       return Pathing.of(Path.of(""));
-    }
-
-    public static List<Path> findJavaFiles(Path root) {
-      return PathSupport.find(root, 99, PathSupport::isJavaFile);
-    }
-
-    public static List<Path> findModuleInfoJavaFiles(Path root) {
-      return PathSupport.find(root, 99, PathSupport::isModuleInfoJavaFile);
     }
 
     public Path root(String first, String... more) {

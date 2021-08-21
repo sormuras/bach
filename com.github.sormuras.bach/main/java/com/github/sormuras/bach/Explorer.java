@@ -1,6 +1,8 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleInfoFinder;
+import com.github.sormuras.bach.internal.PathSupport;
+
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
@@ -16,6 +18,22 @@ public record Explorer(Bach bach) {
 
   public ModuleFinder newModuleInfoFinder(Path root) {
     return ModuleInfoFinder.of(root);
+  }
+
+  public List<Path> findJavaFiles() {
+    return findJavaFiles(bach.path().root());
+  }
+
+  public List<Path> findJavaFiles(Path root) {
+    return PathSupport.find(root, 99, PathSupport::isJavaFile);
+  }
+
+  public List<Path> findModuleInfoJavaFiles() {
+    return findModuleInfoJavaFiles(bach.path().root());
+  }
+
+  public List<Path> findModuleInfoJavaFiles(Path root) {
+    return PathSupport.find(root, 99, PathSupport::isModuleInfoJavaFile);
   }
 
   public List<String> listMissingExternalModules(String... more) {
