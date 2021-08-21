@@ -1,8 +1,8 @@
-import static com.github.sormuras.bach.Note.caption;
-
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ModuleLocators;
 import com.github.sormuras.bach.ToolFinder;
+import com.github.sormuras.bach.external.JUnit;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
@@ -18,18 +18,20 @@ class build {
     try (var bach = new Bach(args)) {
       var version = version(bach);
 
-      bach.log(caption("Grab required and missing external modules"));
+      bach.log("CAPTION:Grab required and missing external modules");
       var grabber = bach.grabber();
-      grabber.grabExternalModules(build::locate, "org.junit.jupiter", "org.junit.platform.console");
-      grabber.grabMissingExternalModules(build::locate);
+      var locators = locators();
+      grabber.grabExternalModules(
+          locators, "org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
+      grabber.grabMissingExternalModules(locators);
 
-      bach.log(caption("Grab external tools"));
+      bach.log("CAPTION:Grab external tools");
       grabber.grab(".bach/external.properties");
 
-      bach.log(caption("Build main code space"));
+      bach.log("CAPTION:Build main code space");
       var mainModules = buildMainModules(bach, version);
 
-      bach.log(caption("Build test code space"));
+      bach.log("CAPTION:Build test code space");
       var testModules = buildTestModules(bach, version, mainModules);
 
       executeTests(bach, "com.github.sormuras.bach", mainModules, testModules);
@@ -38,6 +40,10 @@ class build {
       executeTests(bach, "test.projects", mainModules, testModules);
     }
     System.out.println("END.");
+  }
+
+  static ModuleLocators locators() {
+    return ModuleLocators.of(build::locate, JUnit.version("5.8.0-RC1"));
   }
 
   static String locate(String module) {
@@ -110,7 +116,9 @@ class build {
                 "--module-source-path",
                 String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module"))
             .with("--module-path", List.of(mainModules, bach.path().externalModules()))
-            .with("--patch-module", "com.github.sormuras.bach=" + mainClasses.resolve("com.github.sormuras.bach"))
+            .with(
+                "--patch-module",
+                "com.github.sormuras.bach=" + mainClasses.resolve("com.github.sormuras.bach"))
             .with("-g")
             .with("-parameters")
             .with("-Werror")
@@ -140,7 +148,7 @@ class build {
   }
 
   static void executeTests(Bach bach, String module, Path mainModules, Path testModules) {
-    bach.log(caption("Execute tests of module " + module));
+    bach.log("CAPTION:Execute tests of module " + module);
     var moduleFinder =
         ModuleFinder.of(
             testModules.resolve(module + "@" + version(bach) + "+test.jar"),
