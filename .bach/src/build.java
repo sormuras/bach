@@ -92,8 +92,8 @@ class build {
               .with("--create")
               .with("--file", modules.resolve(file))
               .with("--module-version", version)
-              .with("-C", classes.resolve(name).toString(), ".")
-              .with("-C", Path.of(name).resolve("main/java").toString(), "."));
+              .with("-C", classes.resolve(name), ".")
+              .with("-C", Path.of(name).resolve("main/java"), "."));
     }
     return modules;
   }
@@ -101,7 +101,8 @@ class build {
   static Path buildTestModules(Bach bach, Version version, Path mainModules) {
     var names =
         List.of("test.base", "test.integration", "test.projects", "com.github.sormuras.bach");
-    var classes = Path.of(".bach/workspace/test-classes");
+    var mainClasses = Path.of(".bach/workspace/classes");
+    var testClasses = Path.of(".bach/workspace/test-classes");
     bach.run(
         Call.tool("javac")
             .with("--module", String.join(",", names))
@@ -109,13 +110,13 @@ class build {
                 "--module-source-path",
                 String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module"))
             .with("--module-path", List.of(mainModules, bach.path().externalModules()))
-            .with("--patch-module", "com.github.sormuras.bach=com.github.sormuras.bach/main/java")
+            .with("--patch-module", "com.github.sormuras.bach=" + mainClasses.resolve("com.github.sormuras.bach"))
             .with("-g")
             .with("-parameters")
             .with("-Werror")
             .with("-Xlint")
             .with("-encoding", "UTF-8")
-            .with("-d", classes));
+            .with("-d", testClasses));
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(Call.tool("directories", "create", modules));
     for (var name : names) {
@@ -125,7 +126,10 @@ class build {
               .with("--create")
               .with("--file", modules.resolve(file))
               .with("--module-version", version + "+test")
-              .with("-C", classes.resolve(name).toString(), ".");
+              .with("-C", testClasses.resolve(name), ".");
+      if (name.equals("com.github.sormuras.bach")) {
+        jar = jar.with("-C", mainClasses.resolve("com.github.sormuras.bach"), ".");
+      }
       var resources = Path.of(name, "test", "resources");
       if (Files.isDirectory(resources)) {
         jar = jar.with("-C", resources, ".");
