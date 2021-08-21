@@ -19,7 +19,7 @@ public class Logbook {
 
   public record MessageNote(Level level, String text) implements Note {}
 
-  public record RunNote(Run run, String description) implements Note {}
+  public record RunNote(ToolRun run, String description) implements Note {}
 
   private final Queue<Note> notes;
   private final LocalDateTime start;

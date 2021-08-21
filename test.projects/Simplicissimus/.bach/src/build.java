@@ -1,5 +1,5 @@
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Path;
 
 class build {
@@ -8,19 +8,19 @@ class build {
     var modules = Path.of(".bach/workspace/modules");
     try (var bach = new Bach(args)) {
       bach.run(
-          Call.tool("javac")
+          ToolCall.of("javac")
               .with("--module", "simplicissimus")
               .with("--module-source-path", "simplicissimus=.")
               .with("-d", classes));
-      bach.run(Call.tool("directories", "clean", modules));
+      bach.run(ToolCall.of("directories", "clean", modules));
       bach.run(
-          Call.tool("jar")
+          ToolCall.of("jar")
               .with("--create")
               .with("--file", modules.resolve("simplicissimus@99.jar"))
               .with("--module-version", "99")
               .with("-C", classes.resolve("simplicissimus"), "."));
       bach.run(
-              Call.java()
+              ToolCall.java()
                   .with("--module-path", modules)
                   .with("--describe-module", "simplicissimus"))
           .output()

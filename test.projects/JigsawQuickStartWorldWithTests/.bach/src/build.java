@@ -1,7 +1,7 @@
 import static com.github.sormuras.bach.Note.caption;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -11,7 +11,7 @@ class build {
     try (var bach = new Bach(args)) {
       bach.log(caption("Compile Main Space"));
       var mainModules = compileMainModules(bach);
-      bach.run(Call.module(ModuleFinder.of(mainModules), "com.greetings"))
+      bach.run(ToolCall.module(ModuleFinder.of(mainModules), "com.greetings"))
           .visit(run -> bach.log(run.output()));
 
       bach.log(caption("Compile Test Space"));
@@ -19,8 +19,8 @@ class build {
       var finder = ModuleFinder.of(testModules, mainModules);
 
       bach.log(caption("Execute Tests"));
-      bach.run(Call.module(finder, "test.modules", 1, 2, 3));
-      bach.run(Call.tool(ToolFinder.of(finder, true, "test.modules"), "test", 4, 5, 6));
+      bach.run(ToolCall.module(finder, "test.modules", 1, 2, 3));
+      bach.run(ToolCall.of(ToolFinder.of(finder, true, "test.modules"), "test", 4, 5, 6));
     }
   }
 
@@ -28,19 +28,19 @@ class build {
     var classes = Path.of(".bach/workspace/classes");
     var modules = Path.of(".bach/workspace/modules");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--module", "com.greetings,org.astro")
             .with("--module-source-path", "./*/main/java")
             .with("-d", classes));
-    bach.run(Call.tool("directories", "clean", modules));
+    bach.run(ToolCall.of("directories", "clean", modules));
     bach.runParallel(
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("com.greetings@99.jar"))
             .with("--module-version", "99")
             .with("--main-class", "com.greetings.Main")
             .with("-C", classes.resolve("com.greetings"), "."),
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("org.astro@99.jar"))
             .with("--module-version", "99")
@@ -52,14 +52,14 @@ class build {
     var classes = Path.of(".bach/workspace/test-classes");
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--module", "test.modules")
             .with("--module-source-path", "./*/test/java")
             .with("--module-path", ".bach/workspace/modules")
             .with("-d", ".bach/workspace/test-classes"));
-    bach.run(Call.tool("directories", "clean", modules));
+    bach.run(ToolCall.of("directories", "clean", modules));
     bach.run(
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("test.modules@99+test.jar"))
             .with("--module-version", "99+test")

@@ -15,7 +15,7 @@ import java.util.function.Consumer;
  * @param output the normal and expected output of the tool run
  * @param errors the error message of the tool run
  */
-public record Run(
+public record ToolRun(
     String name,
     List<String> args,
     long thread,
@@ -39,13 +39,13 @@ public record Run(
    *
    * @throws RuntimeException if {@link #isError()} returns {@code true}
    */
-  public Run requireSuccessful() {
+  public ToolRun requireSuccessful() {
     if (isSuccessful()) return this;
     var message = "%s returned code %d\n%s".formatted(name, code, toString().indent(4));
     throw new RuntimeException(message);
   }
 
-  public Run visit(Consumer<Run> visitor) {
+  public ToolRun visit(Consumer<ToolRun> visitor) {
     visitor.accept(this);
     return this;
   }

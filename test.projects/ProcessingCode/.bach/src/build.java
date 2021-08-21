@@ -1,21 +1,21 @@
 import static com.github.sormuras.bach.Note.caption;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Path;
 
 class build {
   public static void main(String... args) {
     try (var bach = new Bach(args)) {
       bach.log(caption("Clean"));
-      bach.run(Call.tool("directories", "delete", Path.of(".bach", "workspace")));
+      bach.run(ToolCall.of("directories", "delete", Path.of(".bach", "workspace")));
 
       bach.log(caption("Compile Main Space"));
       var mainModules = compileMainModules(bach);
 
       bach.log(caption("Compile Test Space"));
       bach.run(
-          Call.tool("javac")
+          ToolCall.of("javac")
               .with("-verbose")
               .with("--module", "tests")
               .with("--module-source-path", "./*/test/java")
@@ -25,7 +25,7 @@ class build {
 
       bach.log(caption("Generate API Documentation"));
       bach.run(
-          Call.tool("javadoc")
+          ToolCall.of("javadoc")
               .with("--module", "showcode")
               .with("--module-source-path", "./*/main/java")
               .with("-docletpath", mainModules.resolve("showcode@99.jar"))
@@ -37,13 +37,13 @@ class build {
     var classes = Path.of(".bach/workspace/classes");
     var modules = Path.of(".bach/workspace/modules");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--module", "showcode")
             .with("--module-source-path", "./*/main/java")
             .with("-d", classes));
-    bach.run(Call.tool("directories", "clean", modules));
+    bach.run(ToolCall.of("directories", "clean", modules));
     bach.run(
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("showcode@99.jar"))
             .with("--module-version", "99")

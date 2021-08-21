@@ -3,8 +3,11 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.DurationSupport;
 import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
+import com.github.sormuras.bach.internal.ModuleLaunchingToolCall;
 import com.github.sormuras.bach.internal.ModuleSupport;
+import com.github.sormuras.bach.internal.ProcessStartingToolCall;
 import com.github.sormuras.bach.internal.ToolProviderSupport;
+import com.github.sormuras.bach.internal.ToolRunningToolCall;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
@@ -174,22 +177,22 @@ public class Bach implements AutoCloseable {
     }
   }
 
-  public Run run(Call call) {
-    if (call instanceof Call.ToolCall tool) {
+  public ToolRun run(ToolCall call) {
+    if (call instanceof ToolRunningToolCall tool) {
       var finder = tool.finder().orElse(configuration().tooling().finder());
       var provider = finder.find(tool.name());
       if (provider.isEmpty())
         throw new RuntimeException("Tool '%s' not found".formatted(tool.name()));
       return run(provider.get(), tool.arguments());
     }
-    if (call instanceof Call.ProcessCall process) {
+    if (call instanceof ProcessStartingToolCall process) {
       var tool = new ExecuteProcessToolProvider();
       var command =
           Stream.concat(Stream.of(process.executable().toString()), process.arguments().stream())
               .toList();
       return run(tool, command);
     }
-    if (call instanceof Call.ModuleCall module) {
+    if (call instanceof ModuleLaunchingToolCall module) {
       var tool = new ExecuteModuleToolProvider(module.finder());
       var arguments =
           Stream.concat(Stream.of(module.module()), module.arguments().stream()).toList();
@@ -198,27 +201,27 @@ public class Bach implements AutoCloseable {
     throw new AssertionError("Where art thou, switch o' patterns?");
   }
 
-  public Run run(String tool, Object... args) {
-    return run(Call.tool(tool, args));
+  public ToolRun run(String tool, Object... args) {
+    return run(ToolCall.of(tool, args));
   }
 
-  public Run run(ToolFinder finder, String name, Object... args) {
-    return run(Call.tool(finder, name, args));
+  public ToolRun run(ToolFinder finder, String name, Object... args) {
+    return run(ToolCall.of(finder, name, args));
   }
 
-  public Run run(Path executable, Object... args) {
-    return run(Call.process(executable, args));
+  public ToolRun run(Path executable, Object... args) {
+    return run(ToolCall.process(executable, args));
   }
 
-  public Run run(ModuleFinder finder, String module, Object... args) {
-    return run(Call.module(finder, module, args));
+  public ToolRun run(ModuleFinder finder, String module, Object... args) {
+    return run(ToolCall.module(finder, module, args));
   }
 
-  public Run run(ToolProvider provider, Object... args) {
-    return run(provider, Call.tool(provider.name(), args).arguments());
+  public ToolRun run(ToolProvider provider, Object... args) {
+    return run(provider, ToolCall.of(provider.name(), args).arguments());
   }
 
-  public Run run(ToolProvider provider, List<String> arguments) {
+  public ToolRun run(ToolProvider provider, List<String> arguments) {
     computeRunMessageLine(provider, arguments).ifPresent(this::log);
 
     var currentThread = Thread.currentThread();
@@ -242,22 +245,22 @@ public class Bach implements AutoCloseable {
     var output = out.toString().strip();
     var errors = err.toString().strip();
 
-    var run = new Run(name, arguments, thread, duration, code, output, errors);
+    var run = new ToolRun(name, arguments, thread, duration, code, output, errors);
     var description = ToolProviderSupport.describe(provider);
     log(new Logbook.RunNote(run, description));
 
     return configuration().lenient() ? run : run.requireSuccessful();
   }
 
-  public void run(Stream<Call> calls) {
+  public void run(Stream<ToolCall> calls) {
     calls.forEach(this::run);
   }
 
-  public void run(Call... calls) {
+  public void run(ToolCall... calls) {
     run(Stream.of(calls));
   }
 
-  public void runParallel(Call... calls) {
+  public void runParallel(ToolCall... calls) {
     run(Stream.of(calls).parallel());
   }
 

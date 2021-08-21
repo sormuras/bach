@@ -1,5 +1,5 @@
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ExternalModuleLocators;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.external.JUnit;
@@ -76,7 +76,7 @@ class build {
     var names = List.of("com.github.sormuras.bach");
     var classes = Path.of(".bach/workspace/classes");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--release", "17")
             .with("--module", String.join(",", names))
             .with("--module-source-path", "./*/main/java")
@@ -87,12 +87,12 @@ class build {
             .with("-encoding", "UTF-8")
             .with("-d", classes));
     var modules = Path.of(".bach/workspace/modules");
-    bach.run(Call.tool("directories", "create", modules));
+    bach.run(ToolCall.of("directories", "create", modules));
     for (var name : names) {
       var tag = version.toString().split("\\+")[0];
       var file = name + "@" + tag + ".jar";
       bach.run(
-          Call.tool("jar")
+          ToolCall.of("jar")
               .with("--verbose")
               .with("--create")
               .with("--file", modules.resolve(file))
@@ -109,7 +109,7 @@ class build {
     var mainClasses = Path.of(".bach/workspace/classes");
     var testClasses = Path.of(".bach/workspace/test-classes");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--module", String.join(",", names))
             .with(
                 "--module-source-path",
@@ -125,11 +125,11 @@ class build {
             .with("-encoding", "UTF-8")
             .with("-d", testClasses));
     var modules = Path.of(".bach/workspace/test-modules");
-    bach.run(Call.tool("directories", "create", modules));
+    bach.run(ToolCall.of("directories", "create", modules));
     for (var name : names) {
       var file = name + "@" + version + "+test.jar";
       var jar =
-          Call.tool("jar")
+          ToolCall.of("jar")
               .with("--create")
               .with("--file", modules.resolve(file))
               .with("--module-version", version + "+test")
@@ -156,7 +156,7 @@ class build {
             bach.path().externalModules());
     var toolFinder = ToolFinder.of(moduleFinder, true, module);
     bach.run(
-        Call.tool(toolFinder, "junit")
+        ToolCall.of(toolFinder, "junit")
             .with("--select-module", module)
             .with("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module)));
   }

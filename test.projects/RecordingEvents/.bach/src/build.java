@@ -1,7 +1,7 @@
 import static com.github.sormuras.bach.Note.caption;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Call;
+import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -24,20 +24,20 @@ class build {
     var classes = bach.path().workspace("test-classes");
     var modules = bach.path().workspace("test-modules");
     bach.run(
-        Call.tool("javac")
+        ToolCall.of("javac")
             .with("--module", "foo,bar")
             .with("--module-source-path", "./*/test/java")
             .with("--module-path", bach.path().externalModules())
             .with("-d", classes));
-    bach.run(Call.tool("directories", "clean", modules));
+    bach.run(ToolCall.of("directories", "clean", modules));
     bach.run(
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("foo@99+test.jar"))
             .with("--module-version", "99+test")
             .with("-C", classes.resolve("foo"), "."));
     bach.run(
-        Call.tool("jar")
+        ToolCall.of("jar")
             .with("--create")
             .with("--file", modules.resolve("bar@99+test.jar"))
             .with("--module-version", "99+test")
@@ -47,11 +47,11 @@ class build {
 
   private static void executeTestModules(Bach bach, ModuleFinder finder) {
     bach.run(
-        Call.tool(ToolFinder.of(finder, true, "foo"), "junit")
+        ToolCall.of(ToolFinder.of(finder, true, "foo"), "junit")
             .with("--select-module", "foo")
             .with("--reports-dir", bach.path().workspace("junit-foo")));
     bach.run(
-        Call.tool(ToolFinder.of(finder, true, "bar"), "junit")
+        ToolCall.of(ToolFinder.of(finder, true, "bar"), "junit")
             .with("--select-module", "bar")
             .with("--reports-dir", bach.path().workspace("junit-bar")));
   }
