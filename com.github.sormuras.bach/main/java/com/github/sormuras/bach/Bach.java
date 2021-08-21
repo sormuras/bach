@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -199,6 +200,10 @@ public class Bach implements AutoCloseable {
       return run(tool, arguments);
     }
     throw new AssertionError("Where art thou, switch o' patterns?");
+  }
+
+  public ToolRun run(String tool, UnaryOperator<ToolCall> composer) {
+    return run(composer.apply(ToolCall.of(tool)));
   }
 
   public ToolRun run(String tool, Object... args) {
