@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 
 /** Locates "Gluon Attach" modules via their Maven Central artifacts. */
-public record GluonAttach(String version) implements ModuleLocator {
+public record GluonAttach(String version) implements ExternalModuleLocator {
 
   private static final String MODULE_PREFIX = "com.gluonhq.attach";
   private static final String MAVEN_GROUP = "com.gluonhq.attach";

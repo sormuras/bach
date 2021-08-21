@@ -59,8 +59,12 @@ public class Bach implements AutoCloseable {
     return new Explorer(this);
   }
 
-  public Grabber grabber() {
-    return new Grabber(this);
+  public Grabber grabber(ExternalModuleLocator... locators) {
+    return grabber(ExternalModuleLocators.of(locators));
+  }
+
+  public Grabber grabber(ExternalModuleLocators locators) {
+    return new Grabber(this, locators);
   }
 
   @Override
@@ -78,7 +82,7 @@ public class Bach implements AutoCloseable {
   }
 
   public PrintWriter err() {
-    return configuration().printing().out();
+    return configuration().printing().err();
   }
 
   protected Optional<String> computeRunMessageLine(ToolProvider provider, List<String> arguments) {

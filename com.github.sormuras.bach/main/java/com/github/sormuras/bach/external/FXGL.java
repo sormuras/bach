@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 
 /** Locates "Java/JavaFX/Kotlin Game Library" modules via their Maven Central artifacts. */
-public record FXGL(String version) implements ModuleLocator {
+public record FXGL(String version) implements ExternalModuleLocator {
 
   private static final String MODULE_PREFIX = "com.almasb.fxgl";
   private static final String MAVEN_GROUP = "com.github.almasb";

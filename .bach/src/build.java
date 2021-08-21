@@ -1,6 +1,6 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Call;
-import com.github.sormuras.bach.ModuleLocators;
+import com.github.sormuras.bach.ExternalModuleLocators;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.external.JUnit;
 import java.io.File;
@@ -19,11 +19,9 @@ class build {
       var version = version(bach);
 
       bach.log("CAPTION:Grab required and missing external modules");
-      var grabber = bach.grabber();
-      var locators = locators();
-      grabber.grabExternalModules(
-          locators, "org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
-      grabber.grabMissingExternalModules(locators);
+      var grabber = bach.grabber(locators());
+      grabber.grabExternalModules("org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
+      grabber.grabMissingExternalModules();
 
       bach.log("CAPTION:Grab external tools");
       grabber.grab(".bach/external.properties");
@@ -42,8 +40,8 @@ class build {
     System.out.println("END.");
   }
 
-  static ModuleLocators locators() {
-    return ModuleLocators.of(build::locate, JUnit.version("5.8.0-RC1"));
+  static ExternalModuleLocators locators() {
+    return ExternalModuleLocators.of(build::locate, JUnit.version("5.8.0-RC1"));
   }
 
   static String locate(String module) {

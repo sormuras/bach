@@ -1,70 +1,65 @@
 package com.github.sormuras.bach.external;
 
-import java.util.Objects;
 import java.util.StringJoiner;
 
 public final class Maven {
 
+  public static final String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
+  public static final String DEFAULT_CLASSIFIER = "", DEFAULT_TYPE = "jar";
+
+  public static Builder builder(String group, String artifact, String version) {
+    return new Builder(group, artifact, version);
+  }
+
   public static String central(String group, String artifact, String version) {
-    return Joiner.of(group, artifact, version).toString();
+    return builder(group, artifact, version).build();
   }
 
   public static String central(String group, String artifact, String version, String classifier) {
-    return Joiner.of(group, artifact, version).classifier(classifier).toString();
+    return builder(group, artifact, version).classifier(classifier).build();
   }
 
-  public static class Joiner {
+  public record Builder(
+      String repository,
+      String group,
+      String artifact,
+      String version,
+      String classifier,
+      String type) {
 
-    public static Joiner of(String group, String artifact, String version) {
-      return new Joiner().group(group).artifact(artifact).version(version);
+    public Builder(String group, String artifact, String version) {
+      this(CENTRAL_REPOSITORY, group, artifact, version, DEFAULT_CLASSIFIER, DEFAULT_TYPE);
     }
 
-    private String repository = "https://repo.maven.apache.org/maven2";
-    private String group;
-    private String artifact;
-    private String version;
-    private String classifier = "";
-    private String type = "jar";
-
-    /** Hidden default constructor. */
-    private Joiner() {}
-
-    @Override
-    public String toString() {
+    public String build() {
       var joiner = new StringJoiner("/").add(repository);
       joiner.add(group.replace('.', '/')).add(artifact).add(version);
       var file = artifact + '-' + (classifier.isBlank() ? version : version + '-' + classifier);
       return joiner.add(file + '.' + type).toString();
     }
 
-    public Joiner repository(String repository) {
-      this.repository = Objects.requireNonNull(repository, "repository");
-      return this;
+    public Builder repository(String repository) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
 
-    public Joiner group(String group) {
-      this.group = Objects.requireNonNull(group, "group");
-      return this;
+    public Builder group(String group) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
 
-    public Joiner artifact(String artifact) {
-      this.artifact = Objects.requireNonNull(artifact, "artifact");
-      return this;
+    public Builder artifact(String artifact) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
 
-    public Joiner version(String version) {
-      this.version = Objects.requireNonNull(version, "version");
-      return this;
+    public Builder version(String version) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
 
-    public Joiner classifier(String classifier) {
-      this.classifier = Objects.requireNonNull(classifier, "classifier");
-      return this;
+    public Builder classifier(String classifier) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
 
-    public Joiner type(String type) {
-      this.type = Objects.requireNonNull(type, "type");
-      return this;
+    public Builder type(String type) {
+      return new Builder(repository, group, artifact, version, classifier, type);
     }
   }
 

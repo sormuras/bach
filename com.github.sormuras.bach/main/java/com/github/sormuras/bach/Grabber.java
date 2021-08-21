@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-public record Grabber(Bach bach) {
+public record Grabber(Bach bach, ExternalModuleLocators locators) {
 
   public Directory newExternalToolLayerDirectory(String name, Asset... assets) {
     return new Directory(bach.path().externalToolLayers(), name, List.of(assets));
@@ -31,12 +31,7 @@ public record Grabber(Bach bach) {
       for (var asset : directory.assets()) grab(root, asset);
     }
   }
-
-  public void grabExternalModules(ModuleLocator locator, String... modules) {
-    grabExternalModules(ModuleLocators.of(locator), modules);
-  }
-
-  public void grabExternalModules(ModuleLocators locators, String... modules) {
+  public void grabExternalModules(String... modules) {
     var directory = bach.path().externalModules();
     module_loop:
     for (var module : modules) {
@@ -51,11 +46,7 @@ public record Grabber(Bach bach) {
     }
   }
 
-  public void grabMissingExternalModules(ModuleLocator locator) {
-    grabMissingExternalModules(ModuleLocators.of(locator));
-  }
-
-  public void grabMissingExternalModules(ModuleLocators locators) {
+  public void grabMissingExternalModules() {
     bach.log("DEBUG:Grab missing external modules");
     var explorer = bach.explorer();
     var loaded = new TreeSet<String>();
@@ -66,7 +57,7 @@ public record Grabber(Bach bach) {
       difference.retainAll(missing);
       if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
       difference.addAll(missing);
-      grabExternalModules(locators, missing.toArray(String[]::new));
+      grabExternalModules(missing.toArray(String[]::new));
       loaded.addAll(missing);
     }
     bach.log("DEBUG:Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));

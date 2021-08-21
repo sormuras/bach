@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 
 /** Locates "Kotlin" modules via their Maven Central artifacts. */
-public record Kotlin(String version) implements ModuleLocator {
+public record Kotlin(String version) implements ExternalModuleLocator {
 
   private static final String MODULE_PREFIX = "kotlin";
   private static final String MAVEN_GROUP = "org.jetbrains.kotlin";

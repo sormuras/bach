@@ -16,14 +16,15 @@ public record Configuration(
     Tooling tooling,
     Options.ProjectOptions projectOptions) {
 
-  static final String EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules";
-  static final String EXTERNAL_TOOL_LAYERS_DIRECTORY = ".bach/external-tool-layers";
-  static final String EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs";
-  static final String EXTERNAL_TOOL_PROGRAM_ARGSFILE = "java.args";
-  static final String LOGBOOK_ARCHIVE_FILE = "logbooks/logbook-{TIMESTAMP}.md";
-  static final String LOGBOOK_MARKDOWN_FILE = "logbook.md";
-  static final String TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss";
-  static final String WORKSPACE_DIRECTORY = ".bach/workspace";
+  public static final String //
+      EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules",
+      EXTERNAL_TOOL_LAYERS_DIRECTORY = ".bach/external-tool-layers",
+      EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs",
+      EXTERNAL_TOOL_PROGRAM_ARGSFILE = "java.args",
+      LOGBOOK_ARCHIVE_FILE = "logbooks/logbook-{TIMESTAMP}.md",
+      LOGBOOK_MARKDOWN_FILE = "logbook.md",
+      TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss",
+      WORKSPACE_DIRECTORY = ".bach/workspace";
 
   public static Path computeJavaExecutablePath(String name) {
     var windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("win");
@@ -115,12 +116,12 @@ public record Configuration(
 
   public Configuration with(Options options) {
     return new Configuration(
-        options.configurationOptions().verbose().orElse(verbose),
-        options.configurationOptions().verbose().orElse(lenient),
-        options.configurationOptions().timeout().orElse(timeout),
+        options.forConfiguration().verbose().orElse(verbose),
+        options.forConfiguration().verbose().orElse(lenient),
+        options.forConfiguration().timeout().orElse(timeout),
         pathing,
         printing,
         tooling,
-        options.projectOptions());
+        options.forProject());
   }
 }

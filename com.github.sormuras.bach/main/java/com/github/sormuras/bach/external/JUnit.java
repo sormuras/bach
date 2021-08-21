@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 
 /** Locates "JUnit" modules via their Maven Central artifacts. */
-public record JUnit(String version) implements ModuleLocator {
+public record JUnit(String version) implements ExternalModuleLocator {
 
   /**
    * Constructs a new JUnit module locator with the given version.

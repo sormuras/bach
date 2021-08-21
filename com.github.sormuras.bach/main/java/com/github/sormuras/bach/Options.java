@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public record Options(
-    ConfigurationOptions configurationOptions,
-    ProjectOptions projectOptions,
+    ConfigurationOptions forConfiguration,
+    ProjectOptions forProject,
     List<String> unhandledArguments) {
 
   public record ConfigurationOptions(

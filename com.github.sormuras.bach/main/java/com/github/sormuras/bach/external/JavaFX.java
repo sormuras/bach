@@ -1,10 +1,10 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 import java.util.Locale;
 
 /** Locates well-known JavaFX modules via their Maven Central artifacts. */
-public record JavaFX(String version, String classifier) implements ModuleLocator {
+public record JavaFX(String version, String classifier) implements ExternalModuleLocator {
 
   public static final String MAVEN_GROUP = "org.openjfx";
 

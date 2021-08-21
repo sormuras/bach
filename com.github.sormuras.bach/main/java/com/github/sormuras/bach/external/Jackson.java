@@ -1,9 +1,9 @@
 package com.github.sormuras.bach.external;
 
-import com.github.sormuras.bach.ModuleLocator;
+import com.github.sormuras.bach.ExternalModuleLocator;
 
 /** Locates "Jackson" modules via their Maven Central artifacts. */
-public record Jackson(String version) implements ModuleLocator {
+public record Jackson(String version) implements ExternalModuleLocator {
 
   private static final String MODULE_PREFIX = "com.fasterxml.jackson";
   private static final String MAVEN_GROUP = "com.fasterxml.jackson";
