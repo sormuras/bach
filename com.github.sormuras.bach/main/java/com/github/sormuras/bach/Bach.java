@@ -49,12 +49,24 @@ public class Bach implements AutoCloseable {
     return new Logbook(this);
   }
 
-  public Configuration configuration() {
+  public final Configuration configuration() {
     return configuration;
   }
 
-  public Logbook logbook() {
+  public final Logbook logbook() {
     return logbook;
+  }
+
+  public final Configuration.Pathing path() {
+    return configuration().pathing();
+  }
+
+  public final PrintWriter out() {
+    return configuration().printing().out();
+  }
+
+  public final PrintWriter err() {
+    return configuration().printing().err();
   }
 
   public Explorer explorer() {
@@ -74,18 +86,6 @@ public class Bach implements AutoCloseable {
     writeLogbook();
     var duration = DurationSupport.toHumanReadableString(logbook().uptime());
     logbook().logMessage(System.Logger.Level.INFO, "Total uptime was %s".formatted(duration));
-  }
-
-  public Configuration.Pathing path() {
-    return configuration().pathing();
-  }
-
-  public PrintWriter out() {
-    return configuration().printing().out();
-  }
-
-  public PrintWriter err() {
-    return configuration().printing().err();
   }
 
   public void logCaption(String line) {
