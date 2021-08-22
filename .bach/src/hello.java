@@ -3,7 +3,7 @@ import com.github.sormuras.bach.Bach;
 class hello {
   public static void main(String... args) {
     try (var bach = new Bach()) {
-      bach.log("CAPTION:Grab external tool layers");
+      bach.logCaption("Grab external tool layers");
       var grabber = bach.grabber();
       grabber.grab(
           grabber
@@ -12,7 +12,7 @@ class hello {
                   "com.github.sormuras.hello@1-ea+1.jar",
                   "https://github.com/sormuras/hello/releases/download/1-ea+1/com.github.sormuras.hello@1-ea+1.jar#SIZE=1803"));
 
-      bach.log("CAPTION:Grab external tool programs");
+      bach.logCaption("Grab external tool programs");
       grabber.grab(
           grabber
               .newExternalToolProgramDirectory("sormuras-hello@07819f3ee7")
@@ -38,11 +38,11 @@ class hello {
                   "hello-1-ea+1.jar",
                   "https://github.com/sormuras/hello/releases/download/1-ea+1/hello-1-ea+1.jar#SIZE=909"));
 
-      bach.log("CAPTION:Greet current user");
-      bach.run("hello");
-      bach.run("sormuras-hello@07819f3ee7");
-      bach.run("sormuras-hello@1-ea+1.java");
-      bach.run("sormuras-hello@1-ea+1.jar");
+      bach.logCaption("Greet current user");
+      bach.run("hello", call -> call.with("world 1"));
+      bach.run("sormuras-hello@07819f3ee7", call -> call.with("world 2"));
+      bach.run("sormuras-hello@1-ea+1.java", call -> call.with("world 3"));
+      bach.run("sormuras-hello@1-ea+1.jar", call -> call.with("world 4"));
     }
   }
 }

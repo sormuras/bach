@@ -1,5 +1,3 @@
-import static com.github.sormuras.bach.Note.caption;
-
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Path;
@@ -7,13 +5,13 @@ import java.nio.file.Path;
 class build {
   public static void main(String... args) {
     try (var bach = new Bach(args)) {
-      bach.log(caption("Clean"));
+      bach.logCaption("Clean");
       bach.run(ToolCall.of("directories", "delete", Path.of(".bach", "workspace")));
 
-      bach.log(caption("Compile Main Space"));
+      bach.logCaption("Compile Main Space");
       var mainModules = compileMainModules(bach);
 
-      bach.log(caption("Compile Test Space"));
+      bach.logCaption("Compile Test Space");
       bach.run(
           ToolCall.of("javac")
               .with("-verbose")
@@ -23,7 +21,7 @@ class build {
               .with("--processor-module-path", mainModules)
               .with("-d", Path.of(".bach/workspace/test-classes")));
 
-      bach.log(caption("Generate API Documentation"));
+      bach.logCaption("Generate API Documentation");
       bach.run(
           ToolCall.of("javadoc")
               .with("--module", "showcode")

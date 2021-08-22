@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import java.lang.System.Logger.Level;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +16,11 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
     return new Directory(bach.path().externalToolPrograms(), name, List.of(assets));
   }
 
-  public void grab(Object... args) {
-    bach.run("grab", args);
-  }
-
   public void grab(Path directory, Asset asset) {
     var target = directory.resolve(asset.name());
     var source = asset.source();
-    bach.run("grab", target.toString().replace('\\', '/') + '=' + source);
+    var arg = target.toString().replace('\\', '/') + '=' + source;
+    bach.run("grab", grab -> grab.with(arg));
   }
 
   public void grab(Directory... directories) {
@@ -39,7 +37,8 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
       for (var locator : locators.list()) {
         var location = locator.find(module);
         if (location.isEmpty()) continue;
-        bach.log("DEBUG:Located module `%s` via %s".formatted(module, locator.caption()));
+        bach.logMessage(
+            Level.DEBUG, "Located module `%s` via %s".formatted(module, locator.caption()));
         grab(directory, new Asset(module + ".jar", location.get()));
         continue module_loop;
       }
@@ -48,20 +47,24 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
   }
 
   public void grabMissingExternalModules() {
-    bach.log("DEBUG:Grab missing external modules");
     var explorer = bach.explorer();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
     while (true) {
       var missing = explorer.listMissingExternalModules();
       if (missing.isEmpty()) break;
+      bach.logMessage(
+          Level.DEBUG,
+          "Grab %d missing external module%s"
+              .formatted(missing.size(), missing.size() == 1 ? "" : "s"));
       difference.retainAll(missing);
       if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
       difference.addAll(missing);
       grabExternalModules(missing.toArray(String[]::new));
       loaded.addAll(missing);
     }
-    bach.log("DEBUG:Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
+    bach.logMessage(
+        Level.DEBUG, "Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
   }
 
   public record Asset(String name, String source) {}

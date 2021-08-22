@@ -18,19 +18,19 @@ class build {
     try (var bach = new Bach(args)) {
       var version = version(bach);
 
-      bach.log("CAPTION:Grab required and missing external modules");
+      bach.logCaption("Grab required and missing external modules");
       var grabber = bach.grabber(locators());
       grabber.grabExternalModules(
           "org.junit.jupiter", "org.junit.platform.console", "org.junit.platform.jfr");
       grabber.grabMissingExternalModules();
 
-      bach.log("CAPTION:Grab external tools");
-      grabber.grab(".bach/external.properties");
+      bach.logCaption("Grab external tools");
+      bach.run(ToolCall.of("grab").with(bach.path().root(".bach", "external.properties")));
 
-      bach.log("CAPTION:Build main code space");
+      bach.logCaption("Build main code space");
       var mainModules = buildMainModules(bach, version);
 
-      bach.log("CAPTION:Build test code space");
+      bach.logCaption("Build test code space");
       var testModules = buildTestModules(bach, version, mainModules);
 
       executeTests(bach, "com.github.sormuras.bach", mainModules, testModules);
@@ -148,7 +148,7 @@ class build {
   }
 
   static void executeTests(Bach bach, String module, Path mainModules, Path testModules) {
-    bach.log("CAPTION:Execute tests of module " + module);
+    bach.logCaption("Execute tests of module " + module);
     var moduleFinder =
         ModuleFinder.of(
             testModules.resolve(module + "@" + version(bach) + "+test.jar"),

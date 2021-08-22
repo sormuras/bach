@@ -15,17 +15,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Logbook {
 
+  public sealed interface Note permits CaptionNote, MessageNote, ToolCallNote, ToolRunNote {}
+
   public record CaptionNote(String line) implements Note {}
 
   public record MessageNote(Level level, String text) implements Note {}
 
-  public record RunNote(ToolRun run, String description) implements Note {}
+  public record ToolCallNote(ToolCall call) implements Note {}
 
+  public record ToolRunNote(ToolRun run, String description) implements Note {}
+
+  private final Bach bach;
   private final Queue<Note> notes;
   private final LocalDateTime start;
   private final String timestamp;
 
-  public Logbook() {
+  public Logbook(Bach bach) {
+    this.bach = bach;
     this.notes = new ConcurrentLinkedQueue<>();
     this.start = LocalDateTime.now(ZoneOffset.UTC);
     this.timestamp = DateTimeFormatter.ofPattern(Configuration.TIMESTAMP_PATTERN).format(start);
@@ -35,8 +41,74 @@ public class Logbook {
     return Duration.between(start, LocalDateTime.now(ZoneOffset.UTC));
   }
 
-  public void add(Note note) {
+  private <N extends Note> N add(N note) {
     notes.add(note);
+    return note;
+  }
+
+  public void logCaption(String line) {
+    print(add(new CaptionNote(line)));
+  }
+
+  public void logMessage(Level level, String text) {
+    print(add(new MessageNote(level, text)));
+  }
+
+  void logToolCall(ToolCall call) {
+    print(add(new ToolCallNote(call)));
+  }
+
+  void logToolRun(ToolRun run, String description) {
+    print(add(new ToolRunNote(run, description)));
+  }
+
+  protected void print(CaptionNote note) {
+    bach.out().println();
+    bach.out().println(note.line());
+  }
+
+  protected void print(MessageNote note) {
+    var severity = note.level().getSeverity();
+    var text = note.text();
+    if (severity >= Level.ERROR.getSeverity()) {
+      bach.err().println(text);
+      return;
+    }
+    if (severity >= Level.WARNING.getSeverity()) {
+      bach.out().println(text);
+      return;
+    }
+    if (severity >= Level.INFO.getSeverity() || bach.configuration().verbose()) {
+      bach.out().println(text);
+    }
+  }
+
+  protected void print(ToolCallNote note) {
+    var builder = new StringBuilder("%16s".formatted(note.call().name()));
+    for (var argument : note.call().arguments()) {
+      builder.append(" ").append(String.join("\\n", argument.lines().toList()));
+    }
+    var string = builder.toString();
+    var line = string.length() <= 111 ? string : string.substring(0, 111 - 3) + "...";
+    bach.out().println(line);
+  }
+
+  protected void print(ToolRunNote note) {
+    var run = note.run();
+    var printer = run.isError() ? bach.err() : bach.out();
+    if (run.isError() || bach.configuration().verbose()) {
+      var output = run.output();
+      var errors = run.errors();
+      if (!output.isEmpty()) printer.println(output.indent(4).stripTrailing());
+      if (!errors.isEmpty()) printer.println(errors.indent(4).stripTrailing());
+      printer.printf(
+          "Tool '%s' run with %d argument%s took %s and finished with exit code %d%n",
+          run.name(),
+          run.args().size(),
+          run.args().size() == 1 ? "" : "s",
+          DurationSupport.toHumanReadableString(run.duration()),
+          run.code());
+    }
   }
 
   public String toMarkdown() {
@@ -58,7 +130,7 @@ public class Logbook {
         md.add("- [%s] %s".formatted(message.level().name(), sanitize(message.text())));
         continue;
       }
-      if (note instanceof RunNote ran) {
+      if (note instanceof ToolRunNote ran) {
         var run = ran.run();
         var thread = run.thread() == 1 ? "main" : "0x%x".formatted(run.thread());
         var duration = DurationSupport.toHumanReadableString(run.duration());

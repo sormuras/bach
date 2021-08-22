@@ -1,5 +1,3 @@
-import static com.github.sormuras.bach.Note.caption;
-
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
@@ -9,13 +7,13 @@ import java.nio.file.Path;
 class build {
   public static void main(String... args) {
     try (var bach = new Bach(args)) {
-      bach.log(caption("Grab External Assets"));
-      bach.run("grab", ".bach/external.properties");
+      bach.logCaption("Grab External Assets");
+      bach.run("grab", grab -> grab.with(".bach/external.properties"));
 
-      bach.log(caption("Compile Test Space"));
+      bach.logCaption("Compile Test Space");
       var testModules = compileTestModules(bach);
 
-      bach.log(caption("Execute Test Modules"));
+      bach.logCaption("Execute Test Modules");
       executeTestModules(bach, ModuleFinder.of(testModules, bach.path().externalModules()));
     }
   }

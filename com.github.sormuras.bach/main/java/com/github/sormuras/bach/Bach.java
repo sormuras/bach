@@ -10,16 +10,12 @@ import com.github.sormuras.bach.internal.ToolProviderSupport;
 import com.github.sormuras.bach.internal.ToolRunningToolCall;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.System.Logger.Level;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Bach implements AutoCloseable {
@@ -38,17 +34,19 @@ public class Bach implements AutoCloseable {
   public Bach(Configuration configuration) {
     this.configuration = configuration;
     this.logbook = constructLogbook();
-    log(
-        "Initialized Bach %s (Java %s, %s, %s)"
-            .formatted(
-                version(),
-                System.getProperty("java.version"),
-                System.getProperty("os.name"),
-                Path.of(System.getProperty("user.dir")).toUri()));
+    logbook()
+        .logMessage(
+            System.Logger.Level.INFO,
+            "Initialized Bach %s (Java %s, %s, %s)"
+                .formatted(
+                    version(),
+                    System.getProperty("java.version"),
+                    System.getProperty("os.name"),
+                    Path.of(System.getProperty("user.dir")).toUri()));
   }
 
   protected Logbook constructLogbook() {
-    return new Logbook();
+    return new Logbook(this);
   }
 
   public Configuration configuration() {
@@ -74,7 +72,8 @@ public class Bach implements AutoCloseable {
   @Override
   public void close() {
     writeLogbook();
-    log("Total uptime was %s".formatted(DurationSupport.toHumanReadableString(logbook().uptime())));
+    var duration = DurationSupport.toHumanReadableString(logbook().uptime());
+    logbook().logMessage(System.Logger.Level.INFO, "Total uptime was %s".formatted(duration));
   }
 
   public Configuration.Pathing path() {
@@ -89,96 +88,21 @@ public class Bach implements AutoCloseable {
     return configuration().printing().err();
   }
 
-  protected Optional<String> computeRunMessageLine(ToolProvider provider, List<String> arguments) {
-    var builder = new StringBuilder("%16s".formatted(provider.name()));
-    for (var argument : arguments) {
-      builder.append(" ").append(argument.lines().collect(Collectors.joining("\\n")));
-    }
-    var line = builder.toString();
-    return Optional.of(line.length() <= 111 ? line : line.substring(0, 111 - 3) + "...");
+  public void logCaption(String line) {
+    logbook().logCaption(line);
   }
 
-  public void log(String typeColonText) {
-    var colon = typeColonText.indexOf(':');
-    if (colon <= 0) {
-      log(Note.message(typeColonText));
-      return;
-    }
-    var type = typeColonText.substring(0, colon);
-    var text = typeColonText.substring(colon + 1);
-    if (type.equals("CAPTION")) {
-      log(Note.caption(text));
-      return;
-    }
-    for (var level : Level.values()) {
-      if (level == Level.ALL || level == Level.OFF) continue;
-      if (type.equals(level.name())) {
-        log(Note.message(level, text));
-        return;
-      }
-    }
-    log(Note.message(typeColonText));
+  public void logMessage(String info) {
+    logbook().logMessage(System.Logger.Level.INFO, info);
   }
 
-  public void log(Note note) {
-    logbook.add(note);
-
-    if (note instanceof Logbook.CaptionNote caption) {
-      print(caption);
-      return;
-    }
-    if (note instanceof Logbook.MessageNote message) {
-      print(message);
-      return;
-    }
-    if (note instanceof Logbook.RunNote run) {
-      print(run);
-      return;
-    }
-    // default -> { ... }
-    out().println(note);
-  }
-
-  protected void print(Logbook.CaptionNote note) {
-    out().println();
-    out().println(note.line());
-  }
-
-  protected void print(Logbook.MessageNote note) {
-    var severity = note.level().getSeverity();
-    var text = note.text();
-    if (severity >= Level.ERROR.getSeverity()) {
-      err().println(text);
-      return;
-    }
-    if (severity >= Level.WARNING.getSeverity()) {
-      out().println(text);
-      return;
-    }
-    if (severity >= Level.INFO.getSeverity() || configuration().verbose()) {
-      out().println(text);
-    }
-  }
-
-  protected void print(Logbook.RunNote note) {
-    var run = note.run();
-    var printer = run.isError() ? err() : out();
-    if (run.isError() || configuration().verbose()) {
-      var output = run.output();
-      var errors = run.errors();
-      if (!output.isEmpty()) printer.println(output.indent(4).stripTrailing());
-      if (!errors.isEmpty()) printer.println(errors.indent(4).stripTrailing());
-      printer.printf(
-          "Tool '%s' run with %d argument%s took %s and finished with exit code %d%n",
-          run.name(),
-          run.args().size(),
-          run.args().size() == 1 ? "" : "s",
-          DurationSupport.toHumanReadableString(run.duration()),
-          run.code());
-    }
+  public void logMessage(System.Logger.Level level, String text) {
+    logbook().logMessage(level, text);
   }
 
   public ToolRun run(ToolCall call) {
+    logbook().logToolCall(call);
+
     if (call instanceof ToolRunningToolCall tool) {
       var finder = tool.finder().orElse(configuration().tooling().finder());
       var provider = finder.find(tool.name());
@@ -195,40 +119,29 @@ public class Bach implements AutoCloseable {
     }
     if (call instanceof ModuleLaunchingToolCall module) {
       var tool = new ExecuteModuleToolProvider(module.finder());
-      var arguments =
-          Stream.concat(Stream.of(module.module()), module.arguments().stream()).toList();
+      var arguments = Stream.concat(Stream.of(module.name()), module.arguments().stream()).toList();
       return run(tool, arguments);
     }
     throw new AssertionError("Where art thou, switch o' patterns?");
   }
 
-  public ToolRun run(String tool, UnaryOperator<ToolCall> composer) {
+  public ToolRun run(String tool, ToolComposer composer) {
     return run(composer.apply(ToolCall.of(tool)));
   }
 
-  public ToolRun run(String tool, Object... args) {
-    return run(ToolCall.of(tool, args));
+  public ToolRun run(ToolFinder finder, String name, ToolComposer composer) {
+    return run(composer.apply(ToolCall.of(finder, name)));
   }
 
-  public ToolRun run(ToolFinder finder, String name, Object... args) {
-    return run(ToolCall.of(finder, name, args));
+  public ToolRun run(Path executable, ToolComposer composer) {
+    return run(composer.apply(ToolCall.process(executable)));
   }
 
-  public ToolRun run(Path executable, Object... args) {
-    return run(ToolCall.process(executable, args));
+  public ToolRun run(ModuleFinder finder, String module, ToolComposer composer) {
+    return run(composer.apply(ToolCall.module(finder, module)));
   }
 
-  public ToolRun run(ModuleFinder finder, String module, Object... args) {
-    return run(ToolCall.module(finder, module, args));
-  }
-
-  public ToolRun run(ToolProvider provider, Object... args) {
-    return run(provider, ToolCall.of(provider.name(), args).arguments());
-  }
-
-  public ToolRun run(ToolProvider provider, List<String> arguments) {
-    computeRunMessageLine(provider, arguments).ifPresent(this::log);
-
+  private ToolRun run(ToolProvider provider, List<String> arguments) {
     var currentThread = Thread.currentThread();
     var currentLoader = currentThread.getContextClassLoader();
     currentThread.setContextClassLoader(provider.getClass().getClassLoader());
@@ -252,17 +165,13 @@ public class Bach implements AutoCloseable {
 
     var run = new ToolRun(name, arguments, thread, duration, code, output, errors);
     var description = ToolProviderSupport.describe(provider);
-    log(new Logbook.RunNote(run, description));
+    logbook().logToolRun(run, description);
 
     return configuration().lenient() ? run : run.requireSuccessful();
   }
 
   public void run(Stream<ToolCall> calls) {
     calls.forEach(this::run);
-  }
-
-  public void run(ToolCall... calls) {
-    run(Stream.of(calls));
   }
 
   public void runParallel(ToolCall... calls) {
@@ -272,7 +181,7 @@ public class Bach implements AutoCloseable {
   public void writeLogbook() {
     try {
       var file = logbook().write(path().workspace());
-      log("CAPTION:Wrote logbook to %s".formatted(file.toUri()));
+      logbook().logCaption("Wrote logbook to %s".formatted(file.toUri()));
     } catch (Exception exception) {
       exception.printStackTrace(err());
     }

@@ -18,11 +18,11 @@ class external {
             JUnit.version("5.8.0-RC1"),
             Kotlin.version("1.5.30-RC"));
 
-    bach.log("CAPTION:Grab external modules");
+    bach.logCaption("Grab external modules");
     grabber.grabExternalModules("com.almasb.fxgl.all");
     grabber.grabExternalModules("org.junit.jupiter", "org.junit.platform.console");
 
-    bach.log("CAPTION:Grab missing external modules");
+    bach.logCaption("Grab missing external modules");
     grabber.grabMissingExternalModules();
   }
 }
