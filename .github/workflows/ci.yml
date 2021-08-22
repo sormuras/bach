@@ -84,7 +84,6 @@ jobs:
 
   deploy-to-api-repository:
     needs: [ setup, build ]
-    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out sormuras/api repository'
