@@ -58,7 +58,8 @@ public record Configuration(
         new Options.ProjectOptions(Optional.empty(), Optional.empty()));
   }
 
-  public static record Pathing(
+  /** {@link Path}-related settings. */
+  public record Pathing(
       Path root,
       Path externalModules,
       Path externalToolLayers,
@@ -101,8 +102,10 @@ public record Configuration(
     }
   }
 
+  /** Print-related settings and common {@link PrintWriter} objects. */
   public record Printing(PrintWriter out, PrintWriter err) {}
 
+  /** {@link ToolFinder}-related and {@link java.util.spi.ToolProvider}-related settings. */
   public record Tooling(ToolFinder finder) {}
 
   public Configuration with(Options options) {

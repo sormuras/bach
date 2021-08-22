@@ -7,7 +7,7 @@ class Main {
       printHelp();
       return;
     }
-    var options = Options.of(args);
+    var options = Options.parse(args);
     if (options.forMain().help().isPresent()) {
       printHelp();
       return;

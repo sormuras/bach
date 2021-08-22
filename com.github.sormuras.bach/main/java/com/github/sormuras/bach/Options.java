@@ -5,21 +5,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-/** This is the command-line parser. */
+/** Options. */
 public record Options(
     MainOptions forMain,
     ConfigurationOptions forConfiguration,
     ProjectOptions forProject,
     List<String> unhandledArguments) {
 
+  /** A group of optional components used by the main program. */
   public record MainOptions(Optional<Boolean> help, Optional<Boolean> version) {}
 
+  /** A group of optional components used as global settings of a {@link Configuration} instance. */
   public record ConfigurationOptions(
       Optional<Boolean> verbose, Optional<Boolean> lenient, Optional<Integer> timeout) {}
 
+  /** A group of optional components used when building a project model instance. */
   public record ProjectOptions(Optional<String> name, Optional<Version> version) {}
 
-  public static Options of(String... args) {
+  /** Parses an array of strings in command-line style into an options instance. */
+  public static Options parse(String... args) {
     Boolean help = null;
     Boolean version = null;
     Boolean verbose = null;

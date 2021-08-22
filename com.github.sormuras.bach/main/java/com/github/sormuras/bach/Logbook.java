@@ -16,14 +16,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /** A logbook collects notes, prints them, and is able to write itself into a file. */
 public class Logbook {
 
+  /** An abstract logbook entry. */
   public sealed interface Note permits CaptionNote, MessageNote, ToolCallNote, ToolRunNote {}
 
+  /** A textual note starting a section of notes. */
   public record CaptionNote(String line) implements Note {}
 
+  /** A weighted textual note. */
   public record MessageNote(Level level, String text) implements Note {}
 
+  /** A note indicating that a tool is about to be called.  */
   public record ToolCallNote(ToolCall call) implements Note {}
 
+  /** A note indicating that a tool was run with a detailed description.  */
   public record ToolRunNote(ToolRun run, String description) implements Note {}
 
   private final Bach bach;

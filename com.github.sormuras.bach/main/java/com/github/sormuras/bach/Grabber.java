@@ -68,8 +68,10 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
         Level.DEBUG, "Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
   }
 
+  /** Links a local file via its path name to a (remote) resource identifier. */
   public record Asset(String name, String source) {}
 
+  /** Links an {@link Asset} list to a directory name within parent directory. */
   public record Directory(Path parent, String name, List<Asset> assets) {
     public Directory withAsset(String target, String source) {
       var assets = new ArrayList<>(assets());
