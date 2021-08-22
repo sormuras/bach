@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 public sealed interface ToolCall
     permits ToolRunningToolCall, ProcessStartingToolCall, ModuleLaunchingToolCall {
 
+  String name();
+
   List<String> arguments();
 
   static ToolCall of(String name, Object... arguments) {
@@ -35,8 +37,8 @@ public sealed interface ToolCall
     return new ProcessStartingToolCall(executable, new ArrayList<>()).withAll(arguments);
   }
 
-  static ToolCall module(ModuleFinder finder, String module, Object... arguments) {
-    return new ModuleLaunchingToolCall(finder, module, new ArrayList<>()).withAll(arguments);
+  static ToolCall module(ModuleFinder finder, String name, Object... arguments) {
+    return new ModuleLaunchingToolCall(finder, name, new ArrayList<>()).withAll(arguments);
   }
 
   default ToolCall with(Object argument) {
