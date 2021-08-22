@@ -8,6 +8,7 @@ import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 class build {
@@ -127,6 +128,7 @@ class build {
             .with("-d", testClasses));
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(ToolCall.of("directories", "create", modules));
+    var jars = new ArrayList<ToolCall>();
     for (var name : names) {
       var file = name + "@" + version + "+test.jar";
       var jar =
@@ -142,8 +144,9 @@ class build {
       if (Files.isDirectory(resources)) {
         jar = jar.with("-C", resources, ".");
       }
-      bach.run(jar);
+      jars.add(jar);
     }
+    jars.parallelStream().forEach(bach::run);
     return modules;
   }
 

@@ -170,14 +170,6 @@ public class Bach implements AutoCloseable {
     return configuration().lenient() ? run : run.requireSuccessful();
   }
 
-  public void run(Stream<ToolCall> calls) {
-    calls.forEach(this::run);
-  }
-
-  public void runParallel(ToolCall... calls) {
-    run(Stream.of(calls).parallel());
-  }
-
   public void writeLogbook() {
     try {
       var file = logbook().write(path().workspace());

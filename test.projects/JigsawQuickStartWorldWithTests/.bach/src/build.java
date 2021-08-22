@@ -3,6 +3,7 @@ import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 class build {
   public static void main(String... args) {
@@ -31,18 +32,20 @@ class build {
             .with("--module-source-path", "./*/main/java")
             .with("-d", classes));
     bach.run(ToolCall.of("directories", "clean", modules));
-    bach.runParallel(
-        ToolCall.of("jar")
-            .with("--create")
-            .with("--file", modules.resolve("com.greetings@99.jar"))
-            .with("--module-version", "99")
-            .with("--main-class", "com.greetings.Main")
-            .with("-C", classes.resolve("com.greetings"), "."),
-        ToolCall.of("jar")
-            .with("--create")
-            .with("--file", modules.resolve("org.astro@99.jar"))
-            .with("--module-version", "99")
-            .with("-C", classes.resolve("org.astro"), "."));
+    Stream.of(
+            ToolCall.of("jar")
+                .with("--create")
+                .with("--file", modules.resolve("com.greetings@99.jar"))
+                .with("--module-version", "99")
+                .with("--main-class", "com.greetings.Main")
+                .with("-C", classes.resolve("com.greetings"), "."),
+            ToolCall.of("jar")
+                .with("--create")
+                .with("--file", modules.resolve("org.astro@99.jar"))
+                .with("--module-version", "99")
+                .with("-C", classes.resolve("org.astro"), "."))
+        .parallel()
+        .forEach(bach::run);
     return modules;
   }
 

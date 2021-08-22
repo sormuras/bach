@@ -18,9 +18,10 @@ class versions {
     bach.run(Path.of(System.getProperty("java.home"), "bin", "jar"), jar -> jar.with("--version"));
 
     bach.logCaption("Versions of all tools provided by the runtime system");
-    var providers = ToolFinder.ofSystem().findAll().stream()
-        .sorted(Comparator.comparing(ToolProvider::name))
-        .toList();
+    var providers =
+        ToolFinder.ofSystem().findAll().stream()
+            .sorted(Comparator.comparing(ToolProvider::name))
+            .toList();
     for (var provider : providers) {
       var finder = ToolFinder.of(provider);
       var name = provider.name();
