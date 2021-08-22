@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+/** This is the command-line parser. */
 public record Options(
     MainOptions forMain,
     ConfigurationOptions forConfiguration,

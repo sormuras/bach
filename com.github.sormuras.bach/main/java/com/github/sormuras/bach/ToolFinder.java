@@ -15,6 +15,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 
+/** A finder of tool providers. */
 @FunctionalInterface
 public interface ToolFinder {
 

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/** A logbook collects notes, prints them, and is able to write itself into a file. */
 public class Logbook {
 
   public sealed interface Note permits CaptionNote, MessageNote, ToolCallNote, ToolRunNote {}

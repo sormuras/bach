@@ -13,6 +13,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/** An Explorer finds files, lists modules, and helps explore other assets and states. */
 public record Explorer(Bach bach) {
 
   public ModuleFinder newModuleInfoFinder(Path root) {

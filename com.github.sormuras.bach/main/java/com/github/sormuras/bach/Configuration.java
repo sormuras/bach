@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 
+/** Bach's global settings. */
 public record Configuration(
     boolean verbose,
     boolean lenient,

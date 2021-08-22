@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
+/** 🎼 Bach, the Java Shell Builder. */
 public class Bach implements AutoCloseable {
 
   public static String version() {

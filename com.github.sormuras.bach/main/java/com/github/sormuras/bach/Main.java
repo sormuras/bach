@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+/** The main entry-point of Bach. */
 class Main {
   public static void main(String... args) {
     if (args.length == 0) {

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+/** A grabber helps loading, updating, and verifying external assets. */
 public record Grabber(Bach bach, ExternalModuleLocators locators) {
 
   public Directory newExternalToolLayerDirectory(String name, Asset... assets) {

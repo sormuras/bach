@@ -2,6 +2,7 @@ package com.github.sormuras.bach.external;
 
 import java.util.StringJoiner;
 
+/** Maven-related helpers. */
 public final class Maven {
 
   public static final String CENTRAL_REPOSITORY = "https://repo.maven.apache.org/maven2";
@@ -12,13 +13,14 @@ public final class Maven {
   }
 
   public static String central(String group, String artifact, String version) {
-    return builder(group, artifact, version).build();
+    return Maven.builder(group, artifact, version).build();
   }
 
   public static String central(String group, String artifact, String version, String classifier) {
-    return builder(group, artifact, version).classifier(classifier).build();
+    return Maven.builder(group, artifact, version).classifier(classifier).build();
   }
 
+  /** A builder of Maven coordinates. */
   public record Builder(
       String repository,
       String group,

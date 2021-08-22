@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/** Builds named tool calls with their arguments. */
 public sealed interface ToolCall
     permits ToolRunningToolCall, ProcessStartingToolCall, ModuleLaunchingToolCall {
 
