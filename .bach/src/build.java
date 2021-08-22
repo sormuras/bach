@@ -38,6 +38,9 @@ class build {
       executeTests(bach, "test.base", mainModules, testModules);
       executeTests(bach, "test.integration", mainModules, testModules);
       executeTests(bach, "test.projects", mainModules, testModules);
+
+      bach.logCaption("Generate documentation");
+      generateApiDocumentation(bach, version);
     }
     System.out.println("END.");
   }
@@ -161,5 +164,29 @@ class build {
         ToolCall.of(toolFinder, "junit")
             .with("--select-module", module)
             .with("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module)));
+  }
+
+  static void generateApiDocumentation(Bach bach, Version version) {
+    var api = bach.path().workspace("documentation", "api");
+    bach.run(
+        ToolCall.of("javadoc")
+            .with("--module", "com.github.sormuras.bach")
+            .with("--module-source-path", "./*/main/java")
+            .with("-encoding", "UTF-8")
+            .with("-windowtitle", "🎼 Bach " + version)
+            .with("-header", "🎼 Bach %s API documentation".formatted(version))
+            .with("-notimestamp")
+            .with("-use")
+            .with("-linksource")
+            .with("-Xdoclint:-missing")
+            .with("-Werror")
+            .with("-d", api));
+    bach.run(
+        "jar", jar -> jar
+            .with("--create")
+            .with("--file", api.getParent().resolve("api.zip"))
+            .with("--no-manifest")
+            .with("-C", api, ".")
+    );
   }
 }
