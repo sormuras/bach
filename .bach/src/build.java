@@ -75,12 +75,11 @@ class build {
   }
 
   static Path buildMainModules(Bach bach, Version version) {
-    var names = List.of("com.github.sormuras.bach");
     var classes = Path.of(".bach/workspace/classes");
     bach.run(
         ToolCall.of("javac")
             .with("--release", "17")
-            .with("--module", String.join(",", names))
+            .with("--module", "com.github.sormuras.bach")
             .with("--module-source-path", "./*/main/java")
             .with("-g")
             .with("-parameters")
@@ -90,18 +89,17 @@ class build {
             .with("-d", classes));
     var modules = Path.of(".bach/workspace/modules");
     bach.run(ToolCall.of("directories", "create", modules));
-    for (var name : names) {
-      var tag = version.toString().split("\\+")[0];
-      var file = name + "@" + tag + ".jar";
-      bach.run(
-          ToolCall.of("jar")
-              .with("--verbose")
-              .with("--create")
-              .with("--file", modules.resolve(file))
-              .with("--module-version", version)
-              .with("-C", classes.resolve(name), ".")
-              .with("-C", Path.of(name).resolve("main/java"), "."));
-    }
+    var tag = version.toString().split("\\+")[0];
+    var file = "com.github.sormuras.bach@" + tag + ".jar";
+    bach.run(
+        ToolCall.of("jar")
+            .with("--verbose")
+            .with("--create")
+            .with("--file", modules.resolve(file))
+            .with("--module-version", version)
+            .with("--main-class", "com.github.sormuras.bach.Main")
+            .with("-C", classes.resolve("com.github.sormuras.bach"), ".")
+            .with("-C", Path.of("com.github.sormuras.bach").resolve("main/java"), "."));
     return modules;
   }
 

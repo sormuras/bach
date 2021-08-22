@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.Optional;
 
 public record Options(
+    MainOptions forMain,
     ConfigurationOptions forConfiguration,
     ProjectOptions forProject,
     List<String> unhandledArguments) {
+
+  public record MainOptions(Optional<Boolean> help, Optional<Boolean> version) {}
 
   public record ConfigurationOptions(
       Optional<Boolean> verbose, Optional<Boolean> lenient, Optional<Integer> timeout) {}
@@ -16,6 +19,8 @@ public record Options(
   public record ProjectOptions(Optional<String> name, Optional<Version> version) {}
 
   public static Options of(String... args) {
+    Boolean help = null;
+    Boolean version = null;
     Boolean verbose = null;
     Boolean lenient = null;
     Integer timeout = null;
@@ -26,6 +31,8 @@ public record Options(
     while (!arguments.isEmpty()) {
       var argument = arguments.pop();
       switch (argument) {
+        case "--help", "/?" -> help = true;
+        case "--version" -> version = true;
         case "--verbose" -> verbose = true;
         case "--lenient" -> lenient = true;
         case "--timeout" -> timeout = Integer.parseInt(arguments.pop());
@@ -35,6 +42,7 @@ public record Options(
       }
     }
     return new Options(
+        new MainOptions(Optional.ofNullable(help), Optional.ofNullable(version)),
         new ConfigurationOptions(
             Optional.ofNullable(verbose),
             Optional.ofNullable(lenient),

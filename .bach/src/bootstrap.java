@@ -40,6 +40,8 @@ class bootstrap {
         "--create",
         "--file=" + jar,
         "--module-version=" + version + "+" + Instant.now().truncatedTo(ChronoUnit.SECONDS),
+        "--main-class",
+        module + ".Main",
         "-C",
         classes.resolve(module).toString(),
         ".",
