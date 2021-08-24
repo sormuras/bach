@@ -111,7 +111,7 @@ public record Configuration(
   public Configuration with(Options options) {
     return new Configuration(
         options.forConfiguration().verbose().orElse(verbose),
-        options.forConfiguration().verbose().orElse(lenient),
+        options.forConfiguration().lenient().orElse(lenient),
         options.forConfiguration().timeout().orElse(timeout),
         pathing,
         printing,
