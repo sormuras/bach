@@ -25,6 +25,10 @@ public interface ToolFinder {
     return findAll().stream().filter(provider -> provider.name().equals(name)).findFirst();
   }
 
+  default List<ToolProvider> list(String name) {
+    return findAll().stream().filter(provider -> provider.name().equals(name)).toList();
+  }
+
   static ToolFinder of(ToolProvider... providers) {
     return new ToolFinderSupport.ToolProviderToolFinder(List.of(providers));
   }
