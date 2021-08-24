@@ -182,11 +182,11 @@ class build {
             .with("-Werror")
             .with("-d", api));
     bach.run(
-        "jar", jar -> jar
-            .with("--create")
-            .with("--file", api.getParent().resolve("api.zip"))
-            .with("--no-manifest")
-            .with("-C", api, ".")
-    );
+        "jar",
+        jar ->
+            jar.with("--create")
+                .with("--file", api.getParent().resolve("api.zip"))
+                .with("--no-manifest")
+                .with("-C", api, "."));
   }
 }

@@ -25,10 +25,10 @@ public class Logbook {
   /** A weighted textual note. */
   public record MessageNote(Level level, String text) implements Note {}
 
-  /** A note indicating that a tool is about to be called.  */
+  /** A note indicating that a tool is about to be called. */
   public record ToolCallNote(ToolCall call) implements Note {}
 
-  /** A note indicating that a tool was run with a detailed description.  */
+  /** A note indicating that a tool was run with a detailed description. */
   public record ToolRunNote(ToolRun run, String description) implements Note {}
 
   private final Bach bach;
