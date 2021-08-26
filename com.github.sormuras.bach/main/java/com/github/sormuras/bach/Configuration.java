@@ -1,6 +1,8 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.VersionSupport;
 import java.io.PrintWriter;
+import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
@@ -28,6 +30,10 @@ public record Configuration(
   public static Path computeJavaExecutablePath(String name) {
     var windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("win");
     return Path.of(System.getProperty("java.home"), "bin", name + (windows ? ".exe" : ""));
+  }
+
+  public static String computeJarFileName(String module, Version version) {
+    return module + "@" + VersionSupport.toNumberAndPreRelease(version) + ".jar";
   }
 
   public static Configuration of() {
@@ -83,18 +89,6 @@ public record Configuration(
 
     public Path root(String first, String... more) {
       return root.resolve(Path.of(first, more));
-    }
-
-    public Path externalModule(String jar) {
-      return externalModules.resolve(Path.of(jar));
-    }
-
-    public Path externalToolLayer(String name, String... more) {
-      return externalToolLayers.resolve(Path.of(name, more));
-    }
-
-    public Path externalToolProgram(String name, String... more) {
-      return externalToolPrograms.resolve(Path.of(name, more));
     }
 
     public Path workspace(String first, String... more) {

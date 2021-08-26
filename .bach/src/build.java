@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.ExternalModuleLocators;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
@@ -92,8 +93,7 @@ class build {
             .with("-d", classes));
     var modules = Path.of(".bach/workspace/modules");
     bach.run(ToolCall.of("directories", "create", modules));
-    var tag = version.toString().split("\\+")[0];
-    var file = "com.github.sormuras.bach@" + tag + ".jar";
+    var file = Configuration.computeJarFileName("com.github.sormuras.bach", version);
     bach.run(
         ToolCall.of("jar")
             .with("--verbose")
