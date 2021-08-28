@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /** Builds named tool calls with their arguments. */
@@ -67,5 +68,14 @@ public sealed interface ToolCall
   default ToolCall withAll(Collection<?> arguments) {
     arguments.stream().map(Object::toString).forEach(arguments()::add);
     return this;
+  }
+
+  /** A tool call arguments tweaker. */
+  interface Composer extends UnaryOperator<ToolCall> {
+
+    /** {@return a tool call composer that always returns the same call instance} */
+    static Composer identity() {
+      return call -> call;
+    }
   }
 }

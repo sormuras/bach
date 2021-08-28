@@ -41,12 +41,21 @@ public record ToolRun(
    */
   public ToolRun requireSuccessful() {
     if (isSuccessful()) return this;
-    var message = "%s returned code %d\n%s".formatted(name, code, toString().indent(4));
+    var message = "%s returned code %d".formatted(name, code);
     throw new RuntimeException(message);
   }
 
-  public ToolRun visit(Consumer<ToolRun> visitor) {
+  public ToolRun visit(Visitor visitor) {
     visitor.accept(this);
     return this;
+  }
+
+  /** A consumer of a tool run instance. */
+  public interface Visitor extends Consumer<ToolRun> {
+
+    /** {@return a tool run visitor that does nothing} */
+    static Visitor noop() {
+      return run -> {};
+    }
   }
 }

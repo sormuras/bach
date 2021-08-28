@@ -126,19 +126,19 @@ public class Bach implements AutoCloseable {
     throw new AssertionError("Where art thou, switch o' patterns?");
   }
 
-  public ToolRun run(String tool, ToolComposer composer) {
+  public ToolRun run(String tool, ToolCall.Composer composer) {
     return run(composer.apply(ToolCall.of(tool)));
   }
 
-  public ToolRun run(ToolFinder finder, String name, ToolComposer composer) {
+  public ToolRun run(ToolFinder finder, String name, ToolCall.Composer composer) {
     return run(composer.apply(ToolCall.of(finder, name)));
   }
 
-  public ToolRun run(Path executable, ToolComposer composer) {
+  public ToolRun run(Path executable, ToolCall.Composer composer) {
     return run(composer.apply(ToolCall.process(executable)));
   }
 
-  public ToolRun run(ModuleFinder finder, String module, ToolComposer composer) {
+  public ToolRun run(ModuleFinder finder, String module, ToolCall.Composer composer) {
     return run(composer.apply(ToolCall.module(finder, module)));
   }
 
