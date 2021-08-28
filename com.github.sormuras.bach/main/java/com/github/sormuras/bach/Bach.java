@@ -82,6 +82,10 @@ public class Bach implements AutoCloseable {
     return new Grabber(this, locators);
   }
 
+  public Printer printer() {
+    return new Printer(this);
+  }
+
   @Override
   public void close() {
     writeLogbook();

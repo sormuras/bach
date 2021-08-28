@@ -32,12 +32,14 @@ public class Logbook {
   public record ToolRunNote(ToolRun run, String description) implements Note {}
 
   private final Bach bach;
+  private final Printer printer;
   private final Queue<Note> notes;
   private final LocalDateTime start;
   private final String timestamp;
 
   public Logbook(Bach bach) {
     this.bach = bach;
+    this.printer = bach.printer();
     this.notes = new ConcurrentLinkedQueue<>();
     this.start = LocalDateTime.now(ZoneOffset.UTC);
     this.timestamp = DateTimeFormatter.ofPattern(Configuration.TIMESTAMP_PATTERN).format(start);
@@ -101,20 +103,12 @@ public class Logbook {
 
   protected void print(ToolRunNote note) {
     var run = note.run();
-    var printer = run.isError() ? bach.err() : bach.out();
-    if (run.isError() || bach.configuration().verbose()) {
-      var output = run.output();
-      var errors = run.errors();
-      if (!output.isEmpty()) printer.println(output.indent(4).stripTrailing());
-      if (!errors.isEmpty()) printer.println(errors.indent(4).stripTrailing());
-      printer.printf(
-          "Tool '%s' run with %d argument%s took %s and finished with exit code %d%n",
-          run.name(),
-          run.args().size(),
-          run.args().size() == 1 ? "" : "s",
-          DurationSupport.toHumanReadableString(run.duration()),
-          run.code());
-    }
+    if (run.isError() || bach.configuration().verbose()) printer.print(run);
+  }
+
+  public void print(ToolRun run) {
+    if (run.isError() || bach.configuration().verbose()) return;
+    printer.print(run);
   }
 
   public String toMarkdown() {
