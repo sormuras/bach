@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.builder.BuilderFactory;
 import com.github.sormuras.bach.internal.DurationSupport;
 import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
@@ -68,6 +69,10 @@ public class Bach implements AutoCloseable {
 
   public final PrintWriter err() {
     return configuration().printing().err();
+  }
+
+  public BuilderFactory builder() {
+    return new BuilderFactory(this);
   }
 
   public Explorer explorer() {

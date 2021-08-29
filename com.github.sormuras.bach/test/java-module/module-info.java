@@ -3,6 +3,7 @@ open /*test*/ module com.github.sormuras.bach {
   requires test.base;
 
   exports com.github.sormuras.bach;
+  exports com.github.sormuras.bach.builder;
   exports com.github.sormuras.bach.external;
 
   requires java.base;
