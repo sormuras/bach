@@ -6,8 +6,11 @@ import com.github.sormuras.bach.Grabber;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolRun;
+import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.ModuleFinderSupport;
+import com.github.sormuras.bach.internal.PathSupport;
 import java.io.File;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -15,6 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /** An API for building modular Java projects using conventional source file tree layouts. */
 public sealed interface Conventional {
@@ -228,5 +232,65 @@ public sealed interface Conventional {
       paths.addAll(getModulePaths());
       return ModuleFinder.of(paths.toArray(Path[]::new));
     }
+  }
+
+  /** {@return a build program for the conventional unnamend space} */
+  static String generateUnnamedSpaceBuildProgram() {
+    var names =
+        PathSupport.find(Path.of(""), 99, PathSupport::isModuleInfoJavaFile).stream()
+            .map(ModuleDescriptorSupport::parse)
+            .map(ModuleDescriptor::name)
+            .sorted()
+            .toList();
+    var modules =
+        names.isEmpty()
+            ? "/* here be one or more module names */"
+            : names.stream().map(name -> '"' + name + '"').collect(Collectors.joining(", "));
+    return """
+          import com.github.sormuras.bach.*;
+
+          class build {
+            public static void main(String... args) {
+              try (var bach = new Bach(args)) {
+                var space = bach.builder().conventional(%s);
+                space.compile(javac -> javac.with("-Xlint").with("-Werror"), jar -> jar.with("--verbose"));
+                // space.runModule("MODULE[/MAINCLASS]", run -> run.with("--dry-run"));
+                // space.document(javadoc -> javadoc.with("-notimestamp").with("-Xdoclint:-missing"));
+                // space.link(jlink -> jlink.with("--launcher", "NAME=MODULE[/MAINCLASS]"));
+              }
+            }
+          }
+          """
+        .formatted(modules);
+  }
+
+  /** {@return a build program for a project using {@code main} and {@code test} space layout} */
+  static String generateMainAndTestSpaceBuildProgram() {
+    var mainModules = "/* here be one or more main modules */";
+    var testModules = "/* here be one or more test modules */";
+    return """
+          import com.github.sormuras.bach.*;
+
+          class build {
+            public static void main(String... args) {
+              try (var bach = new Bach(args)) {
+
+                var main = bach.builder().conventionalSpace("main", %s);
+                main.compile(javac -> javac.with("-Xlint").with("-Werror"), jar -> jar.with("--verbose"));
+
+                bach.logCaption("Perform automated checks");
+                var test = main.dependentSpace("test", %s);
+                // test.grab(bach.grabber(...), "org.junit.jupiter", "org.junit.platform.console");
+                test.compile(javac -> javac.with("-g").with("-parameters"));
+                test.runAllTests();
+
+                // bach.logCaption("Document API and link main modules into a custom runtime image");
+                // main.document(javadoc -> javadoc.with("-notimestamp").with("-Xdoclint:-missing"));
+                // main.link(jlink -> jlink.with("--launcher", "NAME=MODULE[/MAINCLASS]"));
+              }
+            }
+          }
+          """
+        .formatted(mainModules, testModules);
   }
 }

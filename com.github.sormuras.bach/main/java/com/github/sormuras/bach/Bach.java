@@ -1,6 +1,7 @@
 package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.builder.BuilderFactory;
+import com.github.sormuras.bach.builder.Conventional;
 import com.github.sormuras.bach.internal.DurationSupport;
 import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
@@ -25,6 +26,19 @@ public class Bach implements AutoCloseable {
   public static String version() {
     return ModuleSupport.version(Bach.class.getModule());
   }
+
+  public sealed interface BuildProgramGenerators {
+    static String generateConventionalBuildProgram() {
+      return Conventional.generateMainAndTestSpaceBuildProgram();
+    }
+
+    static String generateConventionalUnnamedSpaceBuildProgram() {
+      return Conventional.generateUnnamedSpaceBuildProgram();
+    }
+  }
+
+  /** Package-private target of local "namespace-defining" sealed types. */
+  record Sealer() implements BuildProgramGenerators {}
 
   private final Configuration configuration;
   private final Logbook logbook;
