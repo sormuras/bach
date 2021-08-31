@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.VersionSupport;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.module.ModuleDescriptor.Version;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -97,7 +98,11 @@ public record Configuration(
   }
 
   /** Print-related settings and common {@link PrintWriter} objects. */
-  public record Printing(PrintWriter out, PrintWriter err) {}
+  public record Printing(PrintWriter out, PrintWriter err) {
+    public static Printing ofErrorsOnly() {
+      return new Printing(new PrintWriter(Writer.nullWriter()), new PrintWriter(System.err, true));
+    }
+  }
 
   /** {@link ToolFinder}-related and {@link java.util.spi.ToolProvider}-related settings. */
   public record Tooling(ToolFinder finder) {}

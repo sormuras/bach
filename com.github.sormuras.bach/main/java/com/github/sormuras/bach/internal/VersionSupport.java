@@ -10,6 +10,7 @@ public sealed interface VersionSupport permits ConstantInterface {
       if (numberTerminator == 0) return version.toString();
       return version.toString().substring(0, numberTerminator);
     }
+
     public String toNumberAndPreRelease() {
       if (preReleaseTerminator == 0) return version.toString();
       return version.toString().substring(0, preReleaseTerminator);

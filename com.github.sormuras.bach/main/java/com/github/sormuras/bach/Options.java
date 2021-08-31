@@ -13,7 +13,8 @@ public record Options(
     List<String> unhandledArguments) {
 
   /** A group of optional components used by the main program. */
-  public record MainOptions(Optional<Boolean> help, Optional<Boolean> version) {}
+  public record MainOptions(
+      Optional<Boolean> help, Optional<Boolean> version, Optional<Boolean> generateBuildProgram) {}
 
   /** A group of optional components used as global settings of a {@link Configuration} instance. */
   public record ConfigurationOptions(
@@ -24,20 +25,26 @@ public record Options(
 
   /** Parses an array of strings in command-line style into an options instance. */
   public static Options parse(String... args) {
+    return Options.parse(List.of(args));
+  }
+
+  public static Options parse(List<String> args) {
     Boolean help = null;
     Boolean version = null;
+    Boolean generateBuildProgram = null;
     Boolean verbose = null;
     Boolean lenient = null;
     Integer timeout = null;
     String projectName = null;
     Version projectVersion = null;
     var unhandled = new LinkedList<String>();
-    var arguments = new LinkedList<>(List.of(args));
+    var arguments = new LinkedList<>(args);
     while (!arguments.isEmpty()) {
       var argument = arguments.pop();
       switch (argument) {
         case "--help", "/?" -> help = true;
         case "--version" -> version = true;
+        case "--generate-build-program" -> generateBuildProgram = true;
         case "--verbose" -> verbose = true;
         case "--lenient" -> lenient = true;
         case "--timeout" -> timeout = Integer.parseInt(arguments.pop());
@@ -47,7 +54,10 @@ public record Options(
       }
     }
     return new Options(
-        new MainOptions(Optional.ofNullable(help), Optional.ofNullable(version)),
+        new MainOptions(
+            Optional.ofNullable(help),
+            Optional.ofNullable(version),
+            Optional.ofNullable(generateBuildProgram)),
         new ConfigurationOptions(
             Optional.ofNullable(verbose),
             Optional.ofNullable(lenient),
