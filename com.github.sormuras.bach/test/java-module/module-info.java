@@ -15,4 +15,7 @@ open /*test*/ module com.github.sormuras.bach {
   requires jdk.jlink;
 
   uses java.util.spi.ToolProvider;
+
+  provides java.util.spi.ToolProvider with
+      com.github.sormuras.bach.Main;
 }
