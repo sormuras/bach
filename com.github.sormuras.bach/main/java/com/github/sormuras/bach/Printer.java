@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.DurationSupport;
 
+/** A printer of various types using the configured output writer. */
 public record Printer(Bach bach) {
 
   public void print(ToolRun run) {

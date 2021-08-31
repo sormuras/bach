@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-/** Options. */
+/** All well-known options, usually parsed from command-line arguments. */
 public record Options(
     MainOptions forMain,
     ConfigurationOptions forConfiguration,

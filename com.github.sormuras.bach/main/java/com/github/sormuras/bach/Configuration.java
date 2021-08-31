@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Bach's global settings. */
+/** Global settings with nested topic-specific configurations. */
 public record Configuration(
     boolean verbose,
     boolean lenient,

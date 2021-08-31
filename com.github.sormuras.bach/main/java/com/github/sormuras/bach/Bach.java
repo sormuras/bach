@@ -23,10 +23,12 @@ import java.util.stream.Stream;
 /** Java Shell Builder. */
 public class Bach implements AutoCloseable {
 
+  /** {@return the version information compiled into Bach's module} */
   public static String version() {
     return ModuleSupport.version(Bach.class.getModule());
   }
 
+  /** Convenience short-cuts to various build program generators. */
   public sealed interface BuildProgramGenerators {
     static String generateConventionalBuildProgram() {
       return Conventional.generateMainAndTestSpaceBuildProgram();
@@ -50,15 +52,13 @@ public class Bach implements AutoCloseable {
   public Bach(Configuration configuration) {
     this.configuration = configuration;
     this.logbook = constructLogbook();
-    logbook()
-        .logMessage(
-            System.Logger.Level.INFO,
-            "Initialized Bach %s (Java %s, %s, %s)"
-                .formatted(
-                    version(),
-                    System.getProperty("java.version"),
-                    System.getProperty("os.name"),
-                    Path.of(System.getProperty("user.dir")).toUri()));
+    logMessage(
+        "Initialized Bach %s (Java %s, %s, %s)"
+            .formatted(
+                version(),
+                System.getProperty("java.version"),
+                System.getProperty("os.name"),
+                Path.of(System.getProperty("user.dir")).toUri()));
   }
 
   protected Logbook constructLogbook() {
