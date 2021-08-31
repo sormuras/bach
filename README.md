@@ -15,7 +15,7 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
 
 ## Build Bach with Bach
 
-- Install [JDK] 16 or later.
+- Install [JDK] 17 or later.
 
 - Build
   ```text
@@ -71,7 +71,7 @@ Bach will **not**...
 
 # be free - have fun
 
-[![jdk16](https://img.shields.io/badge/JDK-16-blue.svg)](https://jdk.java.net)
+[![jdk17](https://img.shields.io/badge/JDK-17-blue.svg)](https://jdk.java.net)
 [![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)](https://sormuras.github.io/api/bach/17-ea)
 ![GitHub all releases](https://img.shields.io/github/downloads/sormuras/bach/total)
 
