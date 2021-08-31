@@ -96,23 +96,3 @@ jobs:
           git add .
           git commit --message 'Update API documentation of ${{ github.event.repository.name }} to ${{ env.VERSION }}'
           git push
-
-  deploy-to-packages:
-    needs: [ build ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Download build artifact ${{ env.VERSION }}'
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ github.event.repository.name }}-build-${{ env.VERSION }}
-      - name: 'Set up Maven (GitHub)'
-        uses: actions/setup-java@v2
-        with:
-          java-version: 11
-          distribution: 'zulu'
-      - name: 'Deploy to https://github.com/sormuras/bach/packages'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          DEPLOY: '--batch-mode --no-transfer-progress org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1:deploy-file'
-          REPOSITORY: '-DrepositoryId=github -Durl=https://maven.pkg.github.com/sormuras/bach'
-        run: for f in .bach/workspace/deploy/maven/*.files ; do mvn ${DEPLOY} ${REPOSITORY} $(cat ${f}) ; done
