@@ -10,27 +10,24 @@ import java.util.StringJoiner;
 /** Contains methods creating new builder instances, e.g. building conventional Java projects. */
 public record BuilderFactory(Bach bach) {
 
-  public Conventional.Builder conventional(String... modules) {
-    if (modules.length == 0) throw new IllegalArgumentException("modules array must not be empty");
-
+  public Conventional.Builder conventional() {
     var unnamedSpace =
         new Conventional.Space(
-            Optional.empty(), List.of(modules), List.of("."), List.of(), Path.of("modules"));
+            Optional.empty(), List.of(), List.of("."), List.of(), Path.of("modules"));
     return new Conventional.Builder(bach, unnamedSpace);
   }
 
-  public Conventional.Builder conventionalSpace(String name, String... modules) {
-    if (modules.length == 0) throw new IllegalArgumentException("modules array must not be empty");
-    if (name.isEmpty()) throw new IllegalArgumentException("name must not be empty");
+  public Conventional.Builder conventional(String space) {
+    if (space.isEmpty()) throw new IllegalArgumentException("space name must not be empty");
 
-    var moduleSourcePather = new StringJoiner(File.separator).add(".").add("*").add(name);
+    var moduleSourcePather = new StringJoiner(File.separator).add(".").add("*").add(space);
     var namedSpace =
         new Conventional.Space(
-            Optional.of(name),
-            List.of(modules),
+            Optional.of(space),
+            List.of(),
             List.of(moduleSourcePather.toString(), moduleSourcePather.add("java").toString()),
             List.of(),
-            Path.of(name, "modules"));
+            Path.of(space, "modules"));
     return new Conventional.Builder(bach, namedSpace);
   }
 }

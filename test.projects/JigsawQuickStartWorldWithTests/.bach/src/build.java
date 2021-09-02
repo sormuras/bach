@@ -73,13 +73,17 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        var main = bach.builder().conventionalSpace("main", "com.greetings", "org.astro");
+        var main =
+            bach.builder()
+                .conventional("main")
+                .withModule("com.greetings", module -> module.main("com.greetings.Main"))
+                .withModule("org.astro", module -> module.resource(Path.of("org.astro/main/java")));
         main.compile(javac -> javac.with("-Xlint").with("-Werror"), jar -> jar.with("--verbose"));
         main.runModule("com.greetings", run -> run.with("stranger"));
 
         bach.logCaption("Perform automated checks");
         var grabber = bach.grabber(JUnit.version("5.8.0-RC1"));
-        var test = main.dependentSpace("test", "test.modules");
+        var test = main.dependentSpace("test").withModule("test.modules");
         test.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
         test.compile(javac -> javac.with("-g").with("-parameters"));
         test.runTool("special-test", run -> run.with(123));

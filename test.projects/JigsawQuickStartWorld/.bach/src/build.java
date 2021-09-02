@@ -50,7 +50,7 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        var space = bach.builder().conventional("com.greetings", "org.astro");
+        var space = bach.builder().conventional().withModule("com.greetings", "org.astro");
         space.compile();
         space.runModule("com.greetings", run -> run.with("fun"));
       }

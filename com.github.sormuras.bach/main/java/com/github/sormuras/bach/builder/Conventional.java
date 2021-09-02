@@ -1,7 +1,6 @@
 package com.github.sormuras.bach.builder;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.Grabber;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
@@ -11,13 +10,13 @@ import com.github.sormuras.bach.internal.ModuleFinderSupport;
 import com.github.sormuras.bach.internal.PathSupport;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /** An API for building modular Java projects using conventional source file tree layouts. */
@@ -26,15 +25,24 @@ public sealed interface Conventional {
   /** Conventional module space descriptor. */
   record Space(
       Optional<String> name,
-      List<String> modules,
+      List<ModuleUnit> moduleUnits,
       List<String> moduleSourcePaths,
       List<Path> modulePaths,
       Path destinationDirectory) {
 
-    /** Copy-and-set the specified component. */
-    private Space modulePaths(List<Path> modulePaths) {
+    private List<String> modules() {
+      return moduleUnits.stream().map(ModuleUnit::name).toList();
+    }
+
+    private Space units(List<ModuleUnit> units) {
       return new Space(
-          name, modules, moduleSourcePaths, List.copyOf(modulePaths), destinationDirectory);
+          name, List.copyOf(units), moduleSourcePaths, modulePaths, destinationDirectory);
+    }
+
+    private Space withUnit(ModuleUnit unit) {
+      var units = new ArrayList<>(this.moduleUnits);
+      units.add(unit);
+      return units(units);
     }
 
     /** Copy-and-add one or more elements to the specified component. */
@@ -42,23 +50,49 @@ public sealed interface Conventional {
       var modulePaths = new ArrayList<>(this.modulePaths);
       modulePaths.add(path);
       if (more.length > 0) modulePaths.addAll(List.of(more));
-      return modulePaths(List.copyOf(modulePaths));
+      return new Space(
+          name, moduleUnits, moduleSourcePaths, List.copyOf(modulePaths), destinationDirectory);
+    }
+  }
+
+  /** Conventional module information unit. */
+  record ModuleUnit(String name, Optional<String> main, List<Path> resources) {
+    public static ModuleUnit named(String name) {
+      return new ModuleUnit(name, Optional.empty(), List.of());
+    }
+
+    public ModuleUnit main(String main) {
+      return new ModuleUnit(name, Optional.ofNullable(main), resources);
+    }
+
+    public ModuleUnit resource(Path path, Path... more) {
+      var resources = new ArrayList<>(this.resources);
+      resources.add(path);
+      if (more.length > 0) resources.addAll(List.of(more));
+      return new ModuleUnit(name, main, resources);
     }
   }
 
   /** Conventional project builder. */
   record Builder(Bach bach, Space space) implements Conventional {
 
-    public Builder dependentSpace(String name, String... modules) {
+    public Builder dependentSpace(String name) {
       if (name.equals(space.name.orElse("?")))
         throw new IllegalArgumentException("name collision: " + name);
 
-      var dependent =
-          new BuilderFactory(bach)
-              .conventionalSpace(name, modules)
-              .space()
-              .withModulePath(getModulesDirectory());
-      return new Builder(bach, dependent);
+      var dependent = new BuilderFactory(bach).conventional(name).space();
+      return new Builder(bach, dependent.withModulePath(getModulesDirectory()));
+    }
+
+    public Builder withModule(String name, String... more) {
+      var units = new ArrayList<ModuleUnit>();
+      units.add(ModuleUnit.named(name));
+      for (var next : more) units.add(ModuleUnit.named(next));
+      return new Builder(bach, space.units(units));
+    }
+
+    public Builder withModule(String name, UnaryOperator<ModuleUnit> operator) {
+      return new Builder(bach, space.withUnit(operator.apply(ModuleUnit.named(name))));
     }
 
     public void grab(Grabber grabber, String... externalModules) {
@@ -75,20 +109,20 @@ public sealed interface Conventional {
     }
 
     public void compile(ToolCall.Composer javacComposer, ToolCall.Composer jarComposer) {
-      var size = space.modules.size();
+      var size = space.moduleUnits.size();
       var plurals = size == 1 ? "" : "s";
       var name = space.name.orElse("Java");
       bach.logCaption("Compile %d conventional %s module%s".formatted(size, name, plurals));
 
       var javac = ToolCall.of("javac");
-      javac.with("--module", String.join(",", space.modules));
+      javac.with("--module", String.join(",", space.modules()));
       javac.with("--module-source-path", String.join(File.pathSeparator, space.moduleSourcePaths));
       if (!getModulePaths().isEmpty()) javac.with("--module-path", getModulePaths());
       javac.with("-d", getClassesDirectory());
       bach.run(javacComposer.apply(javac));
 
       var jars = new ArrayList<ToolCall>();
-      for (var module : space.modules) jars.add(generateJarCall(module, jarComposer));
+      for (var unit : space.moduleUnits) jars.add(generateJarCall(unit, jarComposer));
       bach.run("directories", dir -> dir.with("clean").with(getModulesDirectory()));
       jars.parallelStream().forEach(bach::run);
     }
@@ -96,7 +130,7 @@ public sealed interface Conventional {
     public void document(ToolCall.Composer javadocComposer) {
       var api = bach.path().workspace(space.name.orElse(""), "documentation", "api");
       var javadoc = ToolCall.of("javadoc");
-      javadoc.with("--module", String.join(",", space.modules));
+      javadoc.with("--module", String.join(",", space.modules()));
       javadoc.with(
           "--module-source-path", String.join(File.pathSeparator, space.moduleSourcePaths));
       if (!getModulePaths().isEmpty()) javadoc.with("--module-path", getModulePaths());
@@ -116,7 +150,7 @@ public sealed interface Conventional {
       var image = bach.path().workspace(space.name.orElse(""), "image");
       var jlink = ToolCall.of("jlink");
       jlink.with("--output", image);
-      jlink.with("--add-modules", String.join(",", space.modules));
+      jlink.with("--add-modules", String.join(",", space.modules()));
       jlink.with("--module-path", List.of(getModulesDirectory(), bach.path().externalModules()));
       bach.run("directories", run -> run.with("delete").with(image));
       bach.run(jlinkComposer.apply(jlink));
@@ -126,7 +160,7 @@ public sealed interface Conventional {
       var name = space.name.orElse("this");
       bach.logCaption("Run all tests in %s space".formatted(name));
       var moduleFinder = getRuntimeModuleFinder();
-      for (var module : space.modules) {
+      for (var module : space.modules()) {
         if (ModuleFinderSupport.findMainClass(moduleFinder, module).isPresent()) {
           runModule(moduleFinder, module, ToolCall.Composer.identity(), bach.printer()::print);
         }
@@ -183,31 +217,20 @@ public sealed interface Conventional {
       visitor.accept(run);
     }
 
-    private ToolCall generateJarCall(String module, ToolCall.Composer jarComposer) {
-      var version = findVersion(module);
-      var file =
-          version
-              .map(value -> Configuration.computeJarFileName(module, value))
-              .orElseGet(() -> module + ".jar");
+    private ToolCall generateJarCall(ModuleUnit unit, ToolCall.Composer jarComposer) {
+      var file = unit.name + ".jar";
       var jar = ToolCall.of("jar");
       jar.with("--create");
       jar.with("--file", getModulesDirectory().resolve(file));
-      version.ifPresent(v -> jar.with("--module-version", v));
-      findMainClass(module).ifPresent(mainClass -> jar.with("--main-class", mainClass));
+      unit.main.ifPresent(main -> jar.with("--main-class", main));
       var composed = jarComposer.apply(jar);
-      composed.with("-C", getClassesDirectory().resolve(module), ".");
+      composed.with("-C", getClassesDirectory().resolve(unit.name), ".");
+      for (var resource : unit.resources) {
+        var path = resource.isAbsolute() ? resource : bach.path().root().resolve(resource);
+        if (Files.isDirectory(path)) composed.with("-C", path, ".");
+        else composed.with(path);
+      }
       return composed;
-    }
-
-    private Optional<Version> findVersion(String module) {
-      return Optional.empty();
-    }
-
-    private Optional<String> findMainClass(String module) {
-      var name = module + ".Main";
-      var path = Path.of(name.replace('.', '/') + ".class");
-      var file = getClassesDirectory().resolve(module).resolve(path);
-      return Files.exists(file) ? Optional.of(name) : Optional.empty();
     }
 
     private List<Path> getModulePaths() {
@@ -252,7 +275,7 @@ public sealed interface Conventional {
           class build {
             public static void main(String... args) {
               try (var bach = new Bach(args)) {
-                var space = bach.builder().conventional(%s);
+                var space = bach.builder().conventional().withModule(%s);
                 space.compile(javac -> javac.with("-Xlint").with("-Werror"), jar -> jar.with("--verbose"));
                 // space.runModule("MODULE[/MAINCLASS]", run -> run.with("--dry-run"));
                 // space.document(javadoc -> javadoc.with("-notimestamp").with("-Xdoclint:-missing"));
@@ -275,11 +298,11 @@ public sealed interface Conventional {
             public static void main(String... args) {
               try (var bach = new Bach(args)) {
 
-                var main = bach.builder().conventionalSpace("main", %s);
+                var main = bach.builder().conventional("main").withModule(%s);
                 main.compile(javac -> javac.with("-Xlint").with("-Werror"), jar -> jar.with("--verbose"));
 
                 bach.logCaption("Perform automated checks");
-                var test = main.dependentSpace("test", %s);
+                var test = main.dependentSpace("test").withModule(%s);
                 // test.grab(bach.grabber(...), "org.junit.jupiter", "org.junit.platform.console");
                 test.compile(javac -> javac.with("-g").with("-parameters"));
                 test.runAllTests();
