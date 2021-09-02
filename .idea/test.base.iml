@@ -6,7 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test.base/test/java" isTestSource="true" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" scope="TEST" name="JUnit Jupiter 5.8.0-RC1" level="project" />
+    <orderEntry type="library" scope="TEST" name="external-modules" level="project" />
     <orderEntry type="inheritedJdk" />
   </component>
 </module>

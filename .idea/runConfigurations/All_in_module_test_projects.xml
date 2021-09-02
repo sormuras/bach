@@ -11,7 +11,7 @@
     <option name="MAIN_CLASS_NAME" value="" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="package" />
-    <option name="VM_PARAMETERS" value="-ea -Djava.util.logging.config.file=.bach/logging.properties" />
+    <option name="VM_PARAMETERS" value="-ea -Djava.util.logging.config.file=.bach/logging.properties --add-modules org.junit.platform.console" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     <method v="2">
       <option name="Make" enabled="true" />
