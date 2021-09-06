@@ -99,18 +99,21 @@ public record JarCommand(
     return jar.toArguments();
   }
 
+  /** Main operation mode option. */
   public record ModeOption(Optional<String> value) implements Option.Value<String> {
     public static ModeOption empty() {
       return new ModeOption(Optional.empty());
     }
   }
 
+  /** Archive file name option. */
   public record FileOption(Optional<Path> value) implements Option.Value<Path> {
     public static FileOption empty() {
       return new FileOption(Optional.empty());
     }
   }
 
+  /** Directories and regular files option. */
   public record FilesOption(List<TargetedPaths> values) implements Option.Values<TargetedPaths> {
     public static FilesOption empty() {
       return new FilesOption(List.of());
