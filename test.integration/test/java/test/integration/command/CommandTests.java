@@ -106,7 +106,8 @@ class CommandTests {
         foo.bar.foo.baz
         --verbose
         -g
-        """.lines());
+        """
+            .lines());
   }
 
   static void assertArguments(Command<?> command, Stream<String> expected) {

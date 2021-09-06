@@ -41,8 +41,7 @@ public record Jackson(String version) implements ExternalModuleLocator {
               yield "com.fasterxml.jackson.module";
             if (module.startsWith("com.fasterxml.jackson.jaxrs."))
               yield "com.fasterxml.jackson.jaxrs";
-            if (module.startsWith("com.fasterxml.jackson.jr."))
-              yield "com.fasterxml.jackson.jr";
+            if (module.startsWith("com.fasterxml.jackson.jr.")) yield "com.fasterxml.jackson.jr";
             yield MAVEN_GROUP;
           }
         };
