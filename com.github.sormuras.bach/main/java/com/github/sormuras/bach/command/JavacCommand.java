@@ -91,7 +91,7 @@ public record JavacCommand(
     for (var specific : moduleSpecificSourcePaths.values()) {
       javac = javac.add("--module-source-path", specific);
     }
-    if (verbose.isTrue()) javac = javac.add("--verbose");
+    if (verbose.isTrue()) javac = javac.add("-verbose");
     //
     javac = javac.addAll(additionals.values());
     //

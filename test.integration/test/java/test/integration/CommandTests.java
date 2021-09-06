@@ -121,7 +121,7 @@ class CommandTests {
         src[/\\\\]mods[:;]src[/\\\\]\\*[/\\\\]java[:;]src[/\\\\]modules
         --module-source-path
         foo.baz=other[/\\\\]baz
-        --verbose
+        -verbose
         -g
         """
             .lines());
