@@ -47,11 +47,6 @@ public record JavacCommand(
     return option(new ReleaseOption(Optional.ofNullable(release)));
   }
 
-  @Override
-  public JavacCommand additionals(AdditionalArgumentsOption additionals) {
-    return option(additionals);
-  }
-
   public JavacCommand modules(String... modules) {
     return option(new ModulesOption(List.of(modules)));
   }
@@ -61,12 +56,19 @@ public record JavacCommand(
   }
 
   @Override
+  public JavacCommand additionals(AdditionalArgumentsOption additionals) {
+    return option(additionals);
+  }
+
+  @Override
   public List<String> toArguments() {
     var javac = Command.of(name());
     if (release.isPresent()) javac = javac.add("--release", release.get());
     if (modules.isPresent()) javac = javac.add("--module", modules.join(","));
     if (verbose.isTrue()) javac = javac.add("--verbose");
+    //
     javac = javac.addAll(additionals.values());
+    //
     return javac.toArguments();
   }
 
