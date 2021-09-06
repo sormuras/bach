@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.command;
 
+import com.github.sormuras.bach.Command;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

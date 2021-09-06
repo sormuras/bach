@@ -1,12 +1,12 @@
-package test.integration.command;
+package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.command.AdditionalArgumentsOption;
-import com.github.sormuras.bach.command.Command;
 import com.github.sormuras.bach.command.Composer;
 import com.github.sormuras.bach.command.VerboseOption;
 import java.nio.file.Path;

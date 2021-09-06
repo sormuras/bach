@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.command;
 
+import com.github.sormuras.bach.Command;
 import java.util.function.UnaryOperator;
 
 /** A command component and additional arguments operator. */

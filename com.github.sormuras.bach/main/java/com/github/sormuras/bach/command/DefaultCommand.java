@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.command;
 
+import com.github.sormuras.bach.Command;
+
 /**
  * A command implementation for an arbitrary tool name taking arbitrary arguments.
  *

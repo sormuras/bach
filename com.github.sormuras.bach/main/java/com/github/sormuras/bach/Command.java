@@ -1,5 +1,11 @@
-package com.github.sormuras.bach.command;
+package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.command.AdditionalArgumentsOption;
+import com.github.sormuras.bach.command.Composer;
+import com.github.sormuras.bach.command.DefaultCommand;
+import com.github.sormuras.bach.command.JarCommand;
+import com.github.sormuras.bach.command.JavacCommand;
+import com.github.sormuras.bach.command.Option;
 import java.util.Collection;
 import java.util.List;
 
