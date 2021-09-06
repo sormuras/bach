@@ -64,6 +64,7 @@ class CommandTests {
     assertArguments(
         jar.mode("--create")
             .file(Path.of("file.zip"))
+            .main("com.greetings.Main")
             .verbose(true)
             .add("--no-compress")
             .add("--no-manifest")
@@ -76,6 +77,8 @@ class CommandTests {
         --create
         --file
         file.zip
+        --main-class
+        com.greetings.Main
         --verbose
         --no-compress
         --no-manifest

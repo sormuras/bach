@@ -12,6 +12,7 @@ import java.util.Optional;
  *
  * @param mode The main operation mode like {@code --create}, {@code --list}, or {@code --update}.
  * @param file Specifies the archive file name.
+ * @param main Specifies the entry point for standalone applications bundled into a JAR file.
  * @param verbose Sends or prints verbose output to standard output.
  * @param additionals Aggregates additional command-line arguments.
  * @param files Specifies the classes and resources to operate on.
@@ -21,6 +22,7 @@ import java.util.Optional;
 public record JarCommand(
     ModeOption mode,
     FileOption file,
+    MainClassOption main,
     VerboseOption verbose,
     AdditionalArgumentsOption additionals,
     FilesOption files)
@@ -30,6 +32,7 @@ public record JarCommand(
     this(
         ModeOption.empty(),
         FileOption.empty(),
+        MainClassOption.empty(),
         VerboseOption.empty(),
         AdditionalArgumentsOption.empty(),
         FilesOption.empty());
@@ -45,6 +48,7 @@ public record JarCommand(
     return new JarCommand(
         option instanceof ModeOption mode ? mode : mode,
         option instanceof FileOption file ? file : file,
+        option instanceof MainClassOption main ? main : main,
         option instanceof VerboseOption verbose ? verbose : verbose,
         option instanceof AdditionalArgumentsOption additionals ? additionals : additionals,
         option instanceof FilesOption files ? files : files);
@@ -56,6 +60,10 @@ public record JarCommand(
 
   public JarCommand file(Path file) {
     return option(new FileOption(Optional.ofNullable(file)));
+  }
+
+  public JarCommand main(String main) {
+    return option(new MainClassOption(Optional.ofNullable(main)));
   }
 
   public JarCommand verbose(Boolean verbose) {
@@ -80,6 +88,7 @@ public record JarCommand(
     var jar = Command.of(name());
     if (mode.isPresent()) jar = jar.add(mode.get());
     if (file.isPresent()) jar = jar.add("--file", file.get());
+    if (main.isPresent()) jar = jar.add("--main-class", main.get());
     if (verbose.isTrue()) jar = jar.add("--verbose");
     //
     jar = jar.addAll(additionals.values());
@@ -110,6 +119,13 @@ public record JarCommand(
   public record FileOption(Optional<Path> value) implements Option.Value<Path> {
     public static FileOption empty() {
       return new FileOption(Optional.empty());
+    }
+  }
+
+  /** Entry point for standalone applications option. */
+  public record MainClassOption(Optional<String> value) implements Option.Value<String> {
+    public static MainClassOption empty() {
+      return new MainClassOption(Optional.empty());
     }
   }
 
