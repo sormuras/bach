@@ -103,8 +103,10 @@ class CommandTests {
     assertEquals("javac", javac.name());
 
     assertArguments(
-        javac.modules("foo.bar", "foo.baz").verbose(true).add("-g"),
+        javac.release(99).modules("foo.bar", "foo.baz").verbose(true).add("-g"),
         """
+        --release
+        99
         --module
         foo.bar.foo.baz
         --verbose
