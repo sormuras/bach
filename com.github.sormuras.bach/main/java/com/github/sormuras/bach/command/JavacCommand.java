@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.command;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,8 @@ import java.util.Optional;
 public record JavacCommand(
     ReleaseOption release,
     ModulesOption modules,
+    ModulePatternSourcePathOption modulePatternSourcePaths,
+    ModuleSpecificSourcePathOption moduleSpecificSourcePaths,
     VerboseOption verbose,
     AdditionalArgumentsOption additionals)
     implements Command<JavacCommand> {
@@ -25,6 +28,8 @@ public record JavacCommand(
     this(
         ReleaseOption.empty(),
         ModulesOption.empty(),
+        ModulePatternSourcePathOption.empty(),
+        ModuleSpecificSourcePathOption.empty(),
         VerboseOption.empty(),
         AdditionalArgumentsOption.empty());
   }
@@ -39,6 +44,8 @@ public record JavacCommand(
     return new JavacCommand(
         option instanceof ReleaseOption release ? release : release,
         option instanceof ModulesOption modules ? modules : modules,
+        option instanceof ModulePatternSourcePathOption paths ? paths : modulePatternSourcePaths,
+        option instanceof ModuleSpecificSourcePathOption paths ? paths : moduleSpecificSourcePaths,
         option instanceof VerboseOption verbose ? verbose : verbose,
         option instanceof AdditionalArgumentsOption additionals ? additionals : additionals);
   }
@@ -49,6 +56,18 @@ public record JavacCommand(
 
   public JavacCommand modules(String... modules) {
     return option(new ModulesOption(List.of(modules)));
+  }
+
+  public JavacCommand modulePatternSourcePaths(String... segments) {
+    return option(new ModulePatternSourcePathOption(List.of(segments)));
+  }
+
+  public JavacCommand withModulePatternSourcePath(String segment) {
+    return option(modulePatternSourcePaths.withModulePatternForm(segment));
+  }
+
+  public JavacCommand withModuleSpecificSourcePath(String module, Path path, Path... more) {
+    return option(moduleSpecificSourcePaths.withModuleSpecificForm(module, path, more));
   }
 
   public JavacCommand verbose(Boolean verbose) {
@@ -65,6 +84,12 @@ public record JavacCommand(
     var javac = Command.of(name());
     if (release.isPresent()) javac = javac.add("--release", release.get());
     if (modules.isPresent()) javac = javac.add("--module", modules.join(","));
+    if (modulePatternSourcePaths.isPresent()) {
+      javac = javac.add("--module-source-path", modulePatternSourcePaths.join());
+    }
+    for (var specific : moduleSpecificSourcePaths.values()) {
+      javac = javac.add("--module-source-path", specific);
+    }
     if (verbose.isTrue()) javac = javac.add("--verbose");
     //
     javac = javac.addAll(additionals.values());

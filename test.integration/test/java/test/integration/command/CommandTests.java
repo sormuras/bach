@@ -101,14 +101,26 @@ class CommandTests {
   void javac() {
     var javac = Command.javac();
     assertEquals("javac", javac.name());
+    assertArguments(javac /*, no arguments */);
 
     assertArguments(
-        javac.release(99).modules("foo.bar", "foo.baz").verbose(true).add("-g"),
+        javac
+            .release(99)
+            .modules("foo.bar", "foo.baz")
+            .modulePatternSourcePaths("src/mods", "src/*/java")
+            .withModulePatternSourcePath("src\\modules")
+            .withModuleSpecificSourcePath("foo.baz", Path.of("other/baz"))
+            .verbose(true)
+            .add("-g"),
         """
         --release
         99
         --module
-        foo.bar.foo.baz
+        foo.bar,foo.baz
+        --module-source-path
+        src[/\\\\]mods[:;]src[/\\\\]\\*[/\\\\]java[:;]src[/\\\\]modules
+        --module-source-path
+        foo.baz=other[/\\\\]baz
         --verbose
         -g
         """
