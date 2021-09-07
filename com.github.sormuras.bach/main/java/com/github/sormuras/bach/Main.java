@@ -44,7 +44,7 @@ public record Main() implements ToolProvider {
         return;
       }
       if (options.forMain().generateBuildProgram().orElse(false)) {
-        out.print(Bach.BuildProgramGenerators.generateConventionalBuildProgram());
+        // TODO out.print(Bach.BuildProgramGenerators.generateConventionalBuildProgram());
         return;
       }
       throw new UnsupportedOperationException("options = %s".formatted(options));

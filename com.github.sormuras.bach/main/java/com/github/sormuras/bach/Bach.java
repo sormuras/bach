@@ -1,7 +1,7 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.builder.BuilderFactory;
-import com.github.sormuras.bach.builder.Conventional;
+import com.github.sormuras.bach.command.Composer;
+import com.github.sormuras.bach.command.DefaultCommand;
 import com.github.sormuras.bach.internal.DurationSupport;
 import com.github.sormuras.bach.internal.ExecuteModuleToolProvider;
 import com.github.sormuras.bach.internal.ExecuteProcessToolProvider;
@@ -12,11 +12,11 @@ import com.github.sormuras.bach.internal.ToolProviderSupport;
 import com.github.sormuras.bach.internal.ToolRunningToolCall;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
@@ -27,20 +27,6 @@ public class Bach implements AutoCloseable {
   public static String version() {
     return ModuleSupport.version(Bach.class.getModule());
   }
-
-  /** Convenience short-cuts to various build program generators. */
-  public sealed interface BuildProgramGenerators {
-    static String generateConventionalBuildProgram() {
-      return Conventional.generateMainAndTestSpaceBuildProgram();
-    }
-
-    static String generateConventionalUnnamedSpaceBuildProgram() {
-      return Conventional.generateUnnamedSpaceBuildProgram();
-    }
-  }
-
-  /** Package-private target of local "namespace-defining" sealed types. */
-  record Sealer() implements BuildProgramGenerators {}
 
   private final Configuration configuration;
   private final Logbook logbook;
@@ -85,10 +71,6 @@ public class Bach implements AutoCloseable {
     return configuration().printing().err();
   }
 
-  public BuilderFactory builder() {
-    return new BuilderFactory(this);
-  }
-
   public Explorer explorer() {
     return new Explorer(this);
   }
@@ -124,6 +106,14 @@ public class Bach implements AutoCloseable {
     logbook().logMessage(level, text);
   }
 
+  public ToolRun run(String tool, Composer<DefaultCommand> composer) {
+    return run(composer.apply(Command.of(tool)));
+  }
+
+  public ToolRun run(Command<?> command) {
+    return run(new ToolRunningToolCall(Optional.empty(), command));
+  }
+
   public ToolRun run(ToolCall call) {
     logbook().logToolCall(call);
 
@@ -147,22 +137,6 @@ public class Bach implements AutoCloseable {
       return run(tool, arguments);
     }
     throw new AssertionError("Where art thou, switch o' patterns?");
-  }
-
-  public ToolRun run(String tool, ToolCall.Composer composer) {
-    return run(composer.apply(ToolCall.of(tool)));
-  }
-
-  public ToolRun run(ToolFinder finder, String name, ToolCall.Composer composer) {
-    return run(composer.apply(ToolCall.of(finder, name)));
-  }
-
-  public ToolRun run(Path executable, ToolCall.Composer composer) {
-    return run(composer.apply(ToolCall.process(executable)));
-  }
-
-  public ToolRun run(ModuleFinder finder, String module, ToolCall.Composer composer) {
-    return run(composer.apply(ToolCall.module(finder, module)));
   }
 
   private ToolRun run(ToolProvider provider, List<String> arguments) {

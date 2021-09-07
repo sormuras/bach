@@ -1,8 +1,10 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.ExternalModuleLocators;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
+import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.external.JUnit;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
@@ -27,7 +29,7 @@ class build {
       grabber.grabMissingExternalModules();
 
       bach.logCaption("Grab external tools");
-      bach.run(ToolCall.of("grab").with(bach.path().root(".bach", "external.properties")));
+      bach.run("grab", grab -> grab.add(bach.path().root(".bach", "external.properties")));
 
       bach.logCaption("Build main code space");
       var mainModules = buildMainModules(bach, version);
@@ -81,28 +83,28 @@ class build {
   static Path buildMainModules(Bach bach, Version version) {
     var classes = Path.of(".bach/workspace/classes");
     bach.run(
-        ToolCall.of("javac")
-            .with("--release", "17")
-            .with("--module", "com.github.sormuras.bach")
-            .with("--module-source-path", "./*/main/java")
-            .with("-g")
-            .with("-parameters")
-            .with("-Werror")
-            .with("-Xlint")
-            .with("-encoding", "UTF-8")
-            .with("-d", classes));
+        Command.javac()
+            .release(17)
+            .modules("com.github.sormuras.bach")
+            .moduleSourcePathPatterns("./*/main/java")
+            .add("-g")
+            .add("-parameters")
+            .add("-Werror")
+            .add("-Xlint")
+            .add("-encoding", "UTF-8")
+            .add("-d", classes));
     var modules = Path.of(".bach/workspace/modules");
     bach.run(ToolCall.of("directories", "create", modules));
     var file = Configuration.computeJarFileName("com.github.sormuras.bach", version);
     bach.run(
-        ToolCall.of("jar")
-            .with("--verbose")
-            .with("--create")
-            .with("--file", modules.resolve(file))
-            .with("--module-version", version)
-            .with("--main-class", "com.github.sormuras.bach.Main")
-            .with("-C", classes.resolve("com.github.sormuras.bach"), ".")
-            .with("-C", Path.of("com.github.sormuras.bach").resolve("main/java"), "."));
+        Command.jar()
+            .mode("--create")
+            .file(modules.resolve(file))
+            .verbose(true)
+            .add("--module-version", version)
+            .main("com.github.sormuras.bach.Main")
+            .filesAdd(classes.resolve("com.github.sormuras.bach"))
+            .filesAdd(Path.of("com.github.sormuras.bach").resolve("main/java")));
     return modules;
   }
 
@@ -112,38 +114,36 @@ class build {
     var mainClasses = Path.of(".bach/workspace/classes");
     var testClasses = Path.of(".bach/workspace/test-classes");
     bach.run(
-        ToolCall.of("javac")
-            .with("--module", String.join(",", names))
-            .with(
-                "--module-source-path",
-                String.join(File.pathSeparator, "./*/test/java", "./*/test/java-module"))
-            .with("--module-path", List.of(mainModules, bach.path().externalModules()))
-            .with(
+        Command.javac()
+            .modules(names)
+            .moduleSourcePathPatterns("./*/test/java", "./*/test/java-module")
+            .add("--module-path", mainModules + File.pathSeparator + bach.path().externalModules())
+            .add(
                 "--patch-module",
                 "com.github.sormuras.bach=" + mainClasses.resolve("com.github.sormuras.bach"))
-            .with("-g")
-            .with("-parameters")
-            .with("-Werror")
-            .with("-Xlint")
-            .with("-encoding", "UTF-8")
-            .with("-d", testClasses));
+            .add("-g")
+            .add("-parameters")
+            .add("-Werror")
+            .add("-Xlint")
+            .add("-encoding", "UTF-8")
+            .add("-d", testClasses));
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(ToolCall.of("directories", "create", modules));
-    var jars = new ArrayList<ToolCall>();
+    var jars = new ArrayList<JarCommand>();
     for (var name : names) {
       var file = name + "@" + version + "+test.jar";
       var jar =
-          ToolCall.of("jar")
-              .with("--create")
-              .with("--file", modules.resolve(file))
-              .with("--module-version", version + "+test")
-              .with("-C", testClasses.resolve(name), ".");
+          Command.jar()
+              .mode("--create")
+              .file(modules.resolve(file))
+              .add("--module-version", version + "+test")
+              .filesAdd(testClasses.resolve(name));
       if (name.equals("com.github.sormuras.bach")) {
-        jar = jar.with("-C", mainClasses.resolve("com.github.sormuras.bach"), ".");
+        jar = jar.filesAdd(mainClasses.resolve("com.github.sormuras.bach"));
       }
       var resources = Path.of(name, "test", "resources");
       if (Files.isDirectory(resources)) {
-        jar = jar.with("-C", resources, ".");
+        jar = jar.filesAdd(resources);
       }
       jars.add(jar);
     }
@@ -161,32 +161,33 @@ class build {
             bach.path().externalModules());
     var toolFinder = ToolFinder.of(moduleFinder, true, module);
     bach.run(
-        ToolCall.of(toolFinder, "junit")
-            .with("--select-module", module)
-            .with("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module)));
+        ToolCall.of(
+            toolFinder,
+            Command.of("junit")
+                .add("--select-module", module)
+                .add("--reports-dir", Path.of(".bach/workspace/test-reports/junit-" + module))));
   }
 
   static void generateApiDocumentation(Bach bach, Version version) {
     var api = bach.path().workspace("documentation", "api");
     bach.run(
-        ToolCall.of("javadoc")
-            .with("--module", "com.github.sormuras.bach")
-            .with("--module-source-path", "./*/main/java")
-            .with("-encoding", "UTF-8")
-            .with("-windowtitle", "🎼 Bach " + version)
-            .with("-header", "🎼 Bach %s API documentation".formatted(version))
-            .with("-notimestamp")
-            .with("-use")
-            .with("-linksource")
-            .with("-Xdoclint:-missing")
-            .with("-Werror")
-            .with("-d", api));
+        Command.of("javadoc")
+            .add("--module", "com.github.sormuras.bach")
+            .add("--module-source-path", "./*/main/java")
+            .add("-encoding", "UTF-8")
+            .add("-windowtitle", "🎼 Bach " + version)
+            .add("-header", "🎼 Bach %s API documentation".formatted(version))
+            .add("-notimestamp")
+            .add("-use")
+            .add("-linksource")
+            .add("-Xdoclint:-missing")
+            .add("-Werror")
+            .add("-d", api));
     bach.run(
-        "jar",
-        jar ->
-            jar.with("--create")
-                .with("--file", api.getParent().resolve("api.zip"))
-                .with("--no-manifest")
-                .with("-C", api, "."));
+        Command.jar()
+            .mode("--create")
+            .file(api.getParent().resolve("api.zip"))
+            .add("--no-manifest")
+            .filesAdd(api));
   }
 }

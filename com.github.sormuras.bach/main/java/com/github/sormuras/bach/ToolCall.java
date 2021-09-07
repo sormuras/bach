@@ -3,31 +3,35 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.ModuleLaunchingToolCall;
 import com.github.sormuras.bach.internal.ProcessStartingToolCall;
 import com.github.sormuras.bach.internal.ToolRunningToolCall;
-import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 /** Builds named tool calls with their arguments. */
 public sealed interface ToolCall
     permits ToolRunningToolCall, ProcessStartingToolCall, ModuleLaunchingToolCall {
 
-  String name();
+  Command<?> command();
 
-  List<String> arguments();
+  default String name() {
+    return command().name();
+  }
+
+  default List<String> arguments() {
+    return command().toArguments();
+  }
 
   static ToolCall of(String name, Object... arguments) {
     return ToolCall.of(null, name, arguments);
   }
 
   static ToolCall of(ToolFinder finder, String name, Object... arguments) {
-    return new ToolRunningToolCall(Optional.ofNullable(finder), name, new ArrayList<>())
-        .withAll(arguments);
+    return ToolCall.of(finder, Command.of(name, arguments));
+  }
+
+  static ToolCall of(ToolFinder finder, Command<?> command) {
+    return new ToolRunningToolCall(Optional.ofNullable(finder), command);
   }
 
   static ToolCall java(Object... arguments) {
@@ -36,46 +40,10 @@ public sealed interface ToolCall
   }
 
   static ToolCall process(Path executable, Object... arguments) {
-    return new ProcessStartingToolCall(executable, new ArrayList<>()).withAll(arguments);
+    return new ProcessStartingToolCall(executable, Command.of(executable.toString(), arguments));
   }
 
   static ToolCall module(ModuleFinder finder, String name, Object... arguments) {
-    return new ModuleLaunchingToolCall(finder, name, new ArrayList<>()).withAll(arguments);
-  }
-
-  default ToolCall with(Object argument) {
-    arguments().add(argument.toString());
-    return this;
-  }
-
-  default ToolCall with(String option, Object value, Object... more) {
-    return with(option).with(value).withAll(more);
-  }
-
-  default ToolCall with(String option, Collection<Path> paths) {
-    return with(option).with(paths, File.pathSeparator);
-  }
-
-  default ToolCall with(Collection<?> arguments, CharSequence delimiter) {
-    if (arguments.isEmpty()) throw new IllegalArgumentException("Collection must not be empty");
-    return with(arguments.stream().map(Object::toString).collect(Collectors.joining(delimiter)));
-  }
-
-  default ToolCall withAll(Object... arguments) {
-    return withAll(List.of(arguments));
-  }
-
-  default ToolCall withAll(Collection<?> arguments) {
-    arguments.stream().map(Object::toString).forEach(arguments()::add);
-    return this;
-  }
-
-  /** A tool call arguments tweaker. */
-  interface Composer extends UnaryOperator<ToolCall> {
-
-    /** {@return a tool call composer that always returns the same call instance} */
-    static Composer identity() {
-      return call -> call;
-    }
+    return new ModuleLaunchingToolCall(finder, Command.of(name, arguments));
   }
 }

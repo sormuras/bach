@@ -76,12 +76,12 @@ public record JarCommand(
     return option(additionals);
   }
 
-  public JarCommand withFiles(Path path) {
-    return withFiles(0, path);
+  public JarCommand filesAdd(Path path) {
+    return filesAdd(0, path);
   }
 
-  public JarCommand withFiles(int version, Path path) {
-    return option(files.withPath(version, path));
+  public JarCommand filesAdd(int version, Path path) {
+    return option(files.add(version, path));
   }
 
   @Override
@@ -136,7 +136,7 @@ public record JarCommand(
       return new FilesOption(List.of());
     }
 
-    public FilesOption withPath(int version, Path path) {
+    public FilesOption add(int version, Path path) {
       var values = new ArrayList<>(this.values);
       values.add(new TargetedPaths(version, List.of(path)));
       return new FilesOption(values);

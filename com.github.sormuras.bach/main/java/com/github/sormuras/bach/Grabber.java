@@ -21,7 +21,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
     var target = directory.resolve(asset.name());
     var source = asset.source();
     var arg = target.toString().replace('\\', '/') + '=' + source;
-    bach.run("grab", grab -> grab.with(arg));
+    bach.run(ToolCall.of("grab", arg));
   }
 
   public void grab(Directory... directories) {

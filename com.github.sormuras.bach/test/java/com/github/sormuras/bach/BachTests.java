@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 class BachTests {
   @Test
-  void packagePrivateSealerRecordCanBeInstantiatedAndReturnsNonNullStringRepresentation() {
-    assertNotNull(new Bach.Sealer().toString());
+  void instanceCreateViaDefaultConstructorReturnsNonNullStringRepresentation() {
+    assertNotNull(new Bach().toString());
   }
 }

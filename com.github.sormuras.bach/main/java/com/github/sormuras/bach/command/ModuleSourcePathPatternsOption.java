@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** An option collecting module source path segments in module-pattern form. */
-public record ModulePatternSourcePathOption(List<String> values) implements Option.Values<String> {
-  public static ModulePatternSourcePathOption empty() {
-    return new ModulePatternSourcePathOption(List.of());
+public record ModuleSourcePathPatternsOption(List<String> values) implements Option.Values<String> {
+  public static ModuleSourcePathPatternsOption empty() {
+    return new ModuleSourcePathPatternsOption(List.of());
   }
 
   public String join() {
@@ -18,9 +18,9 @@ public record ModulePatternSourcePathOption(List<String> values) implements Opti
         .collect(Collectors.joining(File.pathSeparator));
   }
 
-  public ModulePatternSourcePathOption withModulePatternForm(String segment) {
+  public ModuleSourcePathPatternsOption add(String segment) {
     var values = new ArrayList<>(this.values);
     values.add(segment);
-    return new ModulePatternSourcePathOption(List.copyOf(values));
+    return new ModuleSourcePathPatternsOption(List.copyOf(values));
   }
 }

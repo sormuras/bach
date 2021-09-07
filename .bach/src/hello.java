@@ -39,10 +39,10 @@ class hello {
                   "https://github.com/sormuras/hello/releases/download/1-ea+1/hello-1-ea+1.jar#SIZE=909"));
 
       bach.logCaption("Greet current user");
-      bach.run("hello", call -> call.with("world 1"));
-      bach.run("sormuras-hello@07819f3ee7", call -> call.with("world 2"));
-      bach.run("sormuras-hello@1-ea+1.java", call -> call.with("world 3"));
-      bach.run("sormuras-hello@1-ea+1.jar", call -> call.with("world 4"));
+      bach.run("hello", call -> call.add("world 1"));
+      bach.run("sormuras-hello@07819f3ee7", call -> call.add("world 2"));
+      bach.run("sormuras-hello@1-ea+1.java", call -> call.add("world 3"));
+      bach.run("sormuras-hello@1-ea+1.jar", call -> call.add("world 4"));
     }
   }
 }

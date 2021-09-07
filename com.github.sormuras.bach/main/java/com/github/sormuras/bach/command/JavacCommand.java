@@ -19,8 +19,8 @@ import java.util.Optional;
 public record JavacCommand(
     ReleaseOption release,
     ModulesOption modules,
-    ModulePatternSourcePathOption modulePatternSourcePaths,
-    ModuleSpecificSourcePathOption moduleSpecificSourcePaths,
+    ModuleSourcePathPatternsOption moduleSourcePathPatterns,
+    ModuleSourcePathSpecificsOption moduleSourcePathSpecifics,
     VerboseOption verbose,
     AdditionalArgumentsOption additionals)
     implements Command<JavacCommand> {
@@ -29,8 +29,8 @@ public record JavacCommand(
     this(
         ReleaseOption.empty(),
         ModulesOption.empty(),
-        ModulePatternSourcePathOption.empty(),
-        ModuleSpecificSourcePathOption.empty(),
+        ModuleSourcePathPatternsOption.empty(),
+        ModuleSourcePathSpecificsOption.empty(),
         VerboseOption.empty(),
         AdditionalArgumentsOption.empty());
   }
@@ -45,8 +45,8 @@ public record JavacCommand(
     return new JavacCommand(
         option instanceof ReleaseOption release ? release : release,
         option instanceof ModulesOption modules ? modules : modules,
-        option instanceof ModulePatternSourcePathOption paths ? paths : modulePatternSourcePaths,
-        option instanceof ModuleSpecificSourcePathOption paths ? paths : moduleSpecificSourcePaths,
+        option instanceof ModuleSourcePathPatternsOption paths ? paths : moduleSourcePathPatterns,
+        option instanceof ModuleSourcePathSpecificsOption paths ? paths : moduleSourcePathSpecifics,
         option instanceof VerboseOption verbose ? verbose : verbose,
         option instanceof AdditionalArgumentsOption additionals ? additionals : additionals);
   }
@@ -56,19 +56,23 @@ public record JavacCommand(
   }
 
   public JavacCommand modules(String... modules) {
-    return option(new ModulesOption(List.of(modules)));
+    return modules(List.of(modules));
   }
 
-  public JavacCommand modulePatternSourcePaths(String... segments) {
-    return option(new ModulePatternSourcePathOption(List.of(segments)));
+  public JavacCommand modules(List<String> modules) {
+    return option(new ModulesOption(List.copyOf(modules)));
   }
 
-  public JavacCommand withModulePatternSourcePath(String segment) {
-    return option(modulePatternSourcePaths.withModulePatternForm(segment));
+  public JavacCommand moduleSourcePathPatterns(String... patterns) {
+    return option(new ModuleSourcePathPatternsOption(List.of(patterns)));
   }
 
-  public JavacCommand withModuleSpecificSourcePath(String module, Path path, Path... more) {
-    return option(moduleSpecificSourcePaths.withModuleSpecificForm(module, path, more));
+  public JavacCommand moduleSourcePathAddPattern(String segment) {
+    return option(moduleSourcePathPatterns.add(segment));
+  }
+
+  public JavacCommand moduleSourcePathAddSpecific(String module, Path path, Path... more) {
+    return option(moduleSourcePathSpecifics.withModuleSpecificForm(module, path, more));
   }
 
   public JavacCommand verbose(Boolean verbose) {
@@ -85,10 +89,10 @@ public record JavacCommand(
     var javac = Command.of(name());
     if (release.isPresent()) javac = javac.add("--release", release.get());
     if (modules.isPresent()) javac = javac.add("--module", modules.join(","));
-    if (modulePatternSourcePaths.isPresent()) {
-      javac = javac.add("--module-source-path", modulePatternSourcePaths.join());
+    if (moduleSourcePathPatterns.isPresent()) {
+      javac = javac.add("--module-source-path", moduleSourcePathPatterns.join());
     }
-    for (var specific : moduleSpecificSourcePaths.values()) {
+    for (var specific : moduleSourcePathSpecifics.values()) {
       javac = javac.add("--module-source-path", specific);
     }
     if (verbose.isTrue()) javac = javac.add("-verbose");

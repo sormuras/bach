@@ -68,11 +68,11 @@ class CommandTests {
             .verbose(true)
             .add("--no-compress")
             .add("--no-manifest")
-            .withFiles(Path.of("."))
-            .withFiles(9, Path.of("nine"))
-            .withFiles(11, Path.of("elf"))
-            .withFiles(9, Path.of("neuf"))
-            .withFiles(Path.of("base")),
+            .filesAdd(Path.of("."))
+            .filesAdd(9, Path.of("nine"))
+            .filesAdd(11, Path.of("elf"))
+            .filesAdd(9, Path.of("neuf"))
+            .filesAdd(Path.of("base")),
         """
         --create
         --file
@@ -107,9 +107,9 @@ class CommandTests {
         javac
             .release(99)
             .modules("foo.bar", "foo.baz")
-            .modulePatternSourcePaths("src/mods", "src/*/java")
-            .withModulePatternSourcePath("src\\modules")
-            .withModuleSpecificSourcePath("foo.baz", Path.of("other/baz"))
+            .moduleSourcePathPatterns("src/mods", "src/*/java")
+            .moduleSourcePathAddPattern("src\\modules")
+            .moduleSourcePathAddSpecific("foo.baz", Path.of("other/baz"))
             .verbose(true)
             .add("-g"),
         """

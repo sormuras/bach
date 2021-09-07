@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -19,25 +20,25 @@ class build {
       var modules = Path.of(".bach/workspace/modules");
       try (var bach = new Bach(args)) {
         bach.run(
-            ToolCall.of("javac")
-                .with("--module", "com.greetings,org.astro")
-                .with("--module-source-path", ".")
-                .with("-d", classes));
+            Command.javac()
+                .modules("com.greetings", "org.astro")
+                .moduleSourcePathAddPattern(".")
+                .add("-d", classes));
 
         bach.run(ToolCall.of("directories", "clean", modules));
 
         Stream.of(
-                ToolCall.of("jar")
-                    .with("--create")
-                    .with("--file", modules.resolve("com.greetings@99.jar"))
-                    .with("--module-version", "99")
-                    .with("--main-class", "com.greetings.Main")
-                    .with("-C", classes.resolve("com.greetings"), "."),
-                ToolCall.of("jar")
-                    .with("--create")
-                    .with("--file", modules.resolve("org.astro@99.jar"))
-                    .with("--module-version", "99")
-                    .with("-C", classes.resolve("org.astro"), "."))
+                Command.jar()
+                    .mode("--create")
+                    .file(modules.resolve("com.greetings@99.jar"))
+                    .add("--module-version", "99")
+                    .main("com.greetings.Main")
+                    .filesAdd(classes.resolve("com.greetings")),
+                Command.jar()
+                    .mode("--create")
+                    .file(modules.resolve("org.astro@99.jar"))
+                    .add("--module-version", "99")
+                    .filesAdd(classes.resolve("org.astro")))
             .parallel()
             .forEach(bach::run);
 
@@ -50,9 +51,10 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        var space = bach.builder().conventional().withModule("com.greetings", "org.astro");
-        space.compile();
-        space.runModule("com.greetings", run -> run.with("fun"));
+        //        var space = bach.builder().conventional().withModule("com.greetings",
+        // "org.astro");
+        //        space.compile();
+        //        space.runModule("com.greetings", run -> run.with("fun"));
       }
     }
   }

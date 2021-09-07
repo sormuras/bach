@@ -37,8 +37,8 @@ public interface Command<T extends Command<T>> {
    */
   T additionals(AdditionalArgumentsOption additionals);
 
-  static DefaultCommand of(String name) {
-    return new DefaultCommand(name);
+  static DefaultCommand of(String name, Object... arguments) {
+    return new DefaultCommand(name).addAll(arguments);
   }
 
   static JarCommand jar() {

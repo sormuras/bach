@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Path;
 
@@ -13,21 +14,21 @@ class build {
 
       bach.logCaption("Compile Test Space");
       bach.run(
-          ToolCall.of("javac")
-              .with("-verbose")
-              .with("--module", "tests")
-              .with("--module-source-path", "./*/test/java")
-              .with("-Xplugin:showPlugin")
-              .with("--processor-module-path", mainModules)
-              .with("-d", Path.of(".bach/workspace/test-classes")));
+          Command.javac()
+              .verbose(true)
+              .modules("tests")
+              .moduleSourcePathPatterns("./*/test/java")
+              .add("-Xplugin:showPlugin")
+              .add("--processor-module-path", mainModules)
+              .add("-d", Path.of(".bach/workspace/test-classes")));
 
       bach.logCaption("Generate API Documentation");
       bach.run(
-          ToolCall.of("javadoc")
-              .with("--module", "showcode")
-              .with("--module-source-path", "./*/main/java")
-              .with("-docletpath", mainModules.resolve("showcode@99.jar"))
-              .with("-doclet", "showcode.ShowDoclet"));
+          Command.of("javadoc")
+              .add("--module", "showcode")
+              .add("--module-source-path", "./*/main/java")
+              .add("-docletpath", mainModules.resolve("showcode@99.jar"))
+              .add("-doclet", "showcode.ShowDoclet"));
     }
   }
 
@@ -35,17 +36,17 @@ class build {
     var classes = Path.of(".bach/workspace/classes");
     var modules = Path.of(".bach/workspace/modules");
     bach.run(
-        ToolCall.of("javac")
-            .with("--module", "showcode")
-            .with("--module-source-path", "./*/main/java")
-            .with("-d", classes));
+        Command.javac()
+            .modules("showcode")
+            .moduleSourcePathAddPattern("./*/main/java")
+            .add("-d", classes));
     bach.run(ToolCall.of("directories", "clean", modules));
     bach.run(
-        ToolCall.of("jar")
-            .with("--create")
-            .with("--file", modules.resolve("showcode@99.jar"))
-            .with("--module-version", "99")
-            .with("-C", classes.resolve("showcode"), "."));
+        Command.jar()
+            .mode("--create")
+            .file(modules.resolve("showcode@99.jar"))
+            .add("--module-version", "99")
+            .filesAdd(classes.resolve("showcode")));
     return modules;
   }
 }

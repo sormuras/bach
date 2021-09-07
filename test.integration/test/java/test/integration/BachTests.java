@@ -14,12 +14,6 @@ class BachTests {
   }
 
   @Test
-  void generateBuildProgram() {
-    assertNotNull(Bach.BuildProgramGenerators.generateConventionalBuildProgram());
-    assertNotNull(Bach.BuildProgramGenerators.generateConventionalUnnamedSpaceBuildProgram());
-  }
-
-  @Test
   void log() {
     var bach =
         new Bach(

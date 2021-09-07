@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -20,18 +21,18 @@ class build {
         var options = bach.configuration().projectOptions();
         var version = options.version().map(Object::toString).orElse("99");
         bach.run(
-            ToolCall.of("javac")
-                .with("--module", "com.greetings")
-                .with("--module-version", version)
-                .with("--module-source-path", ".")
-                .with("-d", classes));
+            Command.javac()
+                .modules("com.greetings")
+                .moduleSourcePathPatterns(".")
+                .add("--module-version", version)
+                .add("-d", classes));
         bach.run(ToolCall.of("directories", "clean", modules));
         bach.run(
-            ToolCall.of("jar")
-                .with("--create")
-                .with("--file", modules.resolve("com.greetings@" + version + ".jar"))
-                .with("--main-class", "com.greetings.Main")
-                .with("-C", classes.resolve("com.greetings"), "."));
+            Command.jar()
+                .mode("--create")
+                .file(modules.resolve("com.greetings@" + version + ".jar"))
+                .main("com.greetings.Main")
+                .filesAdd(classes.resolve("com.greetings")));
         bach.run(ToolCall.module(ModuleFinder.of(modules), "com.greetings"))
             .visit(bach.logbook()::print);
       }
@@ -41,9 +42,9 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        var space = bach.builder().conventional().withModule("com.greetings");
-        space.compile();
-        space.runModule("com.greetings", run -> run.with("fun"));
+        // TODO var space = bach.builder().conventional().withModule("com.greetings");
+        // space.compile();
+        // space.runModule("com.greetings", run -> run.with("fun"));
       }
     }
   }
