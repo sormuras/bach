@@ -110,6 +110,9 @@ class CommandTests {
             .moduleSourcePathPatterns("src/mods", "src/*/java")
             .moduleSourcePathAddPattern("src\\modules")
             .moduleSourcePathAddSpecific("foo.baz", Path.of("other/baz"))
+            .outputDirectoryForClasses(Path.of("classes"))
+            .modulePaths(Path.of("lib1"), Path.of("lib2"))
+            .modulePathsAdd(Path.of("lib3"))
             .verbose(true)
             .add("-g"),
         """
@@ -121,7 +124,11 @@ class CommandTests {
         src[/\\\\]mods[:;]src[/\\\\]\\*[/\\\\]java[:;]src[/\\\\]modules
         --module-source-path
         foo.baz=other[/\\\\]baz
+        --module-path
+        lib1[:;]lib2[:;]lib3
         -verbose
+        -d
+        classes
         -g
         """
             .lines());

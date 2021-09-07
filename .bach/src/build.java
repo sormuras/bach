@@ -6,7 +6,6 @@ import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.external.JUnit;
-import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -92,7 +91,7 @@ class build {
             .add("-Werror")
             .add("-Xlint")
             .add("-encoding", "UTF-8")
-            .add("-d", classes));
+            .outputDirectoryForClasses(classes));
     var modules = Path.of(".bach/workspace/modules");
     bach.run(ToolCall.of("directories", "create", modules));
     var file = Configuration.computeJarFileName("com.github.sormuras.bach", version);
@@ -117,7 +116,7 @@ class build {
         Command.javac()
             .modules(names)
             .moduleSourcePathPatterns("./*/test/java", "./*/test/java-module")
-            .add("--module-path", mainModules + File.pathSeparator + bach.path().externalModules())
+            .modulePaths(mainModules, bach.path().externalModules())
             .add(
                 "--patch-module",
                 "com.github.sormuras.bach=" + mainClasses.resolve("com.github.sormuras.bach"))
@@ -126,7 +125,7 @@ class build {
             .add("-Werror")
             .add("-Xlint")
             .add("-encoding", "UTF-8")
-            .add("-d", testClasses));
+            .outputDirectoryForClasses(testClasses));
     var modules = Path.of(".bach/workspace/test-modules");
     bach.run(ToolCall.of("directories", "create", modules));
     var jars = new ArrayList<JarCommand>();
