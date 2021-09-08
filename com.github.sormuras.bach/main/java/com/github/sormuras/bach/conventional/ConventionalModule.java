@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/** Describes a source module in a conventional project space. */
 public record ConventionalModule(String name, Optional<String> main, List<Path> resources) {
   public static ConventionalModule of(String name) {
     return new ConventionalModule(name, Optional.empty(), List.of());
@@ -14,10 +15,13 @@ public record ConventionalModule(String name, Optional<String> main, List<Path> 
     return new ConventionalModule(name, Optional.ofNullable(mainClassName), resources);
   }
 
-  public ConventionalModule resourcesAdd(Path path, Path... more) {
+  public ConventionalModule resourcesAddPath(String first, String... more) {
+    return resourcesAddPath(Path.of(first, more));
+  }
+
+  public ConventionalModule resourcesAddPath(Path path) {
     var resources = new ArrayList<>(this.resources);
     resources.add(path);
-    if (more.length > 0) resources.addAll(List.of(more));
     return new ConventionalModule(name, main, resources);
   }
 }

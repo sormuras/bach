@@ -76,36 +76,30 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        var mainSpace =
-            ConventionalSpace.of("main")
-                .modulesAdd("com.greetings", module -> module.main("com.greetings.Main"))
-                .modulesAdd(
-                    "org.astro", module -> module.resourcesAdd(Path.of("org.astro/main/java")));
+        var main =
+            ConventionalSpace.of(bach, "main")
+                .modulesAddModule("com.greetings", module -> module.main("com.greetings.Main"))
+                .modulesAddModule(
+                    "org.astro", module -> module.resourcesAddPath("org.astro/main/java"));
 
-        var mainBuilder =
-            mainSpace.toBuilder(bach)
-                .compile(javac -> javac.add("-Xlint").add("-Werror"), jar -> jar.verbose(true));
-
-        mainBuilder.runModule("com.greetings", run -> run.add("stranger"));
+        main.compile(javac -> javac.add("-Xlint").add("-Werror"), jar -> jar.verbose(true));
+        main.runModule("com.greetings", run -> run.add("stranger"));
 
         bach.logCaption("Perform automated checks");
         var grabber = bach.grabber(JUnit.version("5.8.0-RC1"));
 
-        var testBuilder =
-            mainBuilder
-                .newDependentConventionalSpace("test")
-                .modulesAdd("test.modules", module -> module.main("test.modules.Main"))
-                .toBuilder(bach);
+        var test =
+            main.newDependentConventionalSpace("test")
+                .modulesAddModule("test.modules", module -> module.main("test.modules.Main"));
 
-        testBuilder.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
-        testBuilder.compile(javac -> javac.add("-g").add("-parameters"), Composer.identity());
-        testBuilder.runModule("test.modules", run -> run.add(456));
-        testBuilder.runTool("test", run -> run.add(123));
-
-        testBuilder.runAllTests();
+        test.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
+        test.compile(javac -> javac.add("-g").add("-parameters"), Composer.identity());
+        test.runModule("test.modules", run -> run.add(456));
+        test.runTool("test", run -> run.add(123));
+        test.runAllTests();
 
         bach.logCaption("Generate API documentation and link modules into a custom runtime image");
-        mainBuilder.document(
+        main.document(
             javadoc ->
                 javadoc
                     .add("-encoding", "UTF-8")
@@ -116,7 +110,7 @@ class build {
                     .add("-linksource")
                     .add("-Xdoclint:-missing")
                     .add("-Werror"));
-        mainBuilder.link(jlink -> jlink.add("--launcher", "greet=com.greetings"));
+        main.link(jlink -> jlink.add("--launcher", "greet=com.greetings"));
       }
     }
   }

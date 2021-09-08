@@ -1,6 +1,7 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.conventional.ConventionalSpace;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -51,10 +52,12 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        //        var space = bach.builder().conventional().withModule("com.greetings",
-        // "org.astro");
-        //        space.compile();
-        //        space.runModule("com.greetings", run -> run.with("fun"));
+        var space =
+            ConventionalSpace.of(bach)
+                .modulesAddModule("com.greetings", module -> module.main("com.greetings.Main"))
+                .modulesAddModule("org.astro");
+        space.compile();
+        space.runModule("com.greetings", run -> run.add("fun"));
       }
     }
   }

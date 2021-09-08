@@ -11,26 +11,30 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.UnaryOperator;
 
+/** A module source space configuration and builder class. */
 public record ConventionalSpace(
+    Bach bach,
     Optional<String> name,
     Optional<Integer> release,
     List<ConventionalModule> modules,
     ModuleSourcePathPatternsOption moduleSourcePaths,
-    ModulePathsOption modulePaths) {
+    ModulePathsOption modulePaths)
+    implements ConventionalBuilder {
 
-  public static ConventionalSpace of() {
-    return new ConventionalSpace().moduleSourcePaths(".");
+  public static ConventionalSpace of(Bach bach) {
+    return new ConventionalSpace(bach).moduleSourcePaths(".");
   }
 
-  public static ConventionalSpace of(String name) {
+  public static ConventionalSpace of(Bach bach, String name) {
     var patternJoiner = new StringJoiner(File.separator).add(".").add("*").add(name);
-    return new ConventionalSpace()
+    return new ConventionalSpace(bach)
         .name(name)
         .moduleSourcePaths(patternJoiner.toString(), patternJoiner.add("java").toString());
   }
 
-  public ConventionalSpace() {
+  public ConventionalSpace(Bach bach) {
     this(
+        bach,
         Optional.empty(),
         Optional.empty(),
         List.of(),
@@ -38,26 +42,37 @@ public record ConventionalSpace(
         ModulePathsOption.empty());
   }
 
+  @Override
+  public Bach bach() {
+    return bach;
+  }
+
+  @Override
+  public ConventionalSpace space() {
+    return this;
+  }
+
   public ConventionalSpace name(String name) {
     return new ConventionalSpace(
-        Optional.ofNullable(name), release, modules, moduleSourcePaths, modulePaths);
+        bach, Optional.ofNullable(name), release, modules, moduleSourcePaths, modulePaths);
   }
 
   public ConventionalSpace release(Integer release) {
     return new ConventionalSpace(
-        name, Optional.ofNullable(release), modules, moduleSourcePaths, modulePaths);
+        bach, name, Optional.ofNullable(release), modules, moduleSourcePaths, modulePaths);
   }
 
   public ConventionalSpace modules(List<ConventionalModule> modules) {
     return new ConventionalSpace(
-        name, release, List.copyOf(modules), moduleSourcePaths, modulePaths);
+        bach, name, release, List.copyOf(modules), moduleSourcePaths, modulePaths);
   }
 
-  public ConventionalSpace modulesAdd(String name) {
-    return modulesAdd(name, UnaryOperator.identity());
+  public ConventionalSpace modulesAddModule(String name) {
+    return modulesAddModule(name, UnaryOperator.identity());
   }
 
-  public ConventionalSpace modulesAdd(String name, UnaryOperator<ConventionalModule> operator) {
+  public ConventionalSpace modulesAddModule(
+      String name, UnaryOperator<ConventionalModule> operator) {
     var modules = new ArrayList<>(this.modules);
     modules.add(operator.apply(ConventionalModule.of(name)));
     return modules(modules);
@@ -65,16 +80,17 @@ public record ConventionalSpace(
 
   public ConventionalSpace moduleSourcePaths(String... patterns) {
     return new ConventionalSpace(
-        name, release, modules, new ModuleSourcePathPatternsOption(List.of(patterns)), modulePaths);
+        bach,
+        name,
+        release,
+        modules,
+        new ModuleSourcePathPatternsOption(List.of(patterns)),
+        modulePaths);
   }
 
   public ConventionalSpace modulePaths(Path... paths) {
     return new ConventionalSpace(
-        name, release, modules, moduleSourcePaths, new ModulePathsOption(List.of(paths)));
-  }
-
-  public ConventionalBuilder toBuilder(Bach bach) {
-    return new ConventionalBuilder(bach, this);
+        bach, name, release, modules, moduleSourcePaths, new ModulePathsOption(List.of(paths)));
   }
 
   public List<String> toModuleNames() {
