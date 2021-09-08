@@ -44,6 +44,10 @@ public sealed interface ToolCall
   }
 
   static ToolCall module(ModuleFinder finder, String name, Object... arguments) {
-    return new ModuleLaunchingToolCall(finder, Command.of(name, arguments));
+    return ToolCall.module(finder, Command.of(name, arguments));
+  }
+
+  static ToolCall module(ModuleFinder finder, Command<?> command) {
+    return new ModuleLaunchingToolCall(finder, command);
   }
 }

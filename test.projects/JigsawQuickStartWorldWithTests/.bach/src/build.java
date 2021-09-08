@@ -2,6 +2,8 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
+import com.github.sormuras.bach.command.Composer;
+import com.github.sormuras.bach.conventional.ConventionalSpace;
 import com.github.sormuras.bach.external.JUnit;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
@@ -74,37 +76,47 @@ class build {
   static class BuildWithConventionalApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
-        //        var main =
-        //            bach.builder()
-        //                .conventional("main")
-        //                .withModule("com.greetings", module -> module.main("com.greetings.Main"))
-        //                .withModule("org.astro", module ->
-        // module.resource(Path.of("org.astro/main/java")));
-        //        main.compile(javac -> javac.with("-Xlint").with("-Werror"), jar ->
-        // jar.with("--verbose"));
-        //        main.runModule("com.greetings", run -> run.with("stranger"));
+        var mainSpace =
+            ConventionalSpace.of("main")
+                .modulesAdd("com.greetings", module -> module.main("com.greetings.Main"))
+                .modulesAdd(
+                    "org.astro", module -> module.resourcesAdd(Path.of("org.astro/main/java")));
+
+        var mainBuilder =
+            mainSpace.toBuilder(bach)
+                .compile(javac -> javac.add("-Xlint").add("-Werror"), jar -> jar.verbose(true));
+
+        mainBuilder.runModule("com.greetings", run -> run.add("stranger"));
 
         bach.logCaption("Perform automated checks");
         var grabber = bach.grabber(JUnit.version("5.8.0-RC1"));
-        //        var test = main.dependentSpace("test").withModule("test.modules");
-        //        test.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
-        //        test.compile(javac -> javac.with("-g").with("-parameters"));
-        //        test.runTool("special-test", run -> run.with(123));
-        //        test.runAllTests(); // "test"
 
-        bach.logCaption("Document API and link modules into a custom runtime image");
-        //        main.document(
-        //            javadoc ->
-        //                javadoc
-        //                    .with("-encoding", "UTF-8")
-        //                    .with("-windowtitle", "Window Title")
-        //                    .with("-header", "API documentation header")
-        //                    .with("-notimestamp")
-        //                    .with("-use")
-        //                    .with("-linksource")
-        //                    .with("-Xdoclint:-missing")
-        //                    .with("-Werror"));
-        //        main.link(jlink -> jlink.with("--launcher", "greet=com.greetings"));
+        var testBuilder =
+            mainBuilder
+                .newDependentConventionalSpace("test")
+                .modulesAdd("test.modules", module -> module.main("test.modules.Main"))
+                .toBuilder(bach);
+
+        testBuilder.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
+        testBuilder.compile(javac -> javac.add("-g").add("-parameters"), Composer.identity());
+        testBuilder.runModule("test.modules", run -> run.add(456));
+        testBuilder.runTool("test", run -> run.add(123));
+
+        testBuilder.runAllTests();
+
+        bach.logCaption("Generate API documentation and link modules into a custom runtime image");
+        mainBuilder.document(
+            javadoc ->
+                javadoc
+                    .add("-encoding", "UTF-8")
+                    .add("-windowtitle", "Window Title")
+                    .add("-header", "API documentation header")
+                    .add("-notimestamp")
+                    .add("-use")
+                    .add("-linksource")
+                    .add("-Xdoclint:-missing")
+                    .add("-Werror"));
+        mainBuilder.link(jlink -> jlink.add("--launcher", "greet=com.greetings"));
       }
     }
   }
