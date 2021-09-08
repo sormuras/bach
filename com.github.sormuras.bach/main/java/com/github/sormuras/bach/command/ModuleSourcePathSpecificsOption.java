@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.StringJoiner;
 
 /** An option collecting module source path elements in module-pattern form. */
-public record ModuleSourcePathSpecificsOption(List<String> values) implements Option.Values<String> {
+public record ModuleSourcePathSpecificsOption(List<String> values)
+    implements Option.Values<String> {
   public static ModuleSourcePathSpecificsOption empty() {
     return new ModuleSourcePathSpecificsOption(List.of());
   }

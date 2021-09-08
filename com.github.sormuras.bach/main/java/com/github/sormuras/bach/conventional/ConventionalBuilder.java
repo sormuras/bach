@@ -12,7 +12,6 @@ import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.command.JavacCommand;
 import com.github.sormuras.bach.command.ModulePathsOption;
 import com.github.sormuras.bach.internal.ModuleFinderSupport;
-
 import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
