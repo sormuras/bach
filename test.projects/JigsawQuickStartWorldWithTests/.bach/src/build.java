@@ -2,7 +2,6 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
-import com.github.sormuras.bach.command.Composer;
 import com.github.sormuras.bach.conventional.ConventionalSpace;
 import com.github.sormuras.bach.external.JUnit;
 import java.lang.module.ModuleFinder;
@@ -93,7 +92,7 @@ class build {
                 .modulesAddModule("test.modules", module -> module.main("test.modules.Main"));
 
         test.grab(grabber, "org.junit.jupiter", "org.junit.platform.console");
-        test.compile(javac -> javac.add("-g").add("-parameters"), Composer.identity());
+        test.compile(javac -> javac.add("-g").add("-parameters"));
         test.runModule("test.modules", run -> run.add(456));
         test.runTool("test", run -> run.add(123));
         test.runAllTests();
