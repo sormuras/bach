@@ -34,6 +34,10 @@ public interface ConventionalBuilder {
     compile(Composer.identity(), Composer.identity());
   }
 
+  default void compile(Composer<JavacCommand> javacComposer) {
+    compile(javacComposer, Composer.identity());
+  }
+
   default void compile(Composer<JavacCommand> javacComposer, Composer<JarCommand> jarComposer) {
     var classesDirectory = outputDirectoryForClasses();
     var javac =
