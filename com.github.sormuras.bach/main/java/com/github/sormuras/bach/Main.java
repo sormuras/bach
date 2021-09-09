@@ -11,7 +11,9 @@ public record Main() implements ToolProvider {
     var options = args.length == 0 ? Options.parse("--help") : Options.parse(args);
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
-    new Program(out, err, options).run();
+    try (var program = new Program(out, err, options)) {
+      program.run();
+    }
   }
 
   @Override
@@ -21,8 +23,8 @@ public record Main() implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    try {
-      new Program(out, err, Options.parse(args)).run();
+    try (var program = new Program(out, err, Options.parse(args))) {
+      program.run();
       return 0;
     } catch (Exception exception) {
       err.println(exception);
@@ -30,7 +32,7 @@ public record Main() implements ToolProvider {
     }
   }
 
-  record Program(PrintWriter out, PrintWriter err, Options options) {
+  record Program(PrintWriter out, PrintWriter err, Options options) implements AutoCloseable {
 
     public void run() {
       if (options.forMain().help().orElse(false)) {
@@ -47,7 +49,16 @@ public record Main() implements ToolProvider {
         // TODO out.print(Bach.BuildProgramGenerators.generateConventionalBuildProgram());
         return;
       }
-      throw new UnsupportedOperationException("options = %s".formatted(options));
+      if (options.unhandledArguments().isEmpty()) {
+        throw new AssertionError("Something bad went wrong: %s".formatted(options));
+      }
+      throw new UnsupportedOperationException(String.join(" ", options.unhandledArguments()));
+    }
+
+    @Override
+    public void close() {
+      out.flush();
+      err.flush();
     }
   }
 }
