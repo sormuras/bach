@@ -39,6 +39,7 @@ public class Bach implements AutoCloseable {
     this.configuration = configuration;
     this.logbook = constructLogbook();
     logMessage(
+        configuration.verbose() ? System.Logger.Level.INFO : System.Logger.Level.DEBUG,
         "Initialized Bach %s (Java %s, %s, %s)"
             .formatted(
                 version(),
