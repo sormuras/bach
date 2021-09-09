@@ -8,8 +8,11 @@ import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolRun;
 import com.github.sormuras.bach.command.Composer;
 import com.github.sormuras.bach.command.DefaultCommand;
+import com.github.sormuras.bach.command.JLinkCommand;
+import com.github.sormuras.bach.command.JUnitCommand;
 import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.command.JavacCommand;
+import com.github.sormuras.bach.command.JavadocCommand;
 import com.github.sormuras.bach.command.ModulePathsOption;
 import com.github.sormuras.bach.internal.ModuleFinderSupport;
 import java.io.File;
@@ -64,10 +67,10 @@ public interface ConventionalBuilder {
     jars.parallelStream().forEach(bach()::run);
   }
 
-  default void document(Composer<DefaultCommand> javadocComposer) {
+  default void document(Composer<JavadocCommand> javadocComposer) {
     var api = bach().path().workspace(space().name().orElse(""), "documentation", "api");
     var javadoc =
-        Command.of("javadoc")
+        Command.javadoc()
             .add("--module", String.join(",", space().toModuleNames()))
             .add(
                 "--module-source-path",
@@ -88,10 +91,10 @@ public interface ConventionalBuilder {
     bach().run(jar);
   }
 
-  default void link(Composer<DefaultCommand> jlinkComposer) {
+  default void link(Composer<JLinkCommand> jlinkComposer) {
     var image = bach().path().workspace(space().name().orElse(""), "image");
     var jlink =
-        Command.of("jlink")
+        Command.jlink()
             .add("--output", image)
             .add("--add-modules", String.join(",", space().toModuleNames()))
             .add(
@@ -193,10 +196,10 @@ public interface ConventionalBuilder {
   default void runJUnit(
       ToolFinder finder,
       String module,
-      Composer<DefaultCommand> composer,
+      Composer<JUnitCommand> composer,
       ToolRun.Visitor visitor) {
     var reports = outputDirectoryForReports().resolve("junit/" + module);
-    var junit = Command.of("junit").add("--select-module", module).add("--reports-dir", reports);
+    var junit = Command.junit().add("--select-module", module).add("--reports-dir", reports);
     var call = ToolCall.of(finder, composer.apply(junit));
     var run = bach().run(call);
     visitor.accept(run);
