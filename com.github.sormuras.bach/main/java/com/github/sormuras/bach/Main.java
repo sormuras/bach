@@ -35,21 +35,40 @@ public record Main() implements ToolProvider {
   record Program(PrintWriter out, PrintWriter err, Options options) implements AutoCloseable {
 
     public void run() {
-      if (options.forMain().help().orElse(false)) {
-        out.print("""
-        Usage: bach ...
-        """);
+      var main = options.forMain();
+      if (main.help().orElse(false)) {
+        out.print(
+            """
+            Usage: bach OPTION [ARGUMENTS...]
+            Options include:
+              --help, /?
+                Print this help message.
+              --list-tools
+                Print provided tools and exit.
+              --run-tool NAME ARGUMENTS...
+                Find first tool provider by its NAME and run it with the given ARGUMENTS.
+              --show-tools
+                Print provided tools and continue.
+              --version
+                Print Bach's version and exit.
+            """);
         return;
       }
-      if (options.forMain().version().orElse(false)) {
+      Bach bach = null; // create lazily and memoize locally
+      if (main.listTools().orElse(false) || main.showTools().orElse(false)) {
+        bach = new Bach();
+        bach.printer().printTools();
+        if (main.listTools().orElse(false)) return;
+      }
+      if (main.version().orElse(false)) {
         out.println(Bach.version());
         return;
       }
       var unhandled = options.unhandledArguments();
-      if (options.forMain().tool().isPresent()) {
-        var tool = options.forMain().tool().get();
+      if (main.runTool().isPresent()) {
+        if (bach == null) bach = new Bach();
+        var tool = main.runTool().get();
         var command = Command.of(tool).addAll(unhandled);
-        var bach = new Bach();
         var run = bach.run(command);
         bach.printer().print(run, true, 0);
         return;
