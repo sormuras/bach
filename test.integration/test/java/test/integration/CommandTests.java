@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.command.AdditionalArgumentsOption;
 import com.github.sormuras.bach.command.Composer;
+import com.github.sormuras.bach.command.JDepsCommand;
+import com.github.sormuras.bach.command.JModCommand;
+import com.github.sormuras.bach.command.JavapCommand;
 import com.github.sormuras.bach.command.VerboseOption;
 import java.nio.file.Path;
 import java.util.List;
@@ -132,6 +135,41 @@ class CommandTests {
         -g
         """
             .lines());
+  }
+
+  @Test
+  void javadoc() {
+    assertArguments(Command.javadoc());
+  }
+
+  @Test
+  void javap() {
+    assertArguments(new JavapCommand());
+  }
+
+  @Test
+  void jdeps() {
+    assertArguments(new JDepsCommand());
+  }
+
+  @Test
+  void jlink() {
+    assertArguments(Command.jlink());
+  }
+
+  @Test
+  void jmod() {
+    assertArguments(new JModCommand());
+  }
+
+  @Test
+  void jpackage() {
+    assertArguments(Command.jpackage());
+  }
+
+  @Test
+  void junit() {
+    assertArguments(Command.junit());
   }
 
   static void assertArguments(Command<?> command, Stream<String> expected) {

@@ -3,8 +3,12 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.command.AdditionalArgumentsOption;
 import com.github.sormuras.bach.command.Composer;
 import com.github.sormuras.bach.command.DefaultCommand;
+import com.github.sormuras.bach.command.JLinkCommand;
+import com.github.sormuras.bach.command.JPackageCommand;
+import com.github.sormuras.bach.command.JUnitCommand;
 import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.command.JavacCommand;
+import com.github.sormuras.bach.command.JavadocCommand;
 import com.github.sormuras.bach.command.Option;
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +51,22 @@ public interface Command<T extends Command<T>> {
 
   static JavacCommand javac() {
     return new JavacCommand();
+  }
+
+  static JavadocCommand javadoc() {
+    return new JavadocCommand();
+  }
+
+  static JLinkCommand jlink() {
+    return new JLinkCommand();
+  }
+
+  static JPackageCommand jpackage() {
+    return new JPackageCommand();
+  }
+
+  static JUnitCommand junit() {
+    return new JUnitCommand();
   }
 
   /**

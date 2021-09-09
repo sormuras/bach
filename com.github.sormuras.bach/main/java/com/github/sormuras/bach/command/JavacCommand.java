@@ -24,6 +24,7 @@ import java.util.Optional;
  *     about each class loaded and each source file compiled.
  * @param outputDirectoryForClasses Specify where to place generated class files.
  * @param additionals Aggregates additional command-line arguments.
+ * @see <a href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/javac.html">javac</a>
  */
 public record JavacCommand(
     ReleaseOption release,
