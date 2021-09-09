@@ -14,7 +14,7 @@ public record Options(
 
   /** A group of optional components used by the main program. */
   public record MainOptions(
-      Optional<Boolean> help, Optional<Boolean> version, Optional<Boolean> generateBuildProgram) {}
+      Optional<Boolean> help, Optional<Boolean> version, Optional<String> tool) {}
 
   /** A group of optional components used as global settings of a {@link Configuration} instance. */
   public record ConfigurationOptions(
@@ -31,7 +31,7 @@ public record Options(
   public static Options parse(List<String> args) {
     Boolean help = null;
     Boolean version = null;
-    Boolean generateBuildProgram = null;
+    String tool = null;
     Boolean verbose = null;
     Boolean lenient = null;
     Integer timeout = null;
@@ -44,7 +44,11 @@ public record Options(
       switch (argument) {
         case "--help", "/?" -> help = true;
         case "--version" -> version = true;
-        case "--generate-build-program" -> generateBuildProgram = true;
+        case "--tool" -> {
+          tool = arguments.pop();
+          unhandled.addAll(arguments);
+          arguments.clear();
+        }
         case "--verbose" -> verbose = true;
         case "--lenient" -> lenient = true;
         case "--timeout" -> timeout = Integer.parseInt(arguments.pop());
@@ -55,9 +59,7 @@ public record Options(
     }
     return new Options(
         new MainOptions(
-            Optional.ofNullable(help),
-            Optional.ofNullable(version),
-            Optional.ofNullable(generateBuildProgram)),
+            Optional.ofNullable(help), Optional.ofNullable(version), Optional.ofNullable(tool)),
         new ConfigurationOptions(
             Optional.ofNullable(verbose),
             Optional.ofNullable(lenient),

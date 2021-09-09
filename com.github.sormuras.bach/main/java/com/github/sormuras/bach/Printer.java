@@ -17,7 +17,7 @@ public record Printer(Bach bach) {
     if (summarize) {
       var printer = run.isError() ? bach.err() : bach.out();
       printer.printf(
-          "Tool '%s' run with %d argument%s took %s and finished with exit code %d%n",
+          "Run of %s with %d argument%s took %s and finished with exit code %d%n",
           run.name(),
           run.args().size(),
           run.args().size() == 1 ? "" : "s",

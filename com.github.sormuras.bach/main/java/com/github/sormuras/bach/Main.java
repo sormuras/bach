@@ -45,14 +45,19 @@ public record Main() implements ToolProvider {
         out.println(Bach.version());
         return;
       }
-      if (options.forMain().generateBuildProgram().orElse(false)) {
-        // TODO out.print(Bach.BuildProgramGenerators.generateConventionalBuildProgram());
+      var unhandled = options.unhandledArguments();
+      if (options.forMain().tool().isPresent()) {
+        var tool = options.forMain().tool().get();
+        var command = Command.of(tool).addAll(unhandled);
+        var bach = new Bach();
+        var run = bach.run(command);
+        bach.printer().print(run, true, 0);
         return;
       }
-      if (options.unhandledArguments().isEmpty()) {
+      if (unhandled.isEmpty()) {
         throw new AssertionError("Something bad went wrong: %s".formatted(options));
       }
-      throw new UnsupportedOperationException(String.join(" ", options.unhandledArguments()));
+      throw new UnsupportedOperationException(String.join(" ", unhandled));
     }
 
     @Override
