@@ -32,7 +32,7 @@ class ModuleDescriptorSupportTests {
     var module = ModuleDescriptorSupport.parse(path);
 
     assertEquals(
-        ModuleDescriptor.newModule("com.github.sormuras.bach")
+        ModuleDescriptor.newOpenModule("com.github.sormuras.bach")
             .requires("java.base")
             .requires("jdk.compiler")
             .requires("jdk.jartool")
@@ -52,7 +52,7 @@ class ModuleDescriptorSupportTests {
     var module = ModuleDescriptorSupport.parse(path);
 
     assertEquals(
-        ModuleDescriptor.newModule("test.base")
+        ModuleDescriptor.newOpenModule("test.base")
             .requires("java.base")
             .requires("jdk.httpserver")
             .requires("jdk.xml.dom")
@@ -67,7 +67,7 @@ class ModuleDescriptorSupportTests {
     var module = ModuleDescriptorSupport.parse(path);
 
     assertEquals(
-        ModuleDescriptor.newModule("test.integration")
+        ModuleDescriptor.newOpenModule("test.integration")
             .requires("com.github.sormuras.bach")
             .requires("java.base")
             .requires("org.junit.jupiter")
@@ -82,7 +82,7 @@ class ModuleDescriptorSupportTests {
     var module = ModuleDescriptorSupport.parse(path);
 
     assertEquals(
-        ModuleDescriptor.newModule("test.projects")
+        ModuleDescriptor.newOpenModule("test.projects")
             .requires("com.github.sormuras.bach")
             .requires("java.base")
             .requires("org.junit.jupiter")

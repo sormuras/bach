@@ -9,6 +9,7 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.List;
 import javax.tools.ToolProvider;
 
@@ -20,7 +21,7 @@ public sealed interface ModuleDescriptorSupport permits ConstantInterface {
    *
    * @param info the path to a {@code module-info.java} file to parse
    * @return the module descriptor
-   * @implNote For the time being, only the {@code name} of a module and its {@code requires}
+   * @implNote For the time being, only the {@code kind}, the {@code name} and its {@code requires}
    *     directives are parsed.
    */
   static ModuleDescriptor parse(Path info) {
@@ -47,13 +48,17 @@ public sealed interface ModuleDescriptorSupport permits ConstantInterface {
 
   private static ModuleDescriptor parse(ModuleTree moduleTree) {
     var moduleName = moduleTree.getName().toString();
-    var builder = ModuleDescriptor.newModule(moduleName);
+    var moduleModifiers =
+        moduleTree.getModuleType().equals(ModuleTree.ModuleKind.OPEN)
+            ? EnumSet.of(ModuleDescriptor.Modifier.OPEN)
+            : EnumSet.noneOf(ModuleDescriptor.Modifier.class);
+    var moduleBuilder = ModuleDescriptor.newModule(moduleName, moduleModifiers);
     for (var directive : moduleTree.getDirectives()) {
       if (directive instanceof RequiresTree requires) {
         var requiresModuleName = requires.getModuleName().toString();
-        builder.requires(requiresModuleName);
+        moduleBuilder.requires(requiresModuleName);
       }
     }
-    return builder.build();
+    return moduleBuilder.build();
   }
 }
