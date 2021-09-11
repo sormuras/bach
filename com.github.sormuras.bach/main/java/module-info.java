@@ -17,6 +17,7 @@ module com.github.sormuras.bach {
   exports com.github.sormuras.bach.command;
   exports com.github.sormuras.bach.conventional;
   exports com.github.sormuras.bach.external;
+  exports com.github.sormuras.bach.project;
 
   requires java.base;
   requires jdk.compiler;

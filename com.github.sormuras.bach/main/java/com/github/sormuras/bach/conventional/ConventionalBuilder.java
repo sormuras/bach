@@ -194,10 +194,7 @@ public interface ConventionalBuilder {
   }
 
   default void runJUnit(
-      ToolFinder finder,
-      String module,
-      Composer<JUnitCommand> composer,
-      ToolRun.Visitor visitor) {
+      ToolFinder finder, String module, Composer<JUnitCommand> composer, ToolRun.Visitor visitor) {
     var reports = outputDirectoryForReports().resolve("junit/" + module);
     var junit = Command.junit().add("--select-module", module).add("--reports-dir", reports);
     var call = ToolCall.of(finder, composer.apply(junit));

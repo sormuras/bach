@@ -4,10 +4,18 @@ import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /** A module declaration with its possibly targeted folders. */
-public record DeclaredModule(ModuleDescriptor descriptor, Path info, TargetedFolders folders)
+public record DeclaredModule(
+    ModuleDescriptor descriptor, Path info, Optional<String> mainClass, TargetedFolders folders)
     implements Comparable<DeclaredModule> {
+
+  @FunctionalInterface
+  public interface Operator extends UnaryOperator<DeclaredModule> {}
+
+  public record Tweak(ProjectSpace space, DeclaredModule module, Operator operator) {}
 
   public static DeclaredModule of(String pathOfModuleInfoJavaFileOrItsParentDirectory) {
     var path = Path.of(pathOfModuleInfoJavaFileOrItsParentDirectory).normalize();
@@ -19,7 +27,7 @@ public record DeclaredModule(ModuleDescriptor descriptor, Path info, TargetedFol
     var directory = parent != null ? parent : Path.of(".");
     var types = FolderTypes.of(FolderType.SOURCES);
     var folders = TargetedFolders.of(new TargetedFolder(directory, 0, types));
-    return new DeclaredModule(descriptor, info, folders);
+    return new DeclaredModule(descriptor, info, Optional.empty(), folders);
   }
 
   public String name() {
@@ -31,24 +39,32 @@ public record DeclaredModule(ModuleDescriptor descriptor, Path info, TargetedFol
     return name().compareTo(other.name());
   }
 
-  public DeclaredModule foldersAddSourcesFolder(String directory) {
-    return foldersAddSourcesFolder(directory, 0);
+  DeclaredModule tweak(Tweak tweak) {
+    return this == tweak.module ? tweak.operator.apply(this) : this;
   }
 
-  public DeclaredModule foldersAddSourcesFolder(String directory, int release) {
-    return foldersAddFolder(Path.of(directory), release, FolderType.SOURCES);
+  public DeclaredModule withMainClass(String name) {
+    return new DeclaredModule(descriptor, info, Optional.ofNullable(name), folders);
   }
 
-  public DeclaredModule foldersAddResourcesFolder(String directory) {
-    return foldersAddResourcesFolder(directory, 0);
+  public DeclaredModule withSourcesFolder(String directory) {
+    return withSourcesFolder(directory, 0);
   }
 
-  public DeclaredModule foldersAddResourcesFolder(String directory, int release) {
-    return foldersAddFolder(Path.of(directory), release, FolderType.RESOURCES);
+  public DeclaredModule withSourcesFolder(String directory, int release) {
+    return withFolder(Path.of(directory), release, FolderType.SOURCES);
   }
 
-  public DeclaredModule foldersAddFolder(Path directory, int release, FolderType... types) {
+  public DeclaredModule withResourcesFolder(String directory) {
+    return withResourcesFolder(directory, 0);
+  }
+
+  public DeclaredModule withResourcesFolder(String directory, int release) {
+    return withFolder(Path.of(directory), release, FolderType.RESOURCES);
+  }
+
+  public DeclaredModule withFolder(Path directory, int release, FolderType... types) {
     var folder = new TargetedFolder(directory.normalize(), release, FolderTypes.of(types));
-    return new DeclaredModule(descriptor, info, folders.add(folder));
+    return new DeclaredModule(descriptor, info, mainClass, folders.add(folder));
   }
 }
