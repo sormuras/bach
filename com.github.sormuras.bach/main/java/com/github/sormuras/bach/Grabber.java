@@ -35,7 +35,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
     var directory = bach.path().externalModules();
     module_loop:
     for (var module : modules) {
-      for (var locator : locators.list()) {
+      for (var locator : locators) {
         var location = locator.find(module);
         if (location.isEmpty()) continue;
         bach.logMessage(
