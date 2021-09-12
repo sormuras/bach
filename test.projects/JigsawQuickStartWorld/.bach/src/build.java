@@ -1,17 +1,19 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
+import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.conventional.ConventionalSpace;
+import com.github.sormuras.bach.customizable.CustomizableBuilder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
 class build {
   public static void main(String... args) {
-    switch (System.getProperty("build", "default")) {
+    switch (System.getProperty("build", "customizable")) {
       default -> BuildWithBachApi.main(args);
       case "conventional" -> BuildWithConventionalApi.main(args);
-      case "project" -> BuildWithProjectApi.main(args);
+      case "customizable" -> BuildWithCustomizableApi.main(args);
     }
   }
 
@@ -62,9 +64,25 @@ class build {
     }
   }
 
-  static class BuildWithProjectApi {
+  static class BuildWithCustomizableApi {
     public static void main(String... args) {
-      throw new UnsupportedOperationException("BuildWithProjectApi");
+      var project =
+          Project.of("JigsawQuickStartWorld", "99")
+              .withSpaces(
+                  spaces ->
+                      spaces.withSpace(
+                          "main",
+                          main ->
+                              main.withModule(
+                                      Path.of("com.greetings"),
+                                      module -> module.withMainClass("com.greetings.Main"))
+                                  .withModule("org.astro")));
+      try (var bach = new Bach()) {
+        bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
+        var builder = new CustomizableBuilder(bach, project);
+        builder.compile();
+        builder.runModule("com.greetings", run -> run.add("fun"));
+      }
     }
   }
 }
