@@ -87,8 +87,8 @@ public record JavacCommand(
     return option(moduleSourcePathPatterns.add(segment));
   }
 
-  public JavacCommand moduleSourcePathAddSpecific(String module, Path path, Path... more) {
-    return option(moduleSourcePathSpecifics.withModuleSpecificForm(module, path, more));
+  public JavacCommand moduleSourcePathAddSpecific(String module, Path... paths) {
+    return option(moduleSourcePathSpecifics.withModuleSpecificForm(module, paths));
   }
 
   public JavacCommand modulePaths(Path... paths) {

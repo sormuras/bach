@@ -2,6 +2,7 @@ package com.github.sormuras.bach.command;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,6 +10,10 @@ import java.util.stream.Collectors;
 public record ModuleSourcePathPatternsOption(List<String> values) implements Option.Values<String> {
   public static ModuleSourcePathPatternsOption empty() {
     return new ModuleSourcePathPatternsOption(List.of());
+  }
+
+  public static ModuleSourcePathPatternsOption of(Collection<String> patterns) {
+    return new ModuleSourcePathPatternsOption(List.copyOf(patterns));
   }
 
   public String join() {
