@@ -124,7 +124,15 @@ public record GrabToolProvider() implements ToolProvider {
         var expected = property.value();
         var computed = PathSupport.computeChecksum(target, algorithm);
         if (!expected.equalsIgnoreCase(computed)) {
-          return false;
+          throw new AssertionError(
+              """
+              Checksum mismatch detected: %s
+                  source = %s
+                  target = %s
+                expected = %s
+                computed = %s
+              """
+                  .formatted(algorithm, source, target, expected, computed));
         }
       }
       return true;
