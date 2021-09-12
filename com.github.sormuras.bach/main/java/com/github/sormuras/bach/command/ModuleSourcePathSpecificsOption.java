@@ -16,7 +16,9 @@ public record ModuleSourcePathSpecificsOption(List<String> values)
 
   public static ModuleSourcePathSpecificsOption of(Map<String, List<Path>> specifics) {
     var values = new ArrayList<String>();
-    specifics.entrySet().stream().map(ModuleSourcePathSpecificsOption::toString).forEach(values::add);
+    specifics.entrySet().stream()
+        .map(ModuleSourcePathSpecificsOption::toString)
+        .forEach(values::add);
     return new ModuleSourcePathSpecificsOption(List.copyOf(values));
   }
 
