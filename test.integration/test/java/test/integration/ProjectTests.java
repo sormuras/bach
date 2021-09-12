@@ -78,7 +78,6 @@ class ProjectTests {
     var mainSpace = project.space("main");
     var testSpace = project.space("test");
 
-    assertSame(mainSpace, project.spaces().main());
     assertSame(mainSpace, project.spaces().values().get(0));
     assertSame(mainSpace, testSpace.parents().get(0)); // test depends-on main
 

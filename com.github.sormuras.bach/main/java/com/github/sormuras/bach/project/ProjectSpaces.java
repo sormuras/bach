@@ -1,22 +1,24 @@
 package com.github.sormuras.bach.project;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
-public record ProjectSpaces(List<ProjectSpace> values) {
+public record ProjectSpaces(List<ProjectSpace> values) implements Iterable<ProjectSpace> {
 
   @FunctionalInterface
   public interface Operator extends UnaryOperator<ProjectSpaces> {}
 
-  public ProjectSpace main() {
-    return find("main").orElseThrow();
-  }
-
   public Optional<ProjectSpace> find(String name) {
     return values.stream().filter(space -> space.name().equals(name)).findFirst();
+  }
+
+  @Override
+  public Iterator<ProjectSpace> iterator() {
+    return values.iterator();
   }
 
   public ProjectSpaces with(ProjectSpace value) {
