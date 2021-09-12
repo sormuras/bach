@@ -5,6 +5,7 @@ open /*test*/ module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.command;
   exports com.github.sormuras.bach.conventional;
+  exports com.github.sormuras.bach.customizable;
   exports com.github.sormuras.bach.external;
   exports com.github.sormuras.bach.project;
 
