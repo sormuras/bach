@@ -12,10 +12,10 @@ import java.util.stream.Stream;
 
 class build {
   public static void main(String... args) {
-    switch (System.getProperty("build", "simple")) {
+    switch (System.getProperty("build", "workflow")) {
       default -> BuildWithBachApi.main(args);
       case "simple" -> BuildWithSimpleApi.main(args);
-      case "customizable" -> BuildWithCustomizableApi.main(args);
+      case "workflow" -> BuildWithWorkflowApi.main(args);
     }
   }
 
@@ -112,7 +112,7 @@ class build {
     }
   }
 
-  static class BuildWithCustomizableApi {
+  static class BuildWithWorkflowApi {
     public static void main(String... args) {
       var project =
           Project.of("JigsawQuickStartWorldWithTests", "99")
