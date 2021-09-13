@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.conventional;
+package com.github.sormuras.bach.simple;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.command.ModulePathsOption;
@@ -11,28 +11,28 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.UnaryOperator;
 
-/** A module source space configuration and builder class. */
-public record ConventionalSpace(
+/** A simplified module source space configuration and builder class. */
+public record SimpleSpace(
     Bach bach,
     Optional<String> name,
     Optional<Integer> release,
-    List<ConventionalModule> modules,
+    List<SimpleModule> modules,
     ModuleSourcePathPatternsOption moduleSourcePaths,
     ModulePathsOption modulePaths)
-    implements ConventionalBuilder {
+    implements SimpleBuilder {
 
-  public static ConventionalSpace of(Bach bach) {
-    return new ConventionalSpace(bach).moduleSourcePaths(".");
+  public static SimpleSpace of(Bach bach) {
+    return new SimpleSpace(bach).withModuleSourcePaths(".");
   }
 
-  public static ConventionalSpace of(Bach bach, String name) {
+  public static SimpleSpace of(Bach bach, String name) {
     var patternJoiner = new StringJoiner(File.separator).add(".").add("*").add(name);
-    return new ConventionalSpace(bach)
-        .name(name)
-        .moduleSourcePaths(patternJoiner.toString(), patternJoiner.add("java").toString());
+    return new SimpleSpace(bach)
+        .withName(name)
+        .withModuleSourcePaths(patternJoiner.toString(), patternJoiner.add("java").toString());
   }
 
-  public ConventionalSpace(Bach bach) {
+  public SimpleSpace(Bach bach) {
     this(
         bach,
         Optional.empty(),
@@ -48,38 +48,37 @@ public record ConventionalSpace(
   }
 
   @Override
-  public ConventionalSpace space() {
+  public SimpleSpace space() {
     return this;
   }
 
-  public ConventionalSpace name(String name) {
-    return new ConventionalSpace(
+  public SimpleSpace withName(String name) {
+    return new SimpleSpace(
         bach, Optional.ofNullable(name), release, modules, moduleSourcePaths, modulePaths);
   }
 
-  public ConventionalSpace release(Integer release) {
-    return new ConventionalSpace(
+  public SimpleSpace withRelease(Integer release) {
+    return new SimpleSpace(
         bach, name, Optional.ofNullable(release), modules, moduleSourcePaths, modulePaths);
   }
 
-  public ConventionalSpace modules(List<ConventionalModule> modules) {
-    return new ConventionalSpace(
+  public SimpleSpace withModules(List<SimpleModule> modules) {
+    return new SimpleSpace(
         bach, name, release, List.copyOf(modules), moduleSourcePaths, modulePaths);
   }
 
-  public ConventionalSpace modulesAddModule(String name) {
-    return modulesAddModule(name, UnaryOperator.identity());
+  public SimpleSpace withModule(String name) {
+    return withModule(name, UnaryOperator.identity());
   }
 
-  public ConventionalSpace modulesAddModule(
-      String name, UnaryOperator<ConventionalModule> operator) {
+  public SimpleSpace withModule(String name, UnaryOperator<SimpleModule> operator) {
     var modules = new ArrayList<>(this.modules);
-    modules.add(operator.apply(ConventionalModule.of(name)));
-    return modules(modules);
+    modules.add(operator.apply(SimpleModule.of(name)));
+    return withModules(modules);
   }
 
-  public ConventionalSpace moduleSourcePaths(String... patterns) {
-    return new ConventionalSpace(
+  public SimpleSpace withModuleSourcePaths(String... patterns) {
+    return new SimpleSpace(
         bach,
         name,
         release,
@@ -88,12 +87,12 @@ public record ConventionalSpace(
         modulePaths);
   }
 
-  public ConventionalSpace modulePaths(Path... paths) {
-    return new ConventionalSpace(
+  public SimpleSpace withModulePaths(Path... paths) {
+    return new SimpleSpace(
         bach, name, release, modules, moduleSourcePaths, new ModulePathsOption(List.of(paths)));
   }
 
   public List<String> toModuleNames() {
-    return modules.stream().map(ConventionalModule::name).toList();
+    return modules.stream().map(SimpleModule::name).toList();
   }
 }

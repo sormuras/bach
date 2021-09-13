@@ -2,16 +2,16 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
-import com.github.sormuras.bach.conventional.ConventionalSpace;
 import com.github.sormuras.bach.customizable.CustomizableBuilder;
+import com.github.sormuras.bach.simple.SimpleSpace;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 
 class build {
   public static void main(String... args) {
-    switch (System.getProperty("build", "customizable")) {
+    switch (System.getProperty("build", "simple")) {
       default -> BuildWithBachApi.main(args);
-      case "conventional" -> BuildWithConventionalApi.main(args);
+      case "simple" -> BuildWithSimpleApi.main(args);
       case "customizable" -> BuildWithCustomizableApi.main(args);
     }
   }
@@ -42,12 +42,12 @@ class build {
     }
   }
 
-  static class BuildWithConventionalApi {
+  static class BuildWithSimpleApi {
     public static void main(String... args) {
       try (var bach = new Bach(args)) {
         var space =
-            ConventionalSpace.of(bach)
-                .modulesAddModule("com.greetings", module -> module.main("com.greetings.Main"));
+            SimpleSpace.of(bach)
+                .withModule("com.greetings", module -> module.main("com.greetings.Main"));
         space.compile();
         space.runModule("com.greetings", run -> run.add("fun"));
       }

@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.conventional;
+package com.github.sormuras.bach.simple;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
@@ -21,12 +21,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-/** This interface contains the methods to build a convential project space. */
-public interface ConventionalBuilder {
+/** This interface contains the methods to build a convential "simple" project space. */
+public interface SimpleBuilder {
 
   Bach bach();
 
-  ConventionalSpace space();
+  SimpleSpace space();
 
   default void grab(Grabber grabber, String... externalModules) {
     grabber.grabExternalModules(externalModules);
@@ -135,8 +135,8 @@ public interface ConventionalBuilder {
     return ModuleFinder.of(paths.toArray(Path[]::new));
   }
 
-  default ConventionalSpace newDependentConventionalSpace(String name) {
-    return ConventionalSpace.of(bach(), name).modulePaths(outputDirectoryForModules());
+  default SimpleSpace newDependentSpace(String name) {
+    return SimpleSpace.of(bach(), name).withModulePaths(outputDirectoryForModules());
   }
 
   default void runAllTests() {
