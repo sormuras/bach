@@ -3,8 +3,8 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
-import com.github.sormuras.bach.customizable.CustomizableBuilder;
 import com.github.sormuras.bach.simple.SimpleSpace;
+import com.github.sormuras.bach.workflow.WorkflowBuilder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.Set;
@@ -133,7 +133,7 @@ class build {
                                   test.withModule("test.modules/test/java", "test.modules.Main")));
       try (var bach = new Bach()) {
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
-        var builder = new CustomizableBuilder(bach, project);
+        var builder = new WorkflowBuilder(bach, project);
         builder.compile();
         builder.runModule("com.greetings", 'I');
         builder.runModule(project.space("test"), "test.modules", run -> run.add("II"));

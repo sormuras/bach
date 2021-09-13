@@ -2,8 +2,8 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
-import com.github.sormuras.bach.customizable.CustomizableBuilder;
 import com.github.sormuras.bach.simple.SimpleSpace;
+import com.github.sormuras.bach.workflow.WorkflowBuilder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 
@@ -68,7 +68,7 @@ class build {
                                   module -> module.withMainClass("com.greetings.Main"))));
       try (var bach = new Bach()) {
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
-        var builder = new CustomizableBuilder(bach, project);
+        var builder = new WorkflowBuilder(bach, project);
         builder.compile();
         builder.runModule("com.greetings", 1, 2, 3);
       }

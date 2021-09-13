@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.customizable;
+package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
@@ -8,7 +8,7 @@ import com.github.sormuras.bach.command.DefaultCommand;
 import com.github.sormuras.bach.project.ProjectSpace;
 
 /** A workflow-based builder of projects. */
-public record CustomizableBuilder(Bach bach, Project project) {
+public record WorkflowBuilder(Bach bach, Project project) {
 
   public void compile() {
     for (var space : project.spaces()) compile(space);

@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.customizable;
+package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
