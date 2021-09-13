@@ -137,6 +137,7 @@ class build {
         builder.compile();
         builder.runModule("com.greetings", 'I');
         builder.runModule(project.space("test"), "test.modules", run -> run.add("II"));
+        builder.runAllTests();
       }
     }
   }

@@ -18,6 +18,14 @@ public record WorkflowBuilder(Bach bach, Project project) {
     runWorkflow(new CompileWorkflow(bach, project, space));
   }
 
+  public void runAllTests() {
+    runAllTests(project.space("test"));
+  }
+
+  public void runAllTests(ProjectSpace space) {
+    runWorkflow(new RunAllTestsWorkflow(bach, project, space));
+  }
+
   public void runModule(String module, Object... arguments) {
     var space = project.spaces().values().get(0);
     runModule(space, module, command -> command.addAll(arguments));
