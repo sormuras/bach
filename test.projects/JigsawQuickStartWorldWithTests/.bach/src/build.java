@@ -136,7 +136,7 @@ class build {
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
         var builder = new CustomizableBuilder(bach, project);
         builder.compile();
-        builder.runModule(project.space("main"), "com.greetings", run -> run.add("I"));
+        builder.runModule("com.greetings", 'I');
         builder.runModule(project.space("test"), "test.modules", run -> run.add("II"));
       }
     }

@@ -70,7 +70,7 @@ class build {
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
         var builder = new CustomizableBuilder(bach, project);
         builder.compile();
-        builder.runModule("com.greetings", run -> run.add("fun"));
+        builder.runModule("com.greetings", 1, 2, 3);
       }
     }
   }
