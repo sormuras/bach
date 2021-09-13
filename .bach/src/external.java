@@ -11,12 +11,18 @@ class external {
     var bach = new Bach(args);
     var grabber =
         bach.grabber(
+            // https://repo.maven.apache.org/maven2/com/github/almasb/fxgl/
             FXGL.version("11.17"),
+            // https://repo.maven.apache.org/maven2/com/gluonhq/attach/util/
             GluonAttach.version("4.0.12"),
-            Jackson.version("2.13.0-rc1"),
-            JavaFX.version("18-ea+1"),
-            JUnit.version("5.8.0-RC1"),
-            Kotlin.version("1.5.30-RC"));
+            // https://repo.maven.apache.org/maven2/com/fasterxml/jackson/jackson-parent/
+            Jackson.version("2.13.0-rc2"),
+            // https://repo.maven.apache.org/maven2/org/openjfx/javafx/
+            JavaFX.version("18-ea+2"),
+            // https://repo.maven.apache.org/maven2/org/junit/junit-bom/
+            JUnit.version("5.8.0"),
+            // https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-bom/
+            Kotlin.version("1.5.30"));
 
     bach.logCaption("Grab external modules");
     grabber.grabExternalModules("com.almasb.fxgl.all");
