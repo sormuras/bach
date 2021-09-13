@@ -5,21 +5,16 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.command.JarCommand;
 import com.github.sormuras.bach.command.JavacCommand;
-import com.github.sormuras.bach.command.ModulePathsOption;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.FolderType;
 import com.github.sormuras.bach.project.ProjectSpace;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** Compiles and archives Java source files. */
-public class CompileWorkflow extends Workflow {
-
-  protected final ProjectSpace space;
+public class CompileWorkflow extends AbstractSpaceWorkflow {
 
   public CompileWorkflow(Bach bach, Project project, ProjectSpace space) {
-    super(bach, project);
-    this.space = space;
+    super(bach, project, space);
   }
 
   protected JavacCommand computeJavacCommand(Path classes) {
@@ -73,20 +68,8 @@ public class CompileWorkflow extends Workflow {
     return bach.path().workspace(space.name(), "classes-mr-" + release, module);
   }
 
-  protected Path computeOutputDirectoryForModules(ProjectSpace space) {
-    return bach.path().workspace(space.name(), "modules");
-  }
-
   protected int computeRelease() {
     return /*space.release().map(JavaRelease::feature).orElse*/ Runtime.version().feature();
-  }
-
-  protected ModulePathsOption computeModulePathsOption() {
-    var paths = ModulePathsOption.empty();
-    for (var parent : space.parents()) paths = paths.add(computeOutputDirectoryForModules(parent));
-    var externalModules = bach.path().externalModules();
-    if (Files.isDirectory(externalModules)) paths = paths.add(externalModules);
-    return paths;
   }
 
   @Override
