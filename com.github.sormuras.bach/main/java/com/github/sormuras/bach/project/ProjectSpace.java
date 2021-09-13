@@ -21,6 +21,10 @@ public record ProjectSpace(String name, List<ProjectSpace> parents, DeclaredModu
     return withModule(Path.of(info), module -> module);
   }
 
+  public ProjectSpace withModule(String info, String main) {
+    return withModule(Path.of(info), module -> module.withMainClass(main));
+  }
+
   public ProjectSpace withModule(Path info, DeclaredModule.Operator operator) {
     return withModule(operator.apply(DeclaredModule.of(info.toString())));
   }
