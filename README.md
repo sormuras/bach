@@ -79,6 +79,6 @@ Bach will **not**...
 
 [JDK]: https://jdk.java.net
 
-[JDK tools]: https://docs.oracle.com/en/java/javase/16/docs/specs/man/index.html
+[JDK tools]: https://docs.oracle.com/en/java/javase/17/docs/specs/man/index.html
 
 [JUnit]: https://junit.org

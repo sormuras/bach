@@ -7,7 +7,7 @@
  *   <li>Bach's <a href="https://github.com/sormuras/bach">Code &amp; Issues</a>
  *   <li>Bach's <a href="https://sormuras.github.io/api/#bach">API</a>
  *   <li>Java® Development Kit Version 17 <a
- *       href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/">Tool Specifications</a>
+ *       href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/">Tool Specifications</a>
  * </ul>
  *
  * @uses java.util.spi.ToolProvider

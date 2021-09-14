@@ -5,7 +5,7 @@ import com.github.sormuras.bach.Command;
 /**
  * The javadoc command generates HTML pages of API documentation from Java source files.
  *
- * @see <a href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/javadoc.html">javadoc</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/javadoc.html">javadoc</a>
  */
 public record JavadocCommand(AdditionalArgumentsOption additionals)
     implements Command<JavadocCommand> {

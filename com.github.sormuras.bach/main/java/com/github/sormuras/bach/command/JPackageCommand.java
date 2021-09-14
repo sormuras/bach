@@ -12,7 +12,7 @@ import com.github.sormuras.bach.Command;
  * will have options that allow packaged applications to be customized in various ways.
  *
  * @see <a
- *     href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/jpackage.html">jpackage</a>
+ *     href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html">jpackage</a>
  */
 public record JPackageCommand(AdditionalArgumentsOption additionals)
     implements Command<JPackageCommand> {

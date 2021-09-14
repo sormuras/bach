@@ -17,7 +17,7 @@ import java.util.Optional;
  * @param verbose Sends or prints verbose output to standard output.
  * @param additionals Aggregates additional command-line arguments.
  * @param files Specifies the classes and resources to operate on.
- * @see <a href="https://docs.oracle.com/en/java/javase/16/docs/specs/man/jar.html">jar</a>
+ * @see <a href="https://docs.oracle.com/en/java/javase/17/docs/specs/man/jar.html">jar</a>
  */
 public record JarCommand(
     ModeOption mode,
