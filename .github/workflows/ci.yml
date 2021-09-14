@@ -36,16 +36,16 @@ jobs:
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
-      - name: 'Download JDK'
-        uses: sormuras/download-jdk@v1
+      - name: 'Download latest JDK 17'
+        run: wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
         with:
           feature: 17
       - name: 'Set up JDK'
         uses: actions/setup-java@v2
         with:
-          java-version: ${{ env.JDK_VERSION }}
+          java-version: 17
           distribution: jdkfile
-          jdkFile: ${{ env.JDK_FILE }}
+          jdkFile: jdk-17_linux-x64_bin.tar.gz
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
