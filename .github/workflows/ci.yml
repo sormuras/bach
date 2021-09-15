@@ -37,13 +37,13 @@ jobs:
       - name: 'Check out repository'
         uses: actions/checkout@v2
       - name: 'Download latest JDK 17'
-        run: wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+        run: wget --directory-prefix $RUNNER_TEMP https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
       - name: 'Set up JDK'
         uses: actions/setup-java@v2
         with:
           java-version: 17
           distribution: jdkfile
-          jdkFile: jdk-17_linux-x64_bin.tar.gz
+          jdkFile: $RUNNER_TEMP/jdk-17_linux-x64_bin.tar.gz
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
