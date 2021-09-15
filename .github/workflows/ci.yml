@@ -43,7 +43,7 @@ jobs:
         with:
           java-version: 17
           distribution: jdkfile
-          jdkFile: ${{ env.RUNNER_TEMP }}/jdk-17_linux-x64_bin.tar.gz
+          jdkFile: ${{ runner.temp }}/jdk-17_linux-x64_bin.tar.gz
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
