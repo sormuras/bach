@@ -28,13 +28,12 @@ public record ProjectSpaces(List<ProjectSpace> values) implements Iterable<Proje
   }
 
   public ProjectSpaces withSpace(String name, ProjectSpace.Operator operator) {
-    return with(operator.apply(new ProjectSpace(name, List.of(), DeclaredModules.of())));
+    return with(operator.apply(ProjectSpace.of(name)));
   }
 
-  public ProjectSpaces withSpace(
-      String name, Set<String> parentSpaceNames, ProjectSpace.Operator operator) {
-    var parents = values.stream().filter(space -> parentSpaceNames.contains(space.name())).toList();
-    var space = new ProjectSpace(name, parents, DeclaredModules.of());
+  public ProjectSpaces withSpace(String name, Set<String> parents, ProjectSpace.Operator operator) {
+    var parentSpaces = values.stream().filter(space -> parents.contains(space.name())).toList();
+    var space = ProjectSpace.of(name).withParents(parentSpaces);
     return with(operator.apply(space));
   }
 
