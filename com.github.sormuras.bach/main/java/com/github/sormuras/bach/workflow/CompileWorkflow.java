@@ -33,7 +33,7 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
     var version = project.version().value();
     var file = modules.resolve(name + "@" + version + ".jar");
 
-    var jar = Command.jar().mode("--create").file(file);
+    var jar = Command.jar().mode("--create").file(file).add("--module-version", version);
 
     if (module.mainClass().isPresent()) jar = jar.main(module.mainClass().get());
 
