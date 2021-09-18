@@ -9,9 +9,11 @@ import com.github.sormuras.bach.internal.PathSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.FolderType;
 import com.github.sormuras.bach.project.ProjectSpace;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** Compiles and archives Java source files. */
 public class CompileWorkflow extends AbstractSpaceWorkflow {
@@ -21,14 +23,53 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
   }
 
   protected JavacCommand computeJavacCommand(Path classes) {
+    return computeJavacCommand(computeReleaseVersionFeatureNumber(), classes);
+  }
+
+  protected JavacCommand computeJavacCommand(int release, Path classes) {
+    var releaseOption = JavacCommand.ReleaseOption.of(release);
     var computedModuleSourcePath = ModuleSourcePathComputer.compute(space);
     return Command.javac()
         .modules(space.modules().names())
-        .option(computeReleaseOption())
+        .option(releaseOption)
         .option(computedModuleSourcePath.patterns())
         .option(computedModuleSourcePath.specifics())
         .option(computeModulePathsOption())
         .outputDirectoryForClasses(classes);
+  }
+
+  protected List<Path> computeRelease8ClassPaths(Path classes) {
+    var paths = new ArrayList<Path>();
+    space.modules().names().forEach(name -> paths.add(classes.resolve(name)));
+    // TODO What about modular JAR files built for parent spaces?
+    paths.addAll(PathSupport.list(bach.path().externalModules(), PathSupport::isJarFile));
+    return List.copyOf(paths);
+  }
+
+  protected List<Path> computeRelease8JavaSourceFiles(DeclaredModule module) {
+    var sources = module.folders().list(0, FolderType.SOURCES);
+    return PathSupport.find(sources, 99, PathSupport::isJava8File);
+  }
+
+  protected List<JavacCommand> computeRelease8JavacCommands(Path classes) {
+    var classPath =
+        computeRelease8ClassPaths(classes).stream()
+            .map(Path::toString)
+            .collect(Collectors.joining(File.pathSeparator));
+    var commands = new ArrayList<JavacCommand>();
+    for (var module : space.modules()) {
+      var java8Files = computeRelease8JavaSourceFiles(module);
+      if (java8Files.isEmpty()) continue;
+      var javac =
+          Command.javac()
+              .option(JavacCommand.ReleaseOption.of(8))
+              .add("--class-path", classPath)
+              .add("-implicit:none")
+              .outputDirectoryForClasses(classes.resolve(module.name()))
+              .addAll(java8Files);
+      commands.add(javac);
+    }
+    return List.copyOf(commands);
   }
 
   protected JavacCommand computeMultiReleaseJavacCommand(
@@ -42,13 +83,13 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
         .addAll(javaSourceFiles);
   }
 
-  protected List<JavacCommand> computeMultiReleaseJavacCommands(DeclaredModule module, Path classes) {
+  protected List<JavacCommand> computeMultiReleaseJavacCommands(
+      DeclaredModule module, Path classes) {
     var commands = new ArrayList<JavacCommand>();
     for (var release = 9; release <= Runtime.version().feature(); release++) {
       var roots = module.folders().list(release, FolderType.SOURCES);
       if (roots.isEmpty()) continue;
-      var sources = new ArrayList<Path>();
-      for (var root : roots) sources.addAll(PathSupport.find(root, 99, PathSupport::isJavaFile));
+      var sources = PathSupport.find(roots, 99, PathSupport::isJavaFile);
       commands.add(computeMultiReleaseJavacCommand(release, module.name(), classes, sources));
     }
     return commands;
@@ -114,8 +155,13 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
 
     var classesDirectory = computeOutputDirectoryForClasses();
     var modulesDirectory = computeOutputDirectoryForModules(space);
-    bach.run(computeJavacCommand(classesDirectory));
-    // TODO Compile sources targeted to Java 8
+
+    if (space.release() == 8) {
+      bach.run(computeJavacCommand(9, classesDirectory));
+      computeRelease8JavacCommands(classesDirectory).stream().parallel().forEach(bach::run);
+    } else {
+      bach.run(computeJavacCommand(classesDirectory));
+    }
 
     var multiReleases = computeMultiReleaseJavacCommands(classesDirectory);
     if (multiReleases.size() >= 1) {

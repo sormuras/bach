@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +51,13 @@ public sealed interface PathSupport permits ConstantInterface {
     }
   }
 
+  /** Walk the file tree starting at the root paths and return paths matching the given filter. */
+  static List<Path> find(Collection<Path> roots, int limit, Predicate<Path> filter) {
+    var paths = new ArrayList<Path>();
+    for (var root : roots) paths.addAll(find(root, limit, filter));
+    return List.copyOf(paths);
+  }
+
   /** Walk the file tree starting at the root path and return paths matching the given filter. */
   static List<Path> find(Path root, int limit, Predicate<Path> filter) {
     var paths = new TreeSet<>(Comparator.comparing(Path::toString));
@@ -68,6 +77,11 @@ public sealed interface PathSupport permits ConstantInterface {
   /** Test supplied path for pointing to a regular Java compilation unit file. */
   static boolean isJavaFile(Path path) {
     return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
+  }
+
+  /** Test supplied path for pointing to a regular Java 8 compilation unit file. */
+  static boolean isJava8File(Path path) {
+    return !"module-info.java".equals(name(path)) && isJavaFile(path);
   }
 
   /** Test supplied path for pointing to a regular Java module declaration compilation unit file. */

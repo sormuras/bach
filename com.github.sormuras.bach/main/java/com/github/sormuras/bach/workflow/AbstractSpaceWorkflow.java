@@ -2,7 +2,6 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.command.JavacCommand;
 import com.github.sormuras.bach.command.ModulePathsOption;
 import com.github.sormuras.bach.project.ProjectSpace;
 import java.nio.file.Files;
@@ -15,10 +14,6 @@ public abstract class AbstractSpaceWorkflow extends AbstractProjectWorkflow {
   protected AbstractSpaceWorkflow(Bach bach, Project project, ProjectSpace space) {
     super(bach, project);
     this.space = space;
-  }
-
-  protected JavacCommand.ReleaseOption computeReleaseOption() {
-    return JavacCommand.ReleaseOption.of(space.release());
   }
 
   protected int computeReleaseVersionFeatureNumber() {
