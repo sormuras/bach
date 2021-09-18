@@ -17,8 +17,12 @@ public abstract class AbstractSpaceWorkflow extends AbstractProjectWorkflow {
     this.space = space;
   }
 
-  protected JavacCommand.ReleaseOption computeJavaReleaseOption() {
+  protected JavacCommand.ReleaseOption computeReleaseOption() {
     return JavacCommand.ReleaseOption.of(space.release());
+  }
+
+  protected int computeReleaseVersionFeatureNumber() {
+    return space.release() == 0 ? Runtime.version().feature() : space.release();
   }
 
   protected Path computeOutputDirectoryForModules(ProjectSpace space) {

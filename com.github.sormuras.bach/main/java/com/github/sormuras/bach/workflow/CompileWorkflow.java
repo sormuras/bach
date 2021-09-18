@@ -21,7 +21,7 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
     var computedModuleSourcePath = ModuleSourcePathComputer.compute(space);
     return Command.javac()
         .modules(space.modules().names())
-        .option(computeJavaReleaseOption())
+        .option(computeReleaseOption())
         .option(computedModuleSourcePath.patterns())
         .option(computedModuleSourcePath.specifics())
         .option(computeModulePathsOption())
@@ -62,15 +62,11 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
   }
 
   protected Path computeOutputDirectoryForClasses() {
-    return bach.path().workspace(space.name(), "classes-" + computeRelease());
+    return bach.path().workspace(space.name(), "classes-" + computeReleaseVersionFeatureNumber());
   }
 
   protected Path computeOutputDirectoryForClasses(String module, int release) {
     return bach.path().workspace(space.name(), "classes-mr-" + release, module);
-  }
-
-  protected int computeRelease() {
-    return /*space.release().map(JavaRelease::feature).orElse*/ Runtime.version().feature();
   }
 
   @Override
