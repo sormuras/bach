@@ -141,5 +141,9 @@ public record JavacCommand(
     public static ReleaseOption empty() {
       return new ReleaseOption(Optional.empty());
     }
+
+    public static ReleaseOption of(int feature) {
+      return feature == 0 ? empty() : new ReleaseOption(Optional.of(feature));
+    }
   }
 }
