@@ -21,6 +21,7 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
     var computedModuleSourcePath = ModuleSourcePathComputer.compute(space);
     return Command.javac()
         .modules(space.modules().names())
+        .option(computeJavaReleaseOption())
         .option(computedModuleSourcePath.patterns())
         .option(computedModuleSourcePath.specifics())
         .option(computeModulePathsOption())
