@@ -10,6 +10,7 @@ import com.github.sormuras.bach.internal.ModuleSupport;
 import com.github.sormuras.bach.internal.ProcessStartingToolCall;
 import com.github.sormuras.bach.internal.ToolProviderSupport;
 import com.github.sormuras.bach.internal.ToolRunningToolCall;
+import com.github.sormuras.bach.workflow.WorkflowBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -22,6 +23,21 @@ import java.util.stream.Stream;
 
 /** Java Shell Builder. */
 public class Bach implements AutoCloseable {
+
+  public static void build(Project.Operator operator) {
+    var projectName = Configuration.computeDefaultProjectName();
+    var projectVersion = Configuration.computeDefaultProjectVersion();
+    var project = Project.of(projectName, projectVersion);
+    build(operator.apply(project));
+  }
+
+  public static void build(Project project) {
+    try (var bach = new Bach()) {
+      bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
+      var builder = new WorkflowBuilder(bach, project);
+      builder.compile();
+    }
+  }
 
   /** {@return the version information compiled into Bach's module} */
   public static String version() {

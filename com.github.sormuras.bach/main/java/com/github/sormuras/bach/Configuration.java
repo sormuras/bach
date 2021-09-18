@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.PathSupport;
 import com.github.sormuras.bach.internal.VersionSupport;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -19,6 +20,8 @@ public record Configuration(
     Options.ProjectOptions projectOptions) {
 
   public static final String //
+      DEFAULT_PROJECT_NAME = "unnamed",
+      DEFAULT_PROJECT_VERSION = "0-ea",
       EXTERNAL_MODULES_DIRECTORY = ".bach/external-modules",
       EXTERNAL_TOOL_LAYERS_DIRECTORY = ".bach/external-tool-layers",
       EXTERNAL_TOOL_PROGRAMS_DIRECTORY = ".bach/external-tool-programs",
@@ -27,6 +30,14 @@ public record Configuration(
       LOGBOOK_MARKDOWN_FILE = "logbook.md",
       TIMESTAMP_PATTERN = "yyyyMMdd-HHmmss",
       WORKSPACE_DIRECTORY = ".bach/workspace";
+
+  public static String computeDefaultProjectName() {
+    return PathSupport.nameOrElse(Path.of(""), DEFAULT_PROJECT_NAME);
+  }
+
+  public static String computeDefaultProjectVersion() {
+    return Version.parse(DEFAULT_PROJECT_VERSION).toString();
+  }
 
   public static Path computeJavaExecutablePath(String name) {
     var windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("win");

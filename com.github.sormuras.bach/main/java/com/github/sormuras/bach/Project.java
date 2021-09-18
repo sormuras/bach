@@ -9,9 +9,13 @@ import com.github.sormuras.bach.project.ProjectVersion;
 import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 public record Project(
     ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
+
+  @FunctionalInterface
+  public interface Operator extends UnaryOperator<Project> {}
 
   public ProjectSpace space(String name) {
     return spaces.find(name).orElseThrow();
