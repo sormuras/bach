@@ -41,12 +41,12 @@ public record Explorer(Bach bach) {
   }
 
   public List<String> listMissingExternalModules(ModuleFinder finder, String... more) {
-    return listMissingExternalModules(List.of(finder), more);
+    return listMissingExternalModules(List.of(finder), Set.of(more));
   }
 
-  public List<String> listMissingExternalModules(List<ModuleFinder> finders, String... more) {
+  public List<String> listMissingExternalModules(List<ModuleFinder> finders, Set<String> more) {
     // Populate a set with all module names being in a "requires MODULE;" directive
-    var requires = new TreeSet<>(List.of(more)); // more required modules
+    var requires = new TreeSet<>(more); // more required modules
     for (var finder : finders) requires.addAll(required(finder)); // main, test, and other modules
     // Remove names of declared modules from various module finders
     requires.removeAll(declared(ModuleFinder.ofSystem()));
