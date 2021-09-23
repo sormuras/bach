@@ -10,6 +10,10 @@ import com.github.sormuras.bach.project.ProjectSpace;
 /** A workflow-based builder of projects. */
 public record WorkflowBuilder(Bach bach, Project project) {
 
+  public void grab() {
+    runWorkflow(new GrabExternalsWorkflow(bach, project));
+  }
+
   public void compile() {
     for (var space : project.spaces()) compile(space);
   }
@@ -19,7 +23,8 @@ public record WorkflowBuilder(Bach bach, Project project) {
   }
 
   public void runAllTests() {
-    runAllTests(project.space("test"));
+    var testSpace = project.spaces().find("test");
+    testSpace.ifPresent(this::runAllTests);
   }
 
   public void runAllTests(ProjectSpace space) {

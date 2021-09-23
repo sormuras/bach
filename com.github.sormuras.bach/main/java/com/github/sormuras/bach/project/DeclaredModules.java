@@ -1,5 +1,8 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.internal.ModuleInfoFinder;
+import com.github.sormuras.bach.internal.ModuleInfoReference;
+import java.lang.module.ModuleFinder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,6 +28,14 @@ public record DeclaredModules(List<DeclaredModule> values) implements Iterable<D
 
   public List<String> names() {
     return values.stream().map(DeclaredModule::name).toList();
+  }
+
+  public ModuleFinder toModuleFinder() {
+    var moduleInfoReferences =
+        values.stream()
+            .map(module -> new ModuleInfoReference(module.info(), module.descriptor()))
+            .toList();
+    return new ModuleInfoFinder(moduleInfoReferences);
   }
 
   public DeclaredModules with(DeclaredModule module) {

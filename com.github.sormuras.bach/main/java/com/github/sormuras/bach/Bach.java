@@ -35,7 +35,9 @@ public class Bach implements AutoCloseable {
     try (var bach = new Bach()) {
       bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
       var builder = new WorkflowBuilder(bach, project);
+      builder.grab();
       builder.compile();
+      builder.runAllTests();
     }
   }
 
