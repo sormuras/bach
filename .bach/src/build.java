@@ -48,21 +48,21 @@ class build {
   }
 
   static ExternalModuleLocators locators() {
-    return ExternalModuleLocators.of(build::locate, JUnit.version("5.8.0"));
+    return ExternalModuleLocators.of(build::locate, JUnit.version("5.8.1"));
   }
 
   static String locate(String module) {
     return switch (module) {
       case "org.apiguardian.api" -> "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar#SIZE=6806";
-      case "org.junit.jupiter" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.8.0/junit-jupiter-5.8.0.jar#SIZE=6361";
-      case "org.junit.jupiter.api" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.8.0/junit-jupiter-api-5.8.0.jar#SIZE=193370";
-      case "org.junit.jupiter.engine" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.8.0/junit-jupiter-engine-5.8.0.jar#SIZE=227902";
-      case "org.junit.jupiter.params" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.8.0/junit-jupiter-params-5.8.0.jar#SIZE=575426";
-      case "org.junit.platform.commons" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.8.0/junit-platform-commons-1.8.0.jar#SIZE=100384";
-      case "org.junit.platform.console" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console/1.8.0/junit-platform-console-1.8.0.jar#SIZE=488165";
-      case "org.junit.platform.engine" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.8.0/junit-platform-engine-1.8.0.jar#SIZE=185778";
-      case "org.junit.platform.launcher" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.8.0/junit-platform-launcher-1.8.0.jar#SIZE=159557";
-      case "org.junit.platform.reporting" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-reporting/1.8.0/junit-platform-reporting-1.8.0.jar#SIZE=26174";
+      case "org.junit.jupiter" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.8.1/junit-jupiter-5.8.1.jar#SIZE=6361";
+      case "org.junit.jupiter.api" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.8.1/junit-jupiter-api-5.8.1.jar#SIZE=193501";
+      case "org.junit.jupiter.engine" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.8.1/junit-jupiter-engine-5.8.1.jar#SIZE=229680";
+      case "org.junit.jupiter.params" -> "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.8.1/junit-jupiter-params-5.8.1.jar#SIZE=575854";
+      case "org.junit.platform.commons" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.8.1/junit-platform-commons-1.8.1.jar#SIZE=100451";
+      case "org.junit.platform.console" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console/1.8.1/junit-platform-console-1.8.1.jar#SIZE=488164";
+      case "org.junit.platform.engine" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.8.1/junit-platform-engine-1.8.1.jar#SIZE=185778";
+      case "org.junit.platform.launcher" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.8.1/junit-platform-launcher-1.8.1.jar#SIZE=159560";
+      case "org.junit.platform.reporting" -> "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-reporting/1.8.1/junit-platform-reporting-1.8.1.jar#SIZE=26175";
       case "org.opentest4j" -> "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar#SIZE=7653";
       default -> null;
     };
