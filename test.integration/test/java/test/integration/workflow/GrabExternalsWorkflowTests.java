@@ -28,7 +28,9 @@ class GrabExternalsWorkflowTests {
         """);
 
     var bar = Files.createDirectories(temp.resolve("bar/main/java/"));
-    Files.writeString(bar.resolve("module-info.java"), """
+    Files.writeString(
+        bar.resolve("module-info.java"),
+        """
         module bar {
           requires java.se; // SYSTEM
           requires baz.two; // EXTERNAL
@@ -36,7 +38,9 @@ class GrabExternalsWorkflowTests {
         """);
 
     var test = Files.createDirectories(temp.resolve("test/test/java"));
-    Files.writeString(test.resolve("module-info.java"), """
+    Files.writeString(
+        test.resolve("module-info.java"),
+        """
         module test {
           requires java.se; // SYSTEM
           requires foo; // PROJECT
@@ -49,12 +53,14 @@ class GrabExternalsWorkflowTests {
         Project.of("ComputeRequiresInMultiSpaceMultiModuleProject", "0")
             .withSpaces(
                 spaces ->
-                    spaces.withSpace(
-                        "main",
-                        main ->
-                            main.withModule(foo, module -> module)
-                                .withModule(bar, module -> module))
-                        .withSpace("test",
+                    spaces
+                        .withSpace(
+                            "main",
+                            main ->
+                                main.withModule(foo, module -> module)
+                                    .withModule(bar, module -> module))
+                        .withSpace(
+                            "test",
                             Set.of("main"),
                             tests -> tests.withModule(test, module -> module)));
 
@@ -64,10 +70,12 @@ class GrabExternalsWorkflowTests {
                 Configuration.Pathing.of(temp), Configuration.Printing.ofErrorsOnly()));
     var requires = new GrabExternalsWorkflow(bach, project).computeMissingRequiredExternalModules();
 
-    Assertions.assertLinesMatch("""
+    Assertions.assertLinesMatch(
+        """
         baz.one
         baz.two
         org.junit.jupiter
-        """.lines(), requires.stream());
+        """.lines(),
+        requires.stream());
   }
 }
