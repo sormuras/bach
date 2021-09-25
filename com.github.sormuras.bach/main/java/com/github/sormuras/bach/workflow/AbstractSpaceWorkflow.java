@@ -24,6 +24,10 @@ public abstract class AbstractSpaceWorkflow extends AbstractProjectWorkflow {
     return bach.path().workspace(space.name(), "modules");
   }
 
+  protected Path computeOutputDirectoryForReports() {
+    return bach.path().workspace(space.name(), "reports");
+  }
+
   protected ModulePathsOption computeModulePathsOption() {
     var paths = ModulePathsOption.empty();
     for (var parent : space.parents()) paths = paths.add(computeOutputDirectoryForModules(parent));

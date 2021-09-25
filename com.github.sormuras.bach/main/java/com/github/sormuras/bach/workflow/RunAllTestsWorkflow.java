@@ -3,6 +3,9 @@ package com.github.sormuras.bach.workflow;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolFinder;
+import com.github.sormuras.bach.ToolRun;
 import com.github.sormuras.bach.internal.ModuleFinderSupport;
 import com.github.sormuras.bach.project.ProjectSpace;
 import java.lang.module.ModuleFinder;
@@ -31,9 +34,32 @@ public class RunAllTestsWorkflow extends AbstractSpaceWorkflow {
       if (ModuleFinderSupport.findMainClass(moduleFinder, name).isPresent()) {
         new RunModuleWorkflow(bach, project, space, Command.of(name)).run();
       }
-      //      var toolFinder = ToolFinder.of(moduleFinder, true, name);
-      //      runTool(toolFinder, "test", Composer.identity(), bach().printer()::print);
-      //      if (toolFinder.find("junit").isPresent()) runJUnit(toolFinder, name);
+      var toolFinder = ToolFinder.of(moduleFinder, true, name);
+      runTool(toolFinder, "test", bach.printer()::print);
+      if (toolFinder.find("junit").isPresent()) {
+        runJUnit(toolFinder, name);
+      }
     }
+  }
+
+  private void runTool(ToolFinder finder, String tool, ToolRun.Visitor visitor) {
+    for (var provider : finder.list(tool)) {
+      var singleton = ToolFinder.of(provider);
+      var call = ToolCall.of(singleton, Command.of(tool));
+      var run = bach.run(call);
+      visitor.accept(run);
+    }
+  }
+
+  private void runJUnit(ToolFinder finder, String module) {
+    runJUnit(finder, module, ToolRun.Visitor.noop());
+  }
+
+  private void runJUnit(ToolFinder finder, String module, ToolRun.Visitor visitor) {
+    var reports = computeOutputDirectoryForReports().resolve("junit").resolve(module);
+    var junit = Command.junit().add("--select-module", module).add("--reports-dir", reports);
+    var call = ToolCall.of(finder, junit);
+    var run = bach.run(call);
+    visitor.accept(run);
   }
 }
