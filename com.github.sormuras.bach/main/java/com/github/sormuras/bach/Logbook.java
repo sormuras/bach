@@ -16,6 +16,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /** A logbook collects notes, prints them, and is able to write itself into a file. */
 public class Logbook {
 
+  /** An interface declaring default methods operating on an instance of {@code Logbook}. */
+  public interface Trait {
+    Logbook logbook();
+
+    default void debug(String message) {
+      logbook().logMessage(Level.DEBUG, message);
+    }
+  }
+
   /** An abstract logbook entry. */
   public sealed interface Note permits CaptionNote, MessageNote, ToolCallNote, ToolRunNote {}
 
