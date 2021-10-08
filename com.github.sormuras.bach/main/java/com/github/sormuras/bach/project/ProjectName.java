@@ -1,3 +1,5 @@
 package com.github.sormuras.bach.project;
 
-public record ProjectName(String value) {}
+import com.github.sormuras.bach.Project;
+
+public record ProjectName(String value) implements Project.Component {}

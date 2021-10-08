@@ -14,6 +14,9 @@ import java.util.function.UnaryOperator;
 public record Project(
     ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
 
+  public sealed interface Component
+      permits ProjectName, ProjectVersion, ProjectSpaces, ProjectExternals {}
+
   @FunctionalInterface
   public interface Operator extends UnaryOperator<Project> {}
 
@@ -26,15 +29,18 @@ public record Project(
   }
 
   public static Project of(String name, String version) {
+    return Project.of(name, ModuleDescriptor.Version.parse(version));
+  }
+
+  public static Project of(String name, ModuleDescriptor.Version version) {
     return new Project(
         new ProjectName(name),
-        new ProjectVersion(ModuleDescriptor.Version.parse(version)),
+        new ProjectVersion(version),
         new ProjectSpaces(List.of()),
         new ProjectExternals(Set.of(), ExternalModuleLocators.of()));
   }
 
-  public Project with(Object component) {
-    assert component.getClass().isRecord(); // and is handled by exactly one of the following cases
+  public Project with(Component component) {
     return new Project(
         component instanceof ProjectName name ? name : name,
         component instanceof ProjectVersion version ? version : version,

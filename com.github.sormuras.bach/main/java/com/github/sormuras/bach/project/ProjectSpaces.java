@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.Project;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -7,7 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
-public record ProjectSpaces(List<ProjectSpace> values) implements Iterable<ProjectSpace> {
+public record ProjectSpaces(List<ProjectSpace> values)
+    implements Project.Component, Iterable<ProjectSpace> {
 
   @FunctionalInterface
   public interface Operator extends UnaryOperator<ProjectSpaces> {}

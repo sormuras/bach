@@ -2,11 +2,13 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.ExternalModuleLocator;
 import com.github.sormuras.bach.ExternalModuleLocators;
+import com.github.sormuras.bach.Project;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 
-public record ProjectExternals(Set<String> requires, ExternalModuleLocators locators) {
+public record ProjectExternals(Set<String> requires, ExternalModuleLocators locators)
+    implements Project.Component {
 
   @FunctionalInterface
   public interface Operator extends UnaryOperator<ProjectExternals> {}
