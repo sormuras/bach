@@ -71,6 +71,7 @@ public record Explorer(Bach bach) {
         .map(ModuleDescriptor::requires)
         .flatMap(Set::stream)
         .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
+        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
         .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
         .map(Requires::name)
         .collect(Collectors.toCollection(TreeSet::new));
