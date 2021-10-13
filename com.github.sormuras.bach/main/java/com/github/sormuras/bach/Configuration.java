@@ -32,11 +32,15 @@ public record Configuration(
       WORKSPACE_DIRECTORY = ".bach/workspace";
 
   public static String computeDefaultProjectName() {
-    return PathSupport.nameOrElse(Path.of(""), DEFAULT_PROJECT_NAME);
+    return Configuration.computeDefaultProjectName(Path.of(""));
   }
 
-  public static String computeDefaultProjectVersion() {
-    return Version.parse(DEFAULT_PROJECT_VERSION).toString();
+  public static String computeDefaultProjectName(Path directory) {
+    return PathSupport.nameOrElse(directory, DEFAULT_PROJECT_NAME);
+  }
+
+  public static Version computeDefaultProjectVersion() {
+    return Version.parse(DEFAULT_PROJECT_VERSION);
   }
 
   public static Path computeJavaExecutablePath(String name) {

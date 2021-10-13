@@ -18,7 +18,11 @@ public record DeclaredModule(
   public record Tweak(ProjectSpace space, DeclaredModule module, Operator operator) {}
 
   public static DeclaredModule of(String pathOfModuleInfoJavaFileOrItsParentDirectory) {
-    var path = Path.of(pathOfModuleInfoJavaFileOrItsParentDirectory).normalize();
+    return DeclaredModule.of(Path.of(pathOfModuleInfoJavaFileOrItsParentDirectory));
+  }
+
+  public static DeclaredModule of(Path pathOfModuleInfoJavaFileOrItsParentDirectory) {
+    var path = pathOfModuleInfoJavaFileOrItsParentDirectory.normalize();
     if (Files.notExists(path)) throw new IllegalArgumentException("Path must exist: " + path);
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     if (Files.notExists(info)) throw new IllegalArgumentException("No module-info in: " + path);
