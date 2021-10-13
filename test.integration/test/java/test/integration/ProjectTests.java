@@ -11,6 +11,7 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.external.JUnit;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -70,7 +71,9 @@ class ProjectTests {
                 externals ->
                     externals
                         .withRequiresModule("org.junit.platform.console")
-                        .withExternalModuleLocator(JUnit.version("5.7.2")))
+                        .withExternalModuleLocator(JUnit.version("5.7.2"))
+                        .withExternalModuleUri("x", "https://modules.java/x@1")
+                        .withExternalModuleUriMap(Map.of("y", "https://y@2", "z", "https://z@3")))
             .with(Options.parse("--project-name", "Name", "--project-version", "99"));
 
     assertEquals("Name 99", project.toNameAndVersion());
@@ -96,6 +99,9 @@ class ProjectTests {
 
     assertEquals(Set.of("org.junit.platform.console"), project.externals().requires());
     assertNotNull(project.externals().locators().values().get(0).locate("org.junit.jupiter"));
+    assertNotNull(project.externals().locators().values().get(1).locate("x"));
+    assertNotNull(project.externals().locators().values().get(2).locate("y"));
+    assertNotNull(project.externals().locators().values().get(2).locate("z"));
 
     assertEquals("bar.App", project.space("test").module("bar").mainClass().orElseThrow());
     var tweaked = project.withModuleTweak("test", "bar", bar -> bar.withMainClass("bar.Main"));
