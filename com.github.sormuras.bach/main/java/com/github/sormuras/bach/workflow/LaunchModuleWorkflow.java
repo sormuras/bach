@@ -10,11 +10,11 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-public class RunModuleWorkflow extends AbstractSpaceWorkflow {
+public class LaunchModuleWorkflow extends AbstractSpaceWorkflow {
 
   private final Command<?> command;
 
-  public RunModuleWorkflow(Bach bach, Project project, ProjectSpace space, Command<?> command) {
+  public LaunchModuleWorkflow(Bach bach, Project project, ProjectSpace space, Command<?> command) {
     super(bach, project, space);
     this.command = command;
   }

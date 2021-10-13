@@ -10,7 +10,7 @@ import com.github.sormuras.bach.internal.ModuleSupport;
 import com.github.sormuras.bach.internal.ProcessStartingToolCall;
 import com.github.sormuras.bach.internal.ToolProviderSupport;
 import com.github.sormuras.bach.internal.ToolRunningToolCall;
-import com.github.sormuras.bach.workflow.WorkflowBuilder;
+import com.github.sormuras.bach.workflow.WorkflowRunner;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -34,10 +34,10 @@ public class Bach implements AutoCloseable, Logbook.Trait {
   public static void build(Project project) {
     try (var bach = new Bach()) {
       bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
-      var builder = new WorkflowBuilder(bach, project);
-      builder.grab();
-      builder.compile();
-      builder.runAllTests();
+      var runner = new WorkflowRunner(bach, project);
+      runner.grabExternals();
+      runner.compileSpaces();
+      runner.executeTests();
     }
   }
 

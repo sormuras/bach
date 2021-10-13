@@ -3,7 +3,7 @@ import com.github.sormuras.bach.Command;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.simple.SimpleSpace;
-import com.github.sormuras.bach.workflow.WorkflowBuilder;
+import com.github.sormuras.bach.workflow.WorkflowRunner;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -79,9 +79,9 @@ class build {
                                   .withModule("org.astro")));
       try (var bach = new Bach()) {
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
-        var builder = new WorkflowBuilder(bach, project);
-        builder.compile();
-        builder.runModule("com.greetings", 1, 2, 3);
+        var runner = new WorkflowRunner(bach, project);
+        runner.compileSpaces();
+        runner.launchModule("com.greetings", 1, 2, 3);
       }
     }
   }

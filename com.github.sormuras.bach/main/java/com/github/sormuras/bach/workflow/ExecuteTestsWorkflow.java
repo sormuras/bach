@@ -12,9 +12,9 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-public class RunAllTestsWorkflow extends AbstractSpaceWorkflow {
+public class ExecuteTestsWorkflow extends AbstractSpaceWorkflow {
 
-  public RunAllTestsWorkflow(Bach bach, Project project, ProjectSpace space) {
+  public ExecuteTestsWorkflow(Bach bach, Project project, ProjectSpace space) {
     super(bach, project, space);
   }
 
@@ -32,7 +32,7 @@ public class RunAllTestsWorkflow extends AbstractSpaceWorkflow {
     for (var module : space.modules()) {
       var name = module.name();
       if (ModuleFinderSupport.findMainClass(moduleFinder, name).isPresent()) {
-        new RunModuleWorkflow(bach, project, space, Command.of(name)).run();
+        new LaunchModuleWorkflow(bach, project, space, Command.of(name)).run();
       }
       var toolFinder = ToolFinder.of(moduleFinder, true, name);
       runTool(toolFinder, "test", bach.printer()::print);
