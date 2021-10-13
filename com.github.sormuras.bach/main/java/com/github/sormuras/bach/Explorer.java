@@ -70,10 +70,16 @@ public record Explorer(Bach bach) {
     return descriptors
         .map(ModuleDescriptor::requires)
         .flatMap(Set::stream)
-        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.MANDATED))
-        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.STATIC))
-        .filter(requires -> !requires.modifiers().contains(Requires.Modifier.SYNTHETIC))
+        .filter(Explorer::required)
         .map(Requires::name)
         .collect(Collectors.toCollection(TreeSet::new));
+  }
+
+  public static boolean required(Requires requires) {
+    var modifiers = requires.modifiers();
+    if (modifiers.isEmpty() || modifiers.contains(Requires.Modifier.TRANSITIVE)) return true;
+    if (modifiers.contains(Requires.Modifier.MANDATED)) return false;
+    if (modifiers.contains(Requires.Modifier.SYNTHETIC)) return false;
+    return !modifiers.contains(Requires.Modifier.STATIC);
   }
 }
