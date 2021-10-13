@@ -17,7 +17,7 @@ public abstract class AbstractSpaceWorkflow extends AbstractProjectWorkflow {
   }
 
   protected int computeReleaseVersionFeatureNumber() {
-    return space.release() == 0 ? Runtime.version().feature() : space.release();
+    return space.release();
   }
 
   protected Path computeOutputDirectoryForModules(ProjectSpace space) {

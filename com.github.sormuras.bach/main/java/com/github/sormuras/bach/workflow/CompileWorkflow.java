@@ -136,7 +136,9 @@ public class CompileWorkflow extends AbstractSpaceWorkflow {
   }
 
   protected Path computeOutputDirectoryForClasses() {
-    return bach.path().workspace(space.name(), "classes-" + computeReleaseVersionFeatureNumber());
+    var computedNumber = computeReleaseVersionFeatureNumber();
+    var release = computedNumber == 0 ? Runtime.version().feature() : computedNumber;
+    return bach.path().workspace(space.name(), "classes-" + release);
   }
 
   protected Path computeOutputDirectoryForClasses(String module, int release) {
