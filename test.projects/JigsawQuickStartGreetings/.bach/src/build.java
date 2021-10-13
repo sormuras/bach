@@ -1,7 +1,7 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Command;
-import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.project.ProjectScanner;
 import com.github.sormuras.bach.simple.SimpleSpace;
 import com.github.sormuras.bach.workflow.WorkflowBuilder;
 import java.lang.module.ModuleFinder;
@@ -56,17 +56,14 @@ class build {
 
   static class BuildWithWorkflowApi {
     public static void main(String... args) {
-      var project =
-          Project.of("JigsawQuickStartGreetings", "99")
-              .withSpaces(
-                  spaces ->
-                      spaces.withSpace(
-                          "main",
-                          main ->
-                              main.withModule(
-                                  Path.of("com.greetings"),
-                                  module -> module.withMainClass("com.greetings.Main"))));
       try (var bach = new Bach()) {
+        var project =
+            new ProjectScanner(bach)
+                .scanProjectInCurrentWorkingDirectory()
+                .withVersion("99")
+                .withModuleTweak(
+                    "main", "com.greetings", module -> module.withMainClass("com.greetings.Main"));
+
         bach.logMessage("Build project %s".formatted(project.toNameAndVersion()));
         var builder = new WorkflowBuilder(bach, project);
         builder.compile();
