@@ -109,7 +109,7 @@ public sealed interface PathSupport permits ConstantInterface {
   /** {@return the file name of the path as a string, or the given default name} */
   static String nameOrElse(Path path, String defautName) {
     var normalized = path.normalize();
-    var candidate = normalized.getNameCount() == 0 ? normalized.toAbsolutePath() : normalized;
+    var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
     var name = candidate.getFileName();
     return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
   }
