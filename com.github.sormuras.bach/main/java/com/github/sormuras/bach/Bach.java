@@ -22,7 +22,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 /** Java Shell Builder. */
-public class Bach implements AutoCloseable {
+public class Bach implements AutoCloseable, Logbook.Trait {
 
   public static void build(Project.Operator operator) {
     var projectName = Configuration.computeDefaultProjectName();
@@ -56,7 +56,7 @@ public class Bach implements AutoCloseable {
   public Bach(Configuration configuration) {
     this.configuration = configuration;
     this.logbook = constructLogbook();
-    logMessage(
+    log(
         configuration.verbose() ? System.Logger.Level.INFO : System.Logger.Level.DEBUG,
         "Initialized Bach %s (Java %s, %s, %s)"
             .formatted(
@@ -110,19 +110,7 @@ public class Bach implements AutoCloseable {
   public void close() {
     writeLogbook();
     var duration = DurationSupport.toHumanReadableString(logbook().uptime());
-    logbook().logMessage(System.Logger.Level.INFO, "Total uptime was %s".formatted(duration));
-  }
-
-  public void logCaption(String line) {
-    logbook().logCaption(line);
-  }
-
-  public void logMessage(String info) {
-    logbook().logMessage(System.Logger.Level.INFO, info);
-  }
-
-  public void logMessage(System.Logger.Level level, String text) {
-    logbook().logMessage(level, text);
+    logMessage("Total uptime was %s".formatted(duration));
   }
 
   public ToolRun run(String tool, Composer<DefaultCommand> composer) {
@@ -190,7 +178,7 @@ public class Bach implements AutoCloseable {
   public void writeLogbook() {
     try {
       var file = logbook().write(path().workspace());
-      logbook().logCaption("Wrote logbook to %s".formatted(file.toUri()));
+      logCaption("Wrote logbook to %s".formatted(file.toUri()));
     } catch (Exception exception) {
       exception.printStackTrace(err());
     }

@@ -20,8 +20,29 @@ public class Logbook {
   public interface Trait {
     Logbook logbook();
 
-    default void debug(String message) {
-      logbook().logMessage(Level.DEBUG, message);
+    default void log(String message) {
+      log(Level.DEBUG, message);
+    }
+
+    default void log(Level level, String text) {
+      logbook().logMessage(level, text);
+    }
+
+    default <T extends Throwable> T log(T throwable) {
+      return log(throwable instanceof Error ? Level.ERROR : Level.WARNING, throwable);
+    }
+
+    default <T extends Throwable> T log(Level level, T throwable) {
+      log(level, throwable.toString());
+      return throwable;
+    }
+
+    default void logCaption(String line) {
+      logbook().logCaption(line);
+    }
+
+    default void logMessage(String info) {
+      log(Level.INFO, info);
     }
   }
 

@@ -42,8 +42,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
       for (var locator : locators) {
         var location = locator.find(module);
         if (location.isEmpty()) continue;
-        bach.logMessage(
-            Level.DEBUG, "Located module `%s` via %s".formatted(module, locator.caption()));
+        bach.log(Level.DEBUG, "Located module `%s` via %s".formatted(module, locator.caption()));
         grab(directory, new Asset(module + ".jar", location.get()));
         continue module_loop;
       }
@@ -58,7 +57,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
     while (true) {
       var missing = explorer.listMissingExternalModules();
       if (missing.isEmpty()) break;
-      bach.logMessage(
+      bach.log(
           Level.DEBUG,
           "Grab %d missing external module%s"
               .formatted(missing.size(), missing.size() == 1 ? "" : "s"));
@@ -68,7 +67,7 @@ public record Grabber(Bach bach, ExternalModuleLocators locators) {
       grabExternalModules(missing.toArray(String[]::new));
       loaded.addAll(missing);
     }
-    bach.logMessage(
+    bach.log(
         Level.DEBUG, "Grabbed %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
   }
 

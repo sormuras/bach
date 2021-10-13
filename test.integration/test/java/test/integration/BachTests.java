@@ -22,6 +22,6 @@ class BachTests {
                 Configuration.Printing.ofErrorsOnly()));
     bach.logCaption("caption");
     bach.logMessage("message");
-    bach.logMessage(System.Logger.Level.TRACE, "trace");
+    bach.log(System.Logger.Level.TRACE, "trace");
   }
 }
