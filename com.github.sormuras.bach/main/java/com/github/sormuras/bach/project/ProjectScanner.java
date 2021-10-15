@@ -4,6 +4,7 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Configuration;
 import com.github.sormuras.bach.Logbook;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.PathSupport;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,14 +13,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** A factory of {@link Project} instances. */
-public record ProjectScanner(Bach bach) implements Logbook.Trait {
+/** A directory-scanning factory of {@link Project} instances. */
+public record ProjectScanner(Bach bach, boolean treatSourcesAsResources) implements Logbook.Trait {
+
+  public ProjectScanner(Bach bach) {
+    this(bach, false);
+  }
 
   private static final Pattern RELEASE_NUMBER_PATTERN = Pattern.compile(".*?(\\d+)$");
 
@@ -28,8 +34,8 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
     return bach.logbook();
   }
 
-  public Project scanProjectInCurrentWorkingDirectory() {
-    return scanProject(Path.of(""));
+  public Project scanProject() {
+    return scanProject(bach.path().root());
   }
 
   public Project scanProject(Path directory) {
@@ -48,13 +54,13 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
             .orElse(Configuration.computeDefaultProjectVersion());
     log("Find all module-info.java files of %s %s...".formatted(projectName, projectVersion));
 
-    var projectSpaces = parseProjectSpaces(directory);
+    var projectSpaces = scanProjectSpaces(directory);
 
     return Project.of(projectName, projectVersion).with(projectSpaces);
   }
 
-  public ProjectSpaces parseProjectSpaces(Path directory) {
-    var moduleInfoFiles = new ArrayList<>(bach.explorer().findModuleInfoJavaFiles(directory));
+  public ProjectSpaces scanProjectSpaces(Path directory) {
+    var moduleInfoFiles = bach.explorer().findModuleInfoJavaFiles(directory);
     var size = moduleInfoFiles.size();
     log("Found %d module-info.java file%s".formatted(size, size == 1 ? "" : "s"));
     if (size == 0) throw log(new Error("No module-info.java found"));
@@ -65,20 +71,15 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
     var isTestModule = isModuleOf("test", "test");
     var isMainModule = isModuleOf("main", "*");
 
-    var iterator = moduleInfoFiles.listIterator();
-    while (iterator.hasNext()) {
-      var path = iterator.next();
+    for (var path : moduleInfoFiles) {
       if (path.startsWith(".bach")) continue;
+      var declaration = scanDeclaredModule(path);
       if (isTestModule.test(path)) {
-        var declaration = parseDeclaredModule(path);
         tests.put(declaration.name(), declaration);
-        iterator.remove();
         continue;
       }
       if (isMainModule.test(path)) {
-        var declaration = parseDeclaredModule(path);
         mains.put(declaration.name(), declaration);
-        iterator.remove();
         continue;
       }
       throw new IllegalStateException("Path not handled: " + path);
@@ -95,7 +96,7 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
         new ProjectSpace(
             "test",
             List.of(mainSpace),
-            Runtime.version().feature(),
+            Runtime.version().feature(), // or 0
             new DeclaredModules(List.copyOf(tests.values())));
 
     var spaces = new ArrayList<ProjectSpace>();
@@ -104,11 +105,6 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
     if (spaces.isEmpty()) throw new IllegalStateException("All spaces are empty?!");
 
     return new ProjectSpaces(List.copyOf(spaces));
-  }
-
-  public DeclaredModule parseDeclaredModule(Path path) {
-    // TODO ...
-    return DeclaredModule.of(path);
   }
 
   static Predicate<Path> isModuleOf(String space, String... configuration) {
@@ -132,10 +128,31 @@ public record ProjectScanner(Bach bach) implements Logbook.Trait {
     return deque;
   }
 
-  public static TargetedFolder parseTargetedFolder(Path path, FolderType... types) {
+  public static DeclaredModule scanDeclaredModule(Path pathOfModuleInfoJavaOrItsParentDirectory) {
+    var path = pathOfModuleInfoJavaOrItsParentDirectory.normalize();
+    if (Files.notExists(path)) throw new IllegalArgumentException("Path must exist: " + path);
+    var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
+    if (Files.notExists(info)) throw new IllegalArgumentException("No module-info in: " + path);
+    var descriptor = ModuleDescriptorSupport.parse(info);
+
+    // Single module in project's base directory?
+    if (info.toString().equals("module-info.java")) {
+      return new DeclaredModule(descriptor, info, Optional.empty(), Folders.of());
+    }
+
+    // ...
+
+    var parent = info.getParent();
+    var directory = parent != null ? parent : Path.of(".");
+    var types = FolderTypes.of(FolderType.SOURCES);
+    var folders = Folders.of(new Folder(directory, 0, types));
+    return new DeclaredModule(descriptor, info, Optional.empty(), folders);
+  }
+
+  public static Folder parseTargetedFolder(Path path, FolderType... types) {
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
     var version = parseReleaseNumber(PathSupport.name(path));
-    return new TargetedFolder(path, version, FolderTypes.of(types));
+    return new Folder(path, version, FolderTypes.of(types));
   }
 
   static int parseReleaseNumber(String string) {

@@ -9,7 +9,7 @@ import java.util.function.UnaryOperator;
 
 /** A module declaration with its possibly targeted folders. */
 public record DeclaredModule(
-    ModuleDescriptor descriptor, Path info, Optional<String> mainClass, TargetedFolders folders)
+    ModuleDescriptor descriptor, Path info, Optional<String> mainClass, Folders folders)
     implements Comparable<DeclaredModule> {
 
   @FunctionalInterface
@@ -17,25 +17,23 @@ public record DeclaredModule(
 
   public record Tweak(ProjectSpace space, DeclaredModule module, Operator operator) {}
 
-  public static DeclaredModule of(String pathOfModuleInfoJavaFileOrItsParentDirectory) {
-    return DeclaredModule.of(Path.of(pathOfModuleInfoJavaFileOrItsParentDirectory));
+  public String name() {
+    return descriptor.name();
   }
 
-  public static DeclaredModule of(Path pathOfModuleInfoJavaFileOrItsParentDirectory) {
-    var path = pathOfModuleInfoJavaFileOrItsParentDirectory.normalize();
+  public static DeclaredModule of(Path pathOfModuleInfoJavaOrItsParentDirectory) {
+    return DeclaredModule.of(pathOfModuleInfoJavaOrItsParentDirectory, 0, FolderType.SOURCES);
+  }
+
+  public static DeclaredModule of(
+      Path pathOfModuleInfoJavaOrItsParentDirectory, int version, FolderType... types) {
+    var path = pathOfModuleInfoJavaOrItsParentDirectory.normalize();
     if (Files.notExists(path)) throw new IllegalArgumentException("Path must exist: " + path);
     var info = Files.isDirectory(path) ? path.resolve("module-info.java") : path;
     if (Files.notExists(info)) throw new IllegalArgumentException("No module-info in: " + path);
     var descriptor = ModuleDescriptorSupport.parse(info);
-    var parent = info.getParent();
-    var directory = parent != null ? parent : Path.of(".");
-    var types = FolderTypes.of(FolderType.SOURCES);
-    var folders = TargetedFolders.of(new TargetedFolder(directory, 0, types));
+    var folders = Folders.of(new Folder(info.getParent(), version, FolderTypes.of(types)));
     return new DeclaredModule(descriptor, info, Optional.empty(), folders);
-  }
-
-  public String name() {
-    return descriptor.name();
   }
 
   @Override
@@ -68,7 +66,7 @@ public record DeclaredModule(
   }
 
   public DeclaredModule withFolder(Path directory, int release, FolderType... types) {
-    var folder = new TargetedFolder(directory.normalize(), release, FolderTypes.of(types));
+    var folder = new Folder(directory.normalize(), release, FolderTypes.of(types));
     return new DeclaredModule(descriptor, info, mainClass, folders.add(folder));
   }
 }

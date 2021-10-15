@@ -9,18 +9,17 @@ import java.nio.file.Path;
  * @param version the Java feature release version to target
  * @param types the set of types associated with the directory
  */
-public record TargetedFolder(Path directory, int version, FolderTypes types)
-    implements Comparable<TargetedFolder> {
+public record Folder(Path directory, int version, FolderTypes types) implements Comparable<Folder> {
 
-  public TargetedFolder with(Object component) {
-    return new TargetedFolder(
+  public Folder with(Object component) {
+    return new Folder(
         component instanceof Path directory ? directory : directory,
         component instanceof Integer version ? version : version,
         component instanceof FolderTypes types ? types : types);
   }
 
   @Override
-  public int compareTo(TargetedFolder other) {
+  public int compareTo(Folder other) {
     return version - other.version;
   }
 }

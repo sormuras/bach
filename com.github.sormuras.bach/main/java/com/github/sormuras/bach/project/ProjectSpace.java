@@ -30,6 +30,10 @@ public record ProjectSpace(
     return new ProjectSpace(name, parents, release, modules.with(module));
   }
 
+  public ProjectSpace withModule(Path info) {
+    return withModule(info, module -> module);
+  }
+
   public ProjectSpace withModule(String info) {
     return withModule(Path.of(info), module -> module);
   }
@@ -43,7 +47,7 @@ public record ProjectSpace(
   }
 
   public ProjectSpace withModule(Path info, DeclaredModule.Operator operator) {
-    return withModule(operator.apply(DeclaredModule.of(info.toString())));
+    return withModule(operator.apply(DeclaredModule.of(info)));
   }
 
   ProjectSpace tweak(DeclaredModule.Tweak tweak) {
