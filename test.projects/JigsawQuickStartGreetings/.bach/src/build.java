@@ -59,7 +59,7 @@ class build {
       try (var bach = new Bach()) {
         var project =
             new ProjectScanner(bach)
-                .scanProjectInCurrentWorkingDirectory()
+                .scanProject()
                 .withVersion("99")
                 .withModuleTweak(
                     "main", "com.greetings", module -> module.withMainClass("com.greetings.Main"));

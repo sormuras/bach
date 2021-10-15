@@ -53,10 +53,15 @@ public record Configuration(
   }
 
   public static Configuration of() {
+    var out = new PrintWriter(System.out, true);
+    var err = new PrintWriter(System.err, true);
     var pathing = Pathing.ofCurrentWorkingDirectory();
-    var printing =
-        new Printing(new PrintWriter(System.out, true), new PrintWriter(System.err, true));
+    var printing = new Printing(out, err);
     return Configuration.of(pathing, printing);
+  }
+
+  public static Configuration ofErrorsOnly(Path base) {
+    return Configuration.of(Pathing.of(base), Printing.ofErrorsOnly());
   }
 
   public static Configuration of(Pathing pathing, Printing printing) {
