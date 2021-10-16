@@ -1,5 +1,6 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.FindException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -15,7 +16,7 @@ public record ProjectSpace(
   }
 
   public DeclaredModule module(String name) {
-    return modules.find(name).orElseThrow();
+    return modules.find(name).orElseThrow(() -> new FindException(DeclaredModule.class, name));
   }
 
   public ProjectSpace withParents(List<ProjectSpace> parents) {

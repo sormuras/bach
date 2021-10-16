@@ -21,7 +21,7 @@ public record Project(
   public interface Operator extends UnaryOperator<Project> {}
 
   public ProjectSpace space(String name) {
-    return spaces.find(name).orElseThrow();
+    return spaces.find(name).orElseThrow(() -> new FindException(ProjectSpace.class, name));
   }
 
   public String toNameAndVersion() {
