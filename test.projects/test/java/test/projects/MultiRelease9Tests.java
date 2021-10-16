@@ -36,6 +36,10 @@ class MultiRelease9Tests {
         META-INF/versions/15/foo/
         META-INF/versions/15/foo/Foo.class
         META-INF/versions/15/foo/Foo.java
+        META-INF/versions/17/
+        META-INF/versions/17/foo/
+        META-INF/versions/17/foo/Foo.class
+        META-INF/versions/17/module-info.class
         """
             .lines()
             .sorted(),
