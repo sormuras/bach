@@ -1,3 +1,3 @@
 open module bar {
-  requires org.junit.jupiter;
+  requires net.jqwik.api;
 }

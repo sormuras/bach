@@ -1,6 +1,6 @@
 package bar;
 
 class BarTests {
-  @org.junit.jupiter.api.Test
-  void bar() {}
+  @net.jqwik.api.Example
+  boolean bar() { return true; }
 }
