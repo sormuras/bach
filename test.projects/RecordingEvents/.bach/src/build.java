@@ -1,5 +1,6 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.external.JUnit;
+import com.github.sormuras.bach.external.Maven;
 import com.github.sormuras.bach.external.MultiExternalModuleLocator;
 import com.github.sormuras.bach.simple.SimpleSpace;
 import java.util.Map;
@@ -13,9 +14,9 @@ class build {
               new MultiExternalModuleLocator(
                   Map.of(
                       "net.jqwik.api",
-                      "https://oss.sonatype.org/content/repositories/snapshots/net/jqwik/jqwik-api/1.6.0-SNAPSHOT/jqwik-api-1.6.0-20211028.081012-29.jar",
+                      Maven.central("net.jqwik", "jqwik-api", "1.6.0"),
                       "net.jqwik.engine",
-                      "https://oss.sonatype.org/content/repositories/snapshots/net/jqwik/jqwik-engine/1.6.0-SNAPSHOT/jqwik-engine-1.6.0-20211028.081012-27.jar")));
+                      Maven.central("net.jqwik", "jqwik-engine", "1.6.0"))));
 
       var test = SimpleSpace.of(bach, "test").withModule("bar").withModule("foo");
 
