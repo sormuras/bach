@@ -36,18 +36,11 @@ jobs:
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
-      - name: 'Download latest JDK 17'
-        run: |
-          wget \
-            --no-verbose \
-            --directory-prefix ${{ runner.temp }} \
-            https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
-      - name: 'Set up JDK'
-        uses: actions/setup-java@v2
+      - name: 'Set up latest JDK 17'
+        uses: sormuras/setup-jdk@main
         with:
-          java-version: 17
-          distribution: jdkfile
-          jdkFile: ${{ runner.temp }}/jdk-17_linux-x64_bin.tar.gz
+          feature: 17
+          version: latest
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
@@ -121,10 +114,10 @@ jobs:
     needs: [ setup, build, deploy-to-releases ]
     runs-on: ubuntu-latest
     steps:
-      - name: 'Install JDK 16 or later'
+      - name: 'Install JDK 17 or later'
         uses: actions/setup-java@v2
         with:
-          java-version: 16
+          java-version: 17
           distribution: 'zulu'
       - name: 'Verify java and jshell are available'
         run: java --version && jshell --version
