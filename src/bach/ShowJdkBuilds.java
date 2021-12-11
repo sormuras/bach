@@ -36,6 +36,7 @@ public class ShowJdkBuilds {
     var builds = new TreeMap<>(parseArchive());
     builds.put(17, parse(17)); // GA
     builds.put(18, parse(18)); // EA
+    builds.put(19, parse(19)); // EA
 
     var features = new ArrayList<>(builds.keySet());
     features.sort(Comparator.reverseOrder());
