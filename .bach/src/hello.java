@@ -38,7 +38,7 @@ class hello {
                   "hello-1-ea+1.jar",
                   "https://github.com/sormuras/hello/releases/download/1-ea+1/hello-1-ea+1.jar#SIZE=909"));
 
-      bach.logCaption("Greet current user");
+      bach.logCaption("Greet worlds");
       bach.run("hello", call -> call.add("world 1"));
       bach.run("sormuras-hello@07819f3ee7", call -> call.add("world 2"));
       bach.run("sormuras-hello@1-ea+1.java", call -> call.add("world 3"));
