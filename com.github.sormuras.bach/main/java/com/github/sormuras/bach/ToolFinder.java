@@ -10,23 +10,17 @@ import com.github.sormuras.bach.internal.ToolFinderSupport;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.spi.ToolProvider;
 
 /** A finder of tool providers. */
 @FunctionalInterface
-public interface ToolFinder {
+public interface ToolFinder extends ServiceFinder<ToolProvider> {
 
-  List<ToolProvider> findAll();
-
-  default Optional<ToolProvider> find(String name) {
-    return findAll().stream().filter(provider -> provider.name().equals(name)).findFirst();
-  }
-
-  default List<ToolProvider> list(String name) {
-    return findAll().stream().filter(provider -> provider.name().equals(name)).toList();
+  @Override
+  default String nameOf(ToolProvider provider) {
+    return provider.name();
   }
 
   static ToolFinder of(ToolProvider... providers) {
@@ -47,7 +41,7 @@ public interface ToolFinder {
 
   static ToolFinder of(ModuleLayer layer) {
     var loader = ServiceLoader.load(layer, ToolProvider.class);
-    return new ToolFinderSupport.ModuleLayerToolFinder(layer, loader);
+    return new ModuleLayerServiceFinder<>(layer, loader)::findAll;
   }
 
   static ToolFinder of(ClassLoader loader) {
@@ -55,7 +49,7 @@ public interface ToolFinder {
   }
 
   static ToolFinder of(ServiceLoader<ToolProvider> loader) {
-    return new ToolFinderSupport.ServiceLoaderToolFinder(loader);
+    return new ServiceLoaderServiceFinder<>(loader)::findAll;
   }
 
   static ToolFinder ofPrograms(Path directory, Path java, String argsfile) {
