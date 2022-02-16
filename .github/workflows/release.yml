@@ -24,10 +24,7 @@ jobs:
       - name: 'Check out repository'
         uses: actions/checkout@v2
       - name: 'Set up latest JDK 17'
-        uses: sormuras/setup-jdk@main
-        with:
-          feature: 17
-          version: latest
+        uses: oracle-actions/setup-java@v1
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ env.VERSION }}'

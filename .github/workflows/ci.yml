@@ -37,10 +37,7 @@ jobs:
       - name: 'Check out repository'
         uses: actions/checkout@v2
       - name: 'Set up latest JDK 17'
-        uses: sormuras/setup-jdk@main
-        with:
-          feature: 17
-          version: latest
+        uses: oracle-actions/setup-java@v1
       - name: 'Bootstrap Bach'
         run: java --show-version .bach/src/bootstrap.java
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
@@ -107,62 +104,3 @@ jobs:
           git add .
           git commit --message 'Update API documentation of ${{ github.event.repository.name }} to ${{ needs.setup.outputs.version }}'
           git push
-
-
-  play-prelude:
-    if: ${{ false }}
-    needs: [ setup, build, deploy-to-releases ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Install JDK 17 or later'
-        uses: actions/setup-java@v2
-        with:
-          java-version: 17
-          distribution: 'zulu'
-      - name: 'Verify java and jshell are available'
-        run: java --version && jshell --version
-      - name: 'Create directory air and change into it'
-        run: mkdir air && cd air
-      - name: 'Initialize Bach using JShell''s load file feature'
-        working-directory: air
-        run: jshell -R-Dbach-version=17-ea https://git.io/bach-init
-      - name: 'Create modular Java project'
-        working-directory: air
-        run: |
-          echo 'module air {}' >> module-info.java
-          mkdir air
-          echo 'package air;'                                >> air/Main.java
-          echo 'class Main {'                                >> air/Main.java
-          echo '  public static void main(String... args) {' >> air/Main.java
-          echo '     System.out.println("Aria");'            >> air/Main.java
-          echo '  }'                                         >> air/Main.java
-          echo '}'                                           >> air/Main.java
-      - name: 'Build with Bach'
-        working-directory: air
-        run: .bach/bin/bach build
-      - name: 'Run program'
-        working-directory: air
-        run: .bach/workspace/image/bin/java --module air
-
-  use-action:
-    if: ${{ false }}
-    needs: [ setup, build, deploy-to-releases ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Check out repository'
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-      - name: 'Install JDK 16 or later'
-        uses: actions/setup-java@v2
-        with:
-          java-version: 16
-          distribution: 'zulu'
-      - name: 'Build with Bach''s GitHub Action'
-        uses: sormuras/bach-build@v1
-        with:
-          working-directory: test.projects/JigsawQuickStartWorld
-          bach-version: 17-ea
-      - name: 'Run program'
-        working-directory: test.projects/JigsawQuickStartWorld
-        run: .bach/workspace/image/bin/java --module com.greetings
