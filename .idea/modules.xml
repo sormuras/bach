@@ -3,21 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.iml" filepath="$PROJECT_DIR$/.idea/bach.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/com.github.sormuras.bach.iml" filepath="$PROJECT_DIR$/.idea/com.github.sormuras.bach.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.base.iml" filepath="$PROJECT_DIR$/.idea/test.base.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.integration.iml" filepath="$PROJECT_DIR$/.idea/test.integration.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.iml" filepath="$PROJECT_DIR$/.idea/test.projects.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartGreetings.iml" filepath="$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartGreetings.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartWorld.iml" filepath="$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartWorld.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartWorldWithTests.iml" filepath="$PROJECT_DIR$/.idea/test.projects.JigsawQuickStartWorldWithTests.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.MultiRelease-11.iml" filepath="$PROJECT_DIR$/.idea/test.projects.MultiRelease-11.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.MultiRelease-8.iml" filepath="$PROJECT_DIR$/.idea/test.projects.MultiRelease-8.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.MultiRelease-9.iml" filepath="$PROJECT_DIR$/.idea/test.projects.MultiRelease-9.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.MultiReleaseMultiModule.iml" filepath="$PROJECT_DIR$/.idea/test.projects.MultiReleaseMultiModule.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.ProcessingCode.iml" filepath="$PROJECT_DIR$/.idea/test.projects.ProcessingCode.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.RecordingEvents.iml" filepath="$PROJECT_DIR$/.idea/test.projects.RecordingEvents.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.Simple.iml" filepath="$PROJECT_DIR$/.idea/test.projects.Simple.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/test.projects.Simplicissimus.iml" filepath="$PROJECT_DIR$/.idea/test.projects.Simplicissimus.iml" />
     </modules>
   </component>
 </project>

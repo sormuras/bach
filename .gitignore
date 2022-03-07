@@ -1,6 +1,3 @@
-**/.bach/workspace/
-
+*.class
 *.jar
 *.log
-
-.jqwik-database
