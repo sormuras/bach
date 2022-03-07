@@ -1,4 +1,5 @@
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +11,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
@@ -20,27 +23,53 @@ import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 import jdk.jfr.consumer.RecordingFile;
 
-public record Bach(Options options, Logbook logbook, Paths paths) {
+public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static void main(String... args) {
-    var bach = Bach.of(System.out::println, System.err::println, args);
+    var bach = Bach.instance(System.out::println, System.err::println, args);
     var code = bach.run();
     System.exit(code);
+  }
+
+  private static final AtomicReference<Bach> INSTANCE = new AtomicReference<>();
+
+  public static Bach instance(Consumer<String> out, Consumer<String> err, String... args) {
+    return instance(() -> Bach.of(out, err, args));
+  }
+
+  public static Bach instance(Supplier<Bach> supplier) {
+    var oldInstance = INSTANCE.get();
+    if (oldInstance != null) return oldInstance;
+    var newInstance = supplier.get();
+    if (INSTANCE.compareAndSet(null, newInstance)) return newInstance;
+    return INSTANCE.get();
   }
 
   public static Bach of(Consumer<String> out, Consumer<String> err, String... args) {
     var options = Options.of(args);
     var logbook = Logbook.of(out, err, options);
     var paths = Paths.of(options);
-    return new Bach(options, logbook, paths);
+    var tools = Tools.of(options);
+    return new Bach(options, logbook, paths, tools);
+  }
+
+  public static int build(PrintWriter out, PrintWriter err, String... args) {
+    var bach = Bach.instance(out::println, err::println);
+    bach.tools().run(Command.of("info"));
+    return 0;
+  }
+
+  public static int info(PrintWriter out, PrintWriter err, String... args) {
+    var bach = Bach.instance(out::println, err::println);
+    bach.tools().run(Command.of("javac", "--version"));
+    bach.tools().run(Command.of("jar", "--version"));
+    return 0;
   }
 
   public int run() {
     try (var recording = new Recording()) {
       recording.start();
-
-      logbook.log(Level.INFO, "Hello %s!".formatted(System.getProperty("user.name")));
-
+      options.commands().forEach(tools::run);
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-run.jfr");
       recording.dump(jfr);
@@ -102,7 +131,49 @@ public record Bach(Options options, Logbook logbook, Paths paths) {
     }
   }
 
-  public record Options(Level __logbook_threshold, Path __chroot, Path __destination, List<Command> commands) {
+  public record Tools(ToolFinder finder) {
+    public static Tools of(Options options) {
+      return new Tools(
+          ToolFinder.compose(
+              ToolFinder.of(
+                  new ToolFinder.Provider("build", Bach::build),
+                  new ToolFinder.Provider("info", Bach::info)),
+              ToolFinder.ofSystem()));
+    }
+
+    public void run(Command command) {
+      var tool = finder.find(command.name()).orElseThrow();
+      var out = new StringWriter();
+      var err = new StringWriter();
+      var args = command.arguments().toArray(String[]::new);
+      var event = new RunEvent(command);
+      event.begin();
+      event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+      event.end();
+      event.out = out.toString().strip();
+      event.err = err.toString().strip();
+      event.commit();
+    }
+
+    @Category({"Bach", "Tools"})
+    @Name("Bach.Tools.RunEvent")
+    @StackTrace(false)
+    private static final class RunEvent extends Event {
+      String name;
+      String args;
+      int code;
+      String out;
+      String err;
+
+      RunEvent(Command command) {
+        this.name = command.name();
+        this.args = String.join(" ", command.arguments());
+      }
+    }
+  }
+
+  public record Options(
+      Level __logbook_threshold, Path __chroot, Path __destination, List<Command> commands) {
     static Options of(String... args) {
       var map = new TreeMap<String, String>();
       var arguments = new ArrayDeque<>(List.of(args));
