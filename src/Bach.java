@@ -1,3 +1,4 @@
+import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -6,8 +7,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
 import jdk.jfr.Event;
@@ -166,6 +170,82 @@ public record Bach(Options options, Logbook logbook, Paths paths) {
       LogEvent(Level level, String message) {
         this.level = level.name();
         this.message = message;
+      }
+    }
+  }
+
+  /**
+   * A finder of tool providers.
+   *
+   * <p>What {@link java.lang.module.ModuleFinder ModuleFinder} is to {@link
+   * java.lang.module.ModuleReference ModuleReference}, is {@link ToolFinder} to {@link
+   * ToolProvider}.
+   */
+  @FunctionalInterface
+  public interface ToolFinder {
+
+    List<ToolProvider> findAll();
+
+    default Optional<ToolProvider> find(String name) {
+      return findAll().stream().filter(service -> service.name().equals(name)).findFirst();
+    }
+
+    static ToolFinder compose(ToolFinder... finders) {
+      record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
+        @Override
+        public List<ToolProvider> findAll() {
+          return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
+        }
+
+        @Override
+        public Optional<ToolProvider> find(String name) {
+          for (var finder : finders) {
+            var tool = finder.find(name);
+            if (tool.isPresent()) return tool;
+          }
+          return Optional.empty();
+        }
+      }
+
+      return new CompositeToolFinder(List.of(finders));
+    }
+
+    static ToolFinder of(ToolProvider... providers) {
+      record DirectToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
+      return new DirectToolFinder(List.of(providers));
+    }
+
+    static ToolFinder of(ClassLoader loader) {
+      return ToolFinder.of(ServiceLoader.load(ToolProvider.class, loader));
+    }
+
+    static ToolFinder of(ServiceLoader<ToolProvider> loader) {
+      record ServiceLoaderToolFinder(ServiceLoader<ToolProvider> loader) implements ToolFinder {
+        @Override
+        public List<ToolProvider> findAll() {
+          synchronized (loader) {
+            return loader.stream().map(ServiceLoader.Provider::get).toList();
+          }
+        }
+      }
+
+      return new ServiceLoaderToolFinder(loader);
+    }
+
+    static ToolFinder ofSystem() {
+      return ToolFinder.of(ClassLoader.getSystemClassLoader());
+    }
+
+    record Provider(String name, ToolFunction function) implements ToolProvider {
+
+      @FunctionalInterface
+      public interface ToolFunction {
+        int run(PrintWriter out, PrintWriter err, String... args);
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        return function.run(out, err, args);
       }
     }
   }
