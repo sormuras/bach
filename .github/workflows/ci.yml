@@ -9,41 +9,19 @@ on:
 
 jobs:
 
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.version.outputs.sha }}
-      tag: ${{ steps.version.outputs.tag }}
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - name: 'Check out repository'
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-      - name: 'Compute version string'
-        id: version
-        run: |
-          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          TAG=$(<VERSION)-ea
-          VERSION=${TAG}+${SHA}
-          echo "::set-output name=sha::${SHA}"
-          echo "::set-output name=tag::${TAG}"
-          echo "::set-output name=version::${VERSION}"
-
   build:
-    needs: [ setup ]
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
       - name: 'Set up latest JDK 17'
         uses: oracle-actions/setup-java@v1
-      - name: 'Build Bach ${{ needs.setup.outputs.version }}'
-        run: java bach.java --project-version ${{ needs.setup.outputs.version }} build
-      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}'
+      - name: 'Build Bach ${{ github.sha }}'
+        run: java bach.java build
+      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}-build-${{ needs.setup.outputs.version }}
+          name: ${{ github.event.repository.name }}-build-${{ github.sha }}
           path: |
             LICENSE
