@@ -195,7 +195,7 @@ function perform_sanity_checks() {
 }
 
 function determine_url() {
-    local properties='https://github.com/sormuras/bach/raw/master/install-jdk.properties'
+    local properties='https://github.com/sormuras/bach/raw/releases/11/install-jdk.properties'
     url=$(wget --quiet --output-document - ${properties} | grep -i "${feature}-${os}=" | awk -F "=" '{print $2}')
 
     if [[ -z ${url} ]]; then
