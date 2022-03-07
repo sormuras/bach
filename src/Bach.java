@@ -6,12 +6,14 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
@@ -26,7 +28,7 @@ import jdk.jfr.consumer.RecordingFile;
 public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static void main(String... args) {
-    var bach = Bach.instance(System.out::println, System.err::println, args);
+    var bach = Bach.instance(() -> Bach.of(args));
     var code = bach.run();
     System.exit(code);
   }
@@ -45,6 +47,10 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     return INSTANCE.get();
   }
 
+  public static Bach of(String... args) {
+    return Bach.of(System.out::println, System.err::println, args);
+  }
+
   public static Bach of(Consumer<String> out, Consumer<String> err, String... args) {
     var options = Options.of(args);
     var logbook = Logbook.of(out, err, options);
@@ -53,17 +59,30 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     return new Bach(options, logbook, paths, tools);
   }
 
-  public static int build(PrintWriter out, PrintWriter err, String... args) {
-    var bach = Bach.instance(out::println, err::println);
-    bach.tools().run(Command.of("info"));
-    return 0;
+  public void build() {
+    tools.run(Command.of("info"));
   }
 
-  public static int info(PrintWriter out, PrintWriter err, String... args) {
-    var bach = Bach.instance(out::println, err::println);
-    bach.tools().run(Command.of("javac", "--version"));
-    bach.tools().run(Command.of("jar", "--version"));
-    return 0;
+  public void info() {
+    var out = logbook.out();
+    System.getProperties().stringPropertyNames().stream()
+        .sorted()
+        .map(name -> "%s = %s".formatted(name, System.getProperty(name)))
+        .forEach(out);
+
+    out.accept("bach.paths = %s".formatted(paths));
+    tools
+        .finder()
+        .visit(
+            0,
+            (depth, finder) -> {
+              var indent = "  ".repeat(depth);
+              out.accept(indent + finder.title());
+              if (depth == 0) return;
+              finder.findAll().stream()
+                  .sorted(Comparator.comparing(ToolProvider::name))
+                  .forEach(tool -> out.accept(indent + "  - " + tool.name()));
+            });
   }
 
   public int run() {
@@ -136,9 +155,19 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       return new Tools(
           ToolFinder.compose(
               ToolFinder.of(
-                  new ToolFinder.Provider("build", Bach::build),
-                  new ToolFinder.Provider("info", Bach::info)),
+                  new ToolFinder.Provider("build", Tools::build),
+                  new ToolFinder.Provider("info", Tools::info)),
               ToolFinder.ofSystem()));
+    }
+
+    static int build(PrintWriter out, PrintWriter err, String... args) {
+      Bach.instance(out::println, err::println).build();
+      return 0;
+    }
+
+    static int info(PrintWriter out, PrintWriter err, String... args) {
+      Bach.instance(out::println, err::println).info();
+      return 0;
     }
 
     public void run(Command command) {
@@ -258,7 +287,15 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
-      return findAll().stream().filter(service -> service.name().equals(name)).findFirst();
+      return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
+    }
+
+    default String title() {
+      return getClass().getSimpleName();
+    }
+
+    default void visit(int depth, BiConsumer<Integer, ToolFinder> visitor) {
+      visitor.accept(depth, this);
     }
 
     static ToolFinder compose(ToolFinder... finders) {
@@ -276,8 +313,14 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
           }
           return Optional.empty();
         }
-      }
 
+        @Override
+        public void visit(int depth, BiConsumer<Integer, ToolFinder> visitor) {
+          visitor.accept(depth, this);
+          depth++;
+          for (var finder : finders) finder.visit(depth, visitor);
+        }
+      }
       return new CompositeToolFinder(List.of(finders));
     }
 
