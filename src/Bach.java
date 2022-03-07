@@ -1,12 +1,14 @@
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import jdk.jfr.Category;
 import jdk.jfr.Event;
 import jdk.jfr.Name;
@@ -46,7 +48,49 @@ public record Bach(Options options, Logbook logbook, Paths paths) {
     }
   }
 
-  public record Command(String name, List<String> arguments) {}
+  public record Command(String name, List<String> arguments) {
+    public static Command of(String name, Object... arguments) {
+      if (arguments.length == 0) return new Command(name, List.of());
+      if (arguments.length == 1) return new Command(name, List.of(arguments[0].toString()));
+      return new Command(name, List.of()).with(Stream.of(arguments));
+    }
+
+    public Command with(Stream<?> objects) {
+      var strings = objects.map(Object::toString);
+      return new Command(name, Stream.concat(arguments.stream(), strings).toList());
+    }
+
+    public Command with(Object argument) {
+      return with(Stream.of(argument));
+    }
+
+    public Command with(String key, Object value, Object... values) {
+      var command = with(Stream.of(key, value));
+      return values.length == 0 ? command : command.with(Stream.of(values));
+    }
+
+    public Command withFindFiles(String glob) {
+      return withFindFiles(Path.of(""), glob);
+    }
+
+    public Command withFindFiles(Path start, String glob) {
+      return withFindFiles(start, "glob", glob);
+    }
+
+    public Command withFindFiles(Path start, String syntax, String pattern) {
+      var syntaxAndPattern = syntax + ':' + pattern;
+      var matcher = start.getFileSystem().getPathMatcher(syntaxAndPattern);
+      return withFindFiles(start, Integer.MAX_VALUE, matcher);
+    }
+
+    public Command withFindFiles(Path start, int maxDepth, PathMatcher matcher) {
+      try (var files = Files.find(start, maxDepth, (p, a) -> matcher.matches(p))) {
+        return with(files);
+      } catch (Exception exception) {
+        throw new RuntimeException("Find files failed in: " + start, exception);
+      }
+    }
+  }
 
   public record Paths(Path root, Path out) {
     public static Paths of(Options options) {
