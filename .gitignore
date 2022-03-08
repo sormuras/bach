@@ -1,4 +1,1 @@
-*.class
-*.jar
-*.jfr
-*.log
+.bach/out/
