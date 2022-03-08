@@ -69,11 +69,6 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public void info() {
     var out = logbook.out();
-    System.getProperties().stringPropertyNames().stream()
-        .sorted()
-        .map(name -> "%s = %s".formatted(name, System.getProperty(name)))
-        .forEach(out);
-
     out.accept("bach.paths = %s".formatted(paths));
     tools
         .finder()
@@ -96,7 +91,9 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-run.jfr");
       recording.dump(jfr);
-      logbook.toMarkdownLines(jfr).forEach(logbook().out());
+      var logfile = paths.out().resolve("bach-logbook.md");
+      logbook.out.accept("Logbook location %s".formatted(logfile.toUri()));
+      Files.write(logfile, logbook.toMarkdownLines(jfr));
       return 0;
     } catch (Exception exception) {
       logbook.log(Level.ERROR, exception.toString());
