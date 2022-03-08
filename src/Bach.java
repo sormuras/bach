@@ -28,12 +28,16 @@ import jdk.jfr.consumer.RecordingFile;
 public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static void main(String... args) {
-    var bach = Bach.instance(() -> Bach.of(args));
+    var bach = Bach.instance(args);
     var code = bach.run();
     System.exit(code);
   }
 
   private static final AtomicReference<Bach> INSTANCE = new AtomicReference<>();
+
+  public static Bach instance(String... args) {
+    return instance(() -> Bach.of(args));
+  }
 
   public static Bach instance(Consumer<String> out, Consumer<String> err, String... args) {
     return instance(() -> Bach.of(out, err, args));
