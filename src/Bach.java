@@ -13,12 +13,10 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -233,39 +231,42 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       List<ToolCall> calls) {
 
     static Options of(String... args) {
-      var map = new TreeMap<String, String>();
+      var flags = EnumSet.noneOf(Flag.class);
+      var level = Level.INFO;
+      var root = Path.of("");
+      var destination = Path.of(".bach", "out");
+
       var arguments = new ArrayDeque<>(List.of(args));
       var calls = new ArrayList<ToolCall>();
       while (!arguments.isEmpty()) {
         var argument = arguments.removeFirst();
         if (argument.startsWith("--")) {
+          if (argument.equals("--verbose")) {
+            flags.add(Flag.VERBOSE);
+            continue;
+          }
           var delimiter = argument.indexOf('=', 2);
           var key = delimiter == -1 ? argument : argument.substring(0, delimiter);
-          var value =
-              delimiter == -1
-                  ? Flag.find(key).isPresent() ? "true" : arguments.removeFirst()
-                  : argument.substring(delimiter + 1);
-          map.put(key, value);
-          continue;
+          var value = delimiter == -1 ? arguments.removeFirst() : argument.substring(delimiter + 1);
+          if (key.equals("--logbook-threshold")) {
+            level = Level.valueOf(value);
+            continue;
+          }
+          if (key.equals("--chroot")) {
+            root = Path.of(value).normalize();
+            continue;
+          }
+          if (key.equals("--destination")) {
+            destination = Path.of(value).normalize();
+            continue;
+          }
+          throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
         }
         calls.add(new ToolCall(argument, arguments.stream().toList()));
         break;
       }
-      return Options.of(map, calls);
-    }
-
-    static Options of(Map<String, String> map, List<ToolCall> calls) {
-      var flags = EnumSet.noneOf(Flag.class);
-      for (var flag : Flag.values()) {
-        if (Boolean.parseBoolean(map.getOrDefault(flag.key(), "false"))) flags.add(flag);
-      }
-      var root = Path.of(map.getOrDefault("--chroot", "")).normalize();
       return new Options(
-          flags,
-          Level.valueOf(map.getOrDefault("--logbook-threshold", "INFO")),
-          root,
-          root.resolve(Path.of(map.getOrDefault("--destination", ".bach/out"))).normalize(),
-          List.copyOf(calls));
+          Set.copyOf(flags), level, root, root.resolve(destination), List.copyOf(calls));
     }
   }
 
