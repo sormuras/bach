@@ -98,7 +98,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
             ToolCall.of("jlink").with("--version"),
-            ToolCall.of("jmod").with("--vers5ion"),
+            ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .parallel()
         .forEach(call -> run(call, true));
