@@ -74,6 +74,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public void build() {
     run(ToolCall.of("info"));
+    run(ToolCall.of("compile"));
   }
 
   public void info() {
@@ -108,6 +109,10 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
             ToolCall.of("jpackage").with("--version"))
         .parallel()
         .forEach(call -> run(call, true));
+  }
+
+  public void compile() {
+    logbook.log(Level.WARNING, "TODO compile()");
   }
 
   int main() {
@@ -192,12 +197,18 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
           ToolFinder.compose(
               ToolFinder.of(
                   new ToolFinder.Provider("build", Tools::build),
+                  new ToolFinder.Provider("compile", Tools::compile),
                   new ToolFinder.Provider("info", Tools::info)),
               ToolFinder.ofSystem()));
     }
 
     static int build(PrintWriter out, PrintWriter err, String... args) {
       Bach.instance(out::println, err::println).build();
+      return 0;
+    }
+
+    static int compile(PrintWriter out, PrintWriter err, String... args) {
+      Bach.instance(out::println, err::println).compile();
       return 0;
     }
 
