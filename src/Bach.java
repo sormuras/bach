@@ -132,19 +132,35 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public void run(ToolCall call, boolean verbose) {
-    /*Logging*/ {
-      var args = String.join(" ", call.arguments());
+    var event = new RunEvent();
+    event.name = call.name();
+    event.args = String.join(" ", call.arguments());
+
+    /* Log tool call as a single line */ {
       var line = new StringJoiner(" ");
-      line.add(call.name());
-      if (!args.isEmpty()) {
-        var arguments = args.length() <= 50 ? args : args.substring(0, 45) + "[...]";
+      line.add(event.name);
+      if (!event.args.isEmpty()) {
+        var arguments =
+            verbose || event.args.length() <= 50
+                ? event.args
+                : event.args.substring(0, 45) + "[...]";
         line.add(arguments);
       }
       logbook.log(Level.INFO, line.toString());
     }
 
     var start = Instant.now();
-    var event = tools.run(call);
+    var tool = tools.finder().find(call.name()).orElseThrow();
+    var out = new StringWriter();
+    var err = new StringWriter();
+    var args = call.arguments().toArray(String[]::new);
+
+    event.begin();
+    event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+    event.end();
+    event.out = out.toString().strip();
+    event.err = err.toString().strip();
+    event.commit();
 
     if (verbose) {
       if (!event.out.isEmpty()) logbook.out().accept(event.out.indent(2).stripTrailing());
@@ -182,23 +198,6 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     static int info(PrintWriter out, PrintWriter err, String... args) {
       Bach.instance(out::println, err::println).info();
       return 0;
-    }
-
-    public RunEvent run(ToolCall call) {
-      var tool = finder.find(call.name()).orElseThrow();
-      var out = new StringWriter();
-      var err = new StringWriter();
-      var args = call.arguments().toArray(String[]::new);
-      var event = new RunEvent();
-      event.name = call.name();
-      event.args = String.join(" ", call.arguments());
-      event.begin();
-      event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
-      event.end();
-      event.out = out.toString().strip();
-      event.err = err.toString().strip();
-      event.commit();
-      return event;
     }
   }
 
