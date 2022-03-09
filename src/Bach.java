@@ -12,7 +12,6 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -65,7 +64,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     var options = Options.of(args);
     var logbook = Logbook.of(out, err, options);
     var paths = Paths.of(options);
-    var tools = Tools.of(options);
+    var tools = Tools.of();
     return new Bach(options, logbook, paths, tools);
   }
 
@@ -186,7 +185,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public record Tools(ToolFinder finder) {
-    public static Tools of(Options options) {
+    public static Tools of() {
       return new Tools(
           ToolFinder.compose(
               ToolFinder.of(
@@ -207,20 +206,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   enum Flag {
-    VERBOSE;
-
-    static Optional<Flag> find(String key) {
-      var name = key.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
-      try {
-        return Optional.of(Flag.valueOf(name));
-      } catch (IllegalArgumentException exception) {
-        return Optional.empty();
-      }
-    }
-
-    String key() {
-      return "--" + name().toLowerCase(Locale.ROOT).replace('_', '-');
-    }
+    VERBOSE
   }
 
   public record Options(
