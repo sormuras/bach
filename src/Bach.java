@@ -69,7 +69,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public void build() {
-    run(Command.of("info"));
+    run(ToolCall.of("info"));
   }
 
   public void info() {
@@ -89,26 +89,26 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
             });
 
     Stream.of(
-            Command.of("jar").with("--version"),
-            Command.of("javac").with("--version"),
-            Command.of("javadoc").with("--version"))
+            ToolCall.of("jar").with("--version"),
+            ToolCall.of("javac").with("--version"),
+            ToolCall.of("javadoc").with("--version"))
         .sequential()
-        .forEach(command -> run(command, true));
+        .forEach(call -> run(call, true));
 
     Stream.of(
-            Command.of("jdeps").with("--version"),
-            Command.of("jlink").with("--version"),
-            Command.of("jmod").with("--vers5ion"),
-            Command.of("jpackage").with("--version"))
+            ToolCall.of("jdeps").with("--version"),
+            ToolCall.of("jlink").with("--version"),
+            ToolCall.of("jmod").with("--vers5ion"),
+            ToolCall.of("jpackage").with("--version"))
         .parallel()
-        .forEach(command -> run(command, true));
+        .forEach(call -> run(call, true));
   }
 
   int main() {
     try (var recording = new Recording()) {
       recording.start();
       logbook.log(Level.DEBUG, "BEGIN");
-      options.commands().forEach(this::run);
+      options.calls().forEach(this::run);
       logbook.log(Level.DEBUG, "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
@@ -117,7 +117,8 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       logbook.out.accept("-> %s".formatted(jfr.toUri()));
       logbook.out.accept("-> %s".formatted(logfile.toUri()));
       var duration = Duration.between(recording.getStartTime(), recording.getStopTime());
-      logbook.out.accept("Run took %d.%02d seconds".formatted(duration.toSeconds(), duration.toMillis()));
+      logbook.out.accept(
+          "Run took %d.%02d seconds".formatted(duration.toSeconds(), duration.toMillis()));
       Files.write(logfile, logbook.toMarkdownLines());
       return 0;
     } catch (Exception exception) {
@@ -126,15 +127,15 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
   }
 
-  public void run(Command command) {
-    run(command, false); // TODO Bach.Flag.VERBOSE
+  public void run(ToolCall call) {
+    run(call, false); // TODO Bach.Flag.VERBOSE
   }
 
-  public void run(Command command, boolean verbose) {
+  public void run(ToolCall call, boolean verbose) {
     /*Logging*/ {
-      var args = String.join(" ", command.arguments());
+      var args = String.join(" ", call.arguments());
       var line = new StringJoiner(" ");
-      line.add(command.name());
+      line.add(call.name());
       if (!args.isEmpty()) {
         var arguments = args.length() <= 50 ? args : args.substring(0, 45) + "[...]";
         line.add(arguments);
@@ -143,7 +144,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
 
     var start = Instant.now();
-    var event = tools.run(command);
+    var event = tools.run(call);
 
     if (verbose) {
       if (!event.out.isEmpty()) logbook.out().accept(event.out.indent(2).stripTrailing());
@@ -151,53 +152,9 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       var duration = Duration.between(start, Instant.now());
       var line =
           "%s ran %d.%02d seconds and returned code %d"
-              .formatted(command.name(), duration.toSeconds(), duration.toMillis(), event.code);
+              .formatted(call.name(), duration.toSeconds(), duration.toMillis(), event.code);
       var printer = event.code == 0 ? logbook.out() : logbook().err();
       printer.accept(line);
-    }
-  }
-
-  public record Command(String name, List<String> arguments) {
-    public static Command of(String name, Object... arguments) {
-      if (arguments.length == 0) return new Command(name, List.of());
-      if (arguments.length == 1) return new Command(name, List.of(arguments[0].toString()));
-      return new Command(name, List.of()).with(Stream.of(arguments));
-    }
-
-    public Command with(Stream<?> objects) {
-      var strings = objects.map(Object::toString);
-      return new Command(name, Stream.concat(arguments.stream(), strings).toList());
-    }
-
-    public Command with(Object argument) {
-      return with(Stream.of(argument));
-    }
-
-    public Command with(String key, Object value, Object... values) {
-      var command = with(Stream.of(key, value));
-      return values.length == 0 ? command : command.with(Stream.of(values));
-    }
-
-    public Command withFindFiles(String glob) {
-      return withFindFiles(Path.of(""), glob);
-    }
-
-    public Command withFindFiles(Path start, String glob) {
-      return withFindFiles(start, "glob", glob);
-    }
-
-    public Command withFindFiles(Path start, String syntax, String pattern) {
-      var syntaxAndPattern = syntax + ':' + pattern;
-      var matcher = start.getFileSystem().getPathMatcher(syntaxAndPattern);
-      return withFindFiles(start, Integer.MAX_VALUE, matcher);
-    }
-
-    public Command withFindFiles(Path start, int maxDepth, PathMatcher matcher) {
-      try (var files = Files.find(start, maxDepth, (p, a) -> matcher.matches(p))) {
-        return with(files);
-      } catch (Exception exception) {
-        throw new RuntimeException("Find files failed in: " + start, exception);
-      }
     }
   }
 
@@ -227,14 +184,14 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       return 0;
     }
 
-    public RunEvent run(Command command) {
-      var tool = finder.find(command.name()).orElseThrow();
+    public RunEvent run(ToolCall call) {
+      var tool = finder.find(call.name()).orElseThrow();
       var out = new StringWriter();
       var err = new StringWriter();
-      var args = command.arguments().toArray(String[]::new);
+      var args = call.arguments().toArray(String[]::new);
       var event = new RunEvent();
-      event.name = command.name();
-      event.args = String.join(" ", command.arguments());
+      event.name = call.name();
+      event.args = String.join(" ", call.arguments());
       event.begin();
       event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
       event.end();
@@ -246,11 +203,11 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public record Options(
-      Level __logbook_threshold, Path __chroot, Path __destination, List<Command> commands) {
+      Level __logbook_threshold, Path __chroot, Path __destination, List<ToolCall> calls) {
     static Options of(String... args) {
       var map = new TreeMap<String, String>();
       var arguments = new ArrayDeque<>(List.of(args));
-      var commands = new ArrayList<Command>();
+      var calls = new ArrayList<ToolCall>();
       while (!arguments.isEmpty()) {
         var argument = arguments.removeFirst();
         if (argument.startsWith("--")) {
@@ -260,19 +217,19 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
           map.put(key, value);
           continue;
         }
-        commands.add(new Command(argument, arguments.stream().toList()));
+        calls.add(new ToolCall(argument, arguments.stream().toList()));
         break;
       }
-      return Options.of(map, commands);
+      return Options.of(map, calls);
     }
 
-    static Options of(Map<String, String> map, List<Command> commands) {
+    static Options of(Map<String, String> map, List<ToolCall> calls) {
       var root = Path.of(map.getOrDefault("--chroot", "")).normalize();
       return new Options(
           Level.valueOf(map.getOrDefault("--logbook-threshold", "INFO")),
           root,
           root.resolve(Path.of(map.getOrDefault("--destination", ".bach/out"))).normalize(),
-          List.copyOf(commands));
+          List.copyOf(calls));
     }
   }
 
@@ -307,6 +264,50 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
         return List.copyOf(lines);
       } catch (Exception exception) {
         throw new RuntimeException("Failed to read recorded events?", exception);
+      }
+    }
+  }
+
+  public record ToolCall(String name, List<String> arguments) {
+    public static ToolCall of(String name, Object... arguments) {
+      if (arguments.length == 0) return new ToolCall(name, List.of());
+      if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString()));
+      return new ToolCall(name, List.of()).with(Stream.of(arguments));
+    }
+
+    public ToolCall with(Stream<?> objects) {
+      var strings = objects.map(Object::toString);
+      return new ToolCall(name, Stream.concat(arguments.stream(), strings).toList());
+    }
+
+    public ToolCall with(Object argument) {
+      return with(Stream.of(argument));
+    }
+
+    public ToolCall with(String key, Object value, Object... values) {
+      var call = with(Stream.of(key, value));
+      return values.length == 0 ? call : call.with(Stream.of(values));
+    }
+
+    public ToolCall withFindFiles(String glob) {
+      return withFindFiles(Path.of(""), glob);
+    }
+
+    public ToolCall withFindFiles(Path start, String glob) {
+      return withFindFiles(start, "glob", glob);
+    }
+
+    public ToolCall withFindFiles(Path start, String syntax, String pattern) {
+      var syntaxAndPattern = syntax + ':' + pattern;
+      var matcher = start.getFileSystem().getPathMatcher(syntaxAndPattern);
+      return withFindFiles(start, Integer.MAX_VALUE, matcher);
+    }
+
+    public ToolCall withFindFiles(Path start, int maxDepth, PathMatcher matcher) {
+      try (var files = Files.find(start, maxDepth, (p, a) -> matcher.matches(p))) {
+        return with(files);
+      } catch (Exception exception) {
+        throw new RuntimeException("Find files failed in: " + start, exception);
       }
     }
   }
