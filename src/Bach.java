@@ -451,9 +451,9 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       record PropertiesToolProvider(String name, Properties properties) implements ToolProvider {
         @Override
         public int run(PrintWriter out, PrintWriter err, String... args) {
-          var values = properties.stringPropertyNames();
-          for (var value : values.stream().sorted().map(properties::getProperty).toList()) {
-            var lines = value.lines().map(String::trim).toList();
+          var numbers = properties.stringPropertyNames().stream().map(Integer::valueOf).sorted();
+          for (var number : numbers.map(Object::toString).map(properties::getProperty).toList()) {
+            var lines = number.lines().map(String::trim).toList();
             var call = ToolCall.of(lines.get(0)).with(lines.stream().skip(1));
             Bach.instance().run(call);
           }
