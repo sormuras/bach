@@ -79,6 +79,8 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   public void info() {
     var out = logbook.out();
     out.accept("bach.paths = %s".formatted(paths));
+    if (!is(Flag.VERBOSE)) return;
+
     tools
         .finder()
         .visit(
