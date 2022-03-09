@@ -1,4 +1,5 @@
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Files;
@@ -13,6 +14,7 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -64,7 +66,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     var options = Options.of(args);
     var logbook = Logbook.of(out, err, options);
     var paths = Paths.of(options);
-    var tools = Tools.of();
+    var tools = Tools.of(options);
     return new Bach(options, logbook, paths, tools);
   }
 
@@ -192,14 +194,16 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public record Tools(ToolFinder finder) {
-    public static Tools of() {
+    public static Tools of(Options options) {
       return new Tools(
           ToolFinder.compose(
+              ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
               ToolFinder.of(
                   new ToolFinder.Provider("build", Tools::build),
                   new ToolFinder.Provider("compile", Tools::compile),
                   new ToolFinder.Provider("info", Tools::info)),
-              ToolFinder.ofSystem()));
+              ToolFinder.ofSystem() //
+              ));
     }
 
     static int build(PrintWriter out, PrintWriter err, String... args) {
@@ -422,6 +426,49 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
     static ToolFinder ofSystem() {
       return ToolFinder.of(ClassLoader.getSystemClassLoader());
+    }
+
+    static ToolFinder ofProperties(Path directory) {
+      record PropertiesToolProvider(String name, Properties properties) implements ToolProvider {
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          var values = properties.stringPropertyNames();
+          for (var value : values.stream().sorted().map(properties::getProperty).toList()) {
+            var lines = value.lines().map(String::trim).toList();
+            var call = ToolCall.of(lines.get(0)).with(lines.stream().skip(1));
+            Bach.instance().run(call);
+          }
+          return 0;
+        }
+      }
+
+      record PropertiesToolFinder(Path directory) implements ToolFinder {
+        @Override
+        public String title() {
+          return "PropertiesToolFinder(%s)".formatted(directory);
+        }
+
+        @Override
+        public List<ToolProvider> findAll() {
+          if (!Files.isDirectory(directory)) return List.of();
+          var list = new ArrayList<ToolProvider>();
+          try (var paths = Files.newDirectoryStream(directory, "*.properties")) {
+            for (var path : paths) {
+              if (Files.isDirectory(path)) continue;
+              var filename = path.getFileName().toString();
+              var name = filename.substring(0, filename.length() - ".properties".length());
+              var properties = new Properties();
+              properties.load(new StringReader(Files.readString(path)));
+              list.add(new PropertiesToolProvider(name, properties));
+            }
+          } catch (Exception exception) {
+            throw new RuntimeException(exception);
+          }
+          return List.copyOf(list);
+        }
+      }
+
+      return new PropertiesToolFinder(directory);
     }
 
     record Provider(String name, ToolFunction function) implements ToolProvider {
