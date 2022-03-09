@@ -4,14 +4,19 @@ import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -20,16 +25,16 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
 import jdk.jfr.Event;
+import jdk.jfr.Label;
 import jdk.jfr.Name;
 import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
-import jdk.jfr.consumer.RecordingFile;
 
 public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static void main(String... args) {
     var bach = Bach.instance(args);
-    var code = bach.run();
+    var code = bach.main();
     System.exit(code);
   }
 
@@ -64,7 +69,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public void build() {
-    tools.run(Command.of("info"));
+    run(Command.of("info"));
   }
 
   public void info() {
@@ -82,22 +87,73 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
                   .sorted(Comparator.comparing(ToolProvider::name))
                   .forEach(tool -> out.accept(indent + "  - " + tool.name()));
             });
+
+    Stream.of(
+            Command.of("jar").with("--version"),
+            Command.of("javac").with("--version"),
+            Command.of("javadoc").with("--version"))
+        .sequential()
+        .forEach(command -> run(command, true));
+
+    Stream.of(
+            Command.of("jdeps").with("--version"),
+            Command.of("jlink").with("--version"),
+            Command.of("jmod").with("--vers5ion"),
+            Command.of("jpackage").with("--version"))
+        .parallel()
+        .forEach(command -> run(command, true));
   }
 
-  public int run() {
+  int main() {
     try (var recording = new Recording()) {
       recording.start();
-      options.commands().forEach(tools::run);
+      logbook.log(Level.DEBUG, "BEGIN");
+      options.commands().forEach(this::run);
+      logbook.log(Level.DEBUG, "END.");
       recording.stop();
-      var jfr = Files.createDirectories(paths.out()).resolve("bach-run.jfr");
+      var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
       recording.dump(jfr);
       var logfile = paths.out().resolve("bach-logbook.md");
-      logbook.out.accept("Logbook location %s".formatted(logfile.toUri()));
-      Files.write(logfile, logbook.toMarkdownLines(jfr));
+      logbook.out.accept("-> %s".formatted(jfr.toUri()));
+      logbook.out.accept("-> %s".formatted(logfile.toUri()));
+      var duration = Duration.between(recording.getStartTime(), recording.getStopTime());
+      logbook.out.accept("Run took %d.%02d seconds".formatted(duration.toSeconds(), duration.toMillis()));
+      Files.write(logfile, logbook.toMarkdownLines());
       return 0;
     } catch (Exception exception) {
       logbook.log(Level.ERROR, exception.toString());
       return -1;
+    }
+  }
+
+  public void run(Command command) {
+    run(command, false); // TODO Bach.Flag.VERBOSE
+  }
+
+  public void run(Command command, boolean verbose) {
+    /*Logging*/ {
+      var args = String.join(" ", command.arguments());
+      var line = new StringJoiner(" ");
+      line.add(command.name());
+      if (!args.isEmpty()) {
+        var arguments = args.length() <= 50 ? args : args.substring(0, 45) + "[...]";
+        line.add(arguments);
+      }
+      logbook.log(Level.INFO, line.toString());
+    }
+
+    var start = Instant.now();
+    var event = tools.run(command);
+
+    if (verbose) {
+      if (!event.out.isEmpty()) logbook.out().accept(event.out.indent(2).stripTrailing());
+      if (!event.err.isEmpty()) logbook.err().accept(event.err.indent(2).stripTrailing());
+      var duration = Duration.between(start, Instant.now());
+      var line =
+          "%s ran %d.%02d seconds and returned code %d"
+              .formatted(command.name(), duration.toSeconds(), duration.toMillis(), event.code);
+      var printer = event.code == 0 ? logbook.out() : logbook().err();
+      printer.accept(line);
     }
   }
 
@@ -171,34 +227,21 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       return 0;
     }
 
-    public void run(Command command) {
+    public RunEvent run(Command command) {
       var tool = finder.find(command.name()).orElseThrow();
       var out = new StringWriter();
       var err = new StringWriter();
       var args = command.arguments().toArray(String[]::new);
-      var event = new RunEvent(command);
+      var event = new RunEvent();
+      event.name = command.name();
+      event.args = String.join(" ", command.arguments());
       event.begin();
       event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
       event.end();
       event.out = out.toString().strip();
       event.err = err.toString().strip();
       event.commit();
-    }
-
-    @Category({"Bach", "Tools"})
-    @Name("Bach.Tools.RunEvent")
-    @StackTrace(false)
-    private static final class RunEvent extends Event {
-      String name;
-      String args;
-      int code;
-      String out;
-      String err;
-
-      RunEvent(Command command) {
-        this.name = command.name();
-        this.args = String.join(" ", command.arguments());
-      }
+      return event;
     }
   }
 
@@ -233,44 +276,37 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
   }
 
-  public record Logbook(Consumer<String> out, Consumer<String> err, Level threshold) {
+  public record Logbook(
+      Consumer<String> out, Consumer<String> err, Level threshold, Deque<LogEvent> logs) {
+
     public static Logbook of(Consumer<String> out, Consumer<String> err, Options options) {
-      return new Logbook(out, err, options.__logbook_threshold());
+      return new Logbook(out, err, options.__logbook_threshold(), new ConcurrentLinkedDeque<>());
     }
 
     public void log(Level level, String message) {
-      new LogEvent(level, message).commit();
+      var event = new LogEvent();
+      event.level = level.name();
+      event.message = message;
+      event.commit();
+      logs.add(event);
       if (level.getSeverity() < threshold.getSeverity()) return;
       var consumer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
       consumer.accept(message);
     }
 
-    public List<String> toMarkdownLines(Path file) {
+    public List<String> toMarkdownLines() {
       try {
-        var events = RecordingFile.readAllEvents(file);
         var lines = new ArrayList<>(List.of("# Logbook"));
         lines.add("");
-        lines.add("## All Events");
+
+        lines.add("## Log Events");
         lines.add("");
         lines.add("```text");
-        for (var event : events) lines.add(event.toString().trim());
+        logs.forEach(log -> lines.add("[%c] %s".formatted(log.level.charAt(0), log.message)));
         lines.add("```");
         return List.copyOf(lines);
       } catch (Exception exception) {
         throw new RuntimeException("Failed to read recorded events?", exception);
-      }
-    }
-
-    @Category({"Bach", "Logbook"})
-    @Name("Bach.Logbook.LogEvent")
-    @StackTrace(false)
-    private static final class LogEvent extends Event {
-      String level;
-      String message;
-
-      LogEvent(Level level, String message) {
-        this.level = level.name();
-        this.message = message;
       }
     }
   }
@@ -363,5 +399,26 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
         return function.run(out, err, args);
       }
     }
+  }
+
+  @Category("Bach")
+  @Name("Bach.LogEvent")
+  @Label("Log")
+  @StackTrace(false)
+  private static final class LogEvent extends Event {
+    String level;
+    String message;
+  }
+
+  @Category("Bach")
+  @Name("Bach.RunEvent")
+  @Label("Run")
+  @StackTrace(false)
+  private static final class RunEvent extends Event {
+    String name;
+    String args;
+    int code;
+    String out;
+    String err;
   }
 }
