@@ -10,10 +10,13 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -66,6 +69,10 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     var paths = Paths.of(options);
     var tools = Tools.of(options);
     return new Bach(options, logbook, paths, tools);
+  }
+
+  boolean is(Flag flag) {
+    return options.flags.contains(flag);
   }
 
   public void build() {
@@ -128,7 +135,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public void run(ToolCall call) {
-    run(call, false); // TODO Bach.Flag.VERBOSE
+    run(call, is(Flag.VERBOSE));
   }
 
   public void run(ToolCall call, boolean verbose) {
@@ -201,8 +208,30 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
   }
 
+  enum Flag {
+    VERBOSE;
+
+    static Optional<Flag> find(String key) {
+      var name = key.substring(2).toUpperCase(Locale.ROOT).replace('-', '_');
+      try {
+        return Optional.of(Flag.valueOf(name));
+      } catch (IllegalArgumentException exception) {
+        return Optional.empty();
+      }
+    }
+
+    String key() {
+      return "--" + name().toLowerCase(Locale.ROOT).replace('_', '-');
+    }
+  }
+
   public record Options(
-      Level __logbook_threshold, Path __chroot, Path __destination, List<ToolCall> calls) {
+      Set<Flag> flags,
+      Level __logbook_threshold,
+      Path __chroot,
+      Path __destination,
+      List<ToolCall> calls) {
+
     static Options of(String... args) {
       var map = new TreeMap<String, String>();
       var arguments = new ArrayDeque<>(List.of(args));
@@ -212,7 +241,10 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
         if (argument.startsWith("--")) {
           var delimiter = argument.indexOf('=', 2);
           var key = delimiter == -1 ? argument : argument.substring(0, delimiter);
-          var value = delimiter == -1 ? arguments.removeFirst() : argument.substring(delimiter + 1);
+          var value =
+              delimiter == -1
+                  ? Flag.find(key).isPresent() ? "true" : arguments.removeFirst()
+                  : argument.substring(delimiter + 1);
           map.put(key, value);
           continue;
         }
@@ -223,8 +255,13 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
 
     static Options of(Map<String, String> map, List<ToolCall> calls) {
+      var flags = EnumSet.noneOf(Flag.class);
+      for (var flag : Flag.values()) {
+        if (Boolean.parseBoolean(map.getOrDefault(flag.key(), "false"))) flags.add(flag);
+      }
       var root = Path.of(map.getOrDefault("--chroot", "")).normalize();
       return new Options(
+          flags,
           Level.valueOf(map.getOrDefault("--logbook-threshold", "INFO")),
           root,
           root.resolve(Path.of(map.getOrDefault("--destination", ".bach/out"))).normalize(),
