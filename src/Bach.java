@@ -74,7 +74,16 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     return options.flags.contains(flag);
   }
 
+  public void banner(String text) {
+    var line = "=".repeat(text.length());
+    logbook.out.accept("""
+        %s
+        %s
+        %s""".formatted(line, text, line));
+  }
+
   public void build() {
+    run(ToolCall.of("banner").with("BUILD"));
     run(ToolCall.of("info"));
     run(ToolCall.of("compile"));
   }
@@ -199,11 +208,21 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
           ToolFinder.compose(
               ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
               ToolFinder.of(
+                  new ToolFinder.Provider("banner", Tools::banner),
                   new ToolFinder.Provider("build", Tools::build),
                   new ToolFinder.Provider("compile", Tools::compile),
                   new ToolFinder.Provider("info", Tools::info)),
               ToolFinder.ofSystem() //
               ));
+    }
+
+    static int banner(PrintWriter out, PrintWriter err, String... args) {
+      if (args.length == 0) {
+        err.println("Usage: banner TEXT");
+        return 1;
+      }
+      Bach.instance(out::println, err::println).banner(String.join(" ", args));
+      return 0;
     }
 
     static int build(PrintWriter out, PrintWriter err, String... args) {
