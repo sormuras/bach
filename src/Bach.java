@@ -152,11 +152,13 @@ public record Bach(
   public void checksum(Path path, String algorithm, String expected) {
     var computed = PathSupport.computeChecksum(path, algorithm);
     if (computed.equalsIgnoreCase(expected)) return;
-    throw new AssertionError("""
+    throw new AssertionError(
+        """
         Checksum %s mismatch for %s!
           computed: %s
           expected: %s
-        """.formatted(algorithm, path, computed, expected));
+        """
+            .formatted(algorithm, path, computed, expected));
   }
 
   public void compile() {
@@ -189,9 +191,9 @@ public record Bach(
     }
     try (var recording = new Recording()) {
       recording.start();
-      logbook.log(Level.DEBUG, "BEGIN");
+      run("banner", "BEGIN");
       options.calls().forEach(call -> run(call, true));
-      logbook.log(Level.DEBUG, "END.");
+      run("banner", "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
       recording.dump(jfr);
@@ -226,17 +228,17 @@ public record Bach(
     event.name = call.name();
     event.args = String.join(" ", call.arguments());
 
-    /* Log tool call as a single line */ {
+    if (!event.name.equals("banner")) {
       var line = new StringJoiner(" ");
       line.add(event.name);
       if (!event.args.isEmpty()) {
         var arguments =
-            verbose || event.args.length() <= 50
+            verbose || event.args.length() <= 100
                 ? event.args
-                : event.args.substring(0, 45) + "[...]";
+                : event.args.substring(0, 95) + "[...]";
         line.add(arguments);
       }
-      logbook.log(Level.INFO, line.toString());
+      logbook.log(Level.INFO, "  " + line);
     }
 
     var start = Instant.now();
@@ -255,12 +257,6 @@ public record Bach(
     if (verbose) {
       if (!event.out.isEmpty()) logbook.out().accept(event.out.indent(2).stripTrailing());
       if (!event.err.isEmpty()) logbook.err().accept(event.err.indent(2).stripTrailing());
-      var duration = Duration.between(start, Instant.now());
-      var line =
-          "%s ran %d.%02d seconds and returned code %d"
-              .formatted(call.name(), duration.toSeconds(), duration.toMillis(), event.code);
-      var printer = event.code == 0 ? logbook.out() : logbook().err();
-      printer.accept(line);
     }
   }
 
