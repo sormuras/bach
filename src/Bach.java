@@ -174,7 +174,7 @@ public record Bach(
     try (var recording = new Recording()) {
       recording.start();
       logbook.log(Level.DEBUG, "BEGIN");
-      options.calls().forEach(this::run);
+      options.calls().forEach(call -> run(call, true));
       logbook.log(Level.DEBUG, "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
