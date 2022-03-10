@@ -524,7 +524,7 @@ public record Bach(
           for (var number : numbers.map(Object::toString).map(properties::getProperty).toList()) {
             var lines = number.lines().map(String::trim).toList();
             var name = lines.get(0);
-            if (name.equalsIgnoreCase("GOTO")) throw new Error("GOTO IS TOO BASIC!");
+            if (name.toUpperCase().startsWith("GOTO")) throw new Error("GOTO IS TOO BASIC!");
             var call = ToolCall.of(name).with(lines.stream().skip(1));
             Bach.getBach().run(call);
           }
