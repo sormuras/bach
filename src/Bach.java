@@ -176,7 +176,7 @@ public record Bach(
       var parent = to.getParent();
       if (parent != null) Files.createDirectories(parent);
       var size = Files.copy(stream, to);
-      logbook.log(Level.DEBUG, "Downloaded %,7d %s".formatted(size, to.getFileName()));
+      logbook.log(Level.INFO, "Downloaded %,12d %s".formatted(size, to.getFileName()));
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
