@@ -16,7 +16,6 @@ import java.nio.file.PathMatcher;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -162,7 +161,7 @@ public record Bach(
   }
 
   public void compile() {
-    logbook.log(Level.WARNING, "TODO compile()");
+    log(Level.WARNING, "TODO compile()");
   }
 
   public void download(Map<Path, URI> map) {
@@ -171,15 +170,27 @@ public record Bach(
 
   public void download(Path to, URI from) {
     if (Files.exists(to)) return;
-    logbook.log(Level.DEBUG, "Downloading %s".formatted(from));
+    log(Level.DEBUG, "Downloading %s".formatted(from));
     try (var stream = from.toURL().openStream()) {
       var parent = to.getParent();
       if (parent != null) Files.createDirectories(parent);
       var size = Files.copy(stream, to);
-      logbook.log(Level.INFO, "Downloaded %,12d %s".formatted(size, to.getFileName()));
+      log(Level.INFO, "Downloaded %,12d %s".formatted(size, to.getFileName()));
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
+  }
+
+  public void log(Level level, String message) {
+    var event = new LogEvent();
+    event.level = level.name();
+    event.message = message;
+    event.commit();
+    logbook.logs().add(event);
+    var severity = level.getSeverity();
+    if (severity < logbook.threshold().getSeverity()) return;
+    var consumer = severity <= Level.INFO.getSeverity() ? logbook.out : logbook.err;
+    consumer.accept(event.message);
   }
 
   private int main() {
@@ -206,7 +217,7 @@ public record Bach(
       Files.write(logfile, logbook.toMarkdownLines());
       return 0;
     } catch (Exception exception) {
-      logbook.log(Level.ERROR, exception.toString());
+      log(Level.ERROR, exception.toString());
       return -1;
     }
   }
@@ -238,10 +249,9 @@ public record Bach(
                 : event.args.substring(0, 95) + "[...]";
         line.add(arguments);
       }
-      logbook.log(Level.INFO, "  " + line);
+      log(Level.INFO, "  " + line);
     }
 
-    var start = Instant.now();
     var tool = tools.finder().find(call.name()).orElseThrow();
     var out = new StringWriter();
     var err = new StringWriter();
@@ -371,23 +381,11 @@ public record Bach(
 
   public record Logbook(
       Consumer<String> out, Consumer<String> err, Level threshold, Deque<LogEvent> logs) {
-
-    public void log(Level level, String message) {
-      var event = new LogEvent();
-      event.level = level.name();
-      event.message = message;
-      event.commit();
-      logs.add(event);
-      if (level.getSeverity() < threshold.getSeverity()) return;
-      var consumer = level.getSeverity() <= Level.INFO.getSeverity() ? out : err;
-      consumer.accept(message);
-    }
-
     public List<String> toMarkdownLines() {
       try {
         var lines = new ArrayList<>(List.of("# Logbook"));
-        lines.add("");
 
+        lines.add("");
         lines.add("## Log Events");
         lines.add("");
         lines.add("```text");
