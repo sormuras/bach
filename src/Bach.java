@@ -84,6 +84,7 @@ public record Bach(
                 ToolFinder.of(
                     new ToolFinder.Provider("banner", Tools::banner),
                     new ToolFinder.Provider("build", Tools::build),
+                    new ToolFinder.Provider("checksum", Tools::checksum),
                     new ToolFinder.Provider("compile", Tools::compile),
                     new ToolFinder.Provider("download", Tools::download),
                     new ToolFinder.Provider("info", Tools::info)),
@@ -141,6 +142,21 @@ public record Bach(
             ToolCall.of("jpackage").with("--version"))
         .parallel()
         .forEach(call -> run(call, true));
+  }
+
+  public void checksum(Path path, String algorithm) {
+    var checksum = PathSupport.computeChecksum(path, algorithm);
+    logbook.out().accept("%s %s".formatted(checksum, path));
+  }
+
+  public void checksum(Path path, String algorithm, String expected) {
+    var computed = PathSupport.computeChecksum(path, algorithm);
+    if (computed.equalsIgnoreCase(expected)) return;
+    throw new AssertionError("""
+        Checksum %s mismatch for %s!
+          computed: %s
+          expected: %s
+        """.formatted(algorithm, path, computed, expected));
   }
 
   public void compile() {
@@ -264,6 +280,18 @@ public record Bach(
 
     static int build(PrintWriter out, PrintWriter err, String... args) {
       Bach.getBach().build();
+      return 0;
+    }
+
+    static int checksum(PrintWriter out, PrintWriter err, String... args) {
+      if (args.length < 2 || args.length > 3) {
+        err.println("Usage: checksum FILE ALGORITHM [EXPECTED-CHECKSUM]");
+        return 1;
+      }
+      var file = Path.of(args[0]);
+      var algorithm = args[1];
+      if (args.length == 2) Bach.getBach().checksum(file, algorithm);
+      if (args.length == 3) Bach.getBach().checksum(file, algorithm, args[2]);
       return 0;
     }
 
