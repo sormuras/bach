@@ -1,11 +1,20 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -14,11 +23,14 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -33,7 +45,8 @@ import jdk.jfr.Name;
 import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 
-public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
+public record Bach(
+    Options options, Logbook logbook, Paths paths, Externals externals, Tools tools) {
 
   public static void main(String... args) {
     var bach = Bach.of(args);
@@ -47,13 +60,27 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static Bach of(Consumer<String> out, Consumer<String> err, String... args) {
     var options = Options.of(args);
+    var properties = PathSupport.properties(options.__chroot.resolve("bach.properties"));
+    var programs = new TreeMap<Path, URI>();
+    for (var key : properties.stringPropertyNames()) {
+      if (key.startsWith(".bach/external-tool-program/")) {
+        var to = Path.of(key).normalize();
+        var from = URI.create(properties.getProperty(key));
+        programs.put(to, from);
+      }
+    }
     return new Bach(
         options,
         new Logbook(out, err, options.__logbook_threshold, new ConcurrentLinkedDeque<>()),
         new Paths(options.__chroot, options.__destination),
+        new Externals(programs),
         new Tools(
             ToolFinder.compose(
                 ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
+                ToolFinder.ofPrograms(
+                    options.__chroot.resolve(".bach/external-tool-program"),
+                    Path.of(System.getProperty("java.home"), "bin", "java"),
+                    "java.args"),
                 ToolFinder.of(
                     new ToolFinder.Provider("banner", Tools::banner),
                     new ToolFinder.Provider("build", Tools::build),
@@ -120,10 +147,16 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     logbook.log(Level.WARNING, "TODO compile()");
   }
 
+  public void download(Map<Path, URI> map) {
+    map.entrySet().stream().parallel().forEach(entry -> download(entry.getKey(), entry.getValue()));
+  }
+
   public void download(Path to, URI from) {
     if (Files.exists(to)) return;
     logbook.log(Level.DEBUG, "Downloading %s".formatted(from));
     try (var stream = from.toURL().openStream()) {
+      var parent = to.getParent();
+      if (parent != null) Files.createDirectories(parent);
       var size = Files.copy(stream, to);
       logbook.log(Level.DEBUG, "Downloaded %,7d %s".formatted(size, to.getFileName()));
     } catch (Exception exception) {
@@ -211,6 +244,8 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public record Paths(Path root, Path out) {}
 
+  public record Externals(Map<Path, URI> programs) {}
+
   public record Tools(ToolFinder finder) {
     static int banner(PrintWriter out, PrintWriter err, String... args) {
       if (args.length == 0) {
@@ -232,14 +267,19 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
 
     static int download(PrintWriter out, PrintWriter err, String... args) {
-      if (args.length != 2) {
-        err.println("Usage: download TO-PATH FROM-URI");
-        return 1;
+      var bach = Bach.getBach();
+      if (args.length == 0) { // everything
+        bach.download(bach.externals().programs());
+        return 0;
       }
-      var to = Path.of(args[0]);
-      var from = URI.create(args[1]);
-      Bach.getBach().download(to, from);
-      return 0;
+      if (args.length == 2) {
+        var to = Path.of(args[0]);
+        var from = URI.create(args[1]);
+        bach.download(to, from);
+        return 0;
+      }
+      err.println("Usage: download TO-PATH FROM-URI");
+      return 1;
     }
 
     static int info(PrintWriter out, PrintWriter err, String... args) {
@@ -471,8 +511,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
               if (Files.isDirectory(path)) continue;
               var filename = path.getFileName().toString();
               var name = filename.substring(0, filename.length() - ".properties".length());
-              var properties = new Properties();
-              properties.load(new StringReader(Files.readString(path)));
+              var properties = PathSupport.properties(path);
               list.add(new PropertiesToolProvider(name, properties));
             }
           } catch (Exception exception) {
@@ -483,6 +522,55 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       }
 
       return new PropertiesToolFinder(directory);
+    }
+
+    static ToolFinder ofPrograms(Path directory, Path java, String argsfile) {
+      record ProgramToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
+
+        @Override
+        public List<ToolProvider> findAll() {
+          var name = path.normalize().toAbsolutePath().getFileName().toString();
+          return find(name).map(List::of).orElseGet(List::of);
+        }
+
+        @Override
+        public Optional<ToolProvider> find(String name) {
+          var directory = path.normalize().toAbsolutePath();
+          if (!Files.isDirectory(directory)) return Optional.empty();
+          if (!name.equals(directory.getFileName().toString())) return Optional.empty();
+          var command = new ArrayList<String>();
+          command.add(java.toString());
+          var args = directory.resolve(argsfile);
+          if (Files.isRegularFile(args)) {
+            command.add("@" + args);
+            return Optional.of(new ExecuteProgramToolProvider(name, command));
+          }
+          var jars = PathSupport.list(directory, PathSupport::isJarFile);
+          if (jars.size() == 1) {
+            command.add("-jar");
+            command.add(jars.get(0).toString());
+            return Optional.of(new ExecuteProgramToolProvider(name, command));
+          }
+          var javas = PathSupport.list(directory, PathSupport::isJavaFile);
+          if (javas.size() == 1) {
+            command.add(javas.get(0).toString());
+            return Optional.of(new ExecuteProgramToolProvider(name, command));
+          }
+          throw new UnsupportedOperationException("Unknown program layout in " + directory.toUri());
+        }
+      }
+
+      record ProgramsToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
+        @Override
+        public List<ToolProvider> findAll() {
+          return PathSupport.list(path, Files::isDirectory).stream()
+              .map(directory -> new ProgramToolFinder(directory, java, argsfile))
+              .map(ToolFinder::findAll)
+              .flatMap(List::stream)
+              .toList();
+        }
+      }
+      return new ProgramsToolFinder(directory, java, argsfile);
     }
 
     static ToolFinder compose(ToolFinder... finders) {
@@ -528,6 +616,95 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       public int run(PrintWriter out, PrintWriter err, String... args) {
         return function.run(out, err, args);
       }
+    }
+
+    record ExecuteProgramToolProvider(String name, List<String> command) implements ToolProvider {
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... arguments) {
+        var builder = new ProcessBuilder(command);
+        builder.command().addAll(List.of(arguments));
+        try {
+          var process = builder.start();
+          new Thread(new StreamLineConsumer(process.getInputStream(), out::println)).start();
+          new Thread(new StreamLineConsumer(process.getErrorStream(), err::println)).start();
+          return process.waitFor();
+        } catch (Exception exception) {
+          exception.printStackTrace(err);
+          return -1;
+        }
+      }
+    }
+  }
+
+  record StreamLineConsumer(InputStream stream, Consumer<String> consumer) implements Runnable {
+    public void run() {
+      new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
+    }
+  }
+
+  private static final class PathSupport {
+
+    static String computeChecksum(Path path, String algorithm) {
+      if (Files.notExists(path)) throw new RuntimeException(path.toString());
+      try {
+        if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
+        var md = MessageDigest.getInstance(algorithm);
+        try (var source = new BufferedInputStream(new FileInputStream(path.toFile()));
+            var target = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+          source.transferTo(target);
+        }
+        return String.format(
+            "%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
+    }
+
+    static Properties properties(Path path) {
+      var properties = new Properties();
+      if (Files.exists(path)) {
+        try {
+          properties.load(new FileInputStream(path.toFile()));
+        } catch (Exception exception) {
+          throw new RuntimeException(exception);
+        }
+      }
+      return properties;
+    }
+
+    static boolean isJarFile(Path path) {
+      return nameOrElse(path, "").endsWith(".jar") && Files.isRegularFile(path);
+    }
+
+    static boolean isJavaFile(Path path) {
+      return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
+    }
+
+    static boolean isModuleInfoJavaFile(Path path) {
+      return "module-info.java".equals(name(path)) && Files.isRegularFile(path);
+    }
+
+    static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+      if (Files.notExists(directory)) return List.of();
+      var paths = new TreeSet<>(Comparator.comparing(Path::toString));
+      try (var stream = Files.newDirectoryStream(directory, filter)) {
+        stream.forEach(paths::add);
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
+      return List.copyOf(paths);
+    }
+
+    static String name(Path path) {
+      return nameOrElse(path, null);
+    }
+
+    static String nameOrElse(Path path, String defautName) {
+      var normalized = path.normalize();
+      var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
+      var name = candidate.getFileName();
+      return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
     }
   }
 
