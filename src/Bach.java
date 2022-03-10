@@ -2,6 +2,7 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.System.Logger.Level;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -57,6 +58,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
                     new ToolFinder.Provider("banner", Tools::banner),
                     new ToolFinder.Provider("build", Tools::build),
                     new ToolFinder.Provider("compile", Tools::compile),
+                    new ToolFinder.Provider("download", Tools::download),
                     new ToolFinder.Provider("info", Tools::info)),
                 ToolFinder.ofSystem())));
   }
@@ -116,6 +118,17 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public void compile() {
     logbook.log(Level.WARNING, "TODO compile()");
+  }
+
+  public void download(Path to, URI from) {
+    if (Files.exists(to)) return;
+    logbook.log(Level.DEBUG, "Downloading %s".formatted(from));
+    try (var stream = from.toURL().openStream()) {
+      var size = Files.copy(stream, to);
+      logbook.log(Level.DEBUG, "Downloaded %,7d %s".formatted(size, to.getFileName()));
+    } catch (Exception exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   int main() {
@@ -215,6 +228,17 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
     static int compile(PrintWriter out, PrintWriter err, String... args) {
       Bach.getBach().compile();
+      return 0;
+    }
+
+    static int download(PrintWriter out, PrintWriter err, String... args) {
+      if (args.length != 2) {
+        err.println("Usage: download TO-PATH FROM-URI");
+        return 1;
+      }
+      var to = Path.of(args[0]);
+      var from = URI.create(args[1]);
+      Bach.getBach().download(to, from);
       return 0;
     }
 
