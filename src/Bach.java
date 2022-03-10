@@ -132,7 +132,7 @@ public record Bach(
             ToolCall.of("jar").with("--version"),
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
-        .sequential()
+        .parallel()
         .forEach(call -> run(call, true));
 
     Stream.of(
@@ -140,7 +140,7 @@ public record Bach(
             ToolCall.of("jlink").with("--version"),
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
-        .parallel()
+        .sequential()
         .forEach(call -> run(call, true));
   }
 
