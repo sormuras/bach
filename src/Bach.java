@@ -102,7 +102,7 @@ public record Bach(
     if (!INSTANCE.compareAndSet(null, this)) throw new IllegalStateException();
   }
 
-  boolean is(Flag flag) {
+  public boolean is(Flag flag) {
     return options.flags.contains(flag);
   }
 
@@ -164,7 +164,13 @@ public record Bach(
     }
   }
 
-  int main() {
+  private int main() {
+    if (options.calls().isEmpty()) {
+      logbook.out().accept("Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]");
+      logbook.out().accept("Available tools include:");
+      tools.finder().tree(logbook.out());
+      return 1;
+    }
     try (var recording = new Recording()) {
       recording.start();
       logbook.log(Level.DEBUG, "BEGIN");
@@ -499,7 +505,7 @@ public record Bach(
       record PropertiesToolFinder(Path directory) implements ToolFinder {
         @Override
         public String title() {
-          return "PropertiesToolFinder(%s)".formatted(directory);
+          return "PropertiesToolFinder (%s)".formatted(directory);
         }
 
         @Override
@@ -561,6 +567,11 @@ public record Bach(
       }
 
       record ProgramsToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
+        @Override
+        public String title() {
+          return "ProgramsToolFinder (%s -> %s)".formatted(path, java);
+        }
+
         @Override
         public List<ToolProvider> findAll() {
           return PathSupport.list(path, Files::isDirectory).stream()
@@ -643,7 +654,7 @@ public record Bach(
     }
   }
 
-  private static final class PathSupport {
+  static final class PathSupport {
 
     static String computeChecksum(Path path, String algorithm) {
       if (Files.notExists(path)) throw new RuntimeException(path.toString());
@@ -712,7 +723,7 @@ public record Bach(
   @Name("Bach.LogEvent")
   @Label("Log")
   @StackTrace(false)
-  private static final class LogEvent extends Event {
+  static final class LogEvent extends Event {
     String level;
     String message;
   }
@@ -721,7 +732,7 @@ public record Bach(
   @Name("Bach.RunEvent")
   @Label("Run")
   @StackTrace(false)
-  private static final class RunEvent extends Event {
+  static final class RunEvent extends Event {
     String name;
     String args;
     int code;
