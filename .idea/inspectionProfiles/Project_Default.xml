@@ -15,5 +15,6 @@
       <option name="processComments" value="true" />
     </inspection_tool>
     <inspection_tool class="WrongPackageStatement" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="WrongPropertyKeyValueDelimiter" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
   </profile>
 </component>
