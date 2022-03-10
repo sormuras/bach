@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
@@ -35,27 +35,9 @@ import jdk.jfr.StackTrace;
 public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static void main(String... args) {
-    var bach = Bach.instance(args);
+    var bach = Bach.of(args);
     var code = bach.main();
     System.exit(code);
-  }
-
-  private static final AtomicReference<Bach> INSTANCE = new AtomicReference<>();
-
-  public static Bach instance(String... args) {
-    return instance(() -> Bach.of(args));
-  }
-
-  public static Bach instance(Consumer<String> out, Consumer<String> err, String... args) {
-    return instance(() -> Bach.of(out, err, args));
-  }
-
-  public static Bach instance(Supplier<Bach> supplier) {
-    var oldInstance = INSTANCE.get();
-    if (oldInstance != null) return oldInstance;
-    var newInstance = supplier.get();
-    if (INSTANCE.compareAndSet(null, newInstance)) return newInstance;
-    return INSTANCE.get();
   }
 
   public static Bach of(String... args) {
@@ -64,10 +46,31 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public static Bach of(Consumer<String> out, Consumer<String> err, String... args) {
     var options = Options.of(args);
-    var logbook = Logbook.of(out, err, options);
-    var paths = Paths.of(options);
-    var tools = Tools.of(options);
-    return new Bach(options, logbook, paths, tools);
+    return new Bach(
+        options,
+        new Logbook(out, err, options.__logbook_threshold, new ConcurrentLinkedDeque<>()),
+        new Paths(options.__chroot, options.__destination),
+        new Tools(
+            ToolFinder.compose(
+                ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
+                ToolFinder.of(
+                    new ToolFinder.Provider("banner", Tools::banner),
+                    new ToolFinder.Provider("build", Tools::build),
+                    new ToolFinder.Provider("compile", Tools::compile),
+                    new ToolFinder.Provider("info", Tools::info)),
+                ToolFinder.ofSystem())));
+  }
+
+  private static final AtomicReference<Bach> INSTANCE = new AtomicReference<>();
+
+  public static Bach getBach() {
+    var bach = INSTANCE.get();
+    if (bach != null) return bach;
+    throw new IllegalStateException();
+  }
+
+  public Bach {
+    if (!INSTANCE.compareAndSet(null, this)) throw new IllegalStateException();
   }
 
   boolean is(Flag flag) {
@@ -83,9 +86,9 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
   }
 
   public void build() {
-    run(ToolCall.of("banner").with("BUILD"));
-    run(ToolCall.of("info"));
-    run(ToolCall.of("compile"));
+    run("banner", banner -> banner.with("BUILD"));
+    run("info");
+    run("compile");
   }
 
   public void info() {
@@ -93,18 +96,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     out.accept("bach.paths = %s".formatted(paths));
     if (!is(Flag.VERBOSE)) return;
 
-    tools
-        .finder()
-        .visit(
-            0,
-            (depth, finder) -> {
-              var indent = "  ".repeat(depth);
-              out.accept(indent + finder.title());
-              if (depth == 0) return;
-              finder.findAll().stream()
-                  .sorted(Comparator.comparing(ToolProvider::name))
-                  .forEach(tool -> out.accept(indent + "  - " + tool.name()));
-            });
+    tools.finder().tree(out);
 
     Stream.of(
             ToolCall.of("jar").with("--version"),
@@ -147,6 +139,14 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       logbook.log(Level.ERROR, exception.toString());
       return -1;
     }
+  }
+
+  public void run(String name, Object... arguments) {
+    run(ToolCall.of(name, arguments));
+  }
+
+  public void run(String name, UnaryOperator<ToolCall> operator) {
+    run(operator.apply(ToolCall.of(name)));
   }
 
   public void run(ToolCall call) {
@@ -196,52 +196,35 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
     }
   }
 
-  public record Paths(Path root, Path out) {
-    public static Paths of(Options options) {
-      return new Paths(options.__chroot(), options.__destination());
-    }
-  }
+  public record Paths(Path root, Path out) {}
 
   public record Tools(ToolFinder finder) {
-    public static Tools of(Options options) {
-      return new Tools(
-          ToolFinder.compose(
-              ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
-              ToolFinder.of(
-                  new ToolFinder.Provider("banner", Tools::banner),
-                  new ToolFinder.Provider("build", Tools::build),
-                  new ToolFinder.Provider("compile", Tools::compile),
-                  new ToolFinder.Provider("info", Tools::info)),
-              ToolFinder.ofSystem() //
-              ));
-    }
-
     static int banner(PrintWriter out, PrintWriter err, String... args) {
       if (args.length == 0) {
         err.println("Usage: banner TEXT");
         return 1;
       }
-      Bach.instance(out::println, err::println).banner(String.join(" ", args));
+      Bach.getBach().banner(String.join(" ", args));
       return 0;
     }
 
     static int build(PrintWriter out, PrintWriter err, String... args) {
-      Bach.instance(out::println, err::println).build();
+      Bach.getBach().build();
       return 0;
     }
 
     static int compile(PrintWriter out, PrintWriter err, String... args) {
-      Bach.instance(out::println, err::println).compile();
+      Bach.getBach().compile();
       return 0;
     }
 
     static int info(PrintWriter out, PrintWriter err, String... args) {
-      Bach.instance(out::println, err::println).info();
+      Bach.getBach().info();
       return 0;
     }
   }
 
-  enum Flag {
+  public enum Flag {
     VERBOSE
   }
 
@@ -294,10 +277,6 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
 
   public record Logbook(
       Consumer<String> out, Consumer<String> err, Level threshold, Deque<LogEvent> logs) {
-
-    public static Logbook of(Consumer<String> out, Consumer<String> err, Options options) {
-      return new Logbook(out, err, options.__logbook_threshold(), new ConcurrentLinkedDeque<>());
-    }
 
     public void log(Level level, String message) {
       var event = new LogEvent();
@@ -391,38 +370,30 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       return getClass().getSimpleName();
     }
 
+    default void tree(Consumer<String> out) {
+      visit(0, (depth, finder) -> tree(out, depth, finder));
+    }
+
+    private void tree(Consumer<String> out, int depth, ToolFinder finder) {
+      var indent = "  ".repeat(depth);
+      out.accept(indent + finder.title());
+      if (finder instanceof CompositeToolFinder) return;
+      finder.findAll().stream()
+          .sorted(Comparator.comparing(ToolProvider::name))
+          .forEach(tool -> out.accept(indent + "  - " + tool.name()));
+    }
+
     default void visit(int depth, BiConsumer<Integer, ToolFinder> visitor) {
       visitor.accept(depth, this);
     }
 
-    static ToolFinder compose(ToolFinder... finders) {
-      record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
+    static ToolFinder of(ToolProvider... providers) {
+      record DirectToolFinder(List<ToolProvider> findAll) implements ToolFinder {
         @Override
-        public List<ToolProvider> findAll() {
-          return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
-        }
-
-        @Override
-        public Optional<ToolProvider> find(String name) {
-          for (var finder : finders) {
-            var tool = finder.find(name);
-            if (tool.isPresent()) return tool;
-          }
-          return Optional.empty();
-        }
-
-        @Override
-        public void visit(int depth, BiConsumer<Integer, ToolFinder> visitor) {
-          visitor.accept(depth, this);
-          depth++;
-          for (var finder : finders) finder.visit(depth, visitor);
+        public String title() {
+          return "DirectToolFinder (%d)".formatted(findAll.size());
         }
       }
-      return new CompositeToolFinder(List.of(finders));
-    }
-
-    static ToolFinder of(ToolProvider... providers) {
-      record DirectToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
       return new DirectToolFinder(List.of(providers));
     }
 
@@ -455,7 +426,7 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
           for (var number : numbers.map(Object::toString).map(properties::getProperty).toList()) {
             var lines = number.lines().map(String::trim).toList();
             var call = ToolCall.of(lines.get(0)).with(lines.stream().skip(1));
-            Bach.instance().run(call);
+            Bach.getBach().run(call);
           }
           return 0;
         }
@@ -488,6 +459,38 @@ public record Bach(Options options, Logbook logbook, Paths paths, Tools tools) {
       }
 
       return new PropertiesToolFinder(directory);
+    }
+
+    static ToolFinder compose(ToolFinder... finders) {
+      return new CompositeToolFinder(List.of(finders));
+    }
+
+    record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
+      @Override
+      public String title() {
+        return "CompositeToolFinder (%d)".formatted(finders.size());
+      }
+
+      @Override
+      public List<ToolProvider> findAll() {
+        return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
+      }
+
+      @Override
+      public Optional<ToolProvider> find(String name) {
+        for (var finder : finders) {
+          var tool = finder.find(name);
+          if (tool.isPresent()) return tool;
+        }
+        return Optional.empty();
+      }
+
+      @Override
+      public void visit(int depth, BiConsumer<Integer, ToolFinder> visitor) {
+        visitor.accept(depth, this);
+        depth++;
+        for (var finder : finders) finder.visit(depth, visitor);
+      }
     }
 
     record Provider(String name, ToolFunction function) implements ToolProvider {
