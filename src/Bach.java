@@ -784,6 +784,14 @@ public record Bach(
     }
   }
 
+  static final class ToolNotFoundException extends RuntimeException {
+    @java.io.Serial private static final long serialVersionUID = -417539767734303099L;
+
+    public ToolNotFoundException(String name) {
+      super("Tool named `%s` not found".formatted(name));
+    }
+  }
+
   @Category("Bach")
   @Name("Bach.LogEvent")
   @Label("Log")
