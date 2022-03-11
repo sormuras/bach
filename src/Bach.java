@@ -72,7 +72,9 @@ public record Bach(
         options,
         new Logbook(out, err, options.__logbook_threshold, new ConcurrentLinkedDeque<>()),
         new Paths(options.__chroot, options.__destination),
-        new Externals(programs),
+        new Externals(
+            properties.getProperty("bach.externals.default-checksum-algorithm", "SHA-256"),
+            programs),
         new Tools(
             ToolFinder.compose(
                 ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
@@ -143,6 +145,10 @@ public record Bach(
         .forEach(call -> run(call, true));
   }
 
+  public void checksum(Path path) {
+    run("checksum", path, externals.defaultChecksumAlgorithm());
+  }
+
   public void checksum(Path path, String algorithm) {
     var checksum = PathSupport.computeChecksum(path, algorithm);
     logbook.out().accept("%s %s".formatted(checksum, path));
@@ -153,11 +159,13 @@ public record Bach(
     if (computed.equalsIgnoreCase(expected)) return;
     throw new AssertionError(
         """
-        Checksum %s mismatch for %s!
-          computed: %s
-          expected: %s
+        Checksum mismatch detected!
+               path: %s
+          algorithm: %s
+           computed: %s
+           expected: %s
         """
-            .formatted(algorithm, path, computed, expected));
+            .formatted(path, algorithm, computed, expected));
   }
 
   public void compile() {
@@ -165,19 +173,30 @@ public record Bach(
   }
 
   public void download(Map<Path, URI> map) {
-    map.entrySet().stream().parallel().forEach(entry -> download(entry.getKey(), entry.getValue()));
+    map.entrySet().stream()
+        .parallel()
+        .forEach(entry -> run("download", entry.getKey(), entry.getValue()));
   }
 
   public void download(Path to, URI from) {
-    if (Files.exists(to)) return;
-    log(Level.DEBUG, "Downloading %s".formatted(from));
-    try (var stream = from.toURL().openStream()) {
-      var parent = to.getParent();
-      if (parent != null) Files.createDirectories(parent);
-      var size = Files.copy(stream, to);
-      log(Level.INFO, "Downloaded %,12d %s".formatted(size, to.getFileName()));
-    } catch (Exception exception) {
-      throw new RuntimeException(exception);
+    if (Files.notExists(to)) {
+      log(Level.DEBUG, "Downloading %s".formatted(from));
+      try (var stream = from.toURL().openStream()) {
+        var parent = to.getParent();
+        if (parent != null) Files.createDirectories(parent);
+        var size = Files.copy(stream, to);
+        log(Level.DEBUG, "Downloaded %,12d %s".formatted(size, to.getFileName()));
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
+    }
+    var fragment = from.getFragment();
+    if (fragment == null) return;
+    for (var element : fragment.split("&")) {
+      var property = StringSupport.parseProperty(element);
+      var algorithm = property.key();
+      var expected = property.value();
+      run("checksum", to, algorithm, expected);
     }
   }
 
@@ -272,7 +291,7 @@ public record Bach(
 
   public record Paths(Path root, Path out) {}
 
-  public record Externals(Map<Path, URI> programs) {}
+  public record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs) {}
 
   public record Tools(ToolFinder finder) {
     static int banner(PrintWriter out, PrintWriter err, String... args) {
@@ -290,14 +309,17 @@ public record Bach(
     }
 
     static int checksum(PrintWriter out, PrintWriter err, String... args) {
-      if (args.length < 2 || args.length > 3) {
-        err.println("Usage: checksum FILE ALGORITHM [EXPECTED-CHECKSUM]");
+      if (args.length < 1 || args.length > 3) {
+        err.println("Usage: checksum FILE [ALGORITHM [EXPECTED-CHECKSUM]]");
         return 1;
       }
+      var bach = Bach.getBach();
       var file = Path.of(args[0]);
-      var algorithm = args[1];
-      if (args.length == 2) Bach.getBach().checksum(file, algorithm);
-      if (args.length == 3) Bach.getBach().checksum(file, algorithm, args[2]);
+      switch (args.length) {
+        case 1 -> bach.checksum(file);
+        case 2 -> bach.checksum(file, args[1]);
+        case 3 -> bach.checksum(file, args[1], args[2]);
+      }
       return 0;
     }
 
@@ -681,7 +703,7 @@ public record Bach(
   static final class PathSupport {
 
     static String computeChecksum(Path path, String algorithm) {
-      if (Files.notExists(path)) throw new RuntimeException(path.toString());
+      if (Files.notExists(path)) throw new RuntimeException("File not found: " + path);
       try {
         if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
         var md = MessageDigest.getInstance(algorithm);
@@ -740,6 +762,25 @@ public record Bach(
       var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
       var name = candidate.getFileName();
       return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
+    }
+  }
+
+  static final class StringSupport {
+    record Property(String key, String value) {}
+
+    static Property parseProperty(String string) {
+      return StringSupport.parseProperty(string, '=');
+    }
+
+    static Property parseProperty(String string, char separator) {
+      int index = string.indexOf(separator);
+      if (index < 0) {
+        var message = "Expected a `KEY%sVALUE` string, but got: %s".formatted(separator, string);
+        throw new IllegalArgumentException(message);
+      }
+      var key = string.substring(0, index);
+      var value = string.substring(index + 1);
+      return new Property(key, value);
     }
   }
 
