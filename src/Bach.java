@@ -221,9 +221,9 @@ public record Bach(
     }
     try (var recording = new Recording()) {
       recording.start();
-      run("banner", "BEGIN");
+      log(Level.DEBUG, "BEGIN");
       options.calls().forEach(call -> run(call, true));
-      run("banner", "END.");
+      log(Level.DEBUG, "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
       recording.dump(jfr);
