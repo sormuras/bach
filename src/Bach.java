@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
-import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -117,9 +116,9 @@ public record Bach(
   }
 
   public void build() {
-    run("banner", banner -> banner.with("BUILD"));
-    run("info");
-    run("compile");
+    run("banner", banner -> banner.with("BUILD")).assertSuccessful();
+    run("info").assertSuccessful();
+    run("compile").assertSuccessful();
   }
 
   public void info() {
@@ -134,7 +133,7 @@ public record Bach(
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call, true));
+        .forEach(call -> run(call).print(logbook, 2));
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -142,7 +141,7 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call, true));
+        .forEach(call -> run(call).print(logbook, 2));
   }
 
   public void checksum(Path path) {
@@ -208,8 +207,11 @@ public record Bach(
     logbook.logs().add(event);
     var severity = level.getSeverity();
     if (severity < logbook.threshold().getSeverity()) return;
-    var consumer = severity <= Level.INFO.getSeverity() ? logbook.out : logbook.err;
-    consumer.accept(event.message);
+    if (severity >= Level.ERROR.getSeverity()) {
+      logbook.err().accept(message);
+      return;
+    }
+    logbook.out.accept(message.length() <= 100 ? message : message.substring(0, 95) + "[...]");
   }
 
   private int main() {
@@ -222,17 +224,12 @@ public record Bach(
     try (var recording = new Recording()) {
       recording.start();
       log(Level.DEBUG, "BEGIN");
-      options.calls().forEach(call -> run(call, true));
+      options.calls().forEach(call -> run(call).print(logbook, 2).assertSuccessful());
       log(Level.DEBUG, "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
       recording.dump(jfr);
       var logfile = paths.out().resolve("bach-logbook.md");
-      logbook.out.accept("-> %s".formatted(jfr.toUri()));
-      logbook.out.accept("-> %s".formatted(logfile.toUri()));
-      var duration = Duration.between(recording.getStartTime(), recording.getStopTime());
-      logbook.out.accept(
-          "Run took %d.%02d seconds".formatted(duration.toSeconds(), duration.toMillis()));
       Files.write(logfile, logbook.toMarkdownLines());
       return 0;
     } catch (Exception exception) {
@@ -241,37 +238,28 @@ public record Bach(
     }
   }
 
-  public void run(String name, Object... arguments) {
-    run(ToolCall.of(name, arguments));
+  public ToolRun run(String name, Object... arguments) {
+    return run(ToolCall.of(name, arguments));
   }
 
-  public void run(String name, UnaryOperator<ToolCall> operator) {
-    run(operator.apply(ToolCall.of(name)));
+  public ToolRun run(String name, UnaryOperator<ToolCall> operator) {
+    return run(operator.apply(ToolCall.of(name)));
   }
 
-  public void run(ToolCall call) {
-    run(call, is(Flag.VERBOSE));
-  }
-
-  public void run(ToolCall call, boolean verbose) {
+  public ToolRun run(ToolCall call) {
+    var name = call.name();
     var event = new RunEvent();
-    event.name = call.name();
+    event.name = name;
     event.args = String.join(" ", call.arguments());
 
-    if (!event.name.equals("banner")) {
+    if (!name.equals("banner")) {
       var line = new StringJoiner(" ");
-      line.add(event.name);
-      if (!event.args.isEmpty()) {
-        var arguments =
-            verbose || event.args.length() <= 100
-                ? event.args
-                : event.args.substring(0, 95) + "[...]";
-        line.add(arguments);
-      }
+      line.add(name);
+      call.arguments().forEach(line::add);
       log(Level.INFO, "  " + line);
     }
 
-    var tool = tools.finder().find(call.name()).orElseThrow();
+    var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
     var out = new StringWriter();
     var err = new StringWriter();
     var args = call.arguments().toArray(String[]::new);
@@ -283,10 +271,7 @@ public record Bach(
     event.err = err.toString().strip();
     event.commit();
 
-    if (verbose) {
-      if (!event.out.isEmpty()) logbook.out().accept(event.out.indent(2).stripTrailing());
-      if (!event.err.isEmpty()) logbook.err().accept(event.err.indent(2).stripTrailing());
-    }
+    return new ToolRun(call, event.code, event.out, event.err);
   }
 
   public record Paths(Path root, Path out) {}
@@ -691,6 +676,19 @@ public record Bach(
           return -1;
         }
       }
+    }
+  }
+
+  public record ToolRun(ToolCall call, int code, String out, String err) {
+    ToolRun assertSuccessful() {
+      if (code == 0) return this;
+      throw new AssertionError("%s returned non-zero code: %d".formatted(call.name(), code));
+    }
+
+    ToolRun print(Logbook logbook, int indent) {
+      if (!out.isEmpty()) logbook.out().accept(out.indent(indent).stripTrailing());
+      if (!err.isEmpty()) logbook.err().accept(err.indent(indent).stripTrailing());
+      return this;
     }
   }
 
