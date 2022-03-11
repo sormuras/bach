@@ -87,7 +87,8 @@ public record Bach(
                     new ToolFinder.Provider("checksum", Tools::checksum),
                     new ToolFinder.Provider("compile", Tools::compile),
                     new ToolFinder.Provider("download", Tools::download),
-                    new ToolFinder.Provider("info", Tools::info)),
+                    new ToolFinder.Provider("info", Tools::info),
+                    new ToolFinder.Provider("test", Tools::test)),
                 ToolFinder.ofSystem())));
   }
 
@@ -119,6 +120,7 @@ public record Bach(
     run("banner", banner -> banner.with("BUILD")).assertSuccessful();
     run("info").assertSuccessful();
     run("compile").assertSuccessful();
+    run("test").assertSuccessful();
   }
 
   public void info() {
@@ -274,6 +276,10 @@ public record Bach(
     return new ToolRun(call, event.code, event.out, event.err);
   }
 
+  public void test() {
+    log(Level.WARNING, "TODO test()");
+  }
+
   public record Paths(Path root, Path out) {}
 
   public record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs) {}
@@ -331,6 +337,11 @@ public record Bach(
 
     static int info(PrintWriter out, PrintWriter err, String... args) {
       Bach.getBach().info();
+      return 0;
+    }
+
+    static int test(PrintWriter out, PrintWriter err, String... args) {
+      Bach.getBach().test();
       return 0;
     }
   }
