@@ -30,7 +30,6 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -82,26 +81,14 @@ public record Bach(
                     Path.of(System.getProperty("java.home"), "bin", "java"),
                     "java.args"),
                 ToolFinder.of(
-                    new ToolFinder.Provider("banner", Tools::banner),
-                    new ToolFinder.Provider("build", Tools::build),
-                    new ToolFinder.Provider("checksum", Tools::checksum),
-                    new ToolFinder.Provider("compile", Tools::compile),
-                    new ToolFinder.Provider("download", Tools::download),
-                    new ToolFinder.Provider("info", Tools::info),
-                    new ToolFinder.Provider("test", Tools::test)),
+                    Note.of("banner", Note::banner),
+                    Note.of("build", Note::build),
+                    Note.of("checksum", Note::checksum),
+                    Note.of("compile", Note::compile),
+                    Note.of("download", Note::download),
+                    Note.of("info", Note::info),
+                    Note.of("test", Note::test)),
                 ToolFinder.ofSystem())));
-  }
-
-  private static final AtomicReference<Bach> INSTANCE = new AtomicReference<>();
-
-  public static Bach getBach() {
-    var bach = INSTANCE.get();
-    if (bach != null) return bach;
-    throw new IllegalStateException();
-  }
-
-  public Bach {
-    if (!INSTANCE.compareAndSet(null, this)) throw new IllegalStateException();
   }
 
   public boolean is(Flag flag) {
@@ -267,7 +254,10 @@ public record Bach(
     var args = call.arguments().toArray(String[]::new);
 
     event.begin();
-    event.code = tool.run(new PrintWriter(out), new PrintWriter(err), args);
+    event.code =
+        tool instanceof Note.Provider note
+            ? note.run(this, new PrintWriter(out), new PrintWriter(err), args)
+            : tool.run(new PrintWriter(out), new PrintWriter(err), args);
     event.end();
     event.out = out.toString().strip();
     event.err = err.toString().strip();
@@ -280,31 +270,47 @@ public record Bach(
     log(Level.WARNING, "TODO test()");
   }
 
-  public record Paths(Path root, Path out) {}
+  @FunctionalInterface
+  public interface Note {
 
-  public record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs) {}
+    int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
 
-  public record Tools(ToolFinder finder) {
-    static int banner(PrintWriter out, PrintWriter err, String... args) {
+    interface Provider extends Note, ToolProvider {
+      @Override
+      default int run(PrintWriter out, PrintWriter err, String... args) {
+        return run(Bach.of(out::println, err::println), out, err, args);
+      }
+    }
+
+    static Provider of(String name, Note note) {
+      record Wrapper(String name, Note note) implements Provider {
+        @Override
+        public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+          return note.run(bach, out, err, args);
+        }
+      }
+      return new Wrapper(name, note);
+    }
+
+    private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       if (args.length == 0) {
         err.println("Usage: banner TEXT");
         return 1;
       }
-      Bach.getBach().banner(String.join(" ", args));
+      bach.banner(String.join(" ", args));
       return 0;
     }
 
-    static int build(PrintWriter out, PrintWriter err, String... args) {
-      Bach.getBach().build();
+    private static int build(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.build();
       return 0;
     }
 
-    static int checksum(PrintWriter out, PrintWriter err, String... args) {
+    private static int checksum(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       if (args.length < 1 || args.length > 3) {
         err.println("Usage: checksum FILE [ALGORITHM [EXPECTED-CHECKSUM]]");
         return 1;
       }
-      var bach = Bach.getBach();
       var file = Path.of(args[0]);
       switch (args.length) {
         case 1 -> bach.checksum(file);
@@ -314,13 +320,12 @@ public record Bach(
       return 0;
     }
 
-    static int compile(PrintWriter out, PrintWriter err, String... args) {
-      Bach.getBach().compile();
+    private static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.compile();
       return 0;
     }
 
-    static int download(PrintWriter out, PrintWriter err, String... args) {
-      var bach = Bach.getBach();
+    private static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       if (args.length == 0) { // everything
         bach.download(bach.externals().programs());
         return 0;
@@ -335,16 +340,22 @@ public record Bach(
       return 1;
     }
 
-    static int info(PrintWriter out, PrintWriter err, String... args) {
-      Bach.getBach().info();
+    private static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.info();
       return 0;
     }
 
-    static int test(PrintWriter out, PrintWriter err, String... args) {
-      Bach.getBach().test();
+    private static int test(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.test();
       return 0;
     }
   }
+
+  public record Paths(Path root, Path out) {}
+
+  public record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs) {}
+
+  public record Tools(ToolFinder finder) {}
 
   public enum Flag {
     VERBOSE
@@ -529,16 +540,16 @@ public record Bach(
     }
 
     static ToolFinder ofProperties(Path directory) {
-      record PropertiesToolProvider(String name, Properties properties) implements ToolProvider {
+      record PropertiesNoteProvider(String name, Properties properties) implements Note.Provider {
         @Override
-        public int run(PrintWriter out, PrintWriter err, String... args) {
+        public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
           var numbers = properties.stringPropertyNames().stream().map(Integer::valueOf).sorted();
           for (var number : numbers.map(Object::toString).map(properties::getProperty).toList()) {
             var lines = number.lines().map(String::trim).toList();
             var name = lines.get(0);
             if (name.toUpperCase().startsWith("GOTO")) throw new Error("GOTO IS TOO BASIC!");
             var call = ToolCall.of(name).with(lines.stream().skip(1));
-            Bach.getBach().run(call);
+            bach.run(call);
           }
           return 0;
         }
@@ -560,7 +571,7 @@ public record Bach(
               var filename = path.getFileName().toString();
               var name = filename.substring(0, filename.length() - ".properties".length());
               var properties = PathSupport.properties(path);
-              list.add(new PropertiesToolProvider(name, properties));
+              list.add(new PropertiesNoteProvider(name, properties));
             }
           } catch (Exception exception) {
             throw new RuntimeException(exception);
@@ -655,19 +666,6 @@ public record Bach(
         visitor.accept(depth, this);
         depth++;
         for (var finder : finders) finder.visit(depth, visitor);
-      }
-    }
-
-    record Provider(String name, ToolFunction function) implements ToolProvider {
-
-      @FunctionalInterface
-      public interface ToolFunction {
-        int run(PrintWriter out, PrintWriter err, String... args);
-      }
-
-      @Override
-      public int run(PrintWriter out, PrintWriter err, String... args) {
-        return function.run(out, err, args);
       }
     }
 
