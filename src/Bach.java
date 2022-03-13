@@ -104,10 +104,10 @@ public record Bach(
   }
 
   public void build() {
-    run("banner", banner -> banner.with("BUILD")).assertSuccessful();
-    run("info").assertSuccessful();
-    run("compile").assertSuccessful();
-    run("test").assertSuccessful();
+    run("banner", banner -> banner.with("BUILD"));
+    run("info");
+    run("compile");
+    run("test");
   }
 
   public void info() {
@@ -122,7 +122,7 @@ public record Bach(
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call).print(logbook, 2));
+        .forEach(call -> run(call).print(logbook.out, logbook.err, 2));
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -130,7 +130,7 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call).print(logbook, 2));
+        .forEach(call -> run(call).print(logbook.out, logbook.err, 2));
   }
 
   public void checksum(Path path) {
@@ -213,7 +213,7 @@ public record Bach(
     try (var recording = new Recording()) {
       recording.start();
       log(Level.DEBUG, "BEGIN");
-      options.calls().forEach(call -> run(call).print(logbook, 2).assertSuccessful());
+      options.calls().forEach(call -> run(call).print(logbook.out, logbook.err, 2));
       log(Level.DEBUG, "END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
@@ -262,6 +262,16 @@ public record Bach(
     event.out = out.toString().strip();
     event.err = err.toString().strip();
     event.commit();
+
+    if (event.code != call.expectedCode()) {
+      throw new AssertionError(
+          """
+        %s returned unexpected exit code: %d
+        %s
+        %s
+        """
+              .formatted(call.name(), event.code, err, out));
+    }
 
     return new ToolRun(call, event.code, event.out, event.err);
   }
@@ -427,11 +437,15 @@ public record Bach(
     }
   }
 
-  public record ToolCall(String name, List<String> arguments) {
+  public record ToolCall(String name, List<String> arguments, int expectedCode) {
     public static ToolCall of(String name, Object... arguments) {
       if (arguments.length == 0) return new ToolCall(name, List.of());
       if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString()));
       return new ToolCall(name, List.of()).with(Stream.of(arguments));
+    }
+
+    public ToolCall(String name, List<String> arguments) {
+      this(name, arguments, 0);
     }
 
     public ToolCall with(Stream<?> objects) {
@@ -543,15 +557,23 @@ public record Bach(
       record PropertiesNoteProvider(String name, Properties properties) implements Note.Provider {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-          var numbers = properties.stringPropertyNames().stream().map(Integer::valueOf).sorted();
-          for (var number : numbers.map(Object::toString).map(properties::getProperty).toList()) {
-            var lines = number.lines().map(String::trim).toList();
+          var commands =
+              properties.stringPropertyNames().stream()
+                  .sorted(Comparator.comparing(Integer::parseInt))
+                  .map(properties::getProperty)
+                  .toList();
+          for (var command : commands) {
+            var lines = command.lines().map(line -> replace(bach, line)).toList();
             var name = lines.get(0);
             if (name.toUpperCase().startsWith("GOTO")) throw new Error("GOTO IS TOO BASIC!");
             var call = ToolCall.of(name).with(lines.stream().skip(1));
             bach.run(call);
           }
           return 0;
+        }
+
+        private String replace(Bach bach, String line) {
+          return line.trim().replace("{{path.separator}}", System.getProperty("path.separator"));
         }
       }
 
@@ -689,15 +711,9 @@ public record Bach(
   }
 
   public record ToolRun(ToolCall call, int code, String out, String err) {
-    ToolRun assertSuccessful() {
-      if (code == 0) return this;
-      throw new AssertionError("%s returned non-zero code: %d".formatted(call.name(), code));
-    }
-
-    ToolRun print(Logbook logbook, int indent) {
-      if (!out.isEmpty()) logbook.out().accept(out.indent(indent).stripTrailing());
-      if (!err.isEmpty()) logbook.err().accept(err.indent(indent).stripTrailing());
-      return this;
+    void print(Consumer<String> normal, Consumer<String> errors, int indent) {
+      if (!out.isEmpty()) normal.accept(out.indent(indent).stripTrailing());
+      if (!err.isEmpty()) errors.accept(err.indent(indent).stripTrailing());
     }
   }
 
