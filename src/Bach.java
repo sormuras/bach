@@ -43,7 +43,7 @@ import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 
 public record Bach(
-    Options options, Logbook logbook, Paths paths, Externals externals, Tools tools) {
+    Printer printer, Options options, Paths paths, Externals externals, Tools tools) {
 
   public static void main(String... args) {
     var bach = Bach.of(args);
@@ -52,10 +52,10 @@ public record Bach(
   }
 
   public static Bach of(String... args) {
-    return Bach.of(System.out::println, System.err::println, args);
+    return Bach.of(Printer.ofSystem(), args);
   }
 
-  public static Bach of(Consumer<String> out, Consumer<String> err, String... args) {
+  public static Bach of(Printer printer, String... args) {
     var options = Options.of(args);
     var properties = PathSupport.properties(options.__chroot.resolve("bach.properties"));
     var programs = new TreeMap<Path, URI>();
@@ -67,8 +67,8 @@ public record Bach(
       }
     }
     return new Bach(
+        printer,
         options,
-        new Logbook(out, err, options.__logbook_threshold, new ConcurrentLinkedDeque<>()),
         new Paths(options.__chroot, options.__destination),
         new Externals(
             properties.getProperty("bach.externals.default-checksum-algorithm", "SHA-256"),
@@ -97,7 +97,7 @@ public record Bach(
 
   public void banner(String text) {
     var line = "=".repeat(text.length());
-    logbook.out.accept("""
+    printer.print("""
         %s
         %s
         %s""".formatted(line, text, line));
@@ -111,18 +111,16 @@ public record Bach(
   }
 
   public void info() {
-    var out = logbook.out();
-    out.accept("bach.paths = %s".formatted(paths));
-    if (!is(Flag.VERBOSE)) return;
+    printer.print("bach.paths = %s".formatted(paths));
 
-    tools.finder().tree(out);
+    if (!is(Flag.VERBOSE)) return;
 
     Stream.of(
             ToolCall.of("jar").with("--version"),
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call).print(logbook.out, logbook.err, 2));
+        .forEach(call -> run(call).print(printer, 2));
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -130,7 +128,7 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call).print(logbook.out, logbook.err, 2));
+        .forEach(call -> run(call).print(printer, 2));
   }
 
   public void checksum(Path path) {
@@ -139,7 +137,7 @@ public record Bach(
 
   public void checksum(Path path, String algorithm) {
     var checksum = PathSupport.computeChecksum(path, algorithm);
-    logbook.out().accept("%s %s".formatted(checksum, path));
+    printer.print("%s %s".formatted(checksum, path));
   }
 
   public void checksum(Path path, String algorithm, String expected) {
@@ -168,12 +166,12 @@ public record Bach(
 
   public void download(Path to, URI from) {
     if (Files.notExists(to)) {
-      log(Level.DEBUG, "Downloading %s".formatted(from));
+      log("Downloading %s".formatted(from));
       try (var stream = from.toURL().openStream()) {
         var parent = to.getParent();
         if (parent != null) Files.createDirectories(parent);
         var size = Files.copy(stream, to);
-        log(Level.DEBUG, "Downloaded %,12d %s".formatted(size, to.getFileName()));
+        log("Downloaded %,12d %s".formatted(size, to.getFileName()));
       } catch (Exception exception) {
         throw new RuntimeException(exception);
       }
@@ -188,38 +186,48 @@ public record Bach(
     }
   }
 
+  public void log(String message) {
+    log(Level.DEBUG, message);
+  }
+
   public void log(Level level, String message) {
     var event = new LogEvent();
     event.level = level.name();
     event.message = message;
     event.commit();
-    logbook.logs().add(event);
+
     var severity = level.getSeverity();
-    if (severity < logbook.threshold().getSeverity()) return;
-    if (severity >= Level.ERROR.getSeverity()) {
-      logbook.err().accept(message);
+    if (severity < options.__logbook_threshold.getSeverity()) return;
+    if (severity <= Level.DEBUG.getSeverity()) {
+      printer.print(message);
       return;
     }
-    logbook.out.accept(message.length() <= 100 ? message : message.substring(0, 95) + "[...]");
+    if (severity >= Level.ERROR.getSeverity()) {
+      printer.error(message);
+      return;
+    }
+    printer.print(message.length() <= 100 ? message : message.substring(0, 95) + "[...]");
   }
 
   private int main() {
     if (options.calls().isEmpty()) {
-      logbook.out().accept("Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]");
-      logbook.out().accept("Available tools include:");
-      tools.finder().tree(logbook.out());
+      printer.print(
+          """
+          Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
+
+          Available tools include:
+          """);
+      tools.finder().tree(printer.out());
       return 1;
     }
     try (var recording = new Recording()) {
       recording.start();
-      log(Level.DEBUG, "BEGIN");
-      options.calls().forEach(call -> run(call).print(logbook.out, logbook.err, 2));
-      log(Level.DEBUG, "END.");
+      log("BEGIN");
+      options.calls().forEach(call -> run(call).print(printer, 2));
+      log("END.");
       recording.stop();
       var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
       recording.dump(jfr);
-      var logfile = paths.out().resolve("bach-logbook.md");
-      Files.write(logfile, logbook.toMarkdownLines());
       return 0;
     } catch (Exception exception) {
       log(Level.ERROR, exception.toString());
@@ -280,6 +288,29 @@ public record Bach(
     log(Level.WARNING, "TODO test()");
   }
 
+  public record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines) {
+
+    record Line(Level level, String text) {}
+
+    public static Printer ofSilent() {
+      return new Printer(__ -> {}, __ -> {}, new ConcurrentLinkedDeque<>());
+    }
+
+    public static Printer ofSystem() {
+      return new Printer(System.out::println, System.err::println, new ConcurrentLinkedDeque<>());
+    }
+
+    public void print(String string) {
+      lines.add(new Line(Level.INFO, string));
+      out.accept(string);
+    }
+
+    public void error(String string) {
+      lines.add(new Line(Level.ERROR, string));
+      err.accept(string);
+    }
+  }
+
   @FunctionalInterface
   public interface Note {
 
@@ -288,7 +319,7 @@ public record Bach(
     interface Provider extends Note, ToolProvider {
       @Override
       default int run(PrintWriter out, PrintWriter err, String... args) {
-        return run(Bach.of(out::println, err::println), out, err, args);
+        return run(Bach.of(Printer.ofSilent()), out, err, args);
       }
     }
 
@@ -415,25 +446,6 @@ public record Bach(
       }
       return new Options(
           Set.copyOf(flags), level, root, root.resolve(destination), List.copyOf(calls));
-    }
-  }
-
-  public record Logbook(
-      Consumer<String> out, Consumer<String> err, Level threshold, Deque<LogEvent> logs) {
-    public List<String> toMarkdownLines() {
-      try {
-        var lines = new ArrayList<>(List.of("# Logbook"));
-
-        lines.add("");
-        lines.add("## Log Events");
-        lines.add("");
-        lines.add("```text");
-        logs.forEach(log -> lines.add("[%c] %s".formatted(log.level.charAt(0), log.message)));
-        lines.add("```");
-        return List.copyOf(lines);
-      } catch (Exception exception) {
-        throw new RuntimeException("Failed to read recorded events?", exception);
-      }
     }
   }
 
@@ -711,9 +723,9 @@ public record Bach(
   }
 
   public record ToolRun(ToolCall call, int code, String out, String err) {
-    void print(Consumer<String> normal, Consumer<String> errors, int indent) {
-      if (!out.isEmpty()) normal.accept(out.indent(indent).stripTrailing());
-      if (!err.isEmpty()) errors.accept(err.indent(indent).stripTrailing());
+    void print(Printer printer, int indent) {
+      if (!out.isEmpty()) printer.print(out.indent(indent).stripTrailing());
+      if (!err.isEmpty()) printer.error(err.indent(indent).stripTrailing());
     }
   }
 
