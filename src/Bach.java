@@ -75,19 +75,20 @@ public record Bach(
             programs),
         new Tools(
             ToolFinder.compose(
-                ToolFinder.ofProperties(options.__chroot.resolve(".bach/tool-provider")),
+                ToolFinder.of(Tool.of("help", Tool::help), Tool.of("/?", Tool::help)),
+                ToolFinder.ofBasicTools(options.__chroot.resolve(".bach/basic-tools")),
                 ToolFinder.ofPrograms(
                     options.__chroot.resolve(".bach/external-tool-program"),
                     Path.of(System.getProperty("java.home"), "bin", "java"),
                     "java.args"),
                 ToolFinder.of(
-                    Note.of("banner", Note::banner),
-                    Note.of("build", Note::build),
-                    Note.of("checksum", Note::checksum),
-                    Note.of("compile", Note::compile),
-                    Note.of("download", Note::download),
-                    Note.of("info", Note::info),
-                    Note.of("test", Note::test)),
+                    Tool.of("banner", Tool::banner),
+                    Tool.of("build", Tool::build),
+                    Tool.of("checksum", Tool::checksum),
+                    Tool.of("compile", Tool::compile),
+                    Tool.of("download", Tool::download),
+                    Tool.of("info", Tool::info),
+                    Tool.of("test", Tool::test)),
                 ToolFinder.ofSystem())));
   }
 
@@ -120,7 +121,7 @@ public record Bach(
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call, true, true));
+        .forEach(call -> run(call, false, true, true));
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -128,7 +129,17 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call, true, true));
+        .forEach(call -> run(call, true, true, true));
+  }
+
+  public void help() {
+    printer.print(
+        """
+        Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
+
+        Available tools include:
+        """);
+    tools.finder().tree(printer.out());
   }
 
   public void checksum(Path path) {
@@ -211,20 +222,14 @@ public record Bach(
 
   private int main() {
     if (options.calls().isEmpty()) {
-      printer.print(
-          """
-          Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
-
-          Available tools include:
-          """);
-      tools.finder().tree(printer.out());
+      help();
       return 1;
     }
     try (var recording = new Recording()) {
       recording.start();
       log("BEGIN");
       try {
-        options.calls().forEach(call -> run(call, true, true));
+        options.calls().forEach(call -> run(call, false, true, true));
         return 0;
       } catch (RuntimeException exception) {
         return -1;
@@ -249,16 +254,16 @@ public record Bach(
   }
 
   public void run(ToolCall call) {
-    run(call, true, false);
+    run(call, true, true, false);
   }
 
-  void run(ToolCall call, boolean checkCode, boolean printOutput) {
+  void run(ToolCall call, boolean printCall, boolean checkCode, boolean printOutput) {
     var name = call.name();
     var event = new RunEvent();
     event.name = name;
     event.args = String.join(" ", call.arguments());
 
-    if (!name.equals("banner")) {
+    if (printCall) {
       var line = new StringJoiner(" ");
       line.add(name);
       call.arguments().forEach(line::add);
@@ -272,7 +277,7 @@ public record Bach(
 
     event.begin();
     event.code =
-        tool instanceof Note.Provider note
+        tool instanceof Tool.Provider note
             ? note.run(this, new PrintWriter(out), new PrintWriter(err), args)
             : tool.run(new PrintWriter(out), new PrintWriter(err), args);
     event.end();
@@ -289,7 +294,7 @@ public record Bach(
             %s
             """
                 .formatted(call.name(), event.code, event.err, event.out));
-        }
+      }
     }
 
     if (printOutput) {
@@ -326,25 +331,25 @@ public record Bach(
   }
 
   @FunctionalInterface
-  public interface Note {
+  public interface Tool {
 
     int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
 
-    interface Provider extends Note, ToolProvider {
+    interface Provider extends Tool, ToolProvider {
       @Override
       default int run(PrintWriter out, PrintWriter err, String... args) {
         return run(Bach.of(Printer.ofSilent()), out, err, args);
       }
     }
 
-    static Provider of(String name, Note note) {
-      record Wrapper(String name, Note note) implements Provider {
+    static Provider of(String name, Tool tool) {
+      record Wrapper(String name, Tool tool) implements Provider {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-          return note.run(bach, out, err, args);
+          return tool.run(bach, out, err, args);
         }
       }
-      return new Wrapper(name, note);
+      return new Wrapper(name, tool);
     }
 
     private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
@@ -393,6 +398,11 @@ public record Bach(
       }
       err.println("Usage: download TO-PATH FROM-URI");
       return 1;
+    }
+
+    private static int help(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.help();
+      return 0;
     }
 
     private static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
@@ -575,8 +585,8 @@ public record Bach(
       return ToolFinder.of(ClassLoader.getSystemClassLoader());
     }
 
-    static ToolFinder ofProperties(Path directory) {
-      record PropertiesNoteProvider(String name, Properties properties) implements Note.Provider {
+    static ToolFinder ofBasicTools(Path directory) {
+      record BasicToolProvider(String name, Properties properties) implements Tool.Provider {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
           var commands =
@@ -602,10 +612,10 @@ public record Bach(
         }
       }
 
-      record PropertiesToolFinder(Path directory) implements ToolFinder {
+      record BasicToolFinder(Path directory) implements ToolFinder {
         @Override
         public String title() {
-          return "PropertiesToolFinder (%s)".formatted(directory);
+          return "BasicToolFinder (%s)".formatted(directory);
         }
 
         @Override
@@ -618,7 +628,7 @@ public record Bach(
               var filename = path.getFileName().toString();
               var name = filename.substring(0, filename.length() - ".properties".length());
               var properties = PathSupport.properties(path);
-              list.add(new PropertiesNoteProvider(name, properties));
+              list.add(new BasicToolProvider(name, properties));
             }
           } catch (Exception exception) {
             throw new RuntimeException(exception);
@@ -627,7 +637,7 @@ public record Bach(
         }
       }
 
-      return new PropertiesToolFinder(directory);
+      return new BasicToolFinder(directory);
     }
 
     static ToolFinder ofPrograms(Path directory, Path java, String argsfile) {
