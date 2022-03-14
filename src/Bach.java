@@ -585,7 +585,10 @@ public record Bach(
         }
 
         private String replace(Bach bach, String line) {
-          return line.trim().replace("{{path.separator}}", System.getProperty("path.separator"));
+          return line.trim()
+              .replace("{{bach.paths.root}}", PathSupport.normalized(bach.paths.root))
+              .replace("{{bach.paths.out}}", PathSupport.normalized(bach.paths.out))
+              .replace("{{path.separator}}", System.getProperty("path.separator"));
         }
       }
 
@@ -796,7 +799,12 @@ public record Bach(
       var normalized = path.normalize();
       var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
       var name = candidate.getFileName();
-      return Optional.ofNullable(name).map(Path::toString).orElse(defautName);
+      return name != null ? name.toString() : defautName;
+    }
+
+    static String normalized(Path path) {
+      var string = path.normalize().toString();
+      return string.isEmpty() ? "." : string;
     }
   }
 
