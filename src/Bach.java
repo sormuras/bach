@@ -120,7 +120,7 @@ public record Bach(
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call).print(printer, 2));
+        .forEach(call -> run(call, true, true));
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -128,7 +128,7 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call).print(printer, 2));
+        .forEach(call -> run(call, true, true));
   }
 
   public void checksum(Path path) {
@@ -223,27 +223,36 @@ public record Bach(
     try (var recording = new Recording()) {
       recording.start();
       log("BEGIN");
-      options.calls().forEach(call -> run(call).print(printer, 2));
-      log("END.");
-      recording.stop();
-      var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
-      recording.dump(jfr);
-      return 0;
+      try {
+        options.calls().forEach(call -> run(call, true, true));
+        return 0;
+      } catch (RuntimeException exception) {
+        return -1;
+      } finally {
+        log("END.");
+        recording.stop();
+        var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
+        recording.dump(jfr);
+      }
     } catch (Exception exception) {
       log(Level.ERROR, exception.toString());
-      return -1;
+      return -2;
     }
   }
 
-  public ToolRun run(String name, Object... arguments) {
-    return run(ToolCall.of(name, arguments));
+  public void run(String name, Object... arguments) {
+    run(ToolCall.of(name, arguments));
   }
 
-  public ToolRun run(String name, UnaryOperator<ToolCall> operator) {
-    return run(operator.apply(ToolCall.of(name)));
+  public void run(String name, UnaryOperator<ToolCall> operator) {
+    run(operator.apply(ToolCall.of(name)));
   }
 
-  public ToolRun run(ToolCall call) {
+  public void run(ToolCall call) {
+    run(call, true, false);
+  }
+
+  void run(ToolCall call, boolean checkCode, boolean printOutput) {
     var name = call.name();
     var event = new RunEvent();
     event.name = name;
@@ -271,17 +280,22 @@ public record Bach(
     event.err = err.toString().strip();
     event.commit();
 
-    if (event.code != call.expectedCode()) {
-      throw new AssertionError(
-          """
-        %s returned unexpected exit code: %d
-        %s
-        %s
-        """
-              .formatted(call.name(), event.code, err, out));
+    if (checkCode) {
+      if (event.code != 0) {
+        throw new AssertionError(
+            """
+            %s returned non-zero exit code: %d
+            %s
+            %s
+            """
+                .formatted(call.name(), event.code, event.err, event.out));
+        }
     }
 
-    return new ToolRun(call, event.code, event.out, event.err);
+    if (printOutput) {
+      if (!event.out.isEmpty()) printer.print(event.out.indent(2).stripTrailing());
+      if (!event.err.isEmpty()) printer.error(event.err.indent(2).stripTrailing());
+    }
   }
 
   public void test() {
@@ -449,15 +463,11 @@ public record Bach(
     }
   }
 
-  public record ToolCall(String name, List<String> arguments, int expectedCode) {
+  public record ToolCall(String name, List<String> arguments) {
     public static ToolCall of(String name, Object... arguments) {
       if (arguments.length == 0) return new ToolCall(name, List.of());
       if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString()));
       return new ToolCall(name, List.of()).with(Stream.of(arguments));
-    }
-
-    public ToolCall(String name, List<String> arguments) {
-      this(name, arguments, 0);
     }
 
     public ToolCall with(Stream<?> objects) {
@@ -722,13 +732,6 @@ public record Bach(
           return -1;
         }
       }
-    }
-  }
-
-  public record ToolRun(ToolCall call, int code, String out, String err) {
-    void print(Printer printer, int indent) {
-      if (!out.isEmpty()) printer.print(out.indent(indent).stripTrailing());
-      if (!err.isEmpty()) printer.error(err.indent(indent).stripTrailing());
     }
   }
 
