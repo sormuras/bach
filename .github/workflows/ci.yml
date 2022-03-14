@@ -25,3 +25,4 @@ jobs:
           name: ${{ github.event.repository.name }}-build-${{ github.sha }}
           path: |
             LICENSE
+            .bach/out/bach-logbook.jfr
