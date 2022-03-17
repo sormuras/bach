@@ -232,6 +232,7 @@ public record Bach(
         options.calls().forEach(call -> run(call, false, true, true));
         return 0;
       } catch (RuntimeException exception) {
+        log(Level.ERROR, exception.toString());
         return -1;
       } finally {
         log("END.");
