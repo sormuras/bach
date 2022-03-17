@@ -285,19 +285,17 @@ public record Bach(
     event.err = err.toString().strip();
     event.commit();
 
-    if (checkCode) {
-      if (event.code != 0) {
-        throw new AssertionError(
-            """
+    var isError = event.code != 0;
+    if (checkCode && isError)
+      throw new AssertionError(
+          """
             %s returned non-zero exit code: %d
             %s
             %s
             """
-                .formatted(call.name(), event.code, event.err, event.out));
-      }
-    }
+              .formatted(call.name(), event.code, event.err, event.out));
 
-    if (printOutput) {
+    if (printOutput || isError) {
       if (!event.out.isEmpty()) printer.print(event.out.indent(2).stripTrailing());
       if (!event.err.isEmpty()) printer.error(event.err.indent(2).stripTrailing());
     }
