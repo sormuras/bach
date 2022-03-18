@@ -288,10 +288,8 @@ public record Bach(
     throw new AssertionError(
         """
         %s returned non-zero exit code: %d
-        %s
-        %s
         """
-            .formatted(call.name(), event.code, event.err, event.out));
+            .formatted(call.name(), event.code));
   }
 
   public void test() {
