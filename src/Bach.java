@@ -221,7 +221,8 @@ public record Bach(
   }
 
   private int main() {
-    if (options.calls().isEmpty()) {
+    var seed = options.seed();
+    if (seed == null) {
       help();
       return 1;
     }
@@ -229,7 +230,7 @@ public record Bach(
       recording.start();
       log("BEGIN");
       try {
-        options.calls().forEach(call -> run(call, Level.DEBUG));
+        run(seed, Level.DEBUG);
         return 0;
       } catch (RuntimeException exception) {
         log(Level.ERROR, exception.toString());
@@ -420,16 +421,16 @@ public record Bach(
       Level __logbook_threshold,
       Path __chroot,
       Path __destination,
-      List<ToolCall> calls) {
+      ToolCall seed) {
 
     static Options of(String... args) {
       var flags = EnumSet.noneOf(Flag.class);
       var level = Level.INFO;
       var root = Path.of("");
       var destination = Path.of(".bach", "out");
+      ToolCall seed = null;
 
       var arguments = new ArrayDeque<>(List.of(args));
-      var calls = new ArrayList<ToolCall>();
       while (!arguments.isEmpty()) {
         var argument = arguments.removeFirst();
         if (argument.startsWith("--")) {
@@ -454,11 +455,10 @@ public record Bach(
           }
           throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
         }
-        calls.add(new ToolCall(argument, arguments.stream().toList()));
+        seed = new ToolCall(argument, arguments.stream().toList());
         break;
       }
-      return new Options(
-          Set.copyOf(flags), level, root, root.resolve(destination), List.copyOf(calls));
+      return new Options(Set.copyOf(flags), level, root, root.resolve(destination), seed);
     }
   }
 
