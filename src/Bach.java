@@ -47,7 +47,7 @@ public record Bach(
   public static void main(String... args) {
     var bach = Bach.of(args);
     var code = bach.main();
-    System.exit(code);
+    if (code != 0) System.exit(code);
   }
 
   public static Bach of(String... args) {
