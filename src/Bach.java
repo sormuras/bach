@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -121,7 +120,7 @@ public record Bach(
             ToolCall.of("javac").with("--version"),
             ToolCall.of("javadoc").with("--version"))
         .parallel()
-        .forEach(call -> run(call, false, true, true));
+        .forEach(this::run);
 
     Stream.of(
             ToolCall.of("jdeps").with("--version"),
@@ -129,7 +128,7 @@ public record Bach(
             ToolCall.of("jmod").with("--version"),
             ToolCall.of("jpackage").with("--version"))
         .sequential()
-        .forEach(call -> run(call, true, true, true));
+        .forEach(this::run);
   }
 
   public void help() {
@@ -217,7 +216,8 @@ public record Bach(
       printer.error(message);
       return;
     }
-    printer.print(message.length() <= 100 ? message : message.substring(0, 95) + "[...]");
+    var max = 1000;
+    printer.print(message.length() <= max ? message : message.substring(0, max - 5) + "[...]");
   }
 
   private int main() {
@@ -229,7 +229,7 @@ public record Bach(
       recording.start();
       log("BEGIN");
       try {
-        options.calls().forEach(call -> run(call, false, true, true));
+        options.calls().forEach(call -> run(call, Level.DEBUG));
         return 0;
       } catch (RuntimeException exception) {
         log(Level.ERROR, exception.toString());
@@ -255,51 +255,43 @@ public record Bach(
   }
 
   public void run(ToolCall call) {
-    run(call, true, true, false);
+    run(call, Level.INFO);
   }
 
-  void run(ToolCall call, boolean printCall, boolean checkCode, boolean printOutput) {
+  void run(ToolCall call, Level level) {
     var name = call.name();
+    var arguments = call.arguments();
+
     var event = new RunEvent();
     event.name = name;
-    event.args = String.join(" ", call.arguments());
+    event.args = String.join(" ", arguments);
 
-    if (printCall) {
-      var line = new StringJoiner(" ");
-      line.add(name);
-      call.arguments().forEach(line::add);
-      log(Level.INFO, "  " + line);
-    }
+    log(level, arguments.isEmpty() ? name : name + ' ' + event.args);
 
     var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
-    var out = new StringWriter();
-    var err = new StringWriter();
-    var args = call.arguments().toArray(String[]::new);
+    var out = new ForwardingStringWriter(s -> printer().out().accept(s.indent(2).stripTrailing()));
+    var err = new ForwardingStringWriter(s -> printer().err().accept(s.indent(2).stripTrailing()));
+    var args = arguments.toArray(String[]::new);
 
     event.begin();
     event.code =
-        tool instanceof Tool.Provider note
-            ? note.run(this, new PrintWriter(out), new PrintWriter(err), args)
-            : tool.run(new PrintWriter(out), new PrintWriter(err), args);
+        tool instanceof Tool.Provider provider
+            ? provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args)
+            : tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
     event.end();
     event.out = out.toString().strip();
     event.err = err.toString().strip();
     event.commit();
 
-    var isError = event.code != 0;
-    if (checkCode && isError)
-      throw new AssertionError(
-          """
-            %s returned non-zero exit code: %d
-            %s
-            %s
-            """
-              .formatted(call.name(), event.code, event.err, event.out));
+    if (event.code == 0) return;
 
-    if (printOutput || isError) {
-      if (!event.out.isEmpty()) printer.print(event.out.indent(2).stripTrailing());
-      if (!event.err.isEmpty()) printer.error(event.err.indent(2).stripTrailing());
-    }
+    throw new AssertionError(
+        """
+        %s returned non-zero exit code: %d
+        %s
+        %s
+        """
+            .formatted(call.name(), event.code, event.err, event.out));
   }
 
   public void test() {
@@ -747,6 +739,27 @@ public record Bach(
   record StreamLineConsumer(InputStream stream, Consumer<String> consumer) implements Runnable {
     public void run() {
       new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
+    }
+  }
+
+  static final class ForwardingStringWriter extends StringWriter {
+
+    private int beginIndex = 0;
+    private final Consumer<String> consumer;
+
+    ForwardingStringWriter(Consumer<String> consumer) {
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void flush() {
+      var buffer = getBuffer();
+      if (buffer.isEmpty()) return;
+      var string = buffer.toString();
+      var length = string.length();
+      if (beginIndex >= length) return;
+      consumer.accept(string.substring(beginIndex));
+      beginIndex = length;
     }
   }
 
