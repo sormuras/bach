@@ -93,7 +93,11 @@ public record Bach(
                     Tool.of("download", Tool::download),
                     Tool.of("info", Tool::info),
                     Tool.of("test", Tool::test)),
-                ToolFinder.ofSystem())));
+                ToolFinder.ofSystem(),
+                ToolFinder.of(
+                    Tool.ofJavaHomeBinary("jarsigner"),
+                    Tool.ofJavaHomeBinary("jdeprscan"),
+                    Tool.ofJavaHomeBinary("jfr")))));
   }
 
   public boolean is(Flag flag) {
@@ -345,6 +349,11 @@ public record Bach(
         }
       }
       return new Wrapper(name, tool);
+    }
+
+    static ToolProvider ofJavaHomeBinary(String name) {
+      var executable = Path.of(System.getProperty("java.home"), "bin", name);
+      return new ToolFinder.ExecuteProgramToolProvider(name, List.of(executable.toString()));
     }
 
     private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
@@ -750,7 +759,7 @@ public record Bach(
 
       @Override
       public int run(PrintWriter out, PrintWriter err, String... arguments) {
-        var builder = new ProcessBuilder(command);
+        var builder = new ProcessBuilder(new ArrayList<>(command));
         builder.command().addAll(List.of(arguments));
         try {
           var process = builder.start();
