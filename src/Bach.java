@@ -9,10 +9,12 @@ import java.io.StringWriter;
 import java.lang.System.Logger.Level;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardCopyOption;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayDeque;
@@ -74,7 +76,10 @@ public record Bach(
             programs),
         new Tools(
             ToolFinder.compose(
-                ToolFinder.of(Tool.of("help", Tool::help), Tool.of("/?", Tool::help)),
+                ToolFinder.of(
+                    Tool.of("help", Tool::help),
+                    Tool.of("/?", Tool::help),
+                    Tool.of("/save", Tool::save)),
                 ToolFinder.ofBasicTools(options.__chroot.resolve(".bach/basic-tools")),
                 ToolFinder.ofPrograms(
                     options.__chroot.resolve(".bach/external-tool-program"),
@@ -174,13 +179,13 @@ public record Bach(
         .forEach(entry -> run("download", entry.getKey(), entry.getValue()));
   }
 
-  public void download(Path to, URI from) {
-    if (Files.notExists(to)) {
+  public void download(Path to, URI from, CopyOption... options) {
+    if (Set.of(options).contains(StandardCopyOption.REPLACE_EXISTING) || Files.notExists(to)) {
       log("Downloading %s".formatted(from));
       try (var stream = from.toURL().openStream()) {
         var parent = to.getParent();
         if (parent != null) Files.createDirectories(parent);
-        var size = Files.copy(stream, to);
+        var size = Files.copy(stream, to, options);
         log("Downloaded %,12d %s".formatted(size, to.getFileName()));
       } catch (Exception exception) {
         throw new RuntimeException(exception);
@@ -402,6 +407,32 @@ public record Bach(
 
     private static int test(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       bach.test();
+      return 0;
+    }
+
+    private static int save(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      var usage =
+          """
+          Usage: save TARGET VERSION
+
+          Examples:
+            save Bach.java 1.0
+            save .bach/Bach-HEAD.java HEAD
+          """;
+      if (args.length == 1 && args[0].equalsIgnoreCase("--help")) {
+        out.println(usage);
+        return 0;
+      }
+      if (args.length != 2) {
+        err.println(usage);
+        return 1;
+      }
+      var target = Path.of(args[0]);
+      var version = args[1];
+      var from = "https://github.com/sormuras/bach/raw/%s/src/Bach.java".formatted(version);
+      out.println("<< " + from);
+      bach.download(target, URI.create(from), StandardCopyOption.REPLACE_EXISTING);
+      out.println(">> " + target);
       return 0;
     }
   }
