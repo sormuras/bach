@@ -87,13 +87,10 @@ public record Bach(
                     "java.args"),
                 ToolFinder.of(
                     Tool.of("banner", Tool::banner),
-                    Tool.of("build", Tool::build),
                     Tool.of("checksum", Tool::checksum),
-                    Tool.of("compile", Tool::compile),
                     new DirectoriesToolProvider(),
                     Tool.of("download", Tool::download),
-                    Tool.of("info", Tool::info),
-                    Tool.of("test", Tool::test)),
+                    Tool.of("info", Tool::info)),
                 ToolFinder.ofSystem(),
                 ToolFinder.of(
                     Tool.ofJavaHomeBinary("jarsigner"),
@@ -111,13 +108,6 @@ public record Bach(
         %s
         %s
         %s""".formatted(line, text, line));
-  }
-
-  public void build() {
-    run("banner", banner -> banner.with("BUILD"));
-    run("info");
-    run("compile");
-    run("test");
   }
 
   public void info() {
@@ -172,10 +162,6 @@ public record Bach(
            expected: %s
         """
             .formatted(path, algorithm, computed, expected));
-  }
-
-  public void compile() {
-    log(Level.WARNING, "TODO compile()");
   }
 
   public void download(Map<Path, URI> map) {
@@ -303,10 +289,6 @@ public record Bach(
             .formatted(call.name(), event.code));
   }
 
-  public void test() {
-    log(Level.WARNING, "TODO test()");
-  }
-
   public record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines) {
 
     record Line(Level level, String text) {}
@@ -366,11 +348,6 @@ public record Bach(
       return 0;
     }
 
-    private static int build(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.build();
-      return 0;
-    }
-
     private static int checksum(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       if (args.length < 1 || args.length > 3) {
         err.println("Usage: checksum FILE [ALGORITHM [EXPECTED-CHECKSUM]]");
@@ -382,11 +359,6 @@ public record Bach(
         case 2 -> bach.checksum(file, args[1]);
         case 3 -> bach.checksum(file, args[1], args[2]);
       }
-      return 0;
-    }
-
-    private static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.compile();
       return 0;
     }
 
@@ -412,11 +384,6 @@ public record Bach(
 
     private static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       bach.info();
-      return 0;
-    }
-
-    private static int test(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.test();
       return 0;
     }
 
