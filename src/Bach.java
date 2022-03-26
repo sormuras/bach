@@ -92,6 +92,7 @@ public record Bach(
                     Tool.of("download", Tool::download),
                     Tool.of("info", Tool::info)),
                 ToolFinder.ofSystem(),
+                ToolFinder.copyOfWithModuleNamePrepended(ToolFinder.ofSystem()),
                 ToolFinder.of(
                     Tool.ofJavaHomeBinary("jarsigner"),
                     Tool.ofJavaHomeBinary("jdeprscan"),
@@ -580,6 +581,25 @@ public record Bach(
 
     static ToolFinder ofSystem() {
       return ToolFinder.of(ClassLoader.getSystemClassLoader());
+    }
+
+    static ToolFinder copyOfWithModuleNamePrepended(ToolFinder finder) {
+      record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
+        DelegatingToolProvider(ToolProvider delegate) {
+          this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          return delegate.run(out, err, args);
+        }
+      }
+      var rename =
+          finder.findAll().stream()
+              .filter(provider -> provider.getClass().getModule().isNamed())
+              .map(DelegatingToolProvider::new)
+              .toList();
+      return ToolFinder.of(rename.toArray(ToolProvider[]::new));
     }
 
     static ToolFinder ofBasicTools(Path directory) {
