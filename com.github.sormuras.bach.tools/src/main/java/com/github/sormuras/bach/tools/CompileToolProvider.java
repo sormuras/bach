@@ -12,7 +12,12 @@ public record CompileToolProvider() implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    out.printf("Compiling %s...%n", new Project());
-    return 0;
+    try {
+      new CompileTool(new Project()).run(out, err);
+      return 0;
+    } catch (Exception exception) {
+      exception.printStackTrace(err);
+      return 1;
+    }
   }
 }
