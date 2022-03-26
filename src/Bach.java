@@ -48,6 +48,7 @@ public record Bach(
 
   public static void main(String... args) {
     var bach = Bach.of(args);
+    System.getProperties().putIfAbsent("ToolProvider(bach-call)", new BachCallToolProvider(bach));
     var code = bach.main();
     if (code != 0) System.exit(code);
   }
@@ -886,7 +887,25 @@ public record Bach(
     }
   }
 
-  public record DirectoriesToolProvider() implements ToolProvider {
+  record BachCallToolProvider(Bach bach) implements ToolProvider {
+    @Override
+    public String name() {
+      return "bach-call";
+    }
+
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      if (args.length == 0) {
+        err.println("Usage: TOOL-NAME [TOOL-ARGS...]");
+        return 1;
+      }
+      var call = ToolCall.of(args[0]).with(Stream.of(args).skip(1));
+      bach.run(call);
+      return 0;
+    }
+  }
+
+  record DirectoriesToolProvider() implements ToolProvider {
 
     private enum Mode {
       CREATE,
