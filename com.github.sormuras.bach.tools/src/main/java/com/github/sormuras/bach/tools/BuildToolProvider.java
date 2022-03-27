@@ -13,7 +13,9 @@ public record BuildToolProvider() implements ToolProvider {
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     try {
-      new BuildTool(new Project()).run(out, err);
+      var commander = Commander.of(out, err);
+      var project = new Project();
+      new BuildTool(commander, project).run();
       return 0;
     } catch (Exception exception) {
       exception.printStackTrace(err);
