@@ -1,25 +1,18 @@
 package com.github.sormuras.bach.tools;
 
-import com.github.sormuras.bach.project.Project;
-import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
+import java.util.List;
 
-public record BuildToolProvider() implements ToolProvider {
+public record BuildToolProvider() implements BachToolProvider {
   @Override
   public String name() {
     return "build";
   }
 
   @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
-    try {
-      var commander = Commander.of(out, err);
-      var project = new Project();
-      new BuildTool(commander, project).run();
-      return 0;
-    } catch (Exception exception) {
-      exception.printStackTrace(err);
-      return 1;
-    }
+  public int run(BachAPI bach, List<String> arguments) {
+    bach.banner("BUILD " + System.identityHashCode(bach.project()));
+    new CompileToolProvider().run(bach, List.of());
+    new TestToolProvider().run(bach, List.of());
+    return 0;
   }
 }

@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.ToIntBiFunction;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -48,7 +49,6 @@ public record Bach(
 
   public static void main(String... args) {
     var bach = Bach.of(args);
-    System.getProperties().putIfAbsent("ToolProvider(bach-call)", new BachCallToolProvider(bach));
     var code = bach.main();
     if (code != 0) System.exit(code);
   }
@@ -249,6 +249,10 @@ public record Bach(
     run(ToolCall.of(name, arguments));
   }
 
+  public void run(String name, List<String> arguments) {
+    run(new ToolCall(name, arguments));
+  }
+
   public void run(String name, UnaryOperator<ToolCall> operator) {
     run(operator.apply(ToolCall.of(name)));
   }
@@ -257,6 +261,7 @@ public record Bach(
     run(call, Level.INFO);
   }
 
+  @SuppressWarnings("unchecked")
   void run(ToolCall call, Level level) {
     var name = call.name();
     var arguments = call.arguments();
@@ -273,10 +278,16 @@ public record Bach(
     var args = arguments.toArray(String[]::new);
 
     event.begin();
-    event.code =
-        tool instanceof Tool.Provider provider
-            ? provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args)
-            : tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
+    if (tool instanceof Tool.Provider provider) {
+      event.code = provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args);
+    } else if (tool instanceof ToIntBiFunction function) {
+      event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
+    } else if (tool instanceof DelegatingToolProvider provider
+        && provider.delegate() instanceof ToIntBiFunction function) {
+      event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
+    } else {
+      event.code = tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
+    }
     event.end();
     event.out = out.toString().strip();
     event.err = err.toString().strip();
@@ -585,16 +596,6 @@ public record Bach(
     }
 
     static ToolFinder copyOfWithModuleNamePrepended(ToolFinder finder) {
-      record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
-        DelegatingToolProvider(ToolProvider delegate) {
-          this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
-        }
-
-        @Override
-        public int run(PrintWriter out, PrintWriter err, String... args) {
-          return delegate.run(out, err, args);
-        }
-      }
       var rename =
           finder.findAll().stream()
               .filter(provider -> provider.getClass().getModule().isNamed())
@@ -887,21 +888,14 @@ public record Bach(
     }
   }
 
-  record BachCallToolProvider(Bach bach) implements ToolProvider {
-    @Override
-    public String name() {
-      return "bach-call";
+  record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
+    DelegatingToolProvider(ToolProvider delegate) {
+      this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
     }
 
     @Override
     public int run(PrintWriter out, PrintWriter err, String... args) {
-      if (args.length == 0) {
-        err.println("Usage: TOOL-NAME [TOOL-ARGS...]");
-        return 1;
-      }
-      var call = ToolCall.of(args[0]).with(Stream.of(args).skip(1));
-      bach.run(call);
-      return 0;
+      return delegate.run(out, err, args);
     }
   }
 
