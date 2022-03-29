@@ -45,7 +45,11 @@ import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 
 public record Bach(
-    Printer printer, Options options, Paths paths, Externals externals, Tools tools) {
+    Component.Printer printer,
+    Component.Options options,
+    Component.Paths paths,
+    Component.Externals externals,
+    Component.Tools tools) {
 
   public static void main(String... args) {
     var bach = Bach.of(args);
@@ -54,12 +58,12 @@ public record Bach(
   }
 
   public static Bach of(String... args) {
-    return Bach.of(Printer.ofSystem(), args);
+    return Bach.of(Component.Printer.ofSystem(), args);
   }
 
-  public static Bach of(Printer printer, String... args) {
-    var options = Options.of(args);
-    var properties = PathSupport.properties(options.__chroot.resolve("bach.properties"));
+  public static Bach of(Component.Printer printer, String... args) {
+    var options = Component.Options.of(args);
+    var properties = Core.PathSupport.properties(options.__chroot.resolve("bach.properties"));
     var programs = new TreeMap<Path, URI>();
     for (var key : properties.stringPropertyNames()) {
       if (key.startsWith(".bach/external-tool-program/")) {
@@ -71,36 +75,36 @@ public record Bach(
     return new Bach(
         printer,
         options,
-        new Paths(options.__chroot, options.__destination),
-        new Externals(
+        new Component.Paths(options.__chroot, options.__destination),
+        new Component.Externals(
             properties.getProperty("bach.externals.default-checksum-algorithm", "SHA-256"),
             programs),
-        new Tools(
+        new Component.Tools(
             ToolFinder.compose(
                 ToolFinder.of(
-                    Tool.of("help", Tool::help),
-                    Tool.of("/?", Tool::help),
-                    Tool.of("/save", Tool::save)),
+                    Core.Tool.of("help", Core.Tool::help),
+                    Core.Tool.of("/?", Core.Tool::help),
+                    Core.Tool.of("/save", Core.Tool::save)),
                 ToolFinder.ofBasicTools(options.__chroot.resolve(".bach/basic-tools")),
                 ToolFinder.ofPrograms(
                     options.__chroot.resolve(".bach/external-tool-program"),
                     Path.of(System.getProperty("java.home"), "bin", "java"),
                     "java.args"),
                 ToolFinder.of(
-                    Tool.of("banner", Tool::banner),
-                    Tool.of("checksum", Tool::checksum),
-                    new DirectoriesToolProvider(),
-                    Tool.of("download", Tool::download),
-                    Tool.of("info", Tool::info)),
+                    Core.Tool.of("banner", Core.Tool::banner),
+                    Core.Tool.of("checksum", Core.Tool::checksum),
+                    new Core.DirectoriesToolProvider(),
+                    Core.Tool.of("download", Core.Tool::download),
+                    Core.Tool.of("info", Core.Tool::info)),
                 ToolFinder.ofSystem(),
                 ToolFinder.copyOfWithModuleNamePrepended(ToolFinder.ofSystem()),
                 ToolFinder.of(
-                    Tool.ofJavaHomeBinary("jarsigner"),
-                    Tool.ofJavaHomeBinary("jdeprscan"),
-                    Tool.ofJavaHomeBinary("jfr")))));
+                    Core.Tool.ofJavaHomeBinary("jarsigner"),
+                    Core.Tool.ofJavaHomeBinary("jdeprscan"),
+                    Core.Tool.ofJavaHomeBinary("jfr")))));
   }
 
-  public boolean is(Flag flag) {
+  public boolean is(Component.Flag flag) {
     return options.flags.contains(flag);
   }
 
@@ -115,7 +119,7 @@ public record Bach(
   public void info() {
     printer.print("bach.paths = %s".formatted(paths));
 
-    if (!is(Flag.VERBOSE)) return;
+    if (!is(Component.Flag.VERBOSE)) return;
 
     Stream.of(
             ToolCall.of("jar").with("--version"),
@@ -148,12 +152,12 @@ public record Bach(
   }
 
   public void checksum(Path path, String algorithm) {
-    var checksum = PathSupport.computeChecksum(path, algorithm);
+    var checksum = Core.PathSupport.computeChecksum(path, algorithm);
     printer.print("%s %s".formatted(checksum, path));
   }
 
   public void checksum(Path path, String algorithm, String expected) {
-    var computed = PathSupport.computeChecksum(path, algorithm);
+    var computed = Core.PathSupport.computeChecksum(path, algorithm);
     if (computed.equalsIgnoreCase(expected)) return;
     throw new AssertionError(
         """
@@ -187,7 +191,7 @@ public record Bach(
     var fragment = from.getFragment();
     if (fragment == null) return;
     for (var element : fragment.split("&")) {
-      var property = StringSupport.parseProperty(element);
+      var property = Core.StringSupport.parseProperty(element);
       var algorithm = property.key();
       var expected = property.value();
       run("checksum", to, algorithm, expected);
@@ -199,7 +203,7 @@ public record Bach(
   }
 
   public void log(Level level, String message) {
-    var event = new LogEvent();
+    var event = new Core.LogEvent();
     event.level = level.name();
     event.message = message;
     event.commit();
@@ -266,23 +270,25 @@ public record Bach(
     var name = call.name();
     var arguments = call.arguments();
 
-    var event = new RunEvent();
+    var event = new Core.RunEvent();
     event.name = name;
     event.args = String.join(" ", arguments);
 
     log(level, arguments.isEmpty() ? name : name + ' ' + event.args);
 
-    var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
-    var out = new ForwardingStringWriter(s -> printer().out().accept(s.indent(2).stripTrailing()));
-    var err = new ForwardingStringWriter(s -> printer().err().accept(s.indent(2).stripTrailing()));
+    var tool = tools.finder().find(name).orElseThrow(() -> new Core.ToolNotFoundException(name));
+    var out =
+        new Core.ForwardingStringWriter(s -> printer().out().accept(s.indent(2).stripTrailing()));
+    var err =
+        new Core.ForwardingStringWriter(s -> printer().err().accept(s.indent(2).stripTrailing()));
     var args = arguments.toArray(String[]::new);
 
     event.begin();
-    if (tool instanceof Tool.Provider provider) {
+    if (tool instanceof Core.Tool.Provider provider) {
       event.code = provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args);
     } else if (tool instanceof ToIntBiFunction function) {
       event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
-    } else if (tool instanceof DelegatingToolProvider provider
+    } else if (tool instanceof Core.DelegatingToolProvider provider
         && provider.delegate() instanceof ToIntBiFunction function) {
       event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
     } else {
@@ -302,184 +308,395 @@ public record Bach(
             .formatted(call.name(), event.code));
   }
 
-  public record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines) {
+  public sealed interface Component {
+    record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines)
+        implements Component {
 
-    record Line(Level level, String text) {}
+      record Line(Level level, String text) {}
 
-    public static Printer ofSilent() {
-      return new Printer(__ -> {}, __ -> {}, new ConcurrentLinkedDeque<>());
+      public static Printer ofSilent() {
+        return new Printer(__ -> {}, __ -> {}, new ConcurrentLinkedDeque<>());
+      }
+
+      public static Printer ofSystem() {
+        return new Printer(System.out::println, System.err::println, new ConcurrentLinkedDeque<>());
+      }
+
+      public void print(String string) {
+        lines.add(new Line(Level.INFO, string));
+        out.accept(string);
+      }
+
+      public void error(String string) {
+        lines.add(new Line(Level.ERROR, string));
+        err.accept(string);
+      }
     }
 
-    public static Printer ofSystem() {
-      return new Printer(System.out::println, System.err::println, new ConcurrentLinkedDeque<>());
+    enum Flag {
+      VERBOSE
     }
 
-    public void print(String string) {
-      lines.add(new Line(Level.INFO, string));
-      out.accept(string);
+    record Options(
+        Set<Flag> flags,
+        Level __logbook_threshold,
+        Path __chroot,
+        Path __destination,
+        ToolCall seed)
+        implements Component {
+
+      static Options of(String... args) {
+        var flags = EnumSet.noneOf(Flag.class);
+        var level = Level.INFO;
+        var root = Path.of("");
+        var destination = Path.of(".bach", "out");
+        ToolCall seed = null;
+
+        var arguments = new ArrayDeque<>(List.of(args));
+        while (!arguments.isEmpty()) {
+          var argument = arguments.removeFirst();
+          if (argument.startsWith("--")) {
+            if (argument.equals("--verbose")) {
+              flags.add(Flag.VERBOSE);
+              continue;
+            }
+            var delimiter = argument.indexOf('=', 2);
+            var key = delimiter == -1 ? argument : argument.substring(0, delimiter);
+            var value =
+                delimiter == -1 ? arguments.removeFirst() : argument.substring(delimiter + 1);
+            if (key.equals("--logbook-threshold")) {
+              level = Level.valueOf(value);
+              continue;
+            }
+            if (key.equals("--chroot")) {
+              root = Path.of(value).normalize();
+              continue;
+            }
+            if (key.equals("--destination")) {
+              destination = Path.of(value).normalize();
+              continue;
+            }
+            throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
+          }
+          seed = new ToolCall(argument, arguments.stream().toList());
+          break;
+        }
+        return new Options(Set.copyOf(flags), level, root, root.resolve(destination), seed);
+      }
     }
 
-    public void error(String string) {
-      lines.add(new Line(Level.ERROR, string));
-      err.accept(string);
-    }
+    record Paths(Path root, Path out) implements Component {}
+
+    record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs)
+        implements Component {}
+
+    record Tools(ToolFinder finder) implements Component {}
   }
 
-  @FunctionalInterface
-  public interface Tool {
+  private static final class Core {
 
-    int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
+    @FunctionalInterface
+    public interface Tool {
 
-    interface Provider extends Tool, ToolProvider {
-      @Override
-      default int run(PrintWriter out, PrintWriter err, String... args) {
-        return run(Bach.of(Printer.ofSilent()), out, err, args);
-      }
-    }
+      int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
 
-    static Provider of(String name, Tool tool) {
-      record Wrapper(String name, Tool tool) implements Provider {
+      interface Provider extends Tool, ToolProvider {
         @Override
-        public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-          return tool.run(bach, out, err, args);
+        default int run(PrintWriter out, PrintWriter err, String... args) {
+          return run(Bach.of(Component.Printer.ofSilent()), out, err, args);
         }
       }
-      return new Wrapper(name, tool);
-    }
 
-    static ToolProvider ofJavaHomeBinary(String name) {
-      var executable = Path.of(System.getProperty("java.home"), "bin", name);
-      return new ToolFinder.ExecuteProgramToolProvider(name, List.of(executable.toString()));
-    }
-
-    private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      if (args.length == 0) {
-        err.println("Usage: banner TEXT");
-        return 1;
+      static Provider of(String name, Tool tool) {
+        record Wrapper(String name, Tool tool) implements Provider {
+          @Override
+          public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+            return tool.run(bach, out, err, args);
+          }
+        }
+        return new Wrapper(name, tool);
       }
-      bach.banner(String.join(" ", args));
-      return 0;
-    }
 
-    private static int checksum(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      if (args.length < 1 || args.length > 3) {
-        err.println("Usage: checksum FILE [ALGORITHM [EXPECTED-CHECKSUM]]");
-        return 1;
+      static ToolProvider ofJavaHomeBinary(String name) {
+        var executable = Path.of(System.getProperty("java.home"), "bin", name);
+        return new ToolFinder.ExecuteProgramToolProvider(name, List.of(executable.toString()));
       }
-      var file = Path.of(args[0]);
-      switch (args.length) {
-        case 1 -> bach.checksum(file);
-        case 2 -> bach.checksum(file, args[1]);
-        case 3 -> bach.checksum(file, args[1], args[2]);
-      }
-      return 0;
-    }
 
-    private static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      if (args.length == 0) { // everything
-        bach.download(bach.externals().programs());
+      private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        if (args.length == 0) {
+          err.println("Usage: banner TEXT");
+          return 1;
+        }
+        bach.banner(String.join(" ", args));
         return 0;
       }
-      if (args.length == 2) {
-        var to = Path.of(args[0]);
-        var from = URI.create(args[1]);
-        bach.download(to, from);
+
+      private static int checksum(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        if (args.length < 1 || args.length > 3) {
+          err.println("Usage: checksum FILE [ALGORITHM [EXPECTED-CHECKSUM]]");
+          return 1;
+        }
+        var file = Path.of(args[0]);
+        switch (args.length) {
+          case 1 -> bach.checksum(file);
+          case 2 -> bach.checksum(file, args[1]);
+          case 3 -> bach.checksum(file, args[1], args[2]);
+        }
         return 0;
       }
-      err.println("Usage: download TO-PATH FROM-URI");
-      return 1;
-    }
 
-    private static int help(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.help();
-      return 0;
-    }
+      private static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        if (args.length == 0) { // everything
+          bach.download(bach.externals().programs());
+          return 0;
+        }
+        if (args.length == 2) {
+          var to = Path.of(args[0]);
+          var from = URI.create(args[1]);
+          bach.download(to, from);
+          return 0;
+        }
+        err.println("Usage: download TO-PATH FROM-URI");
+        return 1;
+      }
 
-    private static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.info();
-      return 0;
-    }
+      private static int help(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        bach.help();
+        return 0;
+      }
 
-    private static int save(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      var usage =
-          """
+      private static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        bach.info();
+        return 0;
+      }
+
+      private static int save(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+        var usage =
+            """
           Usage: save TARGET VERSION
 
           Examples:
             save Bach.java 1.0
             save .bach/Bach-HEAD.java HEAD
           """;
-      if (args.length == 1 && args[0].equalsIgnoreCase("--help")) {
-        out.println(usage);
+        if (args.length == 1 && args[0].equalsIgnoreCase("--help")) {
+          out.println(usage);
+          return 0;
+        }
+        if (args.length != 2) {
+          err.println(usage);
+          return 1;
+        }
+        var target = Path.of(args[0]);
+        var version = args[1];
+        var from = "https://github.com/sormuras/bach/raw/%s/src/Bach.java".formatted(version);
+        out.println("<< " + from);
+        bach.download(target, URI.create(from), StandardCopyOption.REPLACE_EXISTING);
+        out.println(">> " + target);
         return 0;
       }
-      if (args.length != 2) {
-        err.println(usage);
-        return 1;
-      }
-      var target = Path.of(args[0]);
-      var version = args[1];
-      var from = "https://github.com/sormuras/bach/raw/%s/src/Bach.java".formatted(version);
-      out.println("<< " + from);
-      bach.download(target, URI.create(from), StandardCopyOption.REPLACE_EXISTING);
-      out.println(">> " + target);
-      return 0;
     }
-  }
 
-  public record Paths(Path root, Path out) {}
-
-  public record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs) {}
-
-  public record Tools(ToolFinder finder) {}
-
-  public enum Flag {
-    VERBOSE
-  }
-
-  public record Options(
-      Set<Flag> flags,
-      Level __logbook_threshold,
-      Path __chroot,
-      Path __destination,
-      ToolCall seed) {
-
-    static Options of(String... args) {
-      var flags = EnumSet.noneOf(Flag.class);
-      var level = Level.INFO;
-      var root = Path.of("");
-      var destination = Path.of(".bach", "out");
-      ToolCall seed = null;
-
-      var arguments = new ArrayDeque<>(List.of(args));
-      while (!arguments.isEmpty()) {
-        var argument = arguments.removeFirst();
-        if (argument.startsWith("--")) {
-          if (argument.equals("--verbose")) {
-            flags.add(Flag.VERBOSE);
-            continue;
-          }
-          var delimiter = argument.indexOf('=', 2);
-          var key = delimiter == -1 ? argument : argument.substring(0, delimiter);
-          var value = delimiter == -1 ? arguments.removeFirst() : argument.substring(delimiter + 1);
-          if (key.equals("--logbook-threshold")) {
-            level = Level.valueOf(value);
-            continue;
-          }
-          if (key.equals("--chroot")) {
-            root = Path.of(value).normalize();
-            continue;
-          }
-          if (key.equals("--destination")) {
-            destination = Path.of(value).normalize();
-            continue;
-          }
-          throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
-        }
-        seed = new ToolCall(argument, arguments.stream().toList());
-        break;
+    record StreamLineConsumer(InputStream stream, Consumer<String> consumer) implements Runnable {
+      public void run() {
+        new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
       }
-      return new Options(Set.copyOf(flags), level, root, root.resolve(destination), seed);
+    }
+
+    static final class ForwardingStringWriter extends StringWriter {
+
+      private int beginIndex = 0;
+      private final Consumer<String> consumer;
+
+      ForwardingStringWriter(Consumer<String> consumer) {
+        this.consumer = consumer;
+      }
+
+      @Override
+      public void flush() {
+        var buffer = getBuffer();
+        if (buffer.isEmpty()) return;
+        var string = buffer.toString();
+        var length = string.length();
+        if (beginIndex >= length) return;
+        consumer.accept(string.substring(beginIndex));
+        beginIndex = length;
+      }
+    }
+
+    static final class PathSupport {
+
+      static String computeChecksum(Path path, String algorithm) {
+        if (Files.notExists(path)) throw new RuntimeException("File not found: " + path);
+        try {
+          if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
+          var md = MessageDigest.getInstance(algorithm);
+          try (var source = new BufferedInputStream(new FileInputStream(path.toFile()));
+              var target = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
+            source.transferTo(target);
+          }
+          return String.format(
+              "%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
+        } catch (Exception exception) {
+          throw new RuntimeException(exception);
+        }
+      }
+
+      static Properties properties(Path path) {
+        var properties = new Properties();
+        if (Files.exists(path)) {
+          try {
+            properties.load(new FileInputStream(path.toFile()));
+          } catch (Exception exception) {
+            throw new RuntimeException(exception);
+          }
+        }
+        return properties;
+      }
+
+      static boolean isJarFile(Path path) {
+        return nameOrElse(path, "").endsWith(".jar") && Files.isRegularFile(path);
+      }
+
+      static boolean isJavaFile(Path path) {
+        return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
+      }
+
+      static boolean isModuleInfoJavaFile(Path path) {
+        return "module-info.java".equals(name(path)) && Files.isRegularFile(path);
+      }
+
+      static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
+        if (Files.notExists(directory)) return List.of();
+        var paths = new TreeSet<>(Comparator.comparing(Path::toString));
+        try (var stream = Files.newDirectoryStream(directory, filter)) {
+          stream.forEach(paths::add);
+        } catch (Exception exception) {
+          throw new RuntimeException(exception);
+        }
+        return List.copyOf(paths);
+      }
+
+      static String name(Path path) {
+        return nameOrElse(path, null);
+      }
+
+      static String nameOrElse(Path path, String defautName) {
+        var normalized = path.normalize();
+        var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
+        var name = candidate.getFileName();
+        return name != null ? name.toString() : defautName;
+      }
+
+      static String normalized(Path path) {
+        var string = path.normalize().toString();
+        return string.isEmpty() ? "." : string;
+      }
+    }
+
+    static final class StringSupport {
+      record Property(String key, String value) {}
+
+      static Property parseProperty(String string) {
+        return StringSupport.parseProperty(string, '=');
+      }
+
+      static Property parseProperty(String string, char separator) {
+        int index = string.indexOf(separator);
+        if (index < 0) {
+          var message = "Expected a `KEY%sVALUE` string, but got: %s".formatted(separator, string);
+          throw new IllegalArgumentException(message);
+        }
+        var key = string.substring(0, index);
+        var value = string.substring(index + 1);
+        return new Property(key, value);
+      }
+    }
+
+    static final class ToolNotFoundException extends RuntimeException {
+      @java.io.Serial private static final long serialVersionUID = -417539767734303099L;
+
+      public ToolNotFoundException(String name) {
+        super("Tool named `%s` not found".formatted(name));
+      }
+    }
+
+    record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
+      DelegatingToolProvider(ToolProvider delegate) {
+        this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        return delegate.run(out, err, args);
+      }
+    }
+
+    record DirectoriesToolProvider() implements ToolProvider {
+
+      private enum Mode {
+        CREATE,
+        CLEAN,
+        DELETE
+      }
+
+      @Override
+      public String name() {
+        return "directories";
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        if (args.length != 2) {
+          out.println("""
+          Usage: directories [create|clean|delete] PATH
+          """);
+          return 1;
+        }
+        try {
+          var mode = Mode.valueOf(args[0].toUpperCase());
+          var path = Path.of(args[1]);
+          if (mode == Mode.DELETE || mode == Mode.CLEAN) deleteDirectories(path);
+          if (mode == Mode.CREATE || mode == Mode.CLEAN) createDirectories(path);
+        } catch (Exception exception) {
+          exception.printStackTrace(err);
+          return 2;
+        }
+        return 0;
+      }
+
+      static void createDirectories(Path root) throws Exception {
+        Files.createDirectories(root);
+      }
+
+      static void deleteDirectories(Path root) throws Exception {
+        if (Files.notExists(root)) return;
+        try (var stream = Files.walk(root)) {
+          var paths = stream.sorted((p, q) -> -p.compareTo(q));
+          for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
+        }
+      }
+    }
+
+    @Category("Bach")
+    @Name("Bach.LogEvent")
+    @Label("Log")
+    @StackTrace(false)
+    static final class LogEvent extends Event {
+      String level;
+      String message;
+    }
+
+    @Category("Bach")
+    @Name("Bach.RunEvent")
+    @Label("Run")
+    @StackTrace(false)
+    static final class RunEvent extends Event {
+      String name;
+      String args;
+      int code;
+      String out;
+      String err;
     }
   }
 
@@ -599,13 +816,13 @@ public record Bach(
       var rename =
           finder.findAll().stream()
               .filter(provider -> provider.getClass().getModule().isNamed())
-              .map(DelegatingToolProvider::new)
+              .map(Core.DelegatingToolProvider::new)
               .toList();
       return ToolFinder.of(rename.toArray(ToolProvider[]::new));
     }
 
     static ToolFinder ofBasicTools(Path directory) {
-      record BasicToolProvider(String name, Properties properties) implements Tool.Provider {
+      record BasicToolProvider(String name, Properties properties) implements Core.Tool.Provider {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
           var commands =
@@ -625,8 +842,8 @@ public record Bach(
 
         private String replace(Bach bach, String line) {
           return line.trim()
-              .replace("{{bach.paths.root}}", PathSupport.normalized(bach.paths.root))
-              .replace("{{bach.paths.out}}", PathSupport.normalized(bach.paths.out))
+              .replace("{{bach.paths.root}}", Core.PathSupport.normalized(bach.paths.root))
+              .replace("{{bach.paths.out}}", Core.PathSupport.normalized(bach.paths.out))
               .replace("{{path.separator}}", System.getProperty("path.separator"));
         }
       }
@@ -646,7 +863,7 @@ public record Bach(
               if (Files.isDirectory(path)) continue;
               var filename = path.getFileName().toString();
               var name = filename.substring(0, filename.length() - ".properties".length());
-              var properties = PathSupport.properties(path);
+              var properties = Core.PathSupport.properties(path);
               list.add(new BasicToolProvider(name, properties));
             }
           } catch (Exception exception) {
@@ -680,13 +897,13 @@ public record Bach(
             command.add("@" + args);
             return Optional.of(new ExecuteProgramToolProvider(name, command));
           }
-          var jars = PathSupport.list(directory, PathSupport::isJarFile);
+          var jars = Core.PathSupport.list(directory, Core.PathSupport::isJarFile);
           if (jars.size() == 1) {
             command.add("-jar");
             command.add(jars.get(0).toString());
             return Optional.of(new ExecuteProgramToolProvider(name, command));
           }
-          var javas = PathSupport.list(directory, PathSupport::isJavaFile);
+          var javas = Core.PathSupport.list(directory, Core.PathSupport::isJavaFile);
           if (javas.size() == 1) {
             command.add(javas.get(0).toString());
             return Optional.of(new ExecuteProgramToolProvider(name, command));
@@ -703,7 +920,7 @@ public record Bach(
 
         @Override
         public List<ToolProvider> findAll() {
-          return PathSupport.list(path, Files::isDirectory).stream()
+          return Core.PathSupport.list(path, Files::isDirectory).stream()
               .map(directory -> new ProgramToolFinder(directory, java, argsfile))
               .map(ToolFinder::findAll)
               .flatMap(List::stream)
@@ -753,8 +970,8 @@ public record Bach(
         builder.command().addAll(List.of(arguments));
         try {
           var process = builder.start();
-          new Thread(new StreamLineConsumer(process.getInputStream(), out::println)).start();
-          new Thread(new StreamLineConsumer(process.getErrorStream(), err::println)).start();
+          new Thread(new Core.StreamLineConsumer(process.getInputStream(), out::println)).start();
+          new Thread(new Core.StreamLineConsumer(process.getErrorStream(), err::println)).start();
           return process.waitFor();
         } catch (Exception exception) {
           exception.printStackTrace(err);
@@ -762,207 +979,5 @@ public record Bach(
         }
       }
     }
-  }
-
-  record StreamLineConsumer(InputStream stream, Consumer<String> consumer) implements Runnable {
-    public void run() {
-      new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
-    }
-  }
-
-  static final class ForwardingStringWriter extends StringWriter {
-
-    private int beginIndex = 0;
-    private final Consumer<String> consumer;
-
-    ForwardingStringWriter(Consumer<String> consumer) {
-      this.consumer = consumer;
-    }
-
-    @Override
-    public void flush() {
-      var buffer = getBuffer();
-      if (buffer.isEmpty()) return;
-      var string = buffer.toString();
-      var length = string.length();
-      if (beginIndex >= length) return;
-      consumer.accept(string.substring(beginIndex));
-      beginIndex = length;
-    }
-  }
-
-  static final class PathSupport {
-
-    static String computeChecksum(Path path, String algorithm) {
-      if (Files.notExists(path)) throw new RuntimeException("File not found: " + path);
-      try {
-        if ("size".equalsIgnoreCase(algorithm)) return Long.toString(Files.size(path));
-        var md = MessageDigest.getInstance(algorithm);
-        try (var source = new BufferedInputStream(new FileInputStream(path.toFile()));
-            var target = new DigestOutputStream(OutputStream.nullOutputStream(), md)) {
-          source.transferTo(target);
-        }
-        return String.format(
-            "%0" + (md.getDigestLength() * 2) + "x", new BigInteger(1, md.digest()));
-      } catch (Exception exception) {
-        throw new RuntimeException(exception);
-      }
-    }
-
-    static Properties properties(Path path) {
-      var properties = new Properties();
-      if (Files.exists(path)) {
-        try {
-          properties.load(new FileInputStream(path.toFile()));
-        } catch (Exception exception) {
-          throw new RuntimeException(exception);
-        }
-      }
-      return properties;
-    }
-
-    static boolean isJarFile(Path path) {
-      return nameOrElse(path, "").endsWith(".jar") && Files.isRegularFile(path);
-    }
-
-    static boolean isJavaFile(Path path) {
-      return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
-    }
-
-    static boolean isModuleInfoJavaFile(Path path) {
-      return "module-info.java".equals(name(path)) && Files.isRegularFile(path);
-    }
-
-    static List<Path> list(Path directory, DirectoryStream.Filter<? super Path> filter) {
-      if (Files.notExists(directory)) return List.of();
-      var paths = new TreeSet<>(Comparator.comparing(Path::toString));
-      try (var stream = Files.newDirectoryStream(directory, filter)) {
-        stream.forEach(paths::add);
-      } catch (Exception exception) {
-        throw new RuntimeException(exception);
-      }
-      return List.copyOf(paths);
-    }
-
-    static String name(Path path) {
-      return nameOrElse(path, null);
-    }
-
-    static String nameOrElse(Path path, String defautName) {
-      var normalized = path.normalize();
-      var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
-      var name = candidate.getFileName();
-      return name != null ? name.toString() : defautName;
-    }
-
-    static String normalized(Path path) {
-      var string = path.normalize().toString();
-      return string.isEmpty() ? "." : string;
-    }
-  }
-
-  static final class StringSupport {
-    record Property(String key, String value) {}
-
-    static Property parseProperty(String string) {
-      return StringSupport.parseProperty(string, '=');
-    }
-
-    static Property parseProperty(String string, char separator) {
-      int index = string.indexOf(separator);
-      if (index < 0) {
-        var message = "Expected a `KEY%sVALUE` string, but got: %s".formatted(separator, string);
-        throw new IllegalArgumentException(message);
-      }
-      var key = string.substring(0, index);
-      var value = string.substring(index + 1);
-      return new Property(key, value);
-    }
-  }
-
-  static final class ToolNotFoundException extends RuntimeException {
-    @java.io.Serial private static final long serialVersionUID = -417539767734303099L;
-
-    public ToolNotFoundException(String name) {
-      super("Tool named `%s` not found".formatted(name));
-    }
-  }
-
-  record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
-    DelegatingToolProvider(ToolProvider delegate) {
-      this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
-    }
-
-    @Override
-    public int run(PrintWriter out, PrintWriter err, String... args) {
-      return delegate.run(out, err, args);
-    }
-  }
-
-  record DirectoriesToolProvider() implements ToolProvider {
-
-    private enum Mode {
-      CREATE,
-      CLEAN,
-      DELETE
-    }
-
-    @Override
-    public String name() {
-      return "directories";
-    }
-
-    @Override
-    public int run(PrintWriter out, PrintWriter err, String... args) {
-      if (args.length != 2) {
-        out.println("""
-          Usage: directories [create|clean|delete] PATH
-          """);
-        return 1;
-      }
-      try {
-        var mode = Mode.valueOf(args[0].toUpperCase());
-        var path = Path.of(args[1]);
-        if (mode == Mode.DELETE || mode == Mode.CLEAN) deleteDirectories(path);
-        if (mode == Mode.CREATE || mode == Mode.CLEAN) createDirectories(path);
-      } catch (Exception exception) {
-        exception.printStackTrace(err);
-        return 2;
-      }
-      return 0;
-    }
-
-    static void createDirectories(Path root) throws Exception {
-      Files.createDirectories(root);
-    }
-
-    static void deleteDirectories(Path root) throws Exception {
-      if (Files.notExists(root)) return;
-      try (var stream = Files.walk(root)) {
-        var paths = stream.sorted((p, q) -> -p.compareTo(q));
-        for (var path : paths.toArray(Path[]::new)) Files.deleteIfExists(path);
-      }
-    }
-  }
-
-  @Category("Bach")
-  @Name("Bach.LogEvent")
-  @Label("Log")
-  @StackTrace(false)
-  static final class LogEvent extends Event {
-    String level;
-    String message;
-  }
-
-  @Category("Bach")
-  @Name("Bach.RunEvent")
-  @Label("Run")
-  @StackTrace(false)
-  static final class RunEvent extends Event {
-    String name;
-    String args;
-    int code;
-    String out;
-    String err;
   }
 }
