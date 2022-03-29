@@ -33,8 +33,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.ToIntBiFunction;
-import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
@@ -60,6 +58,10 @@ public record Bach(
 
   public static Bach of(String... args) {
     return Bach.of(Component.Printer.ofSystem(), args);
+  }
+
+  public static Bach of(Consumer<String> printer, String... args) {
+    return Bach.of(Component.Printer.of(printer), args);
   }
 
   public static Bach of(Component.Printer printer, String... args) {
@@ -105,10 +107,6 @@ public record Bach(
                     Core.Tool.ofJavaHomeBinary("jfr")))));
   }
 
-  public boolean is(Component.Flag flag) {
-    return options.flags.contains(flag);
-  }
-
   public void banner(String text) {
     var line = "=".repeat(text.length());
     printer.print("""
@@ -119,23 +117,6 @@ public record Bach(
 
   public void info() {
     printer.print("bach.paths = %s".formatted(paths));
-
-    if (!is(Component.Flag.VERBOSE)) return;
-
-    Stream.of(
-            ToolCall.of("jar").with("--version"),
-            ToolCall.of("javac").with("--version"),
-            ToolCall.of("javadoc").with("--version"))
-        .parallel()
-        .forEach(this::run);
-
-    Stream.of(
-            ToolCall.of("jdeps").with("--version"),
-            ToolCall.of("jlink").with("--version"),
-            ToolCall.of("jmod").with("--version"),
-            ToolCall.of("jpackage").with("--version"))
-        .sequential()
-        .forEach(this::run);
   }
 
   public void help() {
@@ -254,19 +235,10 @@ public record Bach(
     run(ToolCall.of(name, arguments));
   }
 
-  public void run(String name, List<String> arguments) {
-    run(new ToolCall(name, arguments));
-  }
-
-  public void run(String name, UnaryOperator<ToolCall> operator) {
-    run(operator.apply(ToolCall.of(name)));
-  }
-
   public void run(ToolCall call) {
     run(call, Level.INFO);
   }
 
-  @SuppressWarnings("unchecked")
   void run(ToolCall call, Level level) {
     var name = call.name();
     var arguments = call.arguments();
@@ -287,11 +259,6 @@ public record Bach(
     event.begin();
     if (tool instanceof Core.Tool.Provider provider) {
       event.code = provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args);
-    } else if (tool instanceof ToIntBiFunction function) {
-      event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
-    } else if (tool instanceof Core.DelegatingToolProvider provider
-        && provider.delegate() instanceof ToIntBiFunction function) {
-      event.code = function.applyAsInt((BiConsumer<String, List<String>>) this::run, arguments);
     } else {
       event.code = tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
     }
@@ -316,8 +283,8 @@ public record Bach(
 
       record Line(Level level, String text) {}
 
-      public static Printer ofSilent() {
-        return new Printer(__ -> {}, __ -> {}, new ConcurrentLinkedDeque<>());
+      public static Printer of(Consumer<String> consumer) {
+        return new Printer(consumer, consumer, new ConcurrentLinkedDeque<>());
       }
 
       public static Printer ofSystem() {
@@ -396,7 +363,7 @@ public record Bach(
   }
 
   /** Internal helpers. */
-  private static final class Core {
+  static final class Core {
 
     @FunctionalInterface
     public interface Tool {
@@ -406,7 +373,7 @@ public record Bach(
       interface Provider extends Tool, ToolProvider {
         @Override
         default int run(PrintWriter out, PrintWriter err, String... args) {
-          return run(Bach.of(Component.Printer.ofSilent()), out, err, args);
+          throw new UnsupportedOperationException();
         }
       }
 
@@ -703,9 +670,7 @@ public record Bach(
     }
   }
 
-  /**
-   * A command consisting of a tool name and a list of arguments.
-   */
+  /** A command consisting of a tool name and a list of arguments. */
   public record ToolCall(String name, List<String> arguments) {
     public static ToolCall of(String name, Object... arguments) {
       if (arguments.length == 0) return new ToolCall(name, List.of());
