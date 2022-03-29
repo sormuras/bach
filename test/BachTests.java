@@ -38,12 +38,7 @@ class BachTests {
 
     assertLinesMatch(
         """
-        ja.* --version
-        ja.* --version
-        ja.* --version
-          ja.* %1$s
-          ja.* %1$s
-          ja.* %1$s
+        >> 6 >>
         ===
         ---
         ===
