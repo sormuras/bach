@@ -27,6 +27,7 @@ class BachTests {
             Bach.ToolCall.of("javadoc").with("--version"))
         .parallel()
         .forEach(bach::run);
+    bach.banner("---");
     Stream.of(
             Bach.ToolCall.of("jdeps").with("--version"),
             Bach.ToolCall.of("jlink").with("--version"),
@@ -43,6 +44,9 @@ class BachTests {
           ja.* %1$s
           ja.* %1$s
           ja.* %1$s
+        ===
+        ---
+        ===
         jdeps --version
           %1$s
         jlink --version
@@ -54,6 +58,6 @@ class BachTests {
         """
             .formatted(System.getProperty("java.version", "?"))
             .lines(),
-        lines.stream());
+        lines.stream().flatMap(String::lines));
   }
 }
