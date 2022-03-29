@@ -44,6 +44,7 @@ import jdk.jfr.Name;
 import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 
+/** Java Shell Builder. */
 public record Bach(
     Component.Printer printer,
     Component.Options options,
@@ -308,6 +309,7 @@ public record Bach(
             .formatted(call.name(), event.code));
   }
 
+  /** A component of Bach. */
   public sealed interface Component {
     record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines)
         implements Component {
@@ -393,6 +395,7 @@ public record Bach(
     record Tools(ToolFinder finder) implements Component {}
   }
 
+  /** Internal helpers. */
   private static final class Core {
 
     @FunctionalInterface
@@ -700,6 +703,9 @@ public record Bach(
     }
   }
 
+  /**
+   * A command consisting of a tool name and a list of arguments.
+   */
   public record ToolCall(String name, List<String> arguments) {
     public static ToolCall of(String name, Object... arguments) {
       if (arguments.length == 0) return new ToolCall(name, List.of());
