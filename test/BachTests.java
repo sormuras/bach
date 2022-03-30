@@ -43,13 +43,13 @@ class BachTests {
         ---
         ===
         jdeps --version
-          %1$s
+        %1$s
         jlink --version
-          %1$s
+        %1$s
         jmod --version
-          %1$s
+        %1$s
         jpackage --version
-          %1$s
+        %1$s
         """
             .formatted(System.getProperty("java.version", "?"))
             .lines(),

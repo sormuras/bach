@@ -250,17 +250,15 @@ public record Bach(
     log(level, arguments.isEmpty() ? name : name + ' ' + event.args);
 
     var tool = tools.finder().find(name).orElseThrow(() -> new Core.ToolNotFoundException(name));
-    var out =
-        new Core.ForwardingStringWriter(s -> printer().out().accept(s.indent(2).stripTrailing()));
-    var err =
-        new Core.ForwardingStringWriter(s -> printer().err().accept(s.indent(2).stripTrailing()));
+    var out = new Core.ForwardingStringWriter(line -> printer().print(line));
+    var err = new Core.ForwardingStringWriter(line -> printer().error(line));
     var args = arguments.toArray(String[]::new);
 
     event.begin();
     if (tool instanceof Core.Tool.Provider provider) {
-      event.code = provider.run(this, new PrintWriter(out, true), new PrintWriter(err, true), args);
+      event.code = provider.run(this, out.newPrintWriter(), err.newPrintWriter(), args);
     } else {
-      event.code = tool.run(new PrintWriter(out, true), new PrintWriter(err, true), args);
+      event.code = tool.run(out.newPrintWriter(), err.newPrintWriter(), args);
     }
     event.end();
     event.out = out.toString().strip();
@@ -467,12 +465,6 @@ public record Bach(
       }
     }
 
-    record StreamLineConsumer(InputStream stream, Consumer<String> consumer) implements Runnable {
-      public void run() {
-        new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
-      }
-    }
-
     static final class ForwardingStringWriter extends StringWriter {
 
       private int beginIndex = 0;
@@ -489,8 +481,12 @@ public record Bach(
         var string = buffer.toString();
         var length = string.length();
         if (beginIndex >= length) return;
-        consumer.accept(string.substring(beginIndex));
+        string.substring(beginIndex).lines().forEach(consumer);
         beginIndex = length;
+      }
+
+      PrintWriter newPrintWriter() {
+        return new PrintWriter(this, true);
       }
     }
 
@@ -935,14 +931,21 @@ public record Bach(
 
     record ExecuteProgramToolProvider(String name, List<String> command) implements ToolProvider {
 
+      record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
+        @Override
+        public void run() {
+          new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
+        }
+      }
+
       @Override
       public int run(PrintWriter out, PrintWriter err, String... arguments) {
         var builder = new ProcessBuilder(new ArrayList<>(command));
         builder.command().addAll(List.of(arguments));
         try {
           var process = builder.start();
-          new Thread(new Core.StreamLineConsumer(process.getInputStream(), out::println)).start();
-          new Thread(new Core.StreamLineConsumer(process.getErrorStream(), err::println)).start();
+          new Thread(new LinePrinter(process.getInputStream(), out)).start();
+          new Thread(new LinePrinter(process.getErrorStream(), err)).start();
           return process.waitFor();
         } catch (Exception exception) {
           exception.printStackTrace(err);
