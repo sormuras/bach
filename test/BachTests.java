@@ -13,7 +13,7 @@ class BachTests {
   void test(@TempDir Path temp) {
     var bach = Bach.of(__ -> {}, "--chroot", temp.toString());
     assertEquals(temp, bach.paths().root());
-    assertTrue(bach.printer().lines().isEmpty());
+    assertTrue(bach.printer().texts().isEmpty());
   }
 
   @Test

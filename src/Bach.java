@@ -276,10 +276,10 @@ public record Bach(
 
   /** A component of Bach. */
   public sealed interface Component {
-    record Printer(Consumer<String> out, Consumer<String> err, Deque<Line> lines)
+    record Printer(Consumer<String> out, Consumer<String> err, Deque<Text> texts)
         implements Component {
 
-      record Line(Level level, String text) {}
+      record Text(Level level, String string) {}
 
       public static Printer of(Consumer<String> consumer) {
         return new Printer(consumer, consumer, new ConcurrentLinkedDeque<>());
@@ -290,12 +290,12 @@ public record Bach(
       }
 
       public void print(String string) {
-        lines.add(new Line(Level.INFO, string));
+        texts.add(new Text(Level.INFO, string));
         out.accept(string);
       }
 
       public void error(String string) {
-        lines.add(new Line(Level.ERROR, string));
+        texts.add(new Text(Level.ERROR, string));
         err.accept(string);
       }
     }
