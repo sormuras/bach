@@ -52,8 +52,35 @@ public record Bach(
 
   public static void main(String... args) {
     var bach = Bach.of(args);
-    var code = bach.main();
+    var code = main(bach);
     if (code != 0) System.exit(code);
+  }
+
+  static int main(Bach bach) {
+    var seed = bach.options().seed();
+    if (seed == null) {
+      bach.help();
+      return 1;
+    }
+    try (var recording = new Recording()) {
+      recording.start();
+      bach.log("BEGIN");
+      try {
+        bach.run(seed, Level.DEBUG);
+        return 0;
+      } catch (RuntimeException exception) {
+        bach.log(Level.ERROR, exception.toString());
+        return -1;
+      } finally {
+        bach.log("END.");
+        recording.stop();
+        var jfr = Files.createDirectories(bach.paths().out()).resolve("bach-logbook.jfr");
+        recording.dump(jfr);
+      }
+    } catch (Exception exception) {
+      bach.log(Level.ERROR, exception.toString());
+      return -2;
+    }
   }
 
   public static Bach of(String... args) {
@@ -202,33 +229,6 @@ public record Bach(
     }
     var max = 1000;
     printer.print(message.length() <= max ? message : message.substring(0, max - 5) + "[...]");
-  }
-
-  private int main() {
-    var seed = options.seed();
-    if (seed == null) {
-      help();
-      return 1;
-    }
-    try (var recording = new Recording()) {
-      recording.start();
-      log("BEGIN");
-      try {
-        run(seed, Level.DEBUG);
-        return 0;
-      } catch (RuntimeException exception) {
-        log(Level.ERROR, exception.toString());
-        return -1;
-      } finally {
-        log("END.");
-        recording.stop();
-        var jfr = Files.createDirectories(paths.out()).resolve("bach-logbook.jfr");
-        recording.dump(jfr);
-      }
-    } catch (Exception exception) {
-      log(Level.ERROR, exception.toString());
-      return -2;
-    }
   }
 
   public void run(String name, Object... arguments) {
