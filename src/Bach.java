@@ -129,9 +129,10 @@ public record Bach(
                 ToolFinder.ofSystem(),
                 ToolFinder.copyOfWithModuleNamePrepended(ToolFinder.ofSystem()),
                 ToolFinder.of(
-                    Core.Tool.ofJavaHomeBinary("jarsigner"),
-                    Core.Tool.ofJavaHomeBinary("jdeprscan"),
-                    Core.Tool.ofJavaHomeBinary("jfr")))));
+                    ToolFinder.provideJavaHomeBinaryTool("jarsigner"),
+                    ToolFinder.provideJavaHomeBinaryTool("java"),
+                    ToolFinder.provideJavaHomeBinaryTool("jdeprscan"),
+                    ToolFinder.provideJavaHomeBinaryTool("jfr")))));
   }
 
   public void banner(String text) {
@@ -385,11 +386,6 @@ public record Bach(
         return new Wrapper(name, tool);
       }
 
-      static ToolProvider ofJavaHomeBinary(String name) {
-        var executable = Path.of(System.getProperty("java.home"), "bin", name);
-        return new ToolFinder.ExecuteProgramToolProvider(name, List.of(executable.toString()));
-      }
-
       private static int banner(Bach bach, PrintWriter out, PrintWriter err, String... args) {
         if (args.length == 0) {
           err.println("Usage: banner TEXT");
@@ -587,17 +583,6 @@ public record Bach(
       }
     }
 
-    record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
-      DelegatingToolProvider(ToolProvider delegate) {
-        this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
-      }
-
-      @Override
-      public int run(PrintWriter out, PrintWriter err, String... args) {
-        return delegate.run(out, err, args);
-      }
-    }
-
     record DirectoriesToolProvider() implements ToolProvider {
 
       private enum Mode {
@@ -780,10 +765,20 @@ public record Bach(
     }
 
     static ToolFinder copyOfWithModuleNamePrepended(ToolFinder finder) {
+      record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
+        DelegatingToolProvider(ToolProvider delegate) {
+          this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
+        }
+
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          return delegate.run(out, err, args);
+        }
+      }
       var rename =
           finder.findAll().stream()
               .filter(provider -> provider.getClass().getModule().isNamed())
-              .map(Core.DelegatingToolProvider::new)
+              .map(DelegatingToolProvider::new)
               .toList();
       return ToolFinder.of(rename.toArray(ToolProvider[]::new));
     }
@@ -952,6 +947,11 @@ public record Bach(
           return -1;
         }
       }
+    }
+
+    static ToolProvider provideJavaHomeBinaryTool(String name) {
+      var executable = Path.of(System.getProperty("java.home"), "bin", name);
+      return new ExecuteProgramToolProvider(name, List.of(executable.toString()));
     }
   }
 }
