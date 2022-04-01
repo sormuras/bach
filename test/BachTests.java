@@ -27,7 +27,7 @@ class BachTests {
             Bach.ToolCall.of("javadoc").with("--version"))
         .parallel()
         .forEach(bach::run);
-    bach.banner("---");
+    bach.run(Bach.ToolCall.of("banner", "---"));
     Stream.of(
             Bach.ToolCall.of("jdeps").with("--version"),
             Bach.ToolCall.of("jlink").with("--version"),
@@ -39,6 +39,7 @@ class BachTests {
     assertLinesMatch(
         """
         >> 6 >>
+        banner ---
         ===
         ---
         ===
