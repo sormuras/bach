@@ -250,7 +250,7 @@ public record Bach(
 
     log(level, arguments.isEmpty() ? name : name + ' ' + event.args);
 
-    var tool = tools.finder().find(name).orElseThrow(() -> new Core.ToolNotFoundException(name));
+    var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
     var out = new Core.ForwardingStringWriter(line -> printer().print(line));
     var err = new Core.ForwardingStringWriter(line -> printer().error(line));
     var args = arguments.toArray(String[]::new);
@@ -575,13 +575,7 @@ public record Bach(
       }
     }
 
-    static final class ToolNotFoundException extends RuntimeException {
-      @java.io.Serial private static final long serialVersionUID = -417539767734303099L;
 
-      public ToolNotFoundException(String name) {
-        super("Tool named `%s` not found".formatted(name));
-      }
-    }
 
     record DirectoriesToolProvider() implements ToolProvider {
 
@@ -952,6 +946,19 @@ public record Bach(
     static ToolProvider provideJavaHomeBinaryTool(String name) {
       var executable = Path.of(System.getProperty("java.home"), "bin", name);
       return new ExecuteProgramToolProvider(name, List.of(executable.toString()));
+    }
+  }
+
+  public static final class ToolNotFoundException extends RuntimeException {
+    @java.io.Serial private static final long serialVersionUID = -417539767734303099L;
+
+    private ToolNotFoundException(String name) {
+      super("Tool named `%s` not found".formatted(name));
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+      return this;
     }
   }
 }
