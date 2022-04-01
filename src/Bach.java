@@ -779,18 +779,22 @@ public record Bach(
       record BasicToolProvider(String name, Properties properties) implements Core.Tool.Provider {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-          var commands =
+          var verbose = bach.options().flags().contains(Component.Flag.VERBOSE);
+          if (verbose) bach.log(Level.INFO, "BEGIN # of " + name);
+          var numbers =
               properties.stringPropertyNames().stream()
                   .sorted(Comparator.comparing(Integer::parseInt))
-                  .map(properties::getProperty)
                   .toList();
-          for (var command : commands) {
-            var lines = command.lines().map(line -> replace(bach, line)).toList();
+          for (var number : numbers) {
+            if (verbose) bach.log(Level.INFO, name + ':' + number);
+            var value = properties.getProperty(number);
+            var lines = value.lines().map(line -> replace(bach, line)).toList();
             var name = lines.get(0);
             if (name.toUpperCase().startsWith("GOTO")) throw new Error("GOTO IS TOO BASIC!");
             var call = ToolCall.of(name).with(lines.stream().skip(1));
             bach.run(call);
           }
+          if (verbose) bach.log(Level.INFO, "END # of " + name);
           return 0;
         }
 
