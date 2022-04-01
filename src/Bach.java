@@ -575,8 +575,6 @@ public record Bach(
       }
     }
 
-
-
     record DirectoriesToolProvider() implements ToolProvider {
 
       private enum Mode {
