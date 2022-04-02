@@ -11,11 +11,11 @@
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/.bach/external-tool-program/junit" />
+          <root url="file://$MODULE_DIR$/.bach/external-tools/junit" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/.bach/external-tool-program/junit" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/.bach/external-tools/junit" recursive="false" />
       </library>
     </orderEntry>
     <orderEntry type="inheritedJdk" />

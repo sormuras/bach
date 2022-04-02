@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -45,7 +46,7 @@ public record Bach(
     Component.Printer printer,
     Component.Options options,
     Component.Paths paths,
-    Component.Externals externals,
+    Component.External external,
     Component.Tools tools) {
 
   public static void main(String... args) {
@@ -57,13 +58,7 @@ public record Bach(
   private static int main(Bach bach) {
     var seed = bach.options().seed();
     if (seed == null) {
-      bach.printer()
-          .print(
-              """
-          Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
-
-          Available tools include:
-          """);
+      bach.run(Tool.Call.of("/?"));
       return 1;
     }
     try (var recording = new Recording()) {
@@ -97,31 +92,32 @@ public record Bach(
 
   public static Bach of(Component.Printer printer, String... args) {
     var options = Component.Options.of(args);
-    var properties = Core.PathSupport.properties(options.__chroot.resolve("bach.properties"));
-    var programs = new TreeMap<Path, URI>();
+    var root = options.__chroot;
+    var properties = Core.PathSupport.properties(root.resolve("bach.properties"));
+    var resources = new TreeMap<Path, URI>();
     for (var key : properties.stringPropertyNames()) {
-      if (key.startsWith(".bach/external-tool-program/")) {
-        var to = Path.of(key).normalize();
-        var from = URI.create(properties.getProperty(key));
-        programs.put(to, from);
+      if (key.startsWith(".bach/external-")) {
+        var target = Path.of(key).normalize();
+        var source = URI.create(properties.getProperty(key));
+        resources.put(target, source);
       }
     }
     return new Bach(
         printer,
         options,
-        new Component.Paths(options.__chroot, options.__destination),
-        new Component.Externals(
+        new Component.Paths(root, options.__destination),
+        new Component.External(
             properties.getProperty("bach.externals.default-checksum-algorithm", "SHA-256"),
-            programs),
+            resources),
         new Component.Tools(
             Tool.Finder.compose(
                 Tool.Finder.of(
                     Tool.of("help", Bach.Core::help),
                     Tool.of("/?", Bach.Core::help),
                     Tool.of("/save", Bach.Core::save)),
-                Tool.Finder.ofBasicTools(options.__chroot.resolve(".bach/basic-tools")),
+                Tool.Finder.ofBasicTools(root.resolve(".bach/basic-tools")),
                 Tool.Finder.ofJavaTools(
-                    options.__chroot.resolve(".bach/external-tool-program"),
+                    root.resolve(".bach/external-tools"),
                     Path.of(System.getProperty("java.home"), "bin", "java"),
                     "java.args"),
                 Tool.Finder.of(
@@ -149,7 +145,7 @@ public record Bach(
     event.args = String.join(" ", arguments);
 
     var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
-    if (!tool.isHidden()) printer.print(arguments.isEmpty() ? name : name + ' ' + event.args);
+    if (tool.isNotHidden()) printer.print(arguments.isEmpty() ? name : name + ' ' + event.args);
 
     var out = new Core.ForwardingStringWriter(line -> printer().print(line));
     var err = new Core.ForwardingStringWriter(line -> printer().error(line));
@@ -246,7 +242,7 @@ public record Bach(
 
     record Paths(Path root, Path out) implements Component {}
 
-    record Externals(String defaultChecksumAlgorithm, Map<Path, URI> programs)
+    record External(String defaultChecksumAlgorithm, Map<Path, URI> resources)
         implements Component {}
 
     record Tools(Tool.Finder finder) implements Component {}
@@ -275,7 +271,7 @@ public record Bach(
         return 1;
       }
       var path = Path.of(args[0]);
-      var algorithm = args.length > 1 ? args[1] : "SHA-256";
+      var algorithm = args.length > 1 ? args[1] : bach.external().defaultChecksumAlgorithm();
       var computed = PathSupport.computeChecksum(path, algorithm);
       if (args.length == 1 || args.length == 2) {
         out.printf("%s %s%n", computed, path);
@@ -296,8 +292,8 @@ public record Bach(
     }
 
     static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.externals()
-          .programs()
+      bach.external()
+          .resources()
           .forEach((target, source) -> bach.run(Tool.Call.of("load-and-verify", target, source)));
       return 0;
     }
@@ -306,12 +302,14 @@ public record Bach(
       out.print(
           """
           Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
-
-          Available tools include:
           """);
-      bach.tools().finder().findAll().stream()
-          .sorted(Comparator.comparing(Tool::name))
-          .forEach(tool -> out.printf("  - %s%n", tool.name()));
+      if (bach.options().flags().contains(Component.Flag.VERBOSE)) {
+        out.println("Available tools include:");
+        bach.tools().finder().findAll().stream()
+            .filter(Tool::isNotHidden)
+            .sorted(Comparator.comparing(Tool::name))
+            .forEach(tool -> out.printf("  - %s%n", tool.name()));
+      }
       return 0;
     }
 
@@ -371,10 +369,18 @@ public record Bach(
     static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       out.printf("bach.options   = %s%n", bach.options());
       out.printf("bach.paths     = %s%n", bach.paths());
-      out.printf("bach.externals%n");
-      bach.externals().programs().entrySet().stream()
+      out.printf("bach.external.resources%n");
+      bach.external().resources().entrySet().stream()
           .sorted(Map.Entry.comparingByKey())
-          .forEach(entry -> out.printf("  %s -> %s%n", entry.getKey(), entry.getValue()));
+          .forEach(
+              entry ->
+                  out.printf(
+                      """
+                      %s
+                        %s
+                      """,
+                      entry.getKey(),
+                      Core.StringSupport.toTextBlock(entry.getValue()).indent(2).strip()));
       out.printf("bach.tools%n");
       bach.tools().finder().findAll().stream()
           .sorted(Comparator.comparing(Tool::name))
@@ -565,6 +571,31 @@ public record Bach(
         var value = string.substring(index + 1);
         return new Property(key, value);
       }
+
+      static String toTextBlock(URI uri) {
+        var joiner = new StringJoiner("\n");
+        var scheme = uri.getScheme();
+        if (scheme != null) {
+          var host = uri.getHost();
+          var port = uri.getPort();
+          joiner.add(scheme + "://" + host + (port == -1 ? "" : ":" + port));
+        }
+        var path = uri.getPath();
+        var last = path.lastIndexOf('/');
+        var folder = last == -1 ? "" : path.substring(0, last + 1);
+        var name = last == -1 ? path : path.substring(last + 1);
+        if (!folder.isEmpty()) joiner.add(folder);
+        joiner.add(name);
+        var fragment = uri.getFragment();
+        var elements = fragment == null ? new String[0] : fragment.split("&");
+        for (var element : elements) {
+          var property = StringSupport.parseProperty(element);
+          var algorithm = property.key();
+          var expected = property.value();
+          joiner.add("%s = %s".formatted(algorithm, expected));
+        }
+        return joiner.toString();
+      }
     }
 
     @Category("Bach")
@@ -634,8 +665,8 @@ public record Bach(
       return new Tool(Set.copyOf(flags), name, provider);
     }
 
-    public boolean isHidden() {
-      return flags.contains(Flag.HIDDEN);
+    public boolean isNotHidden() {
+      return !flags.contains(Flag.HIDDEN);
     }
 
     /** A command consisting of a tool name and a list of arguments. */

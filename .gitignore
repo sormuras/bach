@@ -1,2 +1,4 @@
-.bach/external-tool-program/
+.bach/external-tools/
 .bach/out/
+
+*.jar
