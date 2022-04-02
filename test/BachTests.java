@@ -22,17 +22,17 @@ class BachTests {
     var bach = Bach.of(lines::add, "--chroot", temp.toString());
 
     Stream.of(
-            Bach.ToolCall.of("jar").with("--version"),
-            Bach.ToolCall.of("javac").with("--version"),
-            Bach.ToolCall.of("javadoc").with("--version"))
+            Bach.Tool.Call.of("jar").with("--version"),
+            Bach.Tool.Call.of("javac").with("--version"),
+            Bach.Tool.Call.of("javadoc").with("--version"))
         .parallel()
         .forEach(bach::run);
-    bach.run(Bach.ToolCall.of("banner", "---"));
+    bach.run(Bach.Tool.Call.of("banner", "---"));
     Stream.of(
-            Bach.ToolCall.of("jdeps").with("--version"),
-            Bach.ToolCall.of("jlink").with("--version"),
-            Bach.ToolCall.of("jmod").with("--version"),
-            Bach.ToolCall.of("jpackage").with("--version"))
+            Bach.Tool.Call.of("jdeps").with("--version"),
+            Bach.Tool.Call.of("jlink").with("--version"),
+            Bach.Tool.Call.of("jmod").with("--version"),
+            Bach.Tool.Call.of("jpackage").with("--version"))
         .sequential()
         .forEach(bach::run);
 
