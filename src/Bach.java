@@ -115,29 +115,26 @@ public record Bach(
             programs),
         new Component.Tools(
             ToolFinder.compose(
-                ToolFinder.of(
-                    BachToolProvider.of("help", Bach::help),
-                    BachToolProvider.of("/save", Bach::save)),
+                ToolFinder.of(Tool.of4("help", Bach::help), Tool.of4("/save", Bach::save)),
                 ToolFinder.ofBasicTools(options.__chroot.resolve(".bach/basic-tools")),
                 ToolFinder.ofPrograms(
                     options.__chroot.resolve(".bach/external-tool-program"),
                     Path.of(System.getProperty("java.home"), "bin", "java"),
                     "java.args"),
                 ToolFinder.of(
-                    FunctionalToolProvider.of("banner", Bach::banner),
-                    FunctionalToolProvider.of("checksum", Bach::checksum),
-                    BachToolProvider.of("download", Bach::download),
-                    FunctionalToolProvider.of("load", Bach::load),
-                    BachToolProvider.of("load-and-verify", Bach::loadAndVerify),
-                    BachToolProvider.of("info", Bach::info),
-                    FunctionalToolProvider.of("tree", Bach::tree)),
+                    Tool.of3("banner", Bach::banner).with(Tool.Flag.HIDDEN),
+                    Tool.of3("checksum", Bach::checksum),
+                    Tool.of4("download", Bach::download),
+                    Tool.of3("load", Bach::load),
+                    Tool.of4("load-and-verify", Bach::loadAndVerify),
+                    Tool.of4("info", Bach::info),
+                    Tool.of3("tree", Bach::tree)),
                 ToolFinder.ofSystem(),
-                ToolFinder.copyOfWithModuleNamePrepended(ToolFinder.ofSystem()),
                 ToolFinder.of(
-                    ToolFinder.provideJavaHomeBinaryTool("jarsigner"),
-                    ToolFinder.provideJavaHomeBinaryTool("java"),
-                    ToolFinder.provideJavaHomeBinaryTool("jdeprscan"),
-                    ToolFinder.provideJavaHomeBinaryTool("jfr")))));
+                    Tool.ofJavaHomeBinaryExecutable("jarsigner"),
+                    Tool.ofJavaHomeBinaryExecutable("java"),
+                    Tool.ofJavaHomeBinaryExecutable("jdeprscan"),
+                    Tool.ofJavaHomeBinaryExecutable("jfr")))));
   }
 
   private static int banner(PrintWriter out, PrintWriter err, String... args) {
@@ -195,7 +192,7 @@ public record Bach(
         Available tools include:
         """);
     bach.tools().finder().findAll().stream()
-        .sorted(Comparator.comparing(ToolProvider::name))
+        .sorted(Comparator.comparing(Tool::name))
         .forEach(tool -> out.printf("  - %s%n", tool.name()));
     return 0;
   }
@@ -262,7 +259,7 @@ public record Bach(
         .forEach(entry -> out.printf("  %s -> %s%n", entry.getKey(), entry.getValue()));
     out.printf("bach.tools%n");
     bach.tools().finder().findAll().stream()
-        .sorted(Comparator.comparing(ToolProvider::name))
+        .sorted(Comparator.comparing(Tool::name))
         .forEach(tool -> out.printf("  - %s%n", tool.name()));
     return 0;
   }
@@ -346,18 +343,19 @@ public record Bach(
     event.name = name;
     event.args = String.join(" ", arguments);
 
-    printer.print(arguments.isEmpty() ? name : name + ' ' + event.args);
-
     var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
+    if (!tool.isHidden()) printer.print(arguments.isEmpty() ? name : name + ' ' + event.args);
+
     var out = new Core.ForwardingStringWriter(line -> printer().print(line));
     var err = new Core.ForwardingStringWriter(line -> printer().error(line));
     var args = arguments.toArray(String[]::new);
 
     event.begin();
-    if (tool instanceof BachToolProvider provider) {
+    var toolProvider = tool.provider();
+    if (toolProvider instanceof BachToolProvider provider) {
       event.code = provider.run(this, out.newPrintWriter(), err.newPrintWriter(), args);
     } else {
-      event.code = tool.run(out.newPrintWriter(), err.newPrintWriter(), args);
+      event.code = toolProvider.run(out.newPrintWriter(), err.newPrintWriter(), args);
     }
     event.end();
     event.out = out.toString().strip();
@@ -375,17 +373,6 @@ public record Bach(
 
   @FunctionalInterface
   public interface FunctionalToolProvider extends ToolProvider {
-    static FunctionalToolProvider of(String name, FunctionalToolProvider provider) {
-      record Provider(String name, FunctionalToolProvider provider)
-          implements FunctionalToolProvider {
-        @Override
-        public int run(PrintWriter out, PrintWriter err, String... args) {
-          return provider.run(out, err, args);
-        }
-      }
-      return new Provider(name, provider);
-    }
-
     @Override
     default String name() {
       return getClass().getSimpleName();
@@ -394,17 +381,6 @@ public record Bach(
 
   @FunctionalInterface
   public interface BachToolProvider extends ToolProvider {
-
-    static BachToolProvider of(String name, BachToolProvider provider) {
-      record Provider(String name, BachToolProvider provider) implements BachToolProvider {
-        @Override
-        public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-          return provider.run(bach, out, err, args);
-        }
-      }
-      return new Provider(name, provider);
-    }
-
     @Override
     default String name() {
       return getClass().getSimpleName();
@@ -674,25 +650,98 @@ public record Bach(
     }
   }
 
+  public record Tool(Set<Flag> flags, String name, ToolProvider provider) {
+
+    public enum Flag {
+      HIDDEN
+    }
+
+    public static Tool of(ToolProvider provider) {
+      return new Tool(Set.of(), provider.name(), provider);
+    }
+
+    public static Tool of4(String name, BachToolProvider provider) {
+      record Provider(BachToolProvider provider) implements BachToolProvider {
+        @Override
+        public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+          return provider.run(bach, out, err, args);
+        }
+      }
+      return new Tool(Set.of(), name, new Provider(provider));
+    }
+
+    public static Tool of3(String name, FunctionalToolProvider provider) {
+      record Provider(FunctionalToolProvider provider) implements FunctionalToolProvider {
+        @Override
+        public int run(PrintWriter out, PrintWriter err, String... args) {
+          return provider.run(out, err, args);
+        }
+      }
+      return new Tool(Set.of(), name, new Provider(provider));
+    }
+
+    public static Tool ofJavaHomeBinaryExecutable(String name) {
+      var executable = Path.of(System.getProperty("java.home"), "bin", name);
+      return Tool.of(new ExecutableToolProvider(name, List.of(executable.toString())));
+    }
+
+    public static Tool ofExecutable(String name, List<String> command) {
+      return Tool.of(new ExecutableToolProvider(name, command));
+    }
+
+    public Tool with(Flag flag) {
+      var flags = Stream.concat(this.flags.stream(), Stream.of(flag)).toList();
+      return new Tool(Set.copyOf(flags), name, provider);
+    }
+
+    public boolean isHidden() {
+      return flags.contains(Flag.HIDDEN);
+    }
+
+    record ExecutableToolProvider(String name, List<String> command) implements ToolProvider {
+
+      record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
+        @Override
+        public void run() {
+          new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
+        }
+      }
+
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... arguments) {
+        var builder = new ProcessBuilder(new ArrayList<>(command));
+        builder.command().addAll(List.of(arguments));
+        try {
+          var process = builder.start();
+          new Thread(new LinePrinter(process.getInputStream(), out)).start();
+          new Thread(new LinePrinter(process.getErrorStream(), err)).start();
+          return process.waitFor();
+        } catch (Exception exception) {
+          exception.printStackTrace(err);
+          return -1;
+        }
+      }
+    }
+  }
+
   /**
-   * A finder of tool providers.
+   * A finder of tools.
    *
    * <p>What {@link java.lang.module.ModuleFinder ModuleFinder} is to {@link
-   * java.lang.module.ModuleReference ModuleReference}, is {@link ToolFinder} to {@link
-   * ToolProvider}.
+   * java.lang.module.ModuleReference ModuleReference}, is {@link ToolFinder} to {@link Tool}.
    */
   @FunctionalInterface
   public interface ToolFinder {
 
-    List<ToolProvider> findAll();
+    List<Tool> findAll();
 
-    default Optional<ToolProvider> find(String name) {
+    default Optional<Tool> find(String name) {
       return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
     }
 
-    static ToolFinder of(ToolProvider... providers) {
-      record DirectToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
-      return new DirectToolFinder(List.of(providers));
+    static ToolFinder of(Tool... tools) {
+      record DirectToolFinder(List<Tool> findAll) implements ToolFinder {}
+      return new DirectToolFinder(List.of(tools));
     }
 
     static ToolFinder of(ClassLoader loader) {
@@ -702,9 +751,9 @@ public record Bach(
     static ToolFinder of(ServiceLoader<ToolProvider> loader) {
       record ServiceLoaderToolFinder(ServiceLoader<ToolProvider> loader) implements ToolFinder {
         @Override
-        public List<ToolProvider> findAll() {
+        public List<Tool> findAll() {
           synchronized (loader) {
-            return loader.stream().map(ServiceLoader.Provider::get).toList();
+            return loader.stream().map(ServiceLoader.Provider::get).map(Tool::of).toList();
           }
         }
       }
@@ -714,25 +763,6 @@ public record Bach(
 
     static ToolFinder ofSystem() {
       return ToolFinder.of(ClassLoader.getSystemClassLoader());
-    }
-
-    static ToolFinder copyOfWithModuleNamePrepended(ToolFinder finder) {
-      record DelegatingToolProvider(String name, ToolProvider delegate) implements ToolProvider {
-        DelegatingToolProvider(ToolProvider delegate) {
-          this(delegate.getClass().getModule().getName() + '/' + delegate.name(), delegate);
-        }
-
-        @Override
-        public int run(PrintWriter out, PrintWriter err, String... args) {
-          return delegate.run(out, err, args);
-        }
-      }
-      var rename =
-          finder.findAll().stream()
-              .filter(provider -> provider.getClass().getModule().isNamed())
-              .map(DelegatingToolProvider::new)
-              .toList();
-      return ToolFinder.of(rename.toArray(ToolProvider[]::new));
     }
 
     static ToolFinder ofBasicTools(Path directory) {
@@ -768,16 +798,16 @@ public record Bach(
 
       record BasicToolFinder(Path directory) implements ToolFinder {
         @Override
-        public List<ToolProvider> findAll() {
+        public List<Tool> findAll() {
           if (!Files.isDirectory(directory)) return List.of();
-          var list = new ArrayList<ToolProvider>();
+          var list = new ArrayList<Tool>();
           try (var paths = Files.newDirectoryStream(directory, "*.properties")) {
             for (var path : paths) {
               if (Files.isDirectory(path)) continue;
               var filename = path.getFileName().toString();
               var name = filename.substring(0, filename.length() - ".properties".length());
               var properties = Core.PathSupport.properties(path);
-              list.add(new BasicToolProvider(name, properties));
+              list.add(Tool.of(new BasicToolProvider(name, properties)));
             }
           } catch (Exception exception) {
             throw new RuntimeException(exception);
@@ -793,13 +823,13 @@ public record Bach(
       record ProgramToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
 
         @Override
-        public List<ToolProvider> findAll() {
+        public List<Tool> findAll() {
           var name = path.normalize().toAbsolutePath().getFileName().toString();
           return find(name).map(List::of).orElseGet(List::of);
         }
 
         @Override
-        public Optional<ToolProvider> find(String name) {
+        public Optional<Tool> find(String name) {
           var directory = path.normalize().toAbsolutePath();
           if (!Files.isDirectory(directory)) return Optional.empty();
           if (!name.equals(directory.getFileName().toString())) return Optional.empty();
@@ -808,18 +838,18 @@ public record Bach(
           var args = directory.resolve(argsfile);
           if (Files.isRegularFile(args)) {
             command.add("@" + args);
-            return Optional.of(new ExecuteProgramToolProvider(name, command));
+            return Optional.of(Tool.ofExecutable(name, command));
           }
           var jars = Core.PathSupport.list(directory, Core.PathSupport::isJarFile);
           if (jars.size() == 1) {
             command.add("-jar");
             command.add(jars.get(0).toString());
-            return Optional.of(new ExecuteProgramToolProvider(name, command));
+            return Optional.of(Tool.ofExecutable(name, command));
           }
           var javas = Core.PathSupport.list(directory, Core.PathSupport::isJavaFile);
           if (javas.size() == 1) {
             command.add(javas.get(0).toString());
-            return Optional.of(new ExecuteProgramToolProvider(name, command));
+            return Optional.of(Tool.ofExecutable(name, command));
           }
           throw new UnsupportedOperationException("Unknown program layout in " + directory.toUri());
         }
@@ -827,7 +857,7 @@ public record Bach(
 
       record ProgramsToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
         @Override
-        public List<ToolProvider> findAll() {
+        public List<Tool> findAll() {
           return Core.PathSupport.list(path, Files::isDirectory).stream()
               .map(directory -> new ProgramToolFinder(directory, java, argsfile))
               .map(ToolFinder::findAll)
@@ -841,12 +871,12 @@ public record Bach(
     static ToolFinder compose(ToolFinder... finders) {
       record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
         @Override
-        public List<ToolProvider> findAll() {
+        public List<Tool> findAll() {
           return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
         }
 
         @Override
-        public Optional<ToolProvider> find(String name) {
+        public Optional<Tool> find(String name) {
           for (var finder : finders) {
             var tool = finder.find(name);
             if (tool.isPresent()) return tool;
@@ -855,36 +885,6 @@ public record Bach(
         }
       }
       return new CompositeToolFinder(List.of(finders));
-    }
-
-    static ToolProvider provideJavaHomeBinaryTool(String name) {
-      var executable = Path.of(System.getProperty("java.home"), "bin", name);
-      return new ExecuteProgramToolProvider(name, List.of(executable.toString()));
-    }
-
-    record ExecuteProgramToolProvider(String name, List<String> command) implements ToolProvider {
-
-      record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
-        @Override
-        public void run() {
-          new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
-        }
-      }
-
-      @Override
-      public int run(PrintWriter out, PrintWriter err, String... arguments) {
-        var builder = new ProcessBuilder(new ArrayList<>(command));
-        builder.command().addAll(List.of(arguments));
-        try {
-          var process = builder.start();
-          new Thread(new LinePrinter(process.getInputStream(), out)).start();
-          new Thread(new LinePrinter(process.getErrorStream(), err)).start();
-          return process.waitFor();
-        } catch (Exception exception) {
-          exception.printStackTrace(err);
-          return -1;
-        }
-      }
     }
   }
 

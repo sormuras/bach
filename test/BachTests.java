@@ -39,7 +39,6 @@ class BachTests {
     assertLinesMatch(
         """
         >> 6 >>
-        banner ---
         ===
         ---
         ===
