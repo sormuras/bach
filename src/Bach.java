@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -158,7 +157,7 @@ public final class Bach {
     this.external = external;
     this.tools = tools;
 
-    this.stack = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
+    this.stack = ThreadLocal.withInitial(ArrayDeque::new);
   }
 
   public PrintWriter getOut() {
