@@ -42,12 +42,7 @@ import jdk.jfr.Recording;
 import jdk.jfr.StackTrace;
 
 /** Java Shell Builder. */
-public record Bach(
-    Component.Printer printer,
-    Component.Options options,
-    Component.Paths paths,
-    Component.External external,
-    Component.Tools tools) {
+public final class Bach {
 
   public static void main(String... args) {
     var bach = Bach.of(args);
@@ -134,6 +129,45 @@ public record Bach(
                     Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
                     Tool.ofNativeToolInJavaHome("jdeprscan"),
                     Tool.ofNativeToolInJavaHome("jfr")))));
+  }
+
+  private final Component.Printer printer;
+  private final Component.Options options;
+  private final Component.Paths paths;
+  private final Component.External external;
+  private final Component.Tools tools;
+
+  public Bach(
+      Component.Printer printer,
+      Component.Options options,
+      Component.Paths paths,
+      Component.External external,
+      Component.Tools tools) {
+    this.printer = printer;
+    this.options = options;
+    this.paths = paths;
+    this.external = external;
+    this.tools = tools;
+  }
+
+  public Component.Printer printer() {
+    return printer;
+  }
+
+  public Component.Options options() {
+    return options;
+  }
+
+  public Component.Paths paths() {
+    return paths;
+  }
+
+  public Component.External external() {
+    return external;
+  }
+
+  public Component.Tools tools() {
+    return tools;
   }
 
   public void run(Tool.Call call) {
