@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -135,6 +137,8 @@ public final class Bach {
 
   private final PrintWriter out;
   private final PrintWriter err;
+  private final ThreadLocal<Deque<String>> stack;
+
   private final Component.Options options;
   private final Component.Paths paths;
   private final Component.External external;
@@ -153,6 +157,8 @@ public final class Bach {
     this.paths = paths;
     this.external = external;
     this.tools = tools;
+
+    this.stack = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
   }
 
   public PrintWriter getOut() {
@@ -187,8 +193,16 @@ public final class Bach {
     event.name = name;
     event.args = String.join(" ", arguments);
 
+    var verbose = options.flags.contains(Component.Flag.VERBOSE);
     var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
+
+    var stack = this.stack.get();
+    stack.addLast(name);
     if (tool.isNotHidden()) {
+      if (verbose && stack.size() > 1) {
+        var navigation = String.join(" | ", stack);
+        this.out.println(navigation);
+      }
       var command = arguments.isEmpty() ? name : name + ' ' + event.args;
       this.out.println(command);
     }
@@ -219,6 +233,7 @@ public final class Bach {
     } finally {
       this.out.flush();
       this.err.flush();
+      stack.removeLast();
     }
   }
 
