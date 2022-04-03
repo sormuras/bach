@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.System.Logger.Level;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
@@ -19,7 +18,6 @@ import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +28,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -45,7 +42,7 @@ import jdk.jfr.StackTrace;
 public final class Bach {
 
   public static void main(String... args) {
-    var bach = Bach.of(args);
+    var bach = Bach.ofSystem(args);
     var code = main(bach);
     if (code != 0) System.exit(code);
   }
@@ -58,34 +55,38 @@ public final class Bach {
     }
     try (var recording = new Recording()) {
       recording.start();
-      bach.printer().print("BEGIN");
+      bach.out.println("BEGIN");
       try {
         bach.run(seed);
         return 0;
       } catch (RuntimeException exception) {
-        bach.printer().error(exception.toString());
-        return -1;
+        bach.getErr().println(exception.getMessage());
+        return 2;
       } finally {
-        bach.printer().print("END.");
+        bach.out.println("END.");
         recording.stop();
         var jfr = Files.createDirectories(bach.paths().out()).resolve("bach-logbook.jfr");
         recording.dump(jfr);
       }
     } catch (Exception exception) {
-      bach.printer().error(exception.toString());
+      exception.printStackTrace(bach.err);
       return -2;
     }
   }
 
-  public static Bach of(String... args) {
-    return Bach.of(Component.Printer.ofSystem(), args);
+  public static Bach ofSilent(String... args) {
+    var out = new Core.StringPrintWriter();
+    var err = new Core.StringPrintWriter();
+    return Bach.of(out, err, args);
   }
 
-  public static Bach of(Consumer<String> printer, String... args) {
-    return Bach.of(Component.Printer.of(printer), args);
+  public static Bach ofSystem(String... args) {
+    var out = new PrintWriter(System.out, true);
+    var err = new PrintWriter(System.err, true);
+    return Bach.of(out, err, args);
   }
 
-  public static Bach of(Component.Printer printer, String... args) {
+  public static Bach of(PrintWriter out, PrintWriter err, String... args) {
     var options = Component.Options.of(args);
     var root = options.__chroot;
     var properties = Core.PathSupport.properties(root.resolve("bach.properties"));
@@ -98,7 +99,8 @@ public final class Bach {
       }
     }
     return new Bach(
-        printer,
+        out,
+        err,
         options,
         new Component.Paths(root, options.__destination),
         new Component.External(
@@ -131,27 +133,34 @@ public final class Bach {
                     Tool.ofNativeToolInJavaHome("jfr")))));
   }
 
-  private final Component.Printer printer;
+  private final PrintWriter out;
+  private final PrintWriter err;
   private final Component.Options options;
   private final Component.Paths paths;
   private final Component.External external;
   private final Component.Tools tools;
 
   public Bach(
-      Component.Printer printer,
+      PrintWriter out,
+      PrintWriter err,
       Component.Options options,
       Component.Paths paths,
       Component.External external,
       Component.Tools tools) {
-    this.printer = printer;
+    this.out = out;
+    this.err = err;
     this.options = options;
     this.paths = paths;
     this.external = external;
     this.tools = tools;
   }
 
-  public Component.Printer printer() {
-    return printer;
+  public PrintWriter getOut() {
+    return out;
+  }
+
+  public PrintWriter getErr() {
+    return err;
   }
 
   public Component.Options options() {
@@ -170,7 +179,7 @@ public final class Bach {
     return tools;
   }
 
-  public void run(Tool.Call call) {
+  public void run(Tool.Call call) throws AssertionError {
     var name = call.name();
     var arguments = call.arguments();
 
@@ -179,59 +188,42 @@ public final class Bach {
     event.args = String.join(" ", arguments);
 
     var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
-    if (tool.isNotHidden()) printer.print(arguments.isEmpty() ? name : name + ' ' + event.args);
-
-    var out = new Core.ForwardingStringWriter(line -> printer().print(line));
-    var err = new Core.ForwardingStringWriter(line -> printer().error(line));
-    var args = arguments.toArray(String[]::new);
-
-    event.begin();
-    var toolProvider = tool.provider();
-    if (toolProvider instanceof Tool.Action provider) {
-      event.code = provider.run(this, out.newPrintWriter(), err.newPrintWriter(), args);
-    } else {
-      event.code = toolProvider.run(out.newPrintWriter(), err.newPrintWriter(), args);
+    if (tool.isNotHidden()) {
+      var command = arguments.isEmpty() ? name : name + ' ' + event.args;
+      this.out.println(command);
     }
-    event.end();
-    event.out = out.toString().strip();
-    event.err = err.toString().strip();
-    event.commit();
 
-    if (event.code == 0) return;
+    try (var out = new Core.MirroringStringPrintWriter(this.out);
+        var err = new Core.MirroringStringPrintWriter(this.err)) {
+      var args = arguments.toArray(String[]::new);
 
-    throw new AssertionError(
-        """
-        %s returned non-zero exit code: %d
-        """
-            .formatted(call.name(), event.code));
+      event.begin();
+      var provider = tool.provider();
+      if (provider instanceof Tool.Action action) {
+        event.code = action.run(this, out, err, args);
+      } else {
+        event.code = provider.run(out, err, args);
+      }
+      event.end();
+      event.out = out.toString().strip();
+      event.err = err.toString().strip();
+      event.commit();
+
+      if (event.code != 0) {
+        throw new AssertionError(
+            """
+            %s returned non-zero exit code: %d
+            """
+                .formatted(call.name(), event.code));
+      }
+    } finally {
+      this.out.flush();
+      this.err.flush();
+    }
   }
 
   /** A component of Bach. */
   public sealed interface Component {
-    record Printer(Consumer<String> out, Consumer<String> err, Deque<Text> texts)
-        implements Component {
-
-      record Text(Level level, String string) {}
-
-      public static Printer of(Consumer<String> consumer) {
-        return new Printer(consumer, consumer, new ConcurrentLinkedDeque<>());
-      }
-
-      public static Printer ofSystem() {
-        return new Printer(System.out::println, System.err::println, new ConcurrentLinkedDeque<>());
-      }
-
-      public void print(String string) {
-        texts.add(new Text(Level.INFO, string));
-        out.accept(string);
-      }
-
-      public void error(String string) {
-        texts.add(new Text(Level.ERROR, string));
-        err.accept(string);
-      }
-    }
-
     enum Flag {
       VERBOSE
     }
@@ -493,28 +485,52 @@ public final class Bach {
       return 0;
     }
 
-    static final class ForwardingStringWriter extends StringWriter {
+    static class StringPrintWriter extends PrintWriter {
+      StringPrintWriter() {
+        super(new StringWriter());
+      }
 
-      private int beginIndex = 0;
-      private final Consumer<String> consumer;
+      @Override
+      public String toString() {
+        return super.out.toString();
+      }
+    }
 
-      ForwardingStringWriter(Consumer<String> consumer) {
-        this.consumer = consumer;
+    static class MirroringStringPrintWriter extends StringPrintWriter {
+      private final PrintWriter other;
+
+      MirroringStringPrintWriter(PrintWriter other) {
+        this.other = other;
       }
 
       @Override
       public void flush() {
-        var buffer = getBuffer();
-        if (buffer.isEmpty()) return;
-        var string = buffer.toString();
-        var length = string.length();
-        if (beginIndex >= length) return;
-        string.substring(beginIndex).lines().forEach(consumer);
-        beginIndex = length;
+        super.flush();
+        other.flush();
       }
 
-      PrintWriter newPrintWriter() {
-        return new PrintWriter(this, true);
+      @Override
+      public void write(int c) {
+        super.write(c);
+        other.write(c);
+      }
+
+      @Override
+      public void write(char[] buf, int off, int len) {
+        super.write(buf, off, len);
+        other.write(buf, off, len);
+      }
+
+      @Override
+      public void write(String s, int off, int len) {
+        super.write(s, off, len);
+        other.write(s, off, len);
+      }
+
+      @Override
+      public void println() {
+        super.println();
+        other.println();
       }
     }
 

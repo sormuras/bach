@@ -3,7 +3,6 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -11,15 +10,15 @@ import org.junit.jupiter.api.io.TempDir;
 class BachTests {
   @Test
   void test(@TempDir Path temp) {
-    var bach = Bach.of(__ -> {}, "--chroot", temp.toString());
+    var bach = Bach.ofSilent("--chroot", temp.toString());
     assertEquals(temp, bach.paths().root());
-    assertTrue(bach.printer().texts().isEmpty());
+    assertTrue(bach.getOut().toString().isEmpty());
+    assertTrue(bach.getErr().toString().isEmpty());
   }
 
   @Test
   void versions(@TempDir Path temp) {
-    var lines = new ArrayList<String>();
-    var bach = Bach.of(lines::add, "--chroot", temp.toString());
+    var bach = Bach.ofSilent("--chroot", temp.toString());
 
     Stream.of(
             Bach.Tool.Call.of("jar").with("--version"),
@@ -53,6 +52,6 @@ class BachTests {
         """
             .formatted(System.getProperty("java.version", "?"))
             .lines(),
-        lines.stream().flatMap(String::lines));
+        bach.getOut().toString().lines());
   }
 }
