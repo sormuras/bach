@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
 record Tool(String name, ToolProvider descriptor) {
@@ -12,7 +13,8 @@ record Tool(String name, ToolProvider descriptor) {
     var finder =
         Finder.compose(
             Finder.of(Tool.of(new Banner()), Tool.of(new Chain())),
-            Finder.of(Tool.of("jar"), Tool.of("javac"), Tool.of("javadoc"), Tool.of("jlink")));
+            // Finder.of(Tool.of("jar"), Tool.of("javac"), Tool.of("javadoc"), Tool.of("jlink")),
+            Finder.ofSystemTools());
 
     finder.findAll().stream().sorted(Comparator.comparing(Tool::name)).forEach(System.out::println);
 
@@ -72,6 +74,25 @@ record Tool(String name, ToolProvider descriptor) {
     static Finder of(Tool... tools) {
       record DirectToolFinder(List<Tool> findAll) implements Finder {}
       return new DirectToolFinder(List.of(tools));
+    }
+
+    static Finder of(ClassLoader loader) {
+      return Finder.of(ServiceLoader.load(ToolProvider.class, loader));
+    }
+
+    static Finder of(ServiceLoader<ToolProvider> loader) {
+      record ServiceLoaderFinder(ServiceLoader<ToolProvider> loader) implements Finder {
+        public List<Tool> findAll() {
+          synchronized (loader) {
+            return loader.stream().map(ServiceLoader.Provider::get).map(Tool::of).toList();
+          }
+        }
+      }
+      return new ServiceLoaderFinder(loader);
+    }
+
+    static Finder ofSystemTools() {
+      return Finder.of(ClassLoader.getSystemClassLoader());
     }
 
     PrintWriter OUT = new PrintWriter(System.out, true);
