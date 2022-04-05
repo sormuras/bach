@@ -1,10 +1,16 @@
+import static java.lang.ModuleLayer.defineModulesWithOneLoader;
+import static java.lang.module.Configuration.resolveAndBind;
+
 import java.io.PrintWriter;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 
 record Tool(String name, ToolProvider descriptor) {
@@ -13,7 +19,8 @@ record Tool(String name, ToolProvider descriptor) {
     var finder =
         Finder.compose(
             Finder.of(Tool.of(new Banner()), Tool.of(new Chain())),
-            // Finder.of(Tool.of("jar"), Tool.of("javac"), Tool.of("javadoc"), Tool.of("jlink")),
+            Finder.of(ModuleFinder.of(Path.of("doc/tool/.bach/out"))),
+            Finder.of(Tool.of("jar"), Tool.of("javac"), Tool.of("javadoc"), Tool.of("jlink")),
             Finder.ofSystemTools());
 
     finder.findAll().stream().sorted(Comparator.comparing(Tool::name)).forEach(System.out::println);
@@ -93,6 +100,38 @@ record Tool(String name, ToolProvider descriptor) {
 
     static Finder ofSystemTools() {
       return Finder.of(ClassLoader.getSystemClassLoader());
+    }
+
+    static Finder of(ModuleFinder finder, String... roots) {
+      return Finder.of(finder, false, roots);
+    }
+
+    static Finder of(ModuleFinder finder, boolean assertions, String... roots) {
+      var parentClassLoader = ClassLoader.getPlatformClassLoader();
+      var parentModuleLayer = ModuleLayer.boot();
+      var parents = List.of(parentModuleLayer.configuration());
+      var configuration = resolveAndBind(ModuleFinder.of(), parents, finder, Set.of(roots));
+      var layers = List.of(parentModuleLayer);
+      var controller = defineModulesWithOneLoader(configuration, layers, parentClassLoader);
+      var layer = controller.layer();
+      if (assertions) for (var root : roots) layer.findLoader(root).setDefaultAssertionStatus(true);
+      return Finder.of(layer);
+    }
+
+    static Finder of(ModuleLayer layer) {
+      record ModuleLayerServiceFinder(ModuleLayer layer, ServiceLoader<ToolProvider> loader) {
+        public List<Tool> findAll() {
+          synchronized (loader) {
+            return loader.stream()
+                .filter(service -> service.type().getModule().getLayer() == layer)
+                .map(ServiceLoader.Provider::get)
+                .map(Tool::of)
+                .toList();
+          }
+        }
+      }
+      var loader = ServiceLoader.load(layer, ToolProvider.class);
+      return new ModuleLayerServiceFinder(layer, loader)::findAll;
     }
 
     PrintWriter OUT = new PrintWriter(System.out, true);
