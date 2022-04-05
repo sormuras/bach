@@ -48,18 +48,18 @@ All Platforms
 
 ```shell
 javac
- -d .bach/out/classes
- --module-source-path .
- --module org.example
+  -d .bach/out/classes
+  --module-source-path .
+  --module org.example,org.example.app,org.example.lib
 ```
 
 ### javadoc
 
 ```shell
 javadoc
- -d .bach/out/javadoc
- --module-source-path .
- --module org.example
+  -d .bach/out/javadoc
+  --module-source-path .
+  --module org.example,org.example.app,org.example.lib
 ```
 
 ### jar
@@ -68,18 +68,32 @@ javadoc
 jar
   --create
   --file .bach/out/org.example.jar
-  --main-class org.example.Main
   -C .bach/out/classes/org.example .
+```
+
+```shell
+jar
+  --create
+  --file .bach/out/org.example.app.jar
+  --main-class org.example.app.Main
+  -C .bach/out/classes/org.example.app .
+```
+
+```shell
+jar
+  --create
+  --file .bach/out/org.example.lib.jar
+  -C .bach/out/classes/org.example.lib .
 ```
 
 ### jlink
 
 ```shell
 jlink
- --output .bach/out/image
- --module-path .bach/out
- --add-modules org.example
- --launcher example=org.example
+  --output .bach/out/image
+  --module-path .bach/out
+  --add-modules org.example
+  --launcher example=org.example.app
 ```
 
 * Linux/Mac
