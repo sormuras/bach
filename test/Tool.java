@@ -10,13 +10,9 @@ record Tool(String name, ToolProvider descriptor) {
 
   public static void main(String... args) {
     var finder =
-        Finder.of(
-            Tool.of(new Banner()),
-            Tool.of(new Chain()),
-            Tool.of("jar"),
-            Tool.of("javac"),
-            Tool.of("javadoc"),
-            Tool.of("jlink"));
+        Finder.compose(
+            Finder.of(Tool.of(new Banner()), Tool.of(new Chain())),
+            Finder.of(Tool.of("jar"), Tool.of("javac"), Tool.of("javadoc"), Tool.of("jlink")));
 
     finder.findAll().stream().sorted(Comparator.comparing(Tool::name)).forEach(System.out::println);
 
@@ -54,6 +50,23 @@ record Tool(String name, ToolProvider descriptor) {
       return provider instanceof Operator operator
           ? operator.run(this, args)
           : provider.run(OUT, ERR, args);
+    }
+
+    static Finder compose(Finder... finders) {
+      record CompositeFinder(List<Finder> finders) implements Finder {
+        public List<Tool> findAll() {
+          return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
+        }
+
+        public Optional<Tool> find(String name) {
+          for (var finder : finders) {
+            var tool = finder.find(name);
+            if (tool.isPresent()) return tool;
+          }
+          return Optional.empty();
+        }
+      }
+      return new CompositeFinder(List.of(finders));
     }
 
     static Finder of(Tool... tools) {
