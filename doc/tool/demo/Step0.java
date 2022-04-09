@@ -2,9 +2,10 @@ import java.util.spi.ToolProvider;
 
 /**
  * Step 0 - Use {@code ToolProvider} SPI to find and run {@code javac} tool.
+ *
  * <li>Launch single-file source-code Java program (JEP 330)
  * <li>Run: {@code java demo/Step0.java}
- * <li><b>TODO</b> <i>Pass non-empty main args as tool's args</i>
+ * <li>TODO Pass non-empty main args as tool's args
  * <li>Run: {@code java demo/Step0.java --version}
  */
 class Step0 {

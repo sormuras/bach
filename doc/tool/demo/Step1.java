@@ -7,7 +7,7 @@ import java.util.spi.ToolProvider;
  * <li>Show usage message on empty args array
  * <li>Create {@code ToolRunner} interface with run method
  * <li>Move find and run code into default implementation
- * <li><b>TODO</b> <i>Print tool name and its args on run</i>
+ * <li>TODO Print tool name and its args on run
  */
 class Step1 {
   public static void main(String... args) {

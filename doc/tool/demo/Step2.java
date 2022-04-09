@@ -6,10 +6,13 @@ import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
 /**
- * Step 2 - Introduce {@code ToolFinder} to list observable tools.
- * <li>Create {@code ToolFinder} interface with {@code findAll()} method</li>
- * <li>Replace {@code ToolProvider.findFirst(NAME)} . . .</li>
- * <li> . . . with {@code ToolFinder.find(NAME)}</li>
+ * Step 2 - Introduce ToolFinder to list observable tools.
+ *
+ * <li>Create ToolFinder interface with abstract List<ToolProvider> findAll() method
+ * <li>Add default Optional<ToolProvider> find(NAME) method to ToolFinder
+ * <li>Add ToolFinder.ofEmpty() factory
+ * <li>In ToolRunner, replace ToolProvider.findFirst(NAME) usage with ToolFinder.find(NAME)
+ * <li>TODO Implement ToolFinder.ofSystem() by looking into ToolProvider.findFirst(NAME)
  */
 class Step2 {
   public static void main(String... args) {
@@ -20,7 +23,7 @@ class Step2 {
       }
     }
 
-    var finder = ToolFinder.ofSystem();
+    var finder = ToolFinder.ofEmpty();
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
