@@ -1,19 +1,41 @@
 # JDK Tools and Where to Find Them
 
-Java libraries and applications can be built using tools the Java Development Kit (JDK) provides.
+Java projects can be built using tools the Java Development Kit (JDK) provides.
+Or how to write a Java Scripting program that uses tools as primitives.
 
-This tutorial starts with an overview of 28 tools shipping with JDK 18.
-A few of them are executed on the command-line in the right order and with the right arguments to build an example application.
-In order to execute command-line tools programmatically, the `ToolProvider` interface providing a way invoke tools without necessarily starting a new VM was introduced in Java 9.
-Leveraging the "Launch Single-File Source-Code Programs" feature of JDK Enhancement Proposal (JEP) 330 a standalone tool-running program is developed. 
+## Outline
+
+This session starts with an overview of 28+ tools shipping with JDK 18.
+
+After a short break (reading all linked man pages takes time),
+a few tools are executed live on the command-line in order to
+compile and link an example application.
+
+In order to execute command-line tools programmatically,
+the `ToolProvider` interface providing a way invoke tools
+without necessarily starting a new VM was introduced in Java 9.
+
+Leveraging the "Launch Single-File Source-Code Programs" feature
+of JDK Enhancement Proposal (JEP) 330 a standalone tool-running
+program called `Tool.java` is developed in seven steps.
+
+Abstractions being introduced are:
+
+- `ToolRunner` A runner of tools. Uses `ToolFinder` and provides run time context.
+- `ToolFinder` A finder of tools. Similar to what `ModuleFinder` is to `ModuleReference`.
+- `ToolOperator` An extension of `ToolProvider` to run tools within a tool run.
 
 ## Tools, Options, Examples
 
-The "Java Platform, Standard Edition & Java Development Kit Specifications Version 18" 
+[JDK 18 Documentation](https://docs.oracle.com/en/java/javase/18/)
+
+[Java® Platform, Standard Edition & Java Development Kit Specifications Version 18](https://docs.oracle.com/en/java/javase/18/docs/specs)
+
+[Java® Development Kit Version 18 Tool Specifications](https://docs.oracle.com/en/java/javase/18/docs/specs/man)
 
 ### Java Development Kit Version 18 Tool Specifications
 
-All Platforms
+**All Platforms**
 
 * `jar` - create an archive for classes and resources, and manipulate or restore individual classes or resources from an archive
 * `jarsigner` - sign and verify Java Archive (JAR) files
@@ -44,25 +66,92 @@ All Platforms
 * `rmiregistry` - create and start a remote object registry on the specified port on the current host
 * `serialver` - return the `serialVersionUID` for one or more classes in a form suitable for copying into an evolving class
 
+**Windows Only**
+
+* `jabswitch` - enable or disable Java Access Bridge
+* `jaccessinspector` - examine accessible information about the objects in the Java Virtual Machine using the Java Accessibility Utilities API
+* `jaccesswalker` - navigate through the component trees in a particular Java Virtual Machine and present the hierarchy in a tree view
+* `javaw` - launch a Java application without a console window
+* `kinit` - obtain and cache Kerberos ticket-granting tickets
+* `klist` - display the entries in the local credentials cache and key table
+* `ktab` - manage the principal names and service keys stored in a local key table
+
+## An Example Project
+
+```text
+├───org.example
+│       module-info.java
+│
+├───org.example.app
+│   │   module-info.java
+│   │
+│   └───org
+│       └───example
+│           └───app
+│                   Main.java
+│
+└───org.example.lib
+    │   module-info.java
+    │
+    └───org
+        └───example
+            └───lib
+                │   ExampleStringSupport.java
+                │
+                └───internal
+                        EchoToolProvider.java
+```
+
 ### javac
+
+> Read Java class and interface definitions and compile them into bytecode and class files.
 
 ```shell
 javac
-  -d .bach/out/classes
-  --module-source-path .
   --module org.example,org.example.app,org.example.lib
+  --module-source-path .
+  -d .bach/out/classes
 ```
 
-### javadoc
+Here, compile 3 modules, namely...
 
-```shell
-javadoc
-  -d .bach/out/javadoc
-  --module-source-path .
-  --module org.example,org.example.app,org.example.lib
+- `org.example`,
+- `org.example.app`, and
+- `org.example.lib`.
+
+Search source files in subdirectories of the current working directory `.`
+named like the modules, and store class files in `.bach/out/classes`,
+creating a subdirectory for each module
+
+```text
+├───org.example
+│       module-info.class
+│       
+├───org.example.app
+│   │   module-info.class
+│   │   
+│   └───org
+│       └───example
+│           └───app
+│                   Main.class
+│
+└───org.example.lib
+    │   module-info.class
+    │   
+    └───org
+        └───example
+            └───lib
+                │   ExampleStringSupport.class
+                │
+                └───internal
+                        EchoToolProvider.class
 ```
 
 ### jar
+
+> Create an archive for classes and resources.
+
+Three time's a charm, one call per module.
 
 ```shell
 jar
@@ -75,7 +164,6 @@ jar
 jar
   --create
   --file .bach/out/org.example.app.jar
-  --main-class org.example.app.Main
   -C .bach/out/classes/org.example.app .
 ```
 
@@ -86,15 +174,20 @@ jar
   -C .bach/out/classes/org.example.lib .
 ```
 
+Here, create a modular JAR file named `org.example[.[app|lib]].jar`.
+
 ### jlink
 
 ```shell
 jlink
+  --verbose
   --output .bach/out/image
   --module-path .bach/out
   --add-modules org.example
-  --launcher example=org.example.app
+  --launcher example=org.example.app/org.example.app.Main
 ```
+
+### java
 
 * Linux/Mac
   ```shell
@@ -106,177 +199,60 @@ jlink
   .bach\out\image\bin\example
   ```
 
-## Find, Load, and Run Provided Tool
+## Find, Load, and Run Tools in Seven Steps
 
-### `ToolProvider` SPI
-
-An interface for command-line tools to provide a way to be invoked without necessarily starting a new VM.
-
-### `ToolProvider` via `ServiceLoader`
-
-```java
-package java.util.spi;
-
-interface ToolProvider {
-  static Optional<ToolProvider> findFirst(String name) {
-    // ...
-  }
-}
+```shell
+java demo/Step0.java
 ```
 
-Returns the first instance of a ToolProvider with the given name, as loaded by ServiceLoader using the system class loader.
-
-## `Tool` API and `Tool.Finder` SPI
-
-> `Tool.Finder` is to `Tool` is what `ModuleFinder` is to `ModuleReference`.
-
-### `Tool` API
-
-```java
-/**
- * A tool reference.
- */
-record Tool(String name, java.util.spi.ToolProvider provider) {}
+```shell
+java demo/Step1.java jar --version
 ```
 
-### Introduce `Tool.Finder`
-
-```java
-import java.util.List;
-import java.util.Optional;
-import java.util.spi.ToolProvider;
-
-record Tool(String name, ToolProvider provider) {
-
-  interface Finder {
-
-    List<Tool> findAll();
-
-    default Optional<Tool> find(String name) {
-      return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
-    }
-  }
-}
+```shell
+java demo/Step2.java --list-tools
 ```
 
-```java
-record Tool(String name, ToolProvider provider) {
-
-  static Tool of(ToolProvider provider) {
-    return new Tool(provider.name(), provider);
-  }
-
-}
+```shell
+java demo/Step3.java banner hello world
 ```
 
-### `ToolFinder.of(Tool...)`
-
-Direct tool finder.
-
-```java
-record Tool(String name, ToolProvider provider) {
-
-  static ToolFinder of(Tool... tools) {
-    record DirectToolFinder(List<Tool> findAll) implements ToolFinder {}
-    return new DirectToolFinder(List.of(tools));
-  }
-
-}
+```shell
+java demo/Step4.java --list-tools
 ```
 
-### `ToolFinder.ofSystemTools()`
-
-### `ToolFinder.ofModuleFinder()`
-
-### `ToolFinder.ofNativeTools()`
-
-* `ProcessBuilder`
-* `Process`
-
-### `ToolFinder.ofNativeJavaHomeTools()`
-
-* `java[.exe]` in `${JAVA_HOME}/bin`|`%JAVA_HOME%\bin`
-
-## Run tools from within a tool run
-
-More precise: how to run non-system tools from within a non-system tool run method?
-
-### `ToolProvider`
-
-```java
-class SomeToolProvider implements ToolProvider {
-    
-  public String name() { return "some"; }
-
-  public int run(PrintWriter out, PrintWriter err, String... args) {
-    ToolProvider.findFirst("hello").orElseThrow().run(out, err, "world");
-    ToolProvider.findFirst("banner").orElseThrow().run(out, err, "text");
-  }
-
-}
+```shell
+java demo/Step5.java chain banner banner
 ```
 
-* No context.
-* No tool finder.
-
-### `ToIntBiFunction<T, U>`
-
-Implement `ToolProvider` and, ignoring custom out and err parameters, `ToIntBiFunction<BiConsumer<String, List<String>, List<String>>>`.
-Using well-known Java types and relying on the calles to pass-in a suitable runner instance.
-
-```java
-class SomeToolProvider implements
-          ToolProvider,
-          ToIntBiFunction<BiConsumer<String, List<String>, List<String>>> {
-
-  public String name() { return "some"; }
-
-  public int applyAsInt(BiConsumer<String, List<String>> runner, List<String> args) {
-    runner.accept("hello", List.of("world"));
-    runner.accept("banner", List.of("text"));
-  }
-
-}
+```shell
+java demo/Step6.java chain compile link
 ```
 
-* Well...
+## `Tool.java`
 
-### `ToolRunner` SPI
+Explore more tool finders:
 
-```java
-record Tool(String name, ToolProvider provider) {
-
-  interface Runner {
-    int run(PrintWriter out, PrintWriter err, String name, String... args);
-  }
-
-  interface Provider extends ToolProvider {
-    int run(Runner runner, PrintWriter out, PrintWriter err, String name, String... args);
-  }
-
-}
-```
-
-```java
-class SomeToolProvider implements ToolProvider {
-
-  public String name() { return "some"; }
-
-  public int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
-    runner.run(out, err, "hello", "world");
-    runner.run(out, err, "banner", "text");
-  }
-
-}
-```
+* `ToolFinder.of(ModuleFinder)` and `ToolFinder.of(ModuleLayer)`
+  * Example: `of(ModuleFinder.of(Path.of("out", "modules")))`
+* `ToolFinder.ofBasicPrograms(Path directory)`
+  * Java Properties-based convention with keys as line numbers
+    and values a tool calls split into one line per argument.
+    ```properties
+    10 javac\n\
+       --version
+    20 GOTO 10
+    ```
+* `ToolFinder.ofNativePrograms(Path directory)`
+  * Leveraging `ProcessBuilder` and `Process` API.
+  * Example: `ofNativePrograms(Path.of(System.getProperty("java.home"), "bin"))`
+* `ToolFinder.ofJavaPrograms(Path directory)`
+  * Single-File Source-Code Program `java Program.java ARGS...`
+  * Executable JAR file `java -jar program.jar ARGS...`
 
 ## `Bach.java`
 
 **TODO**
-
-```shell
-bach --project-version 123 build
-```
 
 ## Talk-Related Links
 
@@ -301,5 +277,9 @@ bach --project-version 123 build
 ## More Tools, More Options, More Examples
 
 ### jpackage
+
+### jtreg (7+)
+
+### jextract (?)
 
 ### jreleaser (external)
