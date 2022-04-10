@@ -199,34 +199,141 @@ jlink
   .bach\out\image\bin\example
   ```
 
-## Find, Load, and Run Tools in Seven Steps
+## Seven Steps to Find, Load, and Run Tools
+
+### Step 0
+
+Use `ToolProvider` (from `java.base/java.util.spi`) to find, load, and run `javac` tool.
 
 ```shell
 java demo/Step0.java
 ```
 
+* Launch single-file source-code Java program (JEP 330)
+* Run: `java demo/Step0.java`
+* TODO Pass non-empty main args arrays as tool's arguments
+* Run: `java demo/Step0.java --version`
+
+```text
+// === DONE ===
+// [x] Used ToolProvider SPI
+// [x] Ignored result of the tool execution
+
+// === HINT ===
+// [ ] args.length != 0 ? args : new String[] {"--version"}
+// [ ] Run: java demo/Step0.java --help-extra
+// [ ] Run: java demo/Step0.java --help-lint
+
+// === NEXT ===
+//  ?  Run: java demo/Step0.java jar --version
+// --> Transform into an application running an arbitrary tool
+```
+
+### Step 1
+
+An application running an arbitrary tool.
+
 ```shell
 java demo/Step1.java jar --version
 ```
+
+* Show usage message on empty args array
+* Create `ToolRunner` interface with run method
+* Move find and run code into default implementation
+* TODO Print tool name and its args on run
+
+```text
+// DONE
+// [x] Let args[0] be the name of the tool to run and args[1..n] its arguments
+// [x] Added an abstraction for running a tool, throwing on non-zero exit code
+
+// HINT
+// [ ] System.out.println("// name = " + name + ", args = " + Arrays.deepToString(args));
+// [ ] Run with well-known system tools: javac, jar, jlink
+
+// NEXT
+//  ?  Run with: jfr
+// --> Implement a `--list-tools` option showing all observable tools and exit
+// --> By introducing a configurable `ToolFinder` abstraction
+```
+
+### Step 2
+
+Introduce ToolFinder to list observable tools.
+
+* Create ToolFinder interface with abstract `List<ToolProvider> findAll()` method
+* Add default `Optional<ToolProvider> find(NAME)` method to ToolFinder
+* Add `ToolFinder.ofEmpty()` factory
+* In `ToolRunner`, replace `ToolProvider.findFirst(NAME)` usage with `ToolFinder.find(NAME)`
+* TODO Implement `ToolFinder.ofSystem()` by looking into `ToolProvider.findFirst(NAME)`
 
 ```shell
 java demo/Step2.java --list-tools
 ```
 
+```text
+// HINT:
+// [x] Run: java --limit-modules java.base demo/Step2.java
+
+// NEXT:
+//  ?  Run: java demo/Step2.java banner hello world
+// [ ] Implement a custom tool: `record Banner(String name) implements ToolProvider {...}`
+// [ ] Implement a tool finder that accepts instances of `ToolProvider`
+```
+
+### Step 3
+
+Local tool Banner and finder of tool instances.
+
 ```shell
 java demo/Step3.java banner hello world
 ```
+
+```text
+// Next step:
+// [ ] Implement a tool finder that is composed of other finders
+// [ ] Compose application's tool finder
+```
+
+### Step 4
+
+Composing tool finders.
 
 ```shell
 java demo/Step4.java --list-tools
 ```
 
+```text
+// Next step:
+// [ ] How to implement a tool that runs other tools?
+// [ ] Add an abstraction for tool running tool: an operator
+```
+
+### Step 5
+
+A tool operator runs other tools.
+
 ```shell
 java demo/Step5.java chain banner banner
 ```
 
+```text
+// Next step:
+// [ ] Implement tool operators: Compile and Link
+```
+
+### Step 6
+
 ```shell
 java demo/Step6.java chain compile link
+```
+
+```text
+// Next step:
+// [ ] GOTO Tool.java
+//     More ToolFinder...
+// [ ] GOTO Bach.java
+//     project-info!
 ```
 
 ## `Tool.java`

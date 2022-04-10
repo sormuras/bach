@@ -32,8 +32,10 @@ class Step4 {
       }
     }
 
-    var runner = ToolRunner.of(finder);
-    runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    /* Run an arbitrary tool. */ {
+      var runner = ToolRunner.of(finder);
+      runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
   }
 
   interface ToolFinder {
@@ -109,7 +111,3 @@ class Step4 {
     }
   }
 }
-
-// Next step:
-// [ ] How to implement a tool that runs other tools?
-// [ ] Add an abstraction for tool running tool: an operator

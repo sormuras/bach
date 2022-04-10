@@ -30,8 +30,10 @@ class Step6 {
       }
     }
 
-    var runner = ToolRunner.of(finder);
-    runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    /* Run an arbitrary tool. */ {
+      var runner = ToolRunner.of(finder);
+      runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
   }
 
   interface ToolOperator extends ToolProvider {
@@ -186,9 +188,3 @@ class Step6 {
     }
   }
 }
-
-// Next step:
-// [ ] GOTO Tool.java
-//     More ToolFinder...
-// [ ] GOTO Bach.java
-//     project-info!

@@ -1,14 +1,7 @@
 import java.util.Arrays;
 import java.util.spi.ToolProvider;
 
-/**
- * Step 1 - An application running an arbitrary tool.
- *
- * <li>Show usage message on empty args array
- * <li>Create {@code ToolRunner} interface with run method
- * <li>Move find and run code into default implementation
- * <li>TODO Print tool name and its args on run
- */
+/** Step 1 - An application running an arbitrary tool. */
 class Step1 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
@@ -25,7 +18,6 @@ class Step1 {
   }
 
   interface ToolRunner {
-
     void run(String name, String... args);
 
     static ToolRunner of() {
@@ -36,16 +28,3 @@ class Step1 {
     }
   }
 }
-
-// DONE
-// [x] Let args[0] be the name of the tool to run and args[1..n] its arguments
-// [x] Added an abstraction for running a tool, throwing on non-zero exit code
-
-// HINT
-// [ ] System.out.println("// name = " + name + ", args = " + Arrays.deepToString(args));
-// [ ] Run with well-known system tools: javac, jar, jlink
-
-// NEXT
-//  ?  Run with: jfr
-// --> Implement a `--list-tools` option showing all observable tools and exit
-// --> By introducing a configurable `ToolFinder` abstraction

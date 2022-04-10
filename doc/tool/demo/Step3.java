@@ -24,8 +24,10 @@ class Step3 {
       }
     }
 
-    var runner = ToolRunner.of(finder);
-    runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    /* Run an arbitrary tool. */ {
+      var runner = ToolRunner.of(finder);
+      runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
   }
 
   interface ToolFinder {
@@ -87,6 +89,3 @@ class Step3 {
   }
 }
 
-// Next step:
-// [ ] Implement a tool finder that is composed of other finders
-// [ ] Compose application's tool finder

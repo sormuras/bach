@@ -32,8 +32,10 @@ class Step5 {
       }
     }
 
-    var runner = ToolRunner.of(finder);
-    runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    /* Run an arbitrary tool. */ {
+      var runner = ToolRunner.of(finder);
+      runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
   }
 
   interface ToolOperator extends ToolProvider {
@@ -141,6 +143,3 @@ class Step5 {
     }
   }
 }
-
-// Next step:
-// [ ] Implement tool operators: Compile and Link
