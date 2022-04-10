@@ -75,7 +75,6 @@ class Tool {
   }
 
   interface ToolFinder {
-
     List<? extends ToolProvider> findAll();
 
     default Optional<? extends ToolProvider> find(String name) {
@@ -112,9 +111,45 @@ class Tool {
     }
 
     static ToolFinder ofNativeTools(Path directory) {
-      record NativePrograms(Path path) implements ToolFinder {
+      record NativeToolProvider(String name, List<String> command) implements ToolProvider {
+        static final boolean WINDOWS =
+            System.getProperty("os.name", "?").toLowerCase().contains("win");
+
+        static boolean isExecutable(Path path) {
+          if (path.getNameCount() == 0) return false;
+          if (!Files.isExecutable(path)) return false;
+          return !WINDOWS || path.getFileName().toString().endsWith(".exe");
+        }
+
+        static NativeToolProvider of(Path executable) {
+          var file = executable.getFileName().toString();
+          var name = file.endsWith(".exe") ? file.substring(0, file.length() - 4) : file;
+          var path = executable.toAbsolutePath().normalize().toString();
+          return new NativeToolProvider(name, List.of(path));
+        }
+
+        public int run(PrintWriter out, PrintWriter err, String... arguments) {
+          record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
+            public void run() {
+              new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
+            }
+          }
+          var builder = new ProcessBuilder(new ArrayList<>(command));
+          builder.command().addAll(List.of(arguments));
+          try {
+            var process = builder.start();
+            new Thread(new LinePrinter(process.getInputStream(), out)).start();
+            new Thread(new LinePrinter(process.getErrorStream(), err)).start();
+            return process.waitFor();
+          } catch (Exception exception) {
+            exception.printStackTrace(err);
+            return -1;
+          }
+        }
+      }
+      record NativeToolFinder(Path directory) implements ToolFinder {
         public List<? extends ToolProvider> findAll() {
-          try (var files = Files.newDirectoryStream(path, Files::isRegularFile)) {
+          try (var files = Files.newDirectoryStream(directory, Files::isRegularFile)) {
             return StreamSupport.stream(files.spliterator(), false)
                 .filter(NativeToolProvider::isExecutable)
                 .map(NativeToolProvider::of)
@@ -125,7 +160,7 @@ class Tool {
           }
         }
       }
-      return new NativePrograms(directory);
+      return new NativeToolFinder(directory);
     }
   }
 
@@ -212,42 +247,6 @@ class Tool {
           "--add-modules=org.example",
           "--launcher=example=org.example.app/org.example.app.Main");
       return 0;
-    }
-  }
-
-  record NativeToolProvider(String name, List<String> command) implements ToolProvider {
-    static final boolean WINDOWS = System.getProperty("os.name", "?").toLowerCase().contains("win");
-
-    static boolean isExecutable(Path path) {
-      if (path.getNameCount() == 0) return false;
-      if (!Files.isExecutable(path)) return false;
-      return !WINDOWS || path.getFileName().toString().endsWith(".exe");
-    }
-
-    static NativeToolProvider of(Path executable) {
-      var file = executable.getFileName().toString();
-      var name = file.endsWith(".exe") ? file.substring(0, file.length() - 4) : file;
-      var path = executable.toAbsolutePath().normalize().toString();
-      return new NativeToolProvider(name, List.of(path));
-    }
-
-    public int run(PrintWriter out, PrintWriter err, String... arguments) {
-      record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
-        public void run() {
-          new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
-        }
-      }
-      var builder = new ProcessBuilder(new ArrayList<>(command));
-      builder.command().addAll(List.of(arguments));
-      try {
-        var process = builder.start();
-        new Thread(new LinePrinter(process.getInputStream(), out)).start();
-        new Thread(new LinePrinter(process.getErrorStream(), err)).start();
-        return process.waitFor();
-      } catch (Exception exception) {
-        exception.printStackTrace(err);
-        return -1;
-      }
     }
   }
 
