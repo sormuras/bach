@@ -1,6 +1,7 @@
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -25,7 +26,17 @@ class Tool6 {
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
-        finder.findAll().forEach(tool -> System.out.printf("%9s by %s%n", tool.name(), tool));
+        var tools = finder.findAll();
+        /* An empty tool finder? */ if (tools.isEmpty()) {
+          System.out.println("No tool found. Using an empty tool finder?");
+          return;
+        }
+        /* List all tools sorted by name. */ {
+          tools.stream()
+              .sorted(Comparator.comparing(ToolProvider::name))
+              .forEach(tool -> System.out.printf("%9s by %s%n", tool.name(), tool));
+          System.out.printf("%n  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
+        }
         return;
       }
     }
@@ -37,7 +48,6 @@ class Tool6 {
   }
 
   interface ToolOperator extends ToolProvider {
-    @Override
     default int run(PrintWriter out, PrintWriter err, String... args) {
       return run(ToolRunner.of(ToolFinder.ofSystem()), args);
     }
@@ -59,15 +69,8 @@ class Tool6 {
 
     static ToolFinder compose(ToolFinder... finders) {
       record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
-
-        @Override
         public List<ToolProvider> findAll() {
           return finders.stream().flatMap(ToolFinder::streamAll).toList();
-        }
-
-        @Override
-        public Optional<ToolProvider> find(String name) {
-          return ToolFinder.super.find(name);
         }
       }
       return new CompositeToolFinder(List.of(finders));
@@ -104,12 +107,10 @@ class Tool6 {
   }
 
   record Banner(String name) implements ToolProvider {
-
     Banner() {
       this("banner");
     }
 
-    @Override
     public int run(PrintWriter out, PrintWriter err, String... args) {
       var text = "USAGE: %s TEXT...".formatted(name());
       var line = args.length != 0 ? String.join(" ", args) : text;
