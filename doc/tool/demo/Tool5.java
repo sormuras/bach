@@ -47,16 +47,7 @@ class Tool5 {
     }
   }
 
-  interface ToolOperator extends ToolProvider {
-    default int run(PrintWriter out, PrintWriter err, String... args) {
-      return run(ToolRunner.of(ToolFinder.ofSystem()), args);
-    }
-
-    int run(ToolRunner runner, String... args);
-  }
-
   interface ToolFinder {
-
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
@@ -104,6 +95,14 @@ class Tool5 {
         }
       };
     }
+  }
+
+  interface ToolOperator extends ToolProvider {
+    default int run(PrintWriter out, PrintWriter err, String... args) {
+      return run(ToolRunner.of(ToolFinder.ofSystem()), args);
+    }
+
+    int run(ToolRunner runner, String... args);
   }
 
   record Banner(String name) implements ToolProvider {

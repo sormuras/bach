@@ -48,7 +48,6 @@ class Tool4 {
   }
 
   interface ToolFinder {
-
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {

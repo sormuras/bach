@@ -47,16 +47,7 @@ class Tool6 {
     }
   }
 
-  interface ToolOperator extends ToolProvider {
-    default int run(PrintWriter out, PrintWriter err, String... args) {
-      return run(ToolRunner.of(ToolFinder.ofSystem()), args);
-    }
-
-    int run(ToolRunner runner, String... args);
-  }
-
   interface ToolFinder {
-
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
@@ -106,6 +97,14 @@ class Tool6 {
     }
   }
 
+  interface ToolOperator extends ToolProvider {
+    default int run(PrintWriter out, PrintWriter err, String... args) {
+      return run(ToolRunner.of(ToolFinder.ofSystem()), args);
+    }
+
+    int run(ToolRunner runner, String... args);
+  }
+
   record Banner(String name) implements ToolProvider {
     Banner() {
       this("banner");
@@ -131,9 +130,8 @@ class Tool6 {
       this("chain");
     }
 
-    @Override
     public int run(ToolRunner runner, String... args) {
-      for (var name : args) runner.run(name); // no args
+      for (var name : args) runner.run(name); // no tool args
       return 0;
     }
   }
@@ -143,7 +141,6 @@ class Tool6 {
       this("compile");
     }
 
-    @Override
     public int run(ToolRunner runner, String... args) {
       var modules = List.of("org.example", "org.example.app", "org.example.lib");
       var out = Path.of(".bach", "out");
@@ -172,7 +169,6 @@ class Tool6 {
       this("link");
     }
 
-    @Override
     public int run(ToolRunner runner, String... args) {
       runner.run(
           "jlink",

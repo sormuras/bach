@@ -17,8 +17,6 @@ import java.util.stream.StreamSupport;
 
 /** JDK Tools and Where to Find Them. */
 class Tool {
-  static final Path JAVA_HOME = Path.of(System.getProperty("java.home", "."));
-
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
@@ -27,12 +25,13 @@ class Tool {
       }
     }
 
+    var JDK = Path.of(System.getProperty("java.home", "."), "bin");
     var finder =
         ToolFinder.compose(
             ToolFinder.of(new Banner(), new Chain()),
             ToolFinder.of(new Compile(), new Link(), new Run()),
             ToolFinder.ofSystem(),
-            ToolFinder.ofNativeTools(JAVA_HOME.resolve("bin")));
+            ToolFinder.ofNativeTools(JDK));
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
@@ -44,24 +43,6 @@ class Tool {
     /* Run an arbitrary tool. */ {
       var runner = ToolRunner.of(finder);
       runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
-    }
-  }
-
-  interface ToolRunner {
-    void run(String name, String... args);
-
-    static ToolRunner of(ToolFinder finder) {
-      return new ToolRunner() {
-        public void run(String name, String... args) {
-          System.out.printf("| %s %s%n", name, String.join(" ", args));
-          var tool = finder.find(name).orElseThrow(() -> new NoSuchElementException(name));
-          var code =
-              tool instanceof ToolOperator operator
-                  ? operator.run(this, args)
-                  : tool.run(System.out, System.err, args);
-          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
-        }
-      };
     }
   }
 
@@ -91,6 +72,7 @@ class Tool {
           }
           return Optional.empty();
         }
+
         public void print(Function<ToolProvider, String> function) {
           for (var finder : finders) {
             var type = finder.getClass().getSimpleName();
@@ -155,6 +137,7 @@ class Tool {
             return -1;
           }
         }
+
         public String toString() {
           return String.join(" ", command);
         }
@@ -173,6 +156,24 @@ class Tool {
         }
       }
       return new NativeToolFinder(directory);
+    }
+  }
+
+  interface ToolRunner {
+    void run(String name, String... args);
+
+    static ToolRunner of(ToolFinder finder) {
+      return new ToolRunner() {
+        public void run(String name, String... args) {
+          System.out.printf("| %s %s%n", name, String.join(" ", args));
+          var tool = finder.find(name).orElseThrow(() -> new NoSuchElementException(name));
+          var code =
+              tool instanceof ToolOperator operator
+                  ? operator.run(this, args)
+                  : tool.run(System.out, System.err, args);
+          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
+        }
+      };
     }
   }
 
