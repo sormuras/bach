@@ -1,4 +1,8 @@
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,11 +11,13 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.StreamSupport;
 
 /** JDK Tools and Where to Find and How to Run Them. */
 class Tool {
+  static final Path JAVA_HOME = Path.of(System.getProperty("java.home", "."));
+
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
@@ -24,11 +30,22 @@ class Tool {
         ToolFinder.compose(
             ToolFinder.of(new Banner(), new Chain()),
             ToolFinder.of(new Compile(), new Link(), new Run()),
-            ToolFinder.ofSystem());
+            ToolFinder.ofSystem(),
+            ToolFinder.ofNativeTools(JAVA_HOME.resolve("bin")));
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
-        finder.forEach(tool -> System.out.printf("%9s = %s%n", tool.name(), tool));
+        var tools = finder.findAll();
+        /* An empty tool finder? */ if (tools.isEmpty()) {
+          System.out.println("No tool found. Using an empty tool finder?");
+          return;
+        }
+        /* List all tools sorted by name. */ {
+          tools.stream()
+              .sorted(Comparator.comparing(ToolProvider::name))
+              .forEach(tool -> System.out.printf("%16s by %s%n", tool.name(), tool));
+          System.out.printf("%n  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
+        }
         return;
       }
     }
@@ -59,23 +76,19 @@ class Tool {
 
   interface ToolFinder {
 
-    List<ToolProvider> findAll();
+    List<? extends ToolProvider> findAll();
 
-    default Optional<ToolProvider> find(String name) {
+    default Optional<? extends ToolProvider> find(String name) {
       return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
-    }
-
-    default void forEach(Consumer<ToolProvider> consumer) {
-      findAll().stream().sorted(Comparator.comparing(ToolProvider::name)).forEach(consumer);
     }
 
     static ToolFinder compose(ToolFinder... finders) {
       record CompositeFinder(List<ToolFinder> finders) implements ToolFinder {
-        public List<ToolProvider> findAll() {
+        public List<? extends ToolProvider> findAll() {
           return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();
         }
 
-        public Optional<ToolProvider> find(String name) {
+        public Optional<? extends ToolProvider> find(String name) {
           for (var finder : finders) {
             var tool = finder.find(name);
             if (tool.isPresent()) return tool;
@@ -96,6 +109,23 @@ class Tool {
           ServiceLoader.load(ToolProvider.class, ClassLoader.getSystemClassLoader()).stream()
               .map(ServiceLoader.Provider::get)
               .toList();
+    }
+
+    static ToolFinder ofNativeTools(Path directory) {
+      record NativePrograms(Path path) implements ToolFinder {
+        public List<? extends ToolProvider> findAll() {
+          try (var files = Files.newDirectoryStream(path, Files::isRegularFile)) {
+            return StreamSupport.stream(files.spliterator(), false)
+                .filter(NativeToolProvider::isExecutable)
+                .map(NativeToolProvider::of)
+                .toList();
+
+          } catch (Exception exception) {
+            throw new RuntimeException(exception);
+          }
+        }
+      }
+      return new NativePrograms(directory);
     }
   }
 
@@ -182,6 +212,42 @@ class Tool {
           "--add-modules=org.example",
           "--launcher=example=org.example.app/org.example.app.Main");
       return 0;
+    }
+  }
+
+  record NativeToolProvider(String name, List<String> command) implements ToolProvider {
+    static final boolean WINDOWS = System.getProperty("os.name", "?").toLowerCase().contains("win");
+
+    static boolean isExecutable(Path path) {
+      if (path.getNameCount() == 0) return false;
+      if (!Files.isExecutable(path)) return false;
+      return !WINDOWS || path.getFileName().toString().endsWith(".exe");
+    }
+
+    static NativeToolProvider of(Path executable) {
+      var file = executable.getFileName().toString();
+      var name = file.endsWith(".exe") ? file.substring(0, file.length() - 4) : file;
+      var path = executable.toAbsolutePath().normalize().toString();
+      return new NativeToolProvider(name, List.of(path));
+    }
+
+    public int run(PrintWriter out, PrintWriter err, String... arguments) {
+      record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
+        public void run() {
+          new BufferedReader(new InputStreamReader(stream)).lines().forEach(writer::println);
+        }
+      }
+      var builder = new ProcessBuilder(new ArrayList<>(command));
+      builder.command().addAll(List.of(arguments));
+      try {
+        var process = builder.start();
+        new Thread(new LinePrinter(process.getInputStream(), out)).start();
+        new Thread(new LinePrinter(process.getErrorStream(), err)).start();
+        return process.waitFor();
+      } catch (Exception exception) {
+        exception.printStackTrace(err);
+        return -1;
+      }
     }
   }
 

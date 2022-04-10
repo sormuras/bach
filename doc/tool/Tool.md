@@ -350,9 +350,9 @@ Explore more tool finders:
        --version
     20 GOTO 10
     ```
-* `ToolFinder.ofNativePrograms(Path directory)`
+* `ToolFinder.ofNativeTools(Path directory)`
   * Leveraging `ProcessBuilder` and `Process` API.
-  * Example: `ofNativePrograms(Path.of(System.getProperty("java.home"), "bin"))`
+  * Example: `ofNativeTools(Path.of(System.getProperty("java.home"), "bin"))`
 * `ToolFinder.ofJavaPrograms(Path directory)`
   * Single-File Source-Code Program `java Program.java ARGS...`
   * Executable JAR file `java -jar program.jar ARGS...`
