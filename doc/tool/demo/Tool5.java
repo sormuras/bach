@@ -7,7 +7,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 /** Step 5 - A tool operator runs other tools. */
-class Step5 {
+class Tool5 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {

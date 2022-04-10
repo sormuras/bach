@@ -206,13 +206,13 @@ jlink
 Use `ToolProvider` (from `java.base/java.util.spi`) to find, load, and run `javac` tool.
 
 ```shell
-java demo/Step0.java
+java demo/Tool0.java
 ```
 
 * Launch single-file source-code Java program (JEP 330)
-* Run: `java demo/Step0.java`
+* Run: `java demo/Tool0.java`
 * TODO Pass non-empty main args arrays as tool's arguments
-* Run: `java demo/Step0.java --version`
+* Run: `java demo/Tool0.java --version`
 
 ```text
 // === DONE ===
@@ -221,11 +221,11 @@ java demo/Step0.java
 
 // === HINT ===
 // [ ] args.length != 0 ? args : new String[] {"--version"}
-// [ ] Run: java demo/Step0.java --help-extra
-// [ ] Run: java demo/Step0.java --help-lint
+// [ ] Run: java demo/Tool0.java --help-extra
+// [ ] Run: java demo/Tool0.java --help-lint
 
 // === NEXT ===
-//  ?  Run: java demo/Step0.java jar --version
+//  ?  Run: java demo/Tool0.java jar --version
 // --> Transform into an application running an arbitrary tool
 ```
 
@@ -234,7 +234,7 @@ java demo/Step0.java
 An application running an arbitrary tool.
 
 ```shell
-java demo/Step1.java jar --version
+java demo/Tool1.java jar --version
 ```
 
 * Show usage message on empty args array
@@ -268,15 +268,15 @@ Introduce ToolFinder to list observable tools.
 * TODO Implement `ToolFinder.ofSystem()` by looking into `ToolProvider.findFirst(NAME)`
 
 ```shell
-java demo/Step2.java --list-tools
+java demo/Tool2.java --list-tools
 ```
 
 ```text
 // HINT:
-// [x] Run: java --limit-modules java.base demo/Step2.java
+// [x] Run: java --limit-modules java.base demo/Tool2.java
 
 // NEXT:
-//  ?  Run: java demo/Step2.java banner hello world
+//  ?  Run: java demo/Tool2.java banner hello world
 // [ ] Implement a custom tool: `record Banner(String name) implements ToolProvider {...}`
 // [ ] Implement a tool finder that accepts instances of `ToolProvider`
 ```
@@ -286,7 +286,7 @@ java demo/Step2.java --list-tools
 Local tool Banner and finder of tool instances.
 
 ```shell
-java demo/Step3.java banner hello world
+java demo/Tool3.java banner hello world
 ```
 
 ```text
@@ -300,7 +300,7 @@ java demo/Step3.java banner hello world
 Composing tool finders.
 
 ```shell
-java demo/Step4.java --list-tools
+java demo/Tool4.java --list-tools
 ```
 
 ```text
@@ -314,7 +314,7 @@ java demo/Step4.java --list-tools
 A tool operator runs other tools.
 
 ```shell
-java demo/Step5.java chain banner banner
+java demo/Tool5.java chain banner banner
 ```
 
 ```text
@@ -325,7 +325,7 @@ java demo/Step5.java chain banner banner
 ### Step 6
 
 ```shell
-java demo/Step6.java chain compile link
+java demo/Tool6.java chain compile link
 ```
 
 ```text

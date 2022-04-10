@@ -2,7 +2,7 @@ import java.util.Arrays;
 import java.util.spi.ToolProvider;
 
 /** Step 1 - An application running an arbitrary tool. */
-class Step1 {
+class Tool1 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {

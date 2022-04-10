@@ -4,26 +4,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 
-/** Step 4 - Composing tool finders. */
-class Step4 {
+/** Step 3 - Local tool {@code Banner} and finder of tool instances. */
+class Tool3 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
-        System.out.println("Usage: Step4 TOOL-NAME [TOOL-ARGS...]");
+        System.out.println("Usage: Step3 TOOL-NAME [TOOL-ARGS...]");
         return;
       }
     }
 
-    var finder =
-        ToolFinder.compose(
-            //
-            ToolFinder.of(new Banner()),
-            //
-            ToolFinder.ofSystem()
-            //
-            );
+    var finder = ToolFinder.of(new Banner());
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
@@ -43,20 +35,7 @@ class Step4 {
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
-      return streamAll().filter(tool -> tool.name().equals(name)).findFirst();
-    }
-
-    default Stream<ToolProvider> streamAll() {
-      return findAll().stream();
-    }
-
-    static ToolFinder compose(ToolFinder... finders) {
-      record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
-        public List<ToolProvider> findAll() {
-          return finders.stream().flatMap(ToolFinder::streamAll).toList();
-        }
-      }
-      return new CompositeToolFinder(List.of(finders));
+      return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
     }
 
     static ToolFinder of(ToolProvider... providers) {
@@ -100,14 +79,13 @@ class Step4 {
       var text = "USAGE: %s TEXT...".formatted(name());
       var line = args.length != 0 ? String.join(" ", args) : text;
       var dash = "=".repeat(line.length());
-      out.printf(
-          """
+      out.printf("""
           %s
           %s
           %s
-          """,
-          dash, line.toUpperCase(), dash);
+          """, dash, line.toUpperCase(), dash);
       return 0;
     }
   }
 }
+

@@ -8,7 +8,7 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 /** Step 6 - Compile and link modular example application. */
-class Step6 {
+class Tool6 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {

@@ -6,7 +6,7 @@ import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
 /** Step 2 - Introduce ToolFinder to list observable tools. */
-class Step2 {
+class Tool2 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
