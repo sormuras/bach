@@ -11,10 +11,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.function.Function;
 import java.util.spi.ToolProvider;
 import java.util.stream.StreamSupport;
 
-/** JDK Tools and Where to Find and How to Run Them. */
+/** JDK Tools and Where to Find Them. */
 class Tool {
   static final Path JAVA_HOME = Path.of(System.getProperty("java.home", "."));
 
@@ -35,17 +36,7 @@ class Tool {
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
-        var tools = finder.findAll();
-        /* An empty tool finder? */ if (tools.isEmpty()) {
-          System.out.println("No tool found. Using an empty tool finder?");
-          return;
-        }
-        /* List all tools sorted by name. */ {
-          tools.stream()
-              .sorted(Comparator.comparing(ToolProvider::name))
-              .forEach(tool -> System.out.printf("%16s by %s%n", tool.name(), tool));
-          System.out.printf("%n  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
-        }
+        finder.print(tool -> String.format("%16s - %s", tool.name(), tool));
         return;
       }
     }
@@ -81,6 +72,12 @@ class Tool {
       return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
     }
 
+    default void print(Function<ToolProvider, String> function) {
+      findAll().stream()
+          .sorted(Comparator.comparing(ToolProvider::name))
+          .forEach(tool -> System.out.println(function.apply(tool)));
+    }
+
     static ToolFinder compose(ToolFinder... finders) {
       record CompositeFinder(List<ToolFinder> finders) implements ToolFinder {
         public List<? extends ToolProvider> findAll() {
@@ -94,6 +91,14 @@ class Tool {
           }
           return Optional.empty();
         }
+        public void print(Function<ToolProvider, String> function) {
+          for (var finder : finders) {
+            var type = finder.getClass().getSimpleName();
+            var size = finder.findAll().size();
+            System.out.printf("%s with %d tool%s%n", type, size, size == 1 ? "" : "s");
+            finder.print(function);
+          }
+        }
       }
       return new CompositeFinder(List.of(finders));
     }
@@ -104,10 +109,14 @@ class Tool {
     }
 
     static ToolFinder ofSystem() {
-      return () ->
-          ServiceLoader.load(ToolProvider.class, ClassLoader.getSystemClassLoader()).stream()
+      record SystemToolFinder() implements ToolFinder {
+        public List<? extends ToolProvider> findAll() {
+          return ServiceLoader.load(ToolProvider.class, ClassLoader.getSystemClassLoader()).stream()
               .map(ServiceLoader.Provider::get)
               .toList();
+        }
+      }
+      return new SystemToolFinder();
     }
 
     static ToolFinder ofNativeTools(Path directory) {
@@ -145,6 +154,9 @@ class Tool {
             exception.printStackTrace(err);
             return -1;
           }
+        }
+        public String toString() {
+          return String.join(" ", command);
         }
       }
       record NativeToolFinder(Path directory) implements ToolFinder {
