@@ -10,13 +10,14 @@ import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
 
-/** JDK Tools and Where to Find Them. */
+/** JDK Tools and Where to Find and How to Run Them. */
 class Tool {
-
   public static void main(String... args) {
-    if (args.length == 0) {
-      System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool.class.getSimpleName());
-      return;
+    /* Empty args array given? Show usage message and exit. */ {
+      if (args.length == 0) {
+        System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool.class.getSimpleName());
+        return;
+      }
     }
 
     var finder =
@@ -25,32 +26,34 @@ class Tool {
             ToolFinder.of(new Compile(), new Link(), new Run()),
             ToolFinder.ofSystem());
 
-    if (args[0].equals("--list-tools")) {
-      finder.forEach(tool -> System.out.printf("%9s = %s%n", tool.name(), tool));
-      return;
+    /* Handle special case: --list-tools */ {
+      if (args[0].equals("--list-tools")) {
+        finder.forEach(tool -> System.out.printf("%9s = %s%n", tool.name(), tool));
+        return;
+      }
     }
 
-    var runner = ToolRunner.of(finder);
-    runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    /* Run an arbitrary tool. */ {
+      var runner = ToolRunner.of(finder);
+      runner.run(args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
   }
 
   interface ToolRunner {
-
-    ToolFinder finder();
-
-    default void run(String name, String... args) {
-      System.out.printf("| %s %s%n", name, String.join(" ", args));
-      var provider = finder().find(name).orElseThrow(() -> new NoSuchElementException(name));
-      var code =
-          provider instanceof ToolOperator operator
-              ? operator.run(this, args)
-              : provider.run(System.out, System.err, args);
-      if (code != 0) throw new RuntimeException(name + " returned non-zero exit code: " + code);
-    }
+    void run(String name, String... args);
 
     static ToolRunner of(ToolFinder finder) {
-      record DefaultToolRunner(ToolFinder finder) implements ToolRunner {}
-      return new DefaultToolRunner(finder);
+      return new ToolRunner() {
+        public void run(String name, String... args) {
+          System.out.printf("| %s %s%n", name, String.join(" ", args));
+          var tool = finder.find(name).orElseThrow(() -> new NoSuchElementException(name));
+          var code =
+              tool instanceof ToolOperator operator
+                  ? operator.run(this, args)
+                  : tool.run(System.out, System.err, args);
+          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
+        }
+      };
     }
   }
 

@@ -6,12 +6,12 @@ import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-/** Step 4 - Composing tool finders. */
+/** Composing tool finders. */
 class Tool4 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
-        System.out.println("Usage: Step4 TOOL-NAME [TOOL-ARGS...]");
+        System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool4.class.getSimpleName());
         return;
       }
     }
@@ -21,9 +21,7 @@ class Tool4 {
             //
             ToolFinder.of(new Banner()),
             //
-            ToolFinder.ofSystem()
-            //
-            );
+            ToolFinder.ofSystem());
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
@@ -73,19 +71,14 @@ class Tool4 {
   }
 
   interface ToolRunner {
-
-    ToolFinder finder();
-
     void run(String name, String... args);
 
     static ToolRunner of(ToolFinder finder) {
-      record DefaultToolRunner(ToolFinder finder) implements ToolRunner {
-        public void run(String name, String... args) {
-          var code = finder().find(name).orElseThrow().run(System.out, System.err, args);
-          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
-        }
-      }
-      return new DefaultToolRunner(finder);
+      return (name, args) -> {
+        var tool = finder.find(name).orElseThrow(() -> new RuntimeException(name + " not found"));
+        var code = tool.run(System.out, System.err, args);
+        if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
+      };
     }
   }
 

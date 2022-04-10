@@ -6,12 +6,12 @@ import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-/** Step 5 - A tool operator runs other tools. */
+/** A tool operator runs other tools. */
 class Tool5 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
-        System.out.println("Usage: Tool TOOL-NAME [TOOL-ARGS...]");
+        System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool5.class.getSimpleName());
         return;
       }
     }
@@ -89,23 +89,19 @@ class Tool5 {
   }
 
   interface ToolRunner {
-
-    ToolFinder finder();
-
     void run(String name, String... args);
 
     static ToolRunner of(ToolFinder finder) {
-      record DefaultToolRunner(ToolFinder finder) implements ToolRunner {
+      return new ToolRunner() {
         public void run(String name, String... args) {
-          var tool = finder().find(name).orElseThrow();
+          var tool = finder.find(name).orElseThrow();
           var code =
               tool instanceof ToolOperator operator
                   ? operator.run(this, args)
                   : tool.run(System.out, System.err, args);
           if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
         }
-      }
-      return new DefaultToolRunner(finder);
+      };
     }
   }
 

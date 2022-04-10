@@ -5,12 +5,12 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
-/** Step 3 - Local tool {@code Banner} and finder of tool instances. */
+/** Add banner tool and finder of tool instances. */
 class Tool3 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
-        System.out.println("Usage: Step3 TOOL-NAME [TOOL-ARGS...]");
+        System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool3.class.getSimpleName());
         return;
       }
     }
@@ -31,7 +31,6 @@ class Tool3 {
   }
 
   interface ToolFinder {
-
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
@@ -52,29 +51,22 @@ class Tool3 {
   }
 
   interface ToolRunner {
-
-    ToolFinder finder();
-
     void run(String name, String... args);
 
     static ToolRunner of(ToolFinder finder) {
-      record DefaultToolRunner(ToolFinder finder) implements ToolRunner {
-        public void run(String name, String... args) {
-          var code = finder().find(name).orElseThrow().run(System.out, System.err, args);
-          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
-        }
-      }
-      return new DefaultToolRunner(finder);
+      return (name, args) -> {
+        var tool = finder.find(name).orElseThrow(() -> new RuntimeException(name + " not found"));
+        var code = tool.run(System.out, System.err, args);
+        if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
+      };
     }
   }
 
   record Banner(String name) implements ToolProvider {
-
     Banner() {
       this("banner");
     }
 
-    @Override
     public int run(PrintWriter out, PrintWriter err, String... args) {
       var text = "USAGE: %s TEXT...".formatted(name());
       var line = args.length != 0 ? String.join(" ", args) : text;

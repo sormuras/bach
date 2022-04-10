@@ -5,17 +5,17 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 
-/** Step 2 - Introduce ToolFinder to list observable tools. */
+/** Introduce ToolFinder to list observable tools. */
 class Tool2 {
   public static void main(String... args) {
     /* Empty args array given? Show usage message and exit. */ {
       if (args.length == 0) {
-        System.out.println("Usage: Step2 TOOL-NAME [TOOL-ARGS...]");
+        System.err.printf("Usage: %s TOOL-NAME TOOL-ARGS...%n", Tool2.class.getSimpleName());
         return;
       }
     }
 
-    var finder = ToolFinder.ofSystem();
+    ToolFinder finder = List::of;
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
@@ -25,10 +25,10 @@ class Tool2 {
           return;
         }
         /* List all tools sorted by name. */ {
-        tools.stream()
-            .sorted(Comparator.comparing(ToolProvider::name))
-            .forEach(tool -> System.out.printf("%9s by %s%n", tool.name(), tool));
-        System.out.printf("%n  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
+          tools.stream()
+              .sorted(Comparator.comparing(ToolProvider::name))
+              .forEach(tool -> System.out.printf("%9s by %s%n", tool.name(), tool));
+          System.out.printf("%n  %d tool%s%n", tools.size(), tools.size() == 1 ? "" : "s");
         }
         return;
       }
@@ -41,15 +41,10 @@ class Tool2 {
   }
 
   interface ToolFinder {
-
     List<ToolProvider> findAll();
 
     default Optional<ToolProvider> find(String name) {
       return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
-    }
-
-    static ToolFinder ofEmpty() {
-      return List::of;
     }
 
     static ToolFinder ofSystem() {
@@ -61,21 +56,14 @@ class Tool2 {
   }
 
   interface ToolRunner {
-
-    ToolFinder finder();
-
     void run(String name, String... args);
 
     static ToolRunner of(ToolFinder finder) {
-      record DefaultToolRunner(ToolFinder finder) implements ToolRunner {
-        @Override
-        public void run(String name, String... args) {
-          var tool = finder().find(name).orElseThrow(() -> new RuntimeException(name + " ???"));
-          var code = tool.run(System.out, System.err, args);
-          if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
-        }
-      }
-      return new DefaultToolRunner(finder);
+      return (name, args) -> {
+        var tool = finder.find(name).orElseThrow(() -> new RuntimeException(name + " not found"));
+        var code = tool.run(System.out, System.err, args);
+        if (code != 0) throw new RuntimeException(name + " returned non-zero code: " + code);
+      };
     }
   }
 }
