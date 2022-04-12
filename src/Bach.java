@@ -128,7 +128,7 @@ public final class Bach {
 
       event.begin();
       var provider = tool.provider();
-      if (provider instanceof Tool.Action operator) {
+      if (provider instanceof Tool.Operator operator) {
         event.code = operator.run(this, out, err, args);
       } else {
         event.code = provider.run(out, err, args);
@@ -593,38 +593,18 @@ public final class Bach {
       HIDDEN
     }
 
-    @FunctionalInterface
-    public interface Action extends ToolProvider {
-      @Override
-      default String name() {
-        return getClass().getSimpleName();
-      }
-
-      @Override
-      default int run(PrintWriter out, PrintWriter err, String... args) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      default int run(PrintStream out, PrintStream err, String... args) {
-        throw new UnsupportedOperationException();
-      }
-
-      int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
-    }
-
     public static Tool of(ToolProvider provider) {
       return new Tool(Set.of(), provider.name(), provider);
     }
 
-    public static Tool of(String name, Action provider) {
-      record Local(Action provider) implements Action {
+    public static Tool of(String name, Operator operator) {
+      record Local(Operator provider) implements Operator {
         @Override
         public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
           return provider.run(bach, out, err, args);
         }
       }
-      return new Tool(Set.of(), name, new Local(provider));
+      return new Tool(Set.of(), name, new Local(operator));
     }
 
     public static Tool ofNativeToolInJavaHome(String name) {
@@ -690,6 +670,27 @@ public final class Bach {
       }
     }
 
+    /** An extension of tool provider for running other tools in custom run implementations. */
+    @FunctionalInterface
+    public interface Operator extends ToolProvider {
+      @Override
+      default String name() {
+        return getClass().getSimpleName();
+      }
+
+      @Override
+      default int run(PrintWriter out, PrintWriter err, String... args) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      default int run(PrintStream out, PrintStream err, String... args) {
+        throw new UnsupportedOperationException();
+      }
+
+      int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
+    }
+
     /**
      * A finder of tools.
      *
@@ -732,7 +733,7 @@ public final class Bach {
       }
 
       static Finder ofBasicTools(Path directory) {
-        record BasicToolProvider(String name, Properties properties) implements Action {
+        record BasicToolProvider(String name, Properties properties) implements Operator {
           @Override
           public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
             var verbose = bach.configuration.isVerbose();
