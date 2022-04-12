@@ -39,12 +39,14 @@ import jdk.jfr.StackTrace;
 /** Java Shell Builder. */
 public final class Bach {
 
+  /** Bach's main program running the initial seed tool call. */
   public static void main(String... args) {
     var bach = Bach.of(args);
     var code = bach.main();
     if (code != 0) System.exit(code);
   }
 
+  /** {@return an instance with "standard" streams and configured from the given arguments array} */
   public static Bach of(String... args) {
     var out = new PrintWriter(System.out, true);
     var err = new PrintWriter(System.err, true);
@@ -52,17 +54,20 @@ public final class Bach {
   }
 
   private final Configuration configuration;
-  private final ThreadLocal<Deque<String>> threadLocalToolCallNamesStack;
+  private final ThreadLocal<Deque<String>> stackedToolCallNames;
 
+  /** Initialize this {@code Bach} instance. */
   public Bach(Configuration configuration) {
     this.configuration = configuration;
-    this.threadLocalToolCallNamesStack = ThreadLocal.withInitial(ArrayDeque::new);
+    this.stackedToolCallNames = ThreadLocal.withInitial(ArrayDeque::new);
   }
 
+  /** {@return the immutable configuration object} */
   public Configuration configuration() {
     return configuration;
   }
 
+  /** {@return the result of running the initial seed tool call} */
   private int main() {
     var seed = configuration.tools.seed;
     if (seed == null) {
@@ -92,6 +97,7 @@ public final class Bach {
     }
   }
 
+  /** Run the given tool call. */
   public void run(Tool.Call call) {
     var name = call.name();
     var arguments = call.arguments();
@@ -105,7 +111,7 @@ public final class Bach {
     var finder = configuration.tools.finder;
     var tool = finder.find(name).orElseThrow(() -> new ToolNotFoundException(name));
 
-    var stack = threadLocalToolCallNamesStack.get();
+    var stack = stackedToolCallNames.get();
     stack.addLast(name);
     if (tool.isNotHidden()) {
       if (verbose && stack.size() > 1) {
@@ -580,6 +586,7 @@ public final class Bach {
     }
   }
 
+  /** A tool reference. */
   public record Tool(Set<Flag> flags, String name, ToolProvider provider) {
 
     public enum Flag {
