@@ -21,13 +21,10 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.StringJoiner;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
@@ -43,148 +40,59 @@ import jdk.jfr.StackTrace;
 public final class Bach {
 
   public static void main(String... args) {
-    var bach = Bach.ofSystem(args);
-    var code = main(bach);
+    var bach = Bach.of(args);
+    var code = bach.main();
     if (code != 0) System.exit(code);
   }
 
-  private static int main(Bach bach) {
-    var seed = bach.options().seed();
+  public static Bach of(String... args) {
+    var out = new PrintWriter(System.out, true);
+    var err = new PrintWriter(System.err, true);
+    return new Bach(Configuration.of(out, err, args));
+  }
+
+  private final Configuration configuration;
+  private final ThreadLocal<Deque<String>> threadLocalToolCallNamesStack;
+
+  public Bach(Configuration configuration) {
+    this.configuration = configuration;
+    this.threadLocalToolCallNamesStack = ThreadLocal.withInitial(ArrayDeque::new);
+  }
+
+  public Configuration configuration() {
+    return configuration;
+  }
+
+  private int main() {
+    var seed = configuration.tools.seed;
     if (seed == null) {
-      bach.run(Tool.Call.of("/?"));
+      run(Tool.Call.of("/?"));
       return 1;
     }
+    var printer = configuration.printer;
+    var paths = configuration.paths;
     try (var recording = new Recording()) {
       recording.start();
-      bach.out.println("BEGIN");
+      printer.out("BEGIN");
       try {
-        bach.run(seed);
+        run(seed);
         return 0;
       } catch (RuntimeException exception) {
-        bach.getErr().println(exception.getMessage());
+        printer.err(exception.getMessage());
         return 2;
       } finally {
-        bach.out.println("END.");
+        printer.out("END.");
         recording.stop();
-        var jfr = Files.createDirectories(bach.paths().out()).resolve("bach-logbook.jfr");
+        var jfr = Files.createDirectories(paths.out).resolve("bach-logbook.jfr");
         recording.dump(jfr);
       }
     } catch (Exception exception) {
-      exception.printStackTrace(bach.err);
+      exception.printStackTrace(printer.err());
       return -2;
     }
   }
 
-  public static Bach ofSilent(String... args) {
-    var out = new Core.StringPrintWriter();
-    var err = new Core.StringPrintWriter();
-    return Bach.of(out, err, args);
-  }
-
-  public static Bach ofSystem(String... args) {
-    var out = new PrintWriter(System.out, true);
-    var err = new PrintWriter(System.err, true);
-    return Bach.of(out, err, args);
-  }
-
-  public static Bach of(PrintWriter out, PrintWriter err, String... args) {
-    var options = Component.Options.of(args);
-    var root = options.__chroot;
-    var properties = Core.PathSupport.properties(root.resolve("bach.properties"));
-    var resources = new TreeMap<Path, URI>();
-    for (var key : properties.stringPropertyNames()) {
-      if (key.startsWith(".bach/external-")) {
-        var target = Path.of(key).normalize();
-        var source = URI.create(properties.getProperty(key));
-        resources.put(target, source);
-      }
-    }
-    return new Bach(
-        out,
-        err,
-        options,
-        new Component.Paths(root, options.__destination),
-        new Component.External(
-            properties.getProperty("bach.externals.default-checksum-algorithm", "SHA-256"),
-            resources),
-        new Component.Tools(
-            Tool.Finder.compose(
-                Tool.Finder.of(
-                    Tool.of("help", Bach.Core::help),
-                    Tool.of("/?", Bach.Core::help),
-                    Tool.of("/save", Bach.Core::save)),
-                Tool.Finder.ofBasicTools(root.resolve(".bach/basic-tools")),
-                Tool.Finder.ofJavaTools(
-                    root.resolve(".bach/external-tools"),
-                    Path.of(System.getProperty("java.home"), "bin", "java"),
-                    "java.args"),
-                Tool.Finder.of(
-                    Tool.of("banner", Bach.Core::banner).with(Tool.Flag.HIDDEN),
-                    Tool.of("checksum", Bach.Core::checksum),
-                    Tool.of("download", Bach.Core::download),
-                    Tool.of("load", Bach.Core::load),
-                    Tool.of("load-and-verify", Bach.Core::loadAndVerify),
-                    Tool.of("info", Bach.Core::info),
-                    Tool.of("tree", Bach.Core::tree)),
-                Tool.Finder.ofSystemTools(),
-                Tool.Finder.of(
-                    Tool.ofNativeToolInJavaHome("jarsigner"),
-                    Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
-                    Tool.ofNativeToolInJavaHome("jdeprscan"),
-                    Tool.ofNativeToolInJavaHome("jfr")))));
-  }
-
-  private final PrintWriter out;
-  private final PrintWriter err;
-  private final ThreadLocal<Deque<String>> stack;
-
-  private final Component.Options options;
-  private final Component.Paths paths;
-  private final Component.External external;
-  private final Component.Tools tools;
-
-  public Bach(
-      PrintWriter out,
-      PrintWriter err,
-      Component.Options options,
-      Component.Paths paths,
-      Component.External external,
-      Component.Tools tools) {
-    this.out = out;
-    this.err = err;
-    this.options = options;
-    this.paths = paths;
-    this.external = external;
-    this.tools = tools;
-
-    this.stack = ThreadLocal.withInitial(ArrayDeque::new);
-  }
-
-  public PrintWriter getOut() {
-    return out;
-  }
-
-  public PrintWriter getErr() {
-    return err;
-  }
-
-  public Component.Options options() {
-    return options;
-  }
-
-  public Component.Paths paths() {
-    return paths;
-  }
-
-  public Component.External external() {
-    return external;
-  }
-
-  public Component.Tools tools() {
-    return tools;
-  }
-
-  public void run(Tool.Call call) throws AssertionError {
+  public void run(Tool.Call call) {
     var name = call.name();
     var arguments = call.arguments();
 
@@ -192,28 +100,30 @@ public final class Bach {
     event.name = name;
     event.args = String.join(" ", arguments);
 
-    var verbose = options.flags.contains(Component.Flag.VERBOSE);
-    var tool = tools.finder().find(name).orElseThrow(() -> new ToolNotFoundException(name));
+    var verbose = configuration.isVerbose();
+    var printer = configuration.printer;
+    var finder = configuration.tools.finder;
+    var tool = finder.find(name).orElseThrow(() -> new ToolNotFoundException(name));
 
-    var stack = this.stack.get();
+    var stack = threadLocalToolCallNamesStack.get();
     stack.addLast(name);
     if (tool.isNotHidden()) {
       if (verbose && stack.size() > 1) {
         var navigation = String.join(" | ", stack);
-        this.out.println(navigation);
+        printer.out(navigation);
       }
       var command = arguments.isEmpty() ? name : name + ' ' + event.args;
-      this.out.println(command);
+      printer.out(command);
     }
 
-    try (var out = new Core.MirroringStringPrintWriter(this.out);
-        var err = new Core.MirroringStringPrintWriter(this.err)) {
+    try (var out = new Core.MirroringStringPrintWriter(printer.out);
+        var err = new Core.MirroringStringPrintWriter(printer.err)) {
       var args = arguments.toArray(String[]::new);
 
       event.begin();
       var provider = tool.provider();
-      if (provider instanceof Tool.Action action) {
-        event.code = action.run(this, out, err, args);
+      if (provider instanceof Tool.Action operator) {
+        event.code = operator.run(this, out, err, args);
       } else {
         event.code = provider.run(out, err, args);
       }
@@ -230,62 +140,100 @@ public final class Bach {
                 .formatted(call.name(), event.code));
       }
     } finally {
-      this.out.flush();
-      this.err.flush();
+      printer.out.flush();
+      printer.err.flush();
       stack.removeLast();
     }
   }
 
-  /** A component of Bach. */
-  public sealed interface Component {
+  /** Immutable settings. */
+  public record Configuration(Printer printer, Set<Flag> flags, Paths paths, Tools tools) {
     enum Flag {
       VERBOSE
     }
 
-    record Options(Set<Flag> flags, Path __chroot, Path __destination, Tool.Call seed)
-        implements Component {
+    public static Configuration of(PrintWriter out, PrintWriter err, String... args) {
+      var printer = new Printer(out, err);
+      var flags = EnumSet.noneOf(Flag.class);
+      var root = Path.of("");
+      Tool.Call seed = null;
 
-      static Options of(String... args) {
-        var flags = EnumSet.noneOf(Flag.class);
-        var root = Path.of("");
-        var destination = Path.of(".bach", "out");
-        Tool.Call seed = null;
-
-        var arguments = new ArrayDeque<>(List.of(args));
-        while (!arguments.isEmpty()) {
-          var argument = arguments.removeFirst();
-          if (argument.startsWith("--")) {
-            if (argument.equals("--verbose")) {
-              flags.add(Flag.VERBOSE);
-              continue;
-            }
-            var delimiter = argument.indexOf('=', 2);
-            var key = delimiter == -1 ? argument : argument.substring(0, delimiter);
-            var value =
-                delimiter == -1 ? arguments.removeFirst() : argument.substring(delimiter + 1);
-            if (key.equals("--chroot")) {
-              root = Path.of(value).normalize();
-              continue;
-            }
-            if (key.equals("--destination")) {
-              destination = Path.of(value).normalize();
-              continue;
-            }
-            throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
+      var arguments = new ArrayDeque<>(List.of(args));
+      while (!arguments.isEmpty()) {
+        var argument = arguments.removeFirst();
+        if (argument.startsWith("--")) {
+          if (argument.equals("--verbose")) {
+            flags.add(Flag.VERBOSE);
+            continue;
           }
-          seed = new Tool.Call(argument, arguments.stream().toList());
-          break;
+          var index = argument.indexOf('=', 2);
+          var key = index == -1 ? argument : argument.substring(0, index);
+          var value = index == -1 ? arguments.removeFirst() : argument.substring(index + 1);
+          if (key.equals("--chroot")) {
+            root = Path.of(value).normalize();
+            continue;
+          }
+          throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
         }
-        return new Options(Set.copyOf(flags), root, root.resolve(destination), seed);
+        seed = new Tool.Call(argument, arguments.stream().toList());
+        break;
+      }
+
+      var paths = new Paths(root, root.resolve(Path.of(".bach", "out")));
+      var finder =
+          Tool.Finder.compose(
+              Tool.Finder.of(
+                  Tool.of("help", Core::help),
+                  Tool.of("/?", Core::help),
+                  Tool.of("/save", Core::save)),
+              Tool.Finder.ofBasicTools(paths.root(".bach", "basic-tools")),
+              Tool.Finder.ofJavaTools(
+                  paths.root(".bach", "external-tools"),
+                  Path.of(System.getProperty("java.home"), "bin", "java"),
+                  "java.args"),
+              Tool.Finder.of(
+                  Tool.of("banner", Core::banner).with(Tool.Flag.HIDDEN),
+                  Tool.of("checksum", Core::checksum),
+                  Tool.of("load", Core::load),
+                  Tool.of("load-and-verify", Core::loadAndVerify),
+                  Tool.of("info", Core::info),
+                  Tool.of("tree", Core::tree)),
+              Tool.Finder.ofSystemTools(),
+              Tool.Finder.of(
+                  Tool.ofNativeToolInJavaHome("jarsigner"),
+                  Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
+                  Tool.ofNativeToolInJavaHome("jdeprscan"),
+                  Tool.ofNativeToolInJavaHome("jfr")));
+      var tools = new Tools(finder, seed);
+
+      return new Configuration(printer, Set.copyOf(flags), paths, tools);
+    }
+
+    public boolean isVerbose() {
+      return flags().contains(Flag.VERBOSE);
+    }
+
+    public record Printer(PrintWriter out, PrintWriter err) {
+      void out(String string) {
+        out.println(string);
+      }
+
+      void err(String string) {
+        err.println(string);
       }
     }
 
-    record Paths(Path root, Path out) implements Component {}
+    public record Paths(Path root, Path out) {
+      public Path root(String first, String... more) {
+        return root.resolve(Path.of(first, more));
+      }
 
-    record External(String defaultChecksumAlgorithm, Map<Path, URI> resources)
-        implements Component {}
+      public Path out(String first, String... more) {
+        return out.resolve(Path.of(first, more));
+      }
+    }
 
-    record Tools(Tool.Finder finder) implements Component {}
+    public record Tools(Tool.Finder finder, Tool.Call seed) {}
   }
 
   /** Internal helpers. */
@@ -311,7 +259,7 @@ public final class Bach {
         return 1;
       }
       var path = Path.of(args[0]);
-      var algorithm = args.length > 1 ? args[1] : bach.external().defaultChecksumAlgorithm();
+      var algorithm = args.length > 1 ? args[1] : "SHA-256";
       var computed = PathSupport.computeChecksum(path, algorithm);
       if (args.length == 1 || args.length == 2) {
         out.printf("%s %s%n", computed, path);
@@ -331,21 +279,14 @@ public final class Bach {
       return 2;
     }
 
-    static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      bach.external()
-          .resources()
-          .forEach((target, source) -> bach.run(Tool.Call.of("load-and-verify", target, source)));
-      return 0;
-    }
-
     static int help(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       out.print(
           """
           Usage: java Bach.java [OPTIONS] TOOL-NAME [TOOL-ARGS...]
           """);
-      if (bach.options().flags().contains(Component.Flag.VERBOSE)) {
+      if (bach.configuration.isVerbose()) {
         out.println("Available tools include:");
-        bach.tools().finder().findAll().stream()
+        bach.configuration.tools.finder.findAll().stream()
             .filter(Tool::isNotHidden)
             .sorted(Comparator.comparing(Tool::name))
             .forEach(tool -> out.printf("  - %s%n", tool.name()));
@@ -407,22 +348,11 @@ public final class Bach {
     }
 
     static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      out.printf("bach.options   = %s%n", bach.options());
-      out.printf("bach.paths     = %s%n", bach.paths());
-      out.printf("bach.external.resources%n");
-      bach.external().resources().entrySet().stream()
-          .sorted(Map.Entry.comparingByKey())
-          .forEach(
-              entry ->
-                  out.printf(
-                      """
-                      %s
-                        %s
-                      """,
-                      entry.getKey(),
-                      Core.StringSupport.toTextBlock(entry.getValue()).indent(2).strip()));
-      out.printf("bach.tools%n");
-      bach.tools().finder().findAll().stream()
+      out.println("Info");
+      out.println(bach.configuration.flags);
+      out.println(bach.configuration.paths);
+      out.printf("Tools%n");
+      bach.configuration.tools.finder.findAll().stream()
           .sorted(Comparator.comparing(Tool::name))
           .forEach(tool -> out.printf("  - %s%n", tool.name()));
       return 0;
@@ -635,31 +565,6 @@ public final class Bach {
         var value = string.substring(index + 1);
         return new Property(key, value);
       }
-
-      static String toTextBlock(URI uri) {
-        var joiner = new StringJoiner("\n");
-        var scheme = uri.getScheme();
-        if (scheme != null) {
-          var host = uri.getHost();
-          var port = uri.getPort();
-          joiner.add(scheme + "://" + host + (port == -1 ? "" : ":" + port));
-        }
-        var path = uri.getPath();
-        var last = path.lastIndexOf('/');
-        var folder = last == -1 ? "" : path.substring(0, last + 1);
-        var name = last == -1 ? path : path.substring(last + 1);
-        if (!folder.isEmpty()) joiner.add(folder);
-        joiner.add(name);
-        var fragment = uri.getFragment();
-        var elements = fragment == null ? new String[0] : fragment.split("&");
-        for (var element : elements) {
-          var property = StringSupport.parseProperty(element);
-          var algorithm = property.key();
-          var expected = property.value();
-          joiner.add("%s = %s".formatted(algorithm, expected));
-        }
-        return joiner.toString();
-      }
     }
 
     @Category("Bach")
@@ -823,7 +728,7 @@ public final class Bach {
         record BasicToolProvider(String name, Properties properties) implements Action {
           @Override
           public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-            var verbose = bach.options().flags().contains(Component.Flag.VERBOSE);
+            var verbose = bach.configuration.isVerbose();
             if (verbose) out.println("BEGIN # of " + name);
             var numbers =
                 properties.stringPropertyNames().stream()
@@ -843,9 +748,11 @@ public final class Bach {
           }
 
           private String replace(Bach bach, String line) {
+            var root = bach.configuration.paths.root;
+            var out = bach.configuration.paths.out;
             return line.trim()
-                .replace("{{bach.paths.root}}", Core.PathSupport.normalized(bach.paths.root))
-                .replace("{{bach.paths.out}}", Core.PathSupport.normalized(bach.paths.out))
+                .replace("{{bach.paths.root}}", Core.PathSupport.normalized(root))
+                .replace("{{bach.paths.out}}", Core.PathSupport.normalized(out))
                 .replace("{{path.separator}}", System.getProperty("path.separator"));
           }
         }

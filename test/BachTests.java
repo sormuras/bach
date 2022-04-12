@@ -8,17 +8,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class BachTests {
+  private static Bach bach(String... args) {
+    var out = new Bach.Core.StringPrintWriter();
+    var err = new Bach.Core.StringPrintWriter();
+    return new Bach(Bach.Configuration.of(out, err, args));
+  }
+
   @Test
   void test(@TempDir Path temp) {
-    var bach = Bach.ofSilent("--chroot", temp.toString());
-    assertEquals(temp, bach.paths().root());
-    assertTrue(bach.getOut().toString().isEmpty());
-    assertTrue(bach.getErr().toString().isEmpty());
+    var bach = bach("--chroot", temp.toString());
+    assertEquals(temp, bach.configuration().paths().root());
+    assertTrue(bach.configuration().printer().out().toString().isEmpty());
+    assertTrue(bach.configuration().printer().err().toString().isEmpty());
   }
 
   @Test
   void versions(@TempDir Path temp) {
-    var bach = Bach.ofSilent("--chroot", temp.toString());
+    var bach = bach("--chroot", temp.toString());
 
     Stream.of(
             Bach.Tool.Call.of("jar").with("--version"),
@@ -52,6 +58,6 @@ class BachTests {
         """
             .formatted(System.getProperty("java.version", "?"))
             .lines(),
-        bach.getOut().toString().lines());
+        bach.configuration().printer().out().toString().lines());
   }
 }
