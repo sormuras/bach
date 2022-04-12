@@ -21,13 +21,14 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.spi.ToolProvider;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jdk.jfr.Category;
 import jdk.jfr.Event;
@@ -83,7 +84,7 @@ public final class Bach {
         run(seed);
         return 0;
       } catch (RuntimeException exception) {
-        printer.err(exception.getMessage());
+        printer.err(exception.getClass().getSimpleName() + ": " + exception.getMessage());
         return 2;
       } finally {
         printer.out("END.");
@@ -92,7 +93,7 @@ public final class Bach {
         recording.dump(jfr);
       }
     } catch (Exception exception) {
-      exception.printStackTrace(printer.err());
+      exception.printStackTrace(printer.err);
       return -2;
     }
   }
@@ -104,7 +105,12 @@ public final class Bach {
     var verbose = configuration.isVerbose();
     var printer = configuration.printer;
     var finder = configuration.tools.finder;
-    var tool = finder.find(name).orElseThrow(() -> new ToolNotFoundException(name));
+
+    var tools = finder.find(name);
+    if (tools.isEmpty()) throw new ToolNotFoundException(name);
+    if (tools.size() != 1) throw new ToolNotUniqueException(name, tools);
+    var tool = tools.get(0);
+
     var names = stackedToolCallNames.get();
     try {
       names.addLast(name);
@@ -151,7 +157,8 @@ public final class Bach {
   }
 
   /** Immutable settings. */
-  public record Configuration(Printer printer, Set<Flag> flags, Paths paths, Tools tools) {
+  public record Configuration(
+      Printer printer, Flags flags, Paths paths, Tools tools, Project project) {
     enum Flag {
       VERBOSE
     }
@@ -187,7 +194,7 @@ public final class Bach {
       var finder =
           Tool.Finder.compose(
               Tool.Finder.of(
-                  Tool.of("help", Core::help),
+                  Tool.of("bach/help", Core::help),
                   Tool.of("/?", Core::help),
                   Tool.of("/save", Core::save)),
               Tool.Finder.ofBasicTools(paths.root(".bach", "basic-tools")),
@@ -196,12 +203,13 @@ public final class Bach {
                   Path.of(System.getProperty("java.home"), "bin", "java"),
                   "java.args"),
               Tool.Finder.of(
-                  Tool.of("banner", Core::banner).with(Tool.Flag.HIDDEN),
-                  Tool.of("checksum", Core::checksum),
-                  Tool.of("load", Core::load),
-                  Tool.of("load-and-verify", Core::loadAndVerify),
-                  Tool.of("info", Core::info),
-                  Tool.of("tree", Core::tree)),
+                  Tool.of("bach/banner", Core::banner).with(Tool.Flag.HIDDEN),
+                  Tool.of("bach/checksum", Core::checksum),
+                  Tool.of("bach/load", Core::load),
+                  Tool.of("bach/load-and-verify", Core::loadAndVerify),
+                  Tool.of("bach/info", Core::info),
+                  Tool.of("bach/tree", Core::tree)),
+              Tool.Finder.of(Tool.of("project/compile", Project::compile)),
               Tool.Finder.ofSystemTools(),
               Tool.Finder.of(
                   Tool.ofNativeToolInJavaHome("jarsigner"),
@@ -210,12 +218,18 @@ public final class Bach {
                   Tool.ofNativeToolInJavaHome("jfr")));
       var tools = new Tools(finder, seed);
 
-      return new Configuration(printer, Set.copyOf(flags), paths, tools);
+      return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, tools, new Project());
     }
 
     public boolean isVerbose() {
-      return flags().contains(Flag.VERBOSE);
+      return is(Flag.VERBOSE);
     }
+
+    public boolean is(Flag flag) {
+      return flags.set.contains(flag);
+    }
+
+    public record Flags(Set<Flag> set) {}
 
     public record Printer(PrintWriter out, PrintWriter err) {
       void out(String string) {
@@ -584,6 +598,13 @@ public final class Bach {
     }
   }
 
+  /** Project model and project-related operators. */
+  public record Project() {
+    static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      return 0;
+    }
+  }
+
   /** A tool reference. */
   public record Tool(Set<Flag> flags, String name, ToolProvider provider) {
 
@@ -592,7 +613,9 @@ public final class Bach {
     }
 
     public static Tool of(ToolProvider provider) {
-      return new Tool(Set.of(), provider.name(), provider);
+      var module = provider.getClass().getModule();
+      var name = module.isNamed() ? module.getName() + '/' + provider.name() : provider.name();
+      return new Tool(Set.of(), name, provider);
     }
 
     public static Tool of(String name, Operator operator) {
@@ -607,7 +630,7 @@ public final class Bach {
 
     public static Tool ofNativeToolInJavaHome(String name) {
       var executable = Path.of(System.getProperty("java.home"), "bin", name);
-      return Tool.of(new NativeToolProvider(name, List.of(executable.toString())));
+      return Tool.of(new NativeToolProvider("java-home/" + name, List.of(executable.toString())));
     }
 
     public static Tool ofNativeTool(String name, List<String> command) {
@@ -621,6 +644,12 @@ public final class Bach {
 
     public boolean isNotHidden() {
       return !flags.contains(Flag.HIDDEN);
+    }
+
+    public boolean isNameMatching(String text) {
+      // name = "foo/bar" matches text = "foo/bar"
+      // name = "foo/bar" matches text = "bar" because name ends with "/bar"
+      return name.equals(text) || name.endsWith('/' + text);
     }
 
     /** A command consisting of a tool name and a list of arguments. */
@@ -700,8 +729,12 @@ public final class Bach {
 
       List<Tool> findAll();
 
-      default Optional<Tool> find(String name) {
-        return findAll().stream().filter(tool -> tool.name().equals(name)).findFirst();
+      default List<Tool> find(String name) {
+        return find(name, Tool::isNameMatching);
+      }
+
+      default List<Tool> find(String name, BiPredicate<Tool, String> filter) {
+        return findAll().stream().filter(tool -> filter.test(tool, name)).toList();
       }
 
       static Finder of(Tool... tools) {
@@ -771,10 +804,11 @@ public final class Bach {
             try (var paths = Files.newDirectoryStream(directory, "*.properties")) {
               for (var path : paths) {
                 if (Files.isDirectory(path)) continue;
+                var namespace = path.getParent().getFileName().toString();
                 var filename = path.getFileName().toString();
                 var name = filename.substring(0, filename.length() - ".properties".length());
                 var properties = Core.PathSupport.properties(path);
-                list.add(Tool.of(new BasicToolProvider(name, properties)));
+                list.add(Tool.of(new BasicToolProvider(namespace + "/" + name, properties)));
               }
             } catch (Exception exception) {
               throw new RuntimeException(exception);
@@ -791,35 +825,34 @@ public final class Bach {
 
           @Override
           public List<Tool> findAll() {
-            var name = path.normalize().toAbsolutePath().getFileName().toString();
-            return find(name).map(List::of).orElseGet(List::of);
+            return find(path.normalize().toAbsolutePath().getFileName().toString());
           }
 
           @Override
-          public Optional<Tool> find(String name) {
+          public List<Tool> find(String name) {
             var directory = path.normalize().toAbsolutePath();
-            if (!Files.isDirectory(directory)) return Optional.empty();
-            if (!name.equals(directory.getFileName().toString())) return Optional.empty();
+            if (!Files.isDirectory(directory)) return List.of();
+            var namespace = path.getParent().getFileName().toString();
+            if (!name.equals(directory.getFileName().toString())) return List.of();
             var command = new ArrayList<String>();
             command.add(java.toString());
             var args = directory.resolve(argsfile);
             if (Files.isRegularFile(args)) {
               command.add("@" + args);
-              return Optional.of(Tool.ofNativeTool(name, command));
+              return List.of(Tool.ofNativeTool(namespace + '/' + name, command));
             }
             var jars = Core.PathSupport.list(directory, Core.PathSupport::isJarFile);
             if (jars.size() == 1) {
               command.add("-jar");
               command.add(jars.get(0).toString());
-              return Optional.of(Tool.ofNativeTool(name, command));
+              return List.of(Tool.ofNativeTool(namespace + '/' + name, command));
             }
             var javas = Core.PathSupport.list(directory, Core.PathSupport::isJavaFile);
             if (javas.size() == 1) {
               command.add(javas.get(0).toString());
-              return Optional.of(Tool.ofNativeTool(name, command));
+              return List.of(Tool.ofNativeTool(namespace + '/' + name, command));
             }
-            throw new UnsupportedOperationException(
-                "Unknown program layout in " + directory.toUri());
+            throw new UnsupportedOperationException("Unknown program layout: " + directory.toUri());
           }
         }
 
@@ -844,12 +877,8 @@ public final class Bach {
           }
 
           @Override
-          public Optional<Tool> find(String name) {
-            for (var finder : finders) {
-              var tool = finder.find(name);
-              if (tool.isPresent()) return tool;
-            }
-            return Optional.empty();
+          public List<Tool> find(String name) {
+            return finders.stream().flatMap(finder -> finder.find(name).stream()).toList();
           }
         }
         return new CompositeToolFinder(List.of(finders));
@@ -888,6 +917,21 @@ public final class Bach {
 
     ToolNotFoundException(String name) {
       super("Tool named `%s` not found".formatted(name));
+    }
+  }
+
+  /** An exception thrown to indicate that multiple tools were found for a given name. */
+  public static final class ToolNotUniqueException extends RuntimeException {
+    @java.io.Serial private static final long serialVersionUID = -4475718006846080166L;
+
+    ToolNotUniqueException(String name, List<Tool> tools) {
+      super(
+          """
+          Multiple tools found for `%s`:
+            - %s
+          """
+              .formatted(name, tools.stream().map(Tool::name).collect(Collectors.joining("\n  - ")))
+              .stripTrailing());
     }
   }
 }
