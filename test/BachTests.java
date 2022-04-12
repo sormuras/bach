@@ -32,7 +32,7 @@ class BachTests {
             Bach.Tool.Call.of("javadoc").with("--version"))
         .parallel()
         .forEach(bach::run);
-    bach.run(Bach.Tool.Call.of("banner", "---"));
+    bach.run("banner", "---");
     Stream.of(
             Bach.Tool.Call.of("jdeps").with("--version"),
             Bach.Tool.Call.of("jlink").with("--version"),

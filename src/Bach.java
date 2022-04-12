@@ -100,8 +100,16 @@ public final class Bach {
 
   /** Run the given tool call. */
   public void run(Tool.Call call) {
-    var name = call.name();
-    var arguments = call.arguments();
+    run(call.name(), call.arguments());
+  }
+
+  /** Run the tool specified the given name and passing the given arguments. */
+  public void run(String name, Object... arguments) {
+    run(name, Stream.of(arguments).map(Object::toString).toList());
+  }
+
+  /** Run the tool specified by its name and passing the given arguments. */
+  public void run(String name, List<String> arguments) {
     var verbose = configuration.isVerbose();
     var printer = configuration.printer;
     var finder = configuration.tools.finder;
@@ -120,11 +128,7 @@ public final class Bach {
       }
       var code = run(tool.provider(), name, arguments);
       if (code != 0) {
-        throw new RuntimeException(
-            """
-          %s returned non-zero exit code: %d
-          """
-                .formatted(call.name(), code));
+        throw new RuntimeException("%s returned non-zero exit code: %d".formatted(name, code));
       }
     } finally {
       names.removeLast();
@@ -397,7 +401,7 @@ public final class Bach {
       var version = args[1];
       var from = URI.create("https://github.com/sormuras/bach/raw/" + version + "/src/Bach.java");
       out.printf("<< %s%n", from);
-      bach.run(Tool.Call.of("download").with("--replace-existing").with(target).with(from));
+      bach.run("load", /* TODO "--replace-existing", */ target, from);
       out.printf(">> %s%n", target);
       return 0;
     }
