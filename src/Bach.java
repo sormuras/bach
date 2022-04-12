@@ -101,33 +101,39 @@ public final class Bach {
   public void run(Tool.Call call) {
     var name = call.name();
     var arguments = call.arguments();
-
-    var event = new Core.RunEvent();
-    event.name = name;
-    event.args = String.join(" ", arguments);
-
     var verbose = configuration.isVerbose();
     var printer = configuration.printer;
     var finder = configuration.tools.finder;
     var tool = finder.find(name).orElseThrow(() -> new ToolNotFoundException(name));
-
-    var stack = stackedToolCallNames.get();
-    stack.addLast(name);
-    if (tool.isNotHidden()) {
-      if (verbose && stack.size() > 1) {
-        var navigation = String.join(" | ", stack);
-        printer.out(navigation);
+    var names = stackedToolCallNames.get();
+    try {
+      names.addLast(name);
+      if (tool.isNotHidden()) {
+        if (verbose && names.size() > 1) printer.out(String.join(" | ", names));
+        printer.out(arguments.isEmpty() ? name : name + ' ' + String.join(" ", arguments));
       }
-      var command = arguments.isEmpty() ? name : name + ' ' + event.args;
-      printer.out(command);
+      var code = run(tool.provider(), name, arguments);
+      if (code != 0) {
+        throw new RuntimeException(
+            """
+          %s returned non-zero exit code: %d
+          """
+                .formatted(call.name(), code));
+      }
+    } finally {
+      names.removeLast();
     }
+  }
 
+  private int run(ToolProvider provider, String name, List<String> arguments) {
+    var event = new Core.RunEvent();
+    event.name = name;
+    event.args = String.join(" ", arguments);
+    var printer = configuration.printer;
     try (var out = new Core.MirroringStringPrintWriter(printer.out);
         var err = new Core.MirroringStringPrintWriter(printer.err)) {
       var args = arguments.toArray(String[]::new);
-
       event.begin();
-      var provider = tool.provider();
       if (provider instanceof Tool.Operator operator) {
         event.code = operator.run(this, out, err, args);
       } else {
@@ -137,18 +143,10 @@ public final class Bach {
       event.out = out.toString().strip();
       event.err = err.toString().strip();
       event.commit();
-
-      if (event.code != 0) {
-        throw new AssertionError(
-            """
-            %s returned non-zero exit code: %d
-            """
-                .formatted(call.name(), event.code));
-      }
+      return event.code;
     } finally {
       printer.out.flush();
       printer.err.flush();
-      stack.removeLast();
     }
   }
 
