@@ -32,7 +32,7 @@ class BachTests {
             Bach.Tool.Call.of("javadoc").with("--version"))
         .parallel()
         .forEach(bach::run);
-    bach.run("banner", "---");
+    bach.run("banner", "|X|");
     Stream.of(
             Bach.Tool.Call.of("jdeps").with("--version"),
             Bach.Tool.Call.of("jlink").with("--version"),
@@ -43,17 +43,15 @@ class BachTests {
 
     assertLinesMatch(
         """
-        >> 6 >>
+        ja.+? %1$s
+        ja.+? %1$s
+        ja.+? %1$s
         ===
-        ---
+        |X|
         ===
-        jdeps --version
         %1$s
-        jlink --version
         %1$s
-        jmod --version
         %1$s
-        jpackage --version
         %1$s
         """
             .formatted(System.getProperty("java.version", "?"))

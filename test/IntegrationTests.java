@@ -29,7 +29,6 @@ class IntegrationTests {
     bach.run("compile");
     assertLinesMatch(
         """
-        compile
         Compile and package 3 main modules...
         >> JAVAC + JAR >>
         """
@@ -41,7 +40,6 @@ class IntegrationTests {
     bach.run("launch", "first", '2', 0x3);
     assertLinesMatch(
         """
-        launch first 2 3
         Example application is running.
         file.+?/main/modules/org.example.app.jar
           module org.example.app

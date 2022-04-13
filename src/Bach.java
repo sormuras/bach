@@ -145,7 +145,9 @@ public final class Bach {
       names.addLast(name);
       if (tool.isNotHidden()) {
         if (verbose && names.size() > 1) printer.out(String.join(" | ", names));
-        printer.out(arguments.isEmpty() ? name : name + ' ' + String.join(" ", arguments));
+        var text = arguments.isEmpty() ? name : name + ' ' + String.join(" ", arguments);
+        var operator = tool.provider instanceof Tool.Operator;
+        if (names.size() > 1) printer.out(operator ? text : "  " + text);
       }
       var code = run(tool.provider(), name, arguments);
       if (code != 0) {
