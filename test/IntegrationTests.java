@@ -59,6 +59,7 @@ class IntegrationTests {
 
   @ParameterizedTest
   @MethodSource
+  @SwallowSystem
   void buildExampleProject(Path path, @TempDir Path temp) throws Exception {
     var bach = bach("--chroot", path.toString(), "--change-bach-out", temp.toString());
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
