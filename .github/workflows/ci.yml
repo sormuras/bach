@@ -14,10 +14,10 @@ jobs:
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v2
-      - name: 'Set up latest JDK 17'
+      - name: 'Set up latest JDK'
         uses: oracle-actions/setup-java@v1
-      - name: 'Build Bach ${{ github.sha }}'
-        run: java src/Bach.java build
+      - name: 'Bootstrap Bach ${{ github.sha }}'
+        run: java src/Bach.java bootstrap
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v2
