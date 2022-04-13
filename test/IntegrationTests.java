@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class IntegrationTests {
   private static Bach bach(String... args) {
@@ -24,10 +26,10 @@ class IntegrationTests {
     assertEquals("2022-04-13T00:00Z", project.version().date().toString());
     assertEquals("org.example.app/org.example.app.Main", main.launcher().orElse("?"));
 
-    bach.run("project/compile");
+    bach.run("compile");
     assertLinesMatch(
         """
-        project/compile
+        compile
         Compile and package 3 main modules...
         >> JAVAC + JAR >>
         """
@@ -36,10 +38,10 @@ class IntegrationTests {
 
     var checkedLines = printer.out().toString().lines().count();
 
-    bach.run("project/launch", "first", '2', 0x3);
+    bach.run("launch", "first", '2', 0x3);
     assertLinesMatch(
         """
-        project/launch first 2 3
+        launch first 2 3
         Example application is running.
         file.+?/main/modules/org.example.app.jar
           module org.example.app
@@ -49,5 +51,13 @@ class IntegrationTests {
         """
             .lines(),
         printer.out().toString().lines().skip(checkedLines));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"aggregator", "hello", "hello-world", "multi-release"})
+  void buildExampleProject(String name, @TempDir Path temp) {
+    var bach =
+        bach("--chroot", "doc/example-projects/" + name, "--change-bach-out", temp.toString());
+    bach.run("build");
   }
 }
