@@ -192,6 +192,7 @@ public final class Bach {
       var printer = new Printer(out, err);
       var flags = EnumSet.noneOf(Flag.class);
       var root = Path.of("");
+      var bout = Path.of(".bach", "out");
       Tool.Call seed = null;
 
       var arguments = new ArrayDeque<>(List.of(args));
@@ -209,13 +210,17 @@ public final class Bach {
             root = Path.of(value).normalize();
             continue;
           }
+          if (key.equals("--change-bach-out")) {
+            bout = Path.of(value).normalize();
+            continue;
+          }
           throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
         }
         seed = new Tool.Call(argument, arguments.stream().toList());
         break;
       }
 
-      var paths = new Paths(root, root.resolve(Path.of(".bach", "out")));
+      var paths = new Paths(root, root.resolve(bout));
       var finder =
           Tool.Finder.compose(
               Tool.Finder.of(
