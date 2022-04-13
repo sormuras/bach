@@ -1,1 +1,3 @@
-module production {}
+module production {
+  requires static annotation;
+}
