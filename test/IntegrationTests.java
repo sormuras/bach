@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -58,9 +59,14 @@ class IntegrationTests {
 
   @ParameterizedTest
   @MethodSource
-  void buildExampleProject(Path path, @TempDir Path temp) {
+  void buildExampleProject(Path path, @TempDir Path temp) throws Exception {
     var bach = bach("--chroot", path.toString(), "--change-bach-out", temp.toString());
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
+    var name = bach.configuration().project().name().value();
+    if (OS.WINDOWS.isCurrentOs() && name.equals("processing-code")) {
+      System.gc(); // try to release file handles and...
+      Thread.sleep(123); // hope JAR files are not locked...
+    }
   }
 
   static List<Path> buildExampleProject() {
