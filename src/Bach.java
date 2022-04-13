@@ -1,35 +1,55 @@
+import com.sun.source.tree.ModuleTree;
+import com.sun.source.tree.RequiresTree;
+import com.sun.source.util.JavacTask;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
+import java.lang.module.FindException;
+import java.lang.module.ModuleDescriptor;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.tools.SimpleJavaFileObject;
 import jdk.jfr.Category;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
@@ -214,7 +234,9 @@ public final class Bach {
                   Tool.of("bach/load-and-verify", Core::loadAndVerify),
                   Tool.of("bach/info", Core::info),
                   Tool.of("bach/tree", Core::tree)),
-              Tool.Finder.of(Tool.of("project/compile", Project::compile)),
+              Tool.Finder.of(
+                  Tool.of("project/compile", Project::compile),
+                  Tool.of("project/launch", Project::launch)),
               Tool.Finder.ofSystemTools(),
               Tool.Finder.of(
                   Tool.ofNativeToolInJavaHome("jarsigner"),
@@ -222,8 +244,12 @@ public final class Bach {
                   Tool.ofNativeToolInJavaHome("jdeprscan"),
                   Tool.ofNativeToolInJavaHome("jfr")));
       var tools = new Tools(finder, seed);
+      var project =
+          Project.of()
+              .withParsingDirectory(root)
+              .withParsingProperties(root.resolve("project-info.properties"));
 
-      return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, tools, new Project());
+      return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, tools, project);
     }
 
     public boolean isVerbose() {
@@ -501,6 +527,118 @@ public final class Bach {
       }
     }
 
+    /** Static utility methods for operating on instances of {@link ModuleDescriptor}. */
+    static class ModuleDescriptorSupport {
+
+      /**
+       * Reads the source form of a module declaration from a file as a module descriptor.
+       *
+       * @param info the path to a {@code module-info.java} file to parse
+       * @return the module descriptor
+       * @implNote For the time being, only the {@code kind}, the {@code name} and its {@code
+       *     requires} directives are parsed.
+       */
+      public static ModuleDescriptor parse(Path info) {
+        if (!Path.of("module-info.java").equals(info.getFileName()))
+          throw new IllegalArgumentException("Path must end with 'module-info.java': " + info);
+
+        var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        var writer = new PrintWriter(Writer.nullWriter());
+        var fileManager = compiler.getStandardFileManager(null, null, null);
+        var units = List.of(new ModuleInfoFileObject(info));
+        var javacTask = (JavacTask) compiler.getTask(writer, fileManager, null, null, null, units);
+
+        try {
+          for (var tree : javacTask.parse()) {
+            var module = tree.getModule();
+            if (module == null) throw new AssertionError("No module tree?! -> " + info);
+            return parse(module);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException("Parse failed for " + info, e);
+        }
+        throw new IllegalArgumentException("Module tree not found in " + info);
+      }
+
+      private static ModuleDescriptor parse(ModuleTree moduleTree) {
+        var moduleName = moduleTree.getName().toString();
+        var moduleModifiers =
+            moduleTree.getModuleType().equals(ModuleTree.ModuleKind.OPEN)
+                ? EnumSet.of(ModuleDescriptor.Modifier.OPEN)
+                : EnumSet.noneOf(ModuleDescriptor.Modifier.class);
+        var moduleBuilder = ModuleDescriptor.newModule(moduleName, moduleModifiers);
+        for (var directive : moduleTree.getDirectives()) {
+          if (directive instanceof RequiresTree requires) {
+            var requiresModuleName = requires.getModuleName().toString();
+            moduleBuilder.requires(requiresModuleName);
+          }
+        }
+        return moduleBuilder.build();
+      }
+
+      static class ModuleInfoFileObject extends SimpleJavaFileObject {
+        ModuleInfoFileObject(Path path) {
+          super(path.toUri(), Kind.SOURCE);
+        }
+
+        @Override
+        public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
+          return Files.readString(Path.of(uri));
+        }
+      }
+    }
+
+    static class ModuleSourcePathSupport {
+
+      public static List<String> compute(Map<String, List<Path>> map, boolean forceSpecificForm) {
+        var patterns = new TreeSet<String>(); // "src:etc/*/java"
+        var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
+        for (var entry : map.entrySet()) {
+          var name = entry.getKey();
+          var paths = entry.getValue();
+          if (forceSpecificForm) {
+            specific.put(name, paths);
+            continue;
+          }
+          try {
+            for (var path : paths) {
+              patterns.add(toPatternForm(path, name));
+            }
+          } catch (FindException e) {
+            specific.put(name, paths);
+          }
+        }
+        return Stream.concat(
+                patterns.stream(),
+                specific.entrySet().stream().map(e -> toSpecificForm(e.getKey(), e.getValue())))
+            .toList();
+      }
+
+      public static String toPatternForm(Path info, String module) {
+        var root = info.getRoot();
+        var deque = new ArrayDeque<String>();
+        if (root != null) deque.add(root.toString());
+        for (var element : info.normalize()) {
+          var name = element.toString();
+          if (name.equals("module-info.java")) continue;
+          deque.addLast(name.equals(module) ? "*" : name);
+        }
+        var pattern = String.join(File.separator, deque);
+        if (!pattern.contains("*"))
+          throw new FindException("Name '" + module + "' not found: " + info);
+        if (pattern.equals("*")) return ".";
+        if (pattern.endsWith("*")) return pattern.substring(0, pattern.length() - 2);
+        if (pattern.startsWith("*")) return "." + File.separator + pattern;
+        return pattern;
+      }
+
+      public static String toSpecificForm(String module, List<Path> paths) {
+        return module
+            + '='
+            + paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+      }
+    }
+
     static final class PathSupport {
 
       static String computeChecksum(Path path, String algorithm) {
@@ -539,7 +677,7 @@ public final class Bach {
         return nameOrElse(path, "").endsWith(".java") && Files.isRegularFile(path);
       }
 
-      static boolean isModuleInfoJavaFile(Path path) {
+      static boolean isModuleInfoJavaFile(Path path, BasicFileAttributes... attributes) {
         return "module-info.java".equals(name(path)) && Files.isRegularFile(path);
       }
 
@@ -588,6 +726,21 @@ public final class Bach {
         var value = string.substring(index + 1);
         return new Property(key, value);
       }
+
+      static Properties loadProperties(Path path) {
+        try {
+          var reader = new StringReader(Files.readString(path));
+          var properties = new Properties();
+          properties.load(reader);
+          return properties;
+        } catch (Exception exception) {
+          throw new RuntimeException(exception);
+        }
+      }
+
+      static Stream<String> lines(String value) {
+        return value.lines().map(String::strip).filter(Predicate.not(String::isEmpty));
+      }
     }
 
     @Category("Bach")
@@ -604,8 +757,323 @@ public final class Bach {
   }
 
   /** Project model and project-related operators. */
-  public record Project() {
+  public record Project(Name name, Version version, Spaces spaces, Modules modules) {
+
+    public static Project of() {
+      return new Project(
+          new Name("unnamed"),
+          new Version("0-ea", ZonedDateTime.now()),
+          new Spaces(new Space("main", 0, Optional.empty())),
+          new Modules(List.of()));
+    }
+
+    public Stream<DeclaredModule> declaredModules(Space space) {
+      return modules.declaredModules().stream()
+          .filter(module -> module.space().equals(space.name()));
+    }
+
+    public Project withParsingProperties(Path path) {
+      if (Files.notExists(path)) return this;
+      return withParsingProperties(Core.StringSupport.loadProperties(path));
+    }
+
+    public Project withParsingProperties(Properties properties) {
+      record Map(Properties properties) {
+        String get(String key) {
+          var value = properties.getProperty(key);
+          if (value != null) return value;
+          value = properties.getProperty("project-" + key);
+          if (value != null) return value;
+          return properties.getProperty("--project-" + key);
+        }
+      }
+      var map = new Map(properties);
+      var copy = this;
+      // name
+      var name = map.get("name");
+      if (name != null) copy = copy.with(new Name(name));
+      // version
+      var version = map.get("version");
+      if (version != null) copy = copy.with(new Version(version, copy.version.date));
+      // version-date
+      var date = map.get("version-date");
+      if (date != null)
+        copy = copy.with(new Version(copy.version.value, ZonedDateTime.parse(date)));
+      // spaces
+      var mainRelease = map.get("main-modules-target-java-release");
+      if (mainRelease != null) {
+        var main = new Space(spaces.main.name, Integer.parseInt(mainRelease), spaces.main.launcher);
+        copy = copy.with(new Spaces(main));
+      }
+      var mainLauncher = map.get("main-launcher");
+      if (mainLauncher != null) {
+        var main = new Space(spaces.main.name, spaces.main.release, Optional.of(mainLauncher));
+        copy = copy.with(new Spaces(main));
+      }
+      // modules
+      var mainModules = map.get("main-modules");
+      if (mainModules != null) {
+        var modules =
+            Core.StringSupport.lines(mainModules)
+                .map(Path::of)
+                .map(path -> DeclaredModule.of("main", path));
+        copy = copy.with(new Modules(modules.toList()));
+      }
+      return copy;
+    }
+
+    public Project withParsingDirectory(Path directory) {
+      var copy = this;
+      // name
+      var name = directory.normalize().toAbsolutePath().getFileName();
+      if (name != null) copy = copy.with(new Name(name.toString()));
+      // modules
+      try (var stream = Files.find(directory, 9, Core.PathSupport::isModuleInfoJavaFile)) {
+        var modules = stream.map(path -> DeclaredModule.of("main", path));
+        copy = copy.with(new Modules(modules.toList()));
+      } catch (Exception exception) {
+        throw new RuntimeException("Find module-info.java files failed", exception);
+      }
+      return copy;
+    }
+
+    private Project with(Component component) {
+      return new Project(
+          component instanceof Name name ? name : name,
+          component instanceof Version version ? version : version,
+          component instanceof Spaces spaces ? spaces : spaces,
+          component instanceof Modules modules ? modules : modules);
+    }
+
+    private sealed interface Component {}
+
+    public record Name(String value) implements Component {
+      public Name {
+        Objects.requireNonNull(value);
+      }
+
+      @Override
+      public String toString() {
+        return value;
+      }
+    }
+
+    public record Version(String value, ZonedDateTime date) implements Component {
+      public Version {
+        ModuleDescriptor.Version.parse(value);
+      }
+    }
+
+    public record Spaces(Space main) implements Component {}
+
+    public record Space(String name, int release, Optional<String> launcher) {
+      public Space {
+        Objects.requireNonNull(name);
+        var feature = Runtime.version().feature();
+        if (release != 0 && (release < 9 || release > feature))
+          throw new IndexOutOfBoundsException(
+              "Release %d not in range of %d..%d".formatted(release, 9, feature));
+        Objects.requireNonNull(launcher);
+      }
+
+      public Optional<Integer> targets() {
+        return release == 0 ? Optional.empty() : Optional.of(release);
+      }
+    }
+
+    public record Modules(List<DeclaredModule> declaredModules) implements Component {
+      public Modules {
+        Objects.requireNonNull(declaredModules);
+      }
+
+      @Override
+      public String toString() {
+        return declaredModules.toString();
+      }
+    }
+
+    public record DeclaredModule(
+        String space, Path info, ModuleDescriptor descriptor, Folders folders) {
+      public static DeclaredModule of(String space, Path path) {
+        var info = path.endsWith("module-info.java") ? path : path.resolve("module-info.java");
+        var descriptor = Core.ModuleDescriptorSupport.parse(info.normalize());
+        var folders = Folders.of(info);
+        return new DeclaredModule(space, info, descriptor, folders);
+      }
+
+      public String toName() {
+        return descriptor.name();
+      }
+
+      public List<Path> toModuleSourcePaths() {
+        var parent = info.getParent();
+        return parent != null ? List.of(parent) : List.of(Path.of("."));
+      }
+    }
+
+    public record Folders(List<Folder> list) {
+      public static Folders of(Path info) {
+        var parent = info.getParent();
+        if (parent == null) return new Folders(List.of());
+        if (!parent.getFileName().toString().startsWith("java"))
+          return new Folders(List.of(Folder.of(parent)));
+        var javas = parent.getParent();
+        if (javas == null) return new Folders(List.of(Folder.of(parent)));
+        try (var stream = Files.list(javas)) {
+          return new Folders(
+              stream
+                  .filter(Files::isDirectory)
+                  .filter(path -> path.getFileName().toString().startsWith("java"))
+                  .map(Folder::of)
+                  .sorted()
+                  .toList());
+        } catch (Exception exception) {
+          throw new RuntimeException("Listing entries of %s failed".formatted(info));
+        }
+      }
+    }
+
+    public record Folder(Path path, int release) implements Comparable<Folder> {
+      static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
+
+      static int parseReleaseNumber(String string) {
+        var matcher = RELEASE_PATTERN.matcher(string);
+        return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+      }
+
+      public static Folder of(Path path) {
+        if (Files.notExists(path)) throw new IllegalArgumentException("No such path: " + path);
+        if (Files.isRegularFile(path))
+          throw new IllegalArgumentException("Not a directory: " + path);
+        return new Folder(path, parseReleaseNumber(path.getFileName().toString()));
+      }
+
+      @Override
+      public int compareTo(Folder other) {
+        return release - other.release;
+      }
+    }
+
     static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      var project = bach.configuration.project;
+      var space = project.spaces.main; // TODO Parse space from args
+
+      var declarations = project.declaredModules(space).toList();
+      if (declarations.isEmpty()) {
+        out.println("No %s modules declared.".formatted(space.name()));
+        return 0;
+      }
+      out.println(
+          "Compile and package %d %s module%s..."
+              .formatted(declarations.size(), space.name(), declarations.size() == 1 ? "" : "s"));
+
+      var paths = bach.configuration.paths;
+      var classes = paths.out(space.name(), "classes");
+      var modules = paths.out(space.name(), "modules");
+
+      var javac = Tool.Call.of("javac");
+
+      var release0 = space.targets();
+      if (release0.isPresent()) {
+        javac = javac.with("--release", release0.get());
+      }
+
+      javac =
+          javac.with(
+              "--module",
+              declarations.stream()
+                  .map(Project.DeclaredModule::descriptor)
+                  .map(ModuleDescriptor::name)
+                  .collect(Collectors.joining(",")));
+      var map =
+          declarations.stream()
+              .collect(
+                  Collectors.toMap(
+                      Project.DeclaredModule::toName, Project.DeclaredModule::toModuleSourcePaths));
+      for (var moduleSourcePath : Core.ModuleSourcePathSupport.compute(map, false)) {
+        javac = javac.with("--module-source-path", moduleSourcePath);
+      }
+
+      var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
+      javac = javac.with("-d", classes0);
+      bach.run(javac);
+
+      try {
+        Files.createDirectories(modules);
+      } catch (Exception exception) {
+        throw new RuntimeException("Create directories failed: " + modules);
+      }
+
+      var javacCommands = new ArrayList<Tool.Call>();
+      var jarCommands = new ArrayList<Tool.Call>();
+      var jarFiles = new ArrayList<Path>();
+      for (var module : declarations) {
+        var name = module.descriptor().name();
+        var file = modules.resolve(name + ".jar");
+
+        jarFiles.add(file);
+
+        var jar = Tool.Call.of("jar").with("--create").with("--file", file);
+
+        jar = jar.with("--module-version", project.version().value());
+
+        if (Runtime.version().feature() >= 19) {
+          var date = project.version().date();
+          jar = jar.with("--date", date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+
+        var mainProgram = name.replace('.', '/') + "/Main.java";
+        var mainJava = module.toModuleSourcePaths().get(0).resolve(mainProgram);
+        if (Files.exists(mainJava)) {
+          jar = jar.with("--main-class", name + ".Main");
+        }
+
+        jar = jar.with("-C", classes0.resolve(name), ".");
+
+        for (var folder : module.folders().list().stream().skip(1).toList()) {
+          var release = folder.release();
+          var classesR = classes.resolve("java-" + release).resolve(name);
+          javacCommands.add(
+              Tool.Call.of("javac")
+                  .with("--release", release)
+                  .with("-d", classesR)
+                  .withFindFiles(folder.path(), "**.java"));
+          jar = jar.with("--release", release).with("-C", classesR, ".");
+        }
+
+        jarCommands.add(jar);
+      }
+      javacCommands.stream().parallel().forEach(bach::run);
+      jarCommands.stream().parallel().forEach(bach::run);
+
+      jarFiles.forEach(
+          file -> {
+            if (Files.notExists(file)) {
+              out.println("JAR file not found: " + file);
+              return;
+            }
+            var size = Core.PathSupport.computeChecksum(file, "SIZE");
+            var hash = Core.PathSupport.computeChecksum(file, "SHA-256");
+            out.println("%s %11s %s".formatted(hash, size, file));
+          });
+
+      return 0;
+    }
+
+    static int launch(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      var launcher = bach.configuration.project.spaces().main().launcher();
+      var paths = bach.configuration.paths;
+      if (launcher.isEmpty()) {
+        err.println("No launcher defined. No start.");
+        return 1;
+      }
+
+      var java =
+          Tool.Call.of("java")
+              .with("--module-path", paths.out("main", "modules"))
+              .with("--module", launcher.get())
+              .with(Stream.of(args));
+      bach.run(java);
       return 0;
     }
   }
