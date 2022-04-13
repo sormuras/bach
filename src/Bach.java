@@ -772,9 +772,9 @@ public final class Bach {
           new Name("unnamed"),
           new Version("0-ea", ZonedDateTime.now()),
           new Spaces(
-              new Space("init", 0, Optional.empty(), List.of()),
-              new Space("main", 0, Optional.empty(), List.of("init")),
-              new Space("test", 0, Optional.empty(), List.of("main"))),
+              new Space("init", 0, Optional.empty(), List.of(), List.of()),
+              new Space("main", 0, Optional.empty(), List.of("init"), List.of()),
+              new Space("test", 0, Optional.empty(), List.of("main"), List.of())),
           new Modules(List.of()));
     }
 
@@ -823,12 +823,35 @@ public final class Bach {
         var release = map.get(space.name + "-modules-target-java-release");
         if (release != null) {
           var next =
-              new Space(space.name, Integer.parseInt(release), space.launcher, space.requires);
+              new Space(
+                  space.name,
+                  Integer.parseInt(release),
+                  space.launcher,
+                  space.requires,
+                  space.additionalCompileJavacArguments);
           copy = copy.with(copy.spaces.with(next));
         }
-        var launcher = map.get("main-launcher");
+        var launcher = map.get(space.name + "-launcher");
         if (launcher != null) {
-          var next = new Space(space.name, space.release, Optional.of(launcher), space.requires);
+          var next =
+              new Space(
+                  space.name,
+                  space.release,
+                  Optional.of(launcher),
+                  space.requires,
+                  space.additionalCompileJavacArguments);
+          copy = copy.with(copy.spaces.with(next));
+        }
+        var additionalCompileJavacArguments =
+            map.get(space.name + "-additional-compile-javac-arguments");
+        if (additionalCompileJavacArguments != null) {
+          var next =
+              new Space(
+                  space.name,
+                  space.release,
+                  space.launcher,
+                  space.requires,
+                  Core.StringSupport.lines(additionalCompileJavacArguments).toList());
           copy = copy.with(copy.spaces.with(next));
         }
       }
@@ -890,7 +913,11 @@ public final class Bach {
     }
 
     public record Space(
-        String name, int release, Optional<String> launcher, List<String> requires) {
+        String name,
+        int release,
+        Optional<String> launcher,
+        List<String> requires, // used to compute "--[processor-]module-path"
+        List<String> additionalCompileJavacArguments) {
       public Space {
         Objects.requireNonNull(name);
         var feature = Runtime.version().feature();
@@ -1038,10 +1065,16 @@ public final class Bach {
                 .collect(Collectors.joining(File.pathSeparator));
         if (!modulePath.isEmpty()) {
           javac = javac.with("--module-path", modulePath);
+          javac = javac.with("--processor-module-path", modulePath);
         }
 
         var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
         javac = javac.with("-d", classes0);
+
+        for (var additionalCompileJavacArgument : space.additionalCompileJavacArguments) {
+          javac = javac.with(additionalCompileJavacArgument);
+        }
+
         bach.run(javac);
 
         try {
