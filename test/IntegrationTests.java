@@ -1,11 +1,14 @@
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class IntegrationTests {
   private static Bach bach(String... args) {
@@ -29,8 +32,10 @@ class IntegrationTests {
     bach.run("compile");
     assertLinesMatch(
         """
+        No init modules declared.
         Compile and package 3 main modules...
         >> JAVAC + JAR >>
+        No test modules declared.
         """
             .lines(),
         printer.out().toString().lines());
@@ -52,10 +57,13 @@ class IntegrationTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"aggregator", "hello", "hello-world", "multi-release"})
-  void buildExampleProject(String name, @TempDir Path temp) {
-    var bach =
-        bach("--chroot", "doc/example-projects/" + name, "--change-bach-out", temp.toString());
-    bach.run("build");
+  @MethodSource
+  void buildExampleProject(Path path, @TempDir Path temp) {
+    var bach = bach("--chroot", path.toString(), "--change-bach-out", temp.toString());
+    assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
+  }
+
+  static List<Path> buildExampleProject() {
+    return Bach.Core.PathSupport.list(Path.of("doc/example-projects"), Files::isDirectory);
   }
 }

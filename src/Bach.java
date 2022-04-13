@@ -771,7 +771,10 @@ public final class Bach {
       return new Project(
           new Name("unnamed"),
           new Version("0-ea", ZonedDateTime.now()),
-          new Spaces(new Space("main", 0, Optional.empty())),
+          new Spaces(
+              new Space("init", 0, Optional.empty(), List.of()),
+              new Space("main", 0, Optional.empty(), List.of("init")),
+              new Space("test", 0, Optional.empty(), List.of("main"))),
           new Modules(List.of()));
     }
 
@@ -807,25 +810,27 @@ public final class Bach {
       var date = map.get("version-date");
       if (date != null)
         copy = copy.with(new Version(copy.version.value, ZonedDateTime.parse(date)));
-      // spaces
-      var mainRelease = map.get("main-modules-target-java-release");
-      if (mainRelease != null) {
-        var main = new Space(spaces.main.name, Integer.parseInt(mainRelease), spaces.main.launcher);
-        copy = copy.with(new Spaces(main));
-      }
-      var mainLauncher = map.get("main-launcher");
-      if (mainLauncher != null) {
-        var main = new Space(spaces.main.name, spaces.main.release, Optional.of(mainLauncher));
-        copy = copy.with(new Spaces(main));
-      }
-      // modules
-      var mainModules = map.get("main-modules");
-      if (mainModules != null) {
-        var modules =
-            Core.StringSupport.lines(mainModules)
-                .map(Path::of)
-                .map(path -> DeclaredModule.of("main", path));
-        copy = copy.with(new Modules(modules.toList()));
+      // module spaces
+      for (var space : spaces.list()) {
+        var value = map.get(space.name + "-modules");
+        if (value != null) {
+          var modules =
+              Core.StringSupport.lines(value)
+                  .map(Path::of)
+                  .map(path -> DeclaredModule.of(space.name, path));
+          copy = copy.with(new Modules(modules.toList()));
+        }
+        var release = map.get(space.name + "-modules-target-java-release");
+        if (release != null) {
+          var next =
+              new Space(space.name, Integer.parseInt(release), space.launcher, space.requires);
+          copy = copy.with(copy.spaces.with(next));
+        }
+        var launcher = map.get("main-launcher");
+        if (launcher != null) {
+          var next = new Space(space.name, space.release, Optional.of(launcher), space.requires);
+          copy = copy.with(copy.spaces.with(next));
+        }
       }
       return copy;
     }
@@ -837,8 +842,7 @@ public final class Bach {
       if (name != null) copy = copy.with(new Name(name.toString()));
       // modules
       try (var stream = Files.find(directory, 9, Core.PathSupport::isModuleInfoJavaFile)) {
-        var modules = stream.map(path -> DeclaredModule.of("main", path));
-        copy = copy.with(new Modules(modules.toList()));
+        copy = copy.with(new Modules(stream.map(DeclaredModule::of).toList()));
       } catch (Exception exception) {
         throw new RuntimeException("Find module-info.java files failed", exception);
       }
@@ -872,9 +876,21 @@ public final class Bach {
       }
     }
 
-    public record Spaces(Space main) implements Component {}
+    public record Spaces(Space init, Space main, Space test) implements Component {
+      List<Space> list() {
+        return List.of(init, main, test);
+      }
 
-    public record Space(String name, int release, Optional<String> launcher) {
+      Spaces with(Space space) {
+        return new Spaces(
+            space.name.equals(init.name) ? space : init,
+            space.name.equals(main.name) ? space : main,
+            space.name.equals(test.name) ? space : test);
+      }
+    }
+
+    public record Space(
+        String name, int release, Optional<String> launcher, List<String> requires) {
       public Space {
         Objects.requireNonNull(name);
         var feature = Runtime.version().feature();
@@ -882,6 +898,7 @@ public final class Bach {
           throw new IndexOutOfBoundsException(
               "Release %d not in range of %d..%d".formatted(release, 9, feature));
         Objects.requireNonNull(launcher);
+        Objects.requireNonNull(requires);
       }
 
       public Optional<Integer> targets() {
@@ -902,6 +919,12 @@ public final class Bach {
 
     public record DeclaredModule(
         String space, Path info, ModuleDescriptor descriptor, Folders folders) {
+      public static DeclaredModule of(Path path) {
+        var uri = path.toUri().toString();
+        var space = uri.contains("/init/") ? "init" : uri.contains("/test/") ? "test" : "main";
+        return of(space, path);
+      }
+
       public static DeclaredModule of(String space, Path path) {
         var info = path.endsWith("module-info.java") ? path : path.resolve("module-info.java");
         var descriptor = Core.ModuleDescriptorSupport.parse(info.normalize());
@@ -969,107 +992,117 @@ public final class Bach {
 
     static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       var project = bach.configuration.project;
-      var space = project.spaces.main; // TODO Parse space from args
-
-      var declarations = project.declaredModules(space).toList();
-      if (declarations.isEmpty()) {
-        out.println("No %s modules declared.".formatted(space.name()));
-        return 0;
-      }
-      out.println(
-          "Compile and package %d %s module%s..."
-              .formatted(declarations.size(), space.name(), declarations.size() == 1 ? "" : "s"));
-
       var paths = bach.configuration.paths;
-      var classes = paths.out(space.name(), "classes");
-      var modules = paths.out(space.name(), "modules");
 
-      var javac = Tool.Call.of("javac");
+      for (var space : project.spaces.list()) {
+        var declarations = project.declaredModules(space).toList();
+        if (declarations.isEmpty()) {
+          out.println("No %s modules declared.".formatted(space.name()));
+          continue;
+        }
+        out.println(
+            "Compile and package %d %s module%s..."
+                .formatted(declarations.size(), space.name(), declarations.size() == 1 ? "" : "s"));
 
-      var release0 = space.targets();
-      if (release0.isPresent()) {
-        javac = javac.with("--release", release0.get());
-      }
+        var classes = paths.out(space.name(), "classes");
+        var modules = paths.out(space.name(), "modules");
 
-      javac =
-          javac.with(
-              "--module",
-              declarations.stream()
-                  .map(Project.DeclaredModule::descriptor)
-                  .map(ModuleDescriptor::name)
-                  .collect(Collectors.joining(",")));
-      var map =
-          declarations.stream()
-              .collect(
-                  Collectors.toMap(
-                      Project.DeclaredModule::toName, Project.DeclaredModule::toModuleSourcePaths));
-      for (var moduleSourcePath : Core.ModuleSourcePathSupport.compute(map, false)) {
-        javac = javac.with("--module-source-path", moduleSourcePath);
-      }
+        var javac = Tool.Call.of("javac");
 
-      var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
-      javac = javac.with("-d", classes0);
-      bach.run(javac);
-
-      try {
-        Files.createDirectories(modules);
-      } catch (Exception exception) {
-        throw new RuntimeException("Create directories failed: " + modules);
-      }
-
-      var javacCommands = new ArrayList<Tool.Call>();
-      var jarCommands = new ArrayList<Tool.Call>();
-      var jarFiles = new ArrayList<Path>();
-      for (var module : declarations) {
-        var name = module.descriptor().name();
-        var file = modules.resolve(name + ".jar");
-
-        jarFiles.add(file);
-
-        var jar = Tool.Call.of("jar").with("--create").with("--file", file);
-
-        jar = jar.with("--module-version", project.version().value());
-
-        if (Runtime.version().feature() >= 19) {
-          var date = project.version().date();
-          jar = jar.with("--date", date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        var release0 = space.targets();
+        if (release0.isPresent()) {
+          javac = javac.with("--release", release0.get());
         }
 
-        var mainProgram = name.replace('.', '/') + "/Main.java";
-        var mainJava = module.toModuleSourcePaths().get(0).resolve(mainProgram);
-        if (Files.exists(mainJava)) {
-          jar = jar.with("--main-class", name + ".Main");
+        javac =
+            javac.with(
+                "--module",
+                declarations.stream()
+                    .map(Project.DeclaredModule::descriptor)
+                    .map(ModuleDescriptor::name)
+                    .collect(Collectors.joining(",")));
+        var map =
+            declarations.stream()
+                .collect(
+                    Collectors.toMap(
+                        Project.DeclaredModule::toName,
+                        Project.DeclaredModule::toModuleSourcePaths));
+        for (var moduleSourcePath : Core.ModuleSourcePathSupport.compute(map, false)) {
+          javac = javac.with("--module-source-path", moduleSourcePath);
         }
 
-        jar = jar.with("-C", classes0.resolve(name), ".");
-
-        for (var folder : module.folders().list().stream().skip(1).toList()) {
-          var release = folder.release();
-          var classesR = classes.resolve("java-" + release).resolve(name);
-          javacCommands.add(
-              Tool.Call.of("javac")
-                  .with("--release", release)
-                  .with("-d", classesR)
-                  .withFindFiles(folder.path(), "**.java"));
-          jar = jar.with("--release", release).with("-C", classesR, ".");
+        var modulePath =
+            space.requires().stream()
+                .map(required -> paths.out(required, "modules"))
+                .map(Path::toString)
+                .collect(Collectors.joining(File.pathSeparator));
+        if (!modulePath.isEmpty()) {
+          javac = javac.with("--module-path", modulePath);
         }
 
-        jarCommands.add(jar);
+        var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
+        javac = javac.with("-d", classes0);
+        bach.run(javac);
+
+        try {
+          Files.createDirectories(modules);
+        } catch (Exception exception) {
+          throw new RuntimeException("Create directories failed: " + modules);
+        }
+
+        var javacCommands = new ArrayList<Tool.Call>();
+        var jarCommands = new ArrayList<Tool.Call>();
+        var jarFiles = new ArrayList<Path>();
+        for (var module : declarations) {
+          var name = module.descriptor().name();
+          var file = modules.resolve(name + ".jar");
+
+          jarFiles.add(file);
+
+          var jar = Tool.Call.of("jar").with("--create").with("--file", file);
+
+          jar = jar.with("--module-version", project.version().value());
+
+          if (Runtime.version().feature() >= 19) {
+            var date = project.version().date();
+            jar = jar.with("--date", date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+          }
+
+          var mainProgram = name.replace('.', '/') + "/Main.java";
+          var mainJava = module.toModuleSourcePaths().get(0).resolve(mainProgram);
+          if (Files.exists(mainJava)) {
+            jar = jar.with("--main-class", name + ".Main");
+          }
+
+          jar = jar.with("-C", classes0.resolve(name), ".");
+
+          for (var folder : module.folders().list().stream().skip(1).toList()) {
+            var release = folder.release();
+            var classesR = classes.resolve("java-" + release).resolve(name);
+            javacCommands.add(
+                Tool.Call.of("javac")
+                    .with("--release", release)
+                    .with("-d", classesR)
+                    .withFindFiles(folder.path(), "**.java"));
+            jar = jar.with("--release", release).with("-C", classesR, ".");
+          }
+
+          jarCommands.add(jar);
+        }
+        javacCommands.stream().parallel().forEach(bach::run);
+        jarCommands.stream().parallel().forEach(bach::run);
+
+        jarFiles.forEach(
+            file -> {
+              if (Files.notExists(file)) {
+                out.println("JAR file not found: " + file);
+                return;
+              }
+              var size = Core.PathSupport.computeChecksum(file, "SIZE");
+              var hash = Core.PathSupport.computeChecksum(file, "SHA-256");
+              out.println("%s %11s %s".formatted(hash, size, file));
+            });
       }
-      javacCommands.stream().parallel().forEach(bach::run);
-      jarCommands.stream().parallel().forEach(bach::run);
-
-      jarFiles.forEach(
-          file -> {
-            if (Files.notExists(file)) {
-              out.println("JAR file not found: " + file);
-              return;
-            }
-            var size = Core.PathSupport.computeChecksum(file, "SIZE");
-            var hash = Core.PathSupport.computeChecksum(file, "SHA-256");
-            out.println("%s %11s %s".formatted(hash, size, file));
-          });
-
       return 0;
     }
 
