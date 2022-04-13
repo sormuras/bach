@@ -70,6 +70,7 @@ public final class Bach {
 
   /** {@return the result of running the initial seed tool call} */
   private int main() {
+    var verbose = configuration.isVerbose();
     var seed = configuration.tools.seed;
     if (seed == null) {
       run(Tool.Call.of("/?"));
@@ -79,15 +80,15 @@ public final class Bach {
     var paths = configuration.paths;
     try (var recording = new Recording()) {
       recording.start();
-      printer.out("BEGIN");
       try {
+        if (verbose) printer.out("BEGIN");
         run(seed);
+        if (verbose) printer.out("END.");
         return 0;
       } catch (RuntimeException exception) {
         printer.err(exception.getClass().getSimpleName() + ": " + exception.getMessage());
         return 2;
       } finally {
-        printer.out("END.");
         recording.stop();
         var jfr = Files.createDirectories(paths.out).resolve("bach-logbook.jfr");
         recording.dump(jfr);
