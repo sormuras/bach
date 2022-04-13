@@ -240,6 +240,7 @@ public final class Bach {
                   Tool.of("bach/info", Core::info),
                   Tool.of("bach/tree", Core::tree)),
               Tool.Finder.of(
+                  Tool.of("project/build", Project::build),
                   Tool.of("project/compile", Project::compile),
                   Tool.of("project/launch", Project::launch)),
               Tool.Finder.ofSystemTools(),
@@ -957,6 +958,11 @@ public final class Bach {
       public int compareTo(Folder other) {
         return release - other.release;
       }
+    }
+
+    static int build(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.run("project/compile");
+      return 0;
     }
 
     static int compile(Bach bach, PrintWriter out, PrintWriter err, String... args) {
