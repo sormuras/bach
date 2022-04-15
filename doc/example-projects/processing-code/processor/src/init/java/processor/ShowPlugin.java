@@ -13,6 +13,11 @@ public class ShowPlugin implements Plugin, TaskListener {
   private PrintWriter out;
 
   @Override
+  public boolean autoStart() {
+    return true;
+  }
+
+  @Override
   public String getName() {
     return "showPlugin";
   }
