@@ -11,18 +11,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.module.FindException;
 import java.lang.module.ModuleDescriptor;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -44,7 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -183,6 +187,32 @@ public final class Bach {
     }
   }
 
+  @ProjectInfo
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface ProjectInfo {
+    String name() default "unnamed";
+
+    String version() default "0-ea";
+
+    String versionDate() default "";
+
+    ModuleSpace init() default @ModuleSpace();
+
+    ModuleSpace main() default @ModuleSpace();
+
+    ModuleSpace test() default @ModuleSpace();
+  }
+
+  @ModuleSpace
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface ModuleSpace {
+    String[] modules() default {};
+
+    String launcher() default "";
+
+    int release() default 0;
+  }
+
   /** Immutable settings. */
   public record Configuration(
       Printer printer, Flags flags, Paths paths, Tools tools, Project project) {
@@ -255,7 +285,7 @@ public final class Bach {
       var project =
           Project.of()
               .withParsingDirectory(root)
-              .withParsingProperties(root.resolve("project-info.properties"));
+              .withParsingAnnotation(root.resolve("bach-project-info.java"));
 
       return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, tools, project);
     }
@@ -734,21 +764,6 @@ public final class Bach {
         var value = string.substring(index + 1);
         return new Property(key, value);
       }
-
-      static Properties loadProperties(Path path) {
-        try {
-          var reader = new StringReader(Files.readString(path));
-          var properties = new Properties();
-          properties.load(reader);
-          return properties;
-        } catch (Exception exception) {
-          throw new RuntimeException(exception);
-        }
-      }
-
-      static Stream<String> lines(String value) {
-        return value.lines().map(String::strip).filter(Predicate.not(String::isEmpty));
-      }
     }
 
     @Category("Bach")
@@ -765,119 +780,108 @@ public final class Bach {
   }
 
   /** Project model and project-related operators. */
-  public record Project(Name name, Version version, Spaces spaces, Modules modules) {
+  public record Project(Name name, Version version, Spaces spaces) {
+
+    private static final ProjectInfo DEFAULT_INFO =
+        ProjectInfo.class.getAnnotation(ProjectInfo.class);
+    private static final ModuleSpace DEFAULT_SPACE =
+        ModuleSpace.class.getAnnotation(ModuleSpace.class);
 
     public static Project of() {
+      var init = new Space("init");
+      var main = new Space("main", "init");
+      var test = new Space("test", "main");
       return new Project(
-          new Name("unnamed"),
-          new Version("0-ea", ZonedDateTime.now()),
-          new Spaces(
-              new Space("init", 0, Optional.empty(), List.of(), List.of()),
-              new Space("main", 0, Optional.empty(), List.of("init"), List.of()),
-              new Space("test", 0, Optional.empty(), List.of("main"), List.of())),
-          new Modules(List.of()));
+          new Name(DEFAULT_INFO.name()),
+          new Version(DEFAULT_INFO.version(), ZonedDateTime.now()),
+          new Spaces(init, main, test));
     }
 
-    public Stream<DeclaredModule> declaredModules(Space space) {
-      return modules.declaredModules().stream()
-          .filter(module -> module.space().equals(space.name()));
-    }
-
-    public Project withParsingProperties(Path path) {
-      if (Files.notExists(path)) return this;
-      return withParsingProperties(Core.StringSupport.loadProperties(path));
-    }
-
-    public Project withParsingProperties(Properties properties) {
-      record Map(Properties properties) {
-        String get(String key) {
-          var value = properties.getProperty(key);
-          if (value != null) return value;
-          value = properties.getProperty("project-" + key);
-          if (value != null) return value;
-          return properties.getProperty("--project-" + key);
+    public Project withParsingAnnotation(Path info) {
+      if (Files.notExists(info)) return this;
+      try {
+        var temp = Files.createTempDirectory("bach-");
+        var name = "Project4711";
+        var hook = Files.copy(info, temp.resolve(name + ".java"));
+        Files.writeString(hook, "interface " + name + " {}", StandardOpenOption.APPEND);
+        var javac = Tool.Call.of("javac").with("-d", temp).with(hook);
+        var sourcefile = System.getProperty("jdk.launcher.sourcefile");
+        if (sourcefile != null) javac = javac.with(sourcefile);
+        var codesource = Bach.class.getProtectionDomain().getCodeSource();
+        if (codesource != null) {
+          var codelocation = codesource.getLocation();
+          if (codelocation != null) {
+            var codepath = Path.of(codelocation.toURI());
+            javac = javac.with("--class-path", codepath);
+          }
         }
+        ToolProvider.findFirst("javac")
+            .orElseThrow()
+            .run(System.out, System.err, javac.arguments().toArray(String[]::new));
+        var urls = new URL[] {temp.toUri().toURL()};
+        var parent = Bach.class.getClassLoader();
+        try (var loader = URLClassLoader.newInstance(urls, parent)) {
+          var project = loader.loadClass(name);
+          var annotation = project.getAnnotation(ProjectInfo.class);
+          var root = info.getParent() == null ? Path.of("") : info.getParent();
+          return withParsingAnnotation(root, annotation);
+        }
+      } catch (Exception exception) {
+        throw new RuntimeException("Parsing " + info + " failed", exception);
       }
-      var map = new Map(properties);
-      var copy = this;
-      // name
-      var name = map.get("name");
-      if (name != null) copy = copy.with(new Name(name));
-      // version
-      var version = map.get("version");
-      if (version != null) copy = copy.with(new Version(version, copy.version.date));
-      // version-date
-      var date = map.get("version-date");
-      if (date != null)
-        copy = copy.with(new Version(copy.version.value, ZonedDateTime.parse(date)));
-      // module spaces
-      for (var space : spaces.list()) {
-        var value = map.get(space.name + "-modules");
-        if (value != null) {
-          var modules =
-              Core.StringSupport.lines(value)
-                  .map(Path::of)
-                  .map(path -> DeclaredModule.of(space.name, path));
-          copy = copy.with(new Modules(modules.toList()));
-        }
-        var release = map.get(space.name + "-modules-target-java-release");
-        if (release != null) {
-          var next =
-              new Space(
-                  space.name,
-                  Integer.parseInt(release),
-                  space.launcher,
-                  space.requires,
-                  space.additionalCompileJavacArguments);
-          copy = copy.with(copy.spaces.with(next));
-        }
-        var launcher = map.get(space.name + "-launcher");
-        if (launcher != null) {
-          var next =
-              new Space(
-                  space.name,
-                  space.release,
-                  Optional.of(launcher),
-                  space.requires,
-                  space.additionalCompileJavacArguments);
-          copy = copy.with(copy.spaces.with(next));
-        }
-        var additionalCompileJavacArguments =
-            map.get(space.name + "-additional-compile-javac-arguments");
-        if (additionalCompileJavacArguments != null) {
-          var next =
-              new Space(
-                  space.name,
-                  space.release,
-                  space.launcher,
-                  space.requires,
-                  Core.StringSupport.lines(additionalCompileJavacArguments).toList());
-          copy = copy.with(copy.spaces.with(next));
-        }
-      }
-      return copy;
+    }
+
+    private static <V> V value(ProjectInfo info, Function<ProjectInfo, V> getter) {
+      var value = getter.apply(info);
+      return value.equals(getter.apply(DEFAULT_INFO)) ? null : value;
+    }
+
+    public Project withParsingAnnotation(Path root, ProjectInfo info) {
+      var project = this;
+      var name = value(info, ProjectInfo::name);
+      project = name == null ? project : project.with(new Name(name));
+      var version = value(info, ProjectInfo::version);
+      project = version == null ? project : project.with(project.version.with(version));
+      var date = value(info, ProjectInfo::versionDate);
+      project = date == null ? project : project.with(project.version.withDate(date));
+      project = project.with(project.spaces.init.withParsing(root, info.init()));
+      project = project.with(project.spaces.main.withParsing(root, info.main()));
+      project = project.with(project.spaces.test.withParsing(root, info.test()));
+      return project;
     }
 
     public Project withParsingDirectory(Path directory) {
-      var copy = this;
-      // name
+      var project = this;
       var name = directory.normalize().toAbsolutePath().getFileName();
-      if (name != null) copy = copy.with(new Name(name.toString()));
-      // modules
+      if (name != null) project = project.with(new Name(name.toString()));
       try (var stream = Files.find(directory, 9, Core.PathSupport::isModuleInfoJavaFile)) {
-        copy = copy.with(new Modules(stream.map(DeclaredModule::of).toList()));
+        var inits = new ArrayList<DeclaredModule>();
+        var mains = new ArrayList<DeclaredModule>();
+        var tests = new ArrayList<DeclaredModule>();
+        for (var path : stream.toList()) {
+          var uri = path.toUri().toString();
+          var list = uri.contains("/init/") ? inits : uri.contains("/test/") ? tests : mains;
+          var module = DeclaredModule.of(path);
+          list.add(module);
+        }
+        project = project.with(project.spaces.init.withModules(List.copyOf(inits)));
+        project = project.with(project.spaces.main.withModules(List.copyOf(mains)));
+        project = project.with(project.spaces.test.withModules(List.copyOf(tests)));
       } catch (Exception exception) {
         throw new RuntimeException("Find module-info.java files failed", exception);
       }
-      return copy;
+      return project;
     }
 
     private Project with(Component component) {
       return new Project(
           component instanceof Name name ? name : name,
           component instanceof Version version ? version : version,
-          component instanceof Spaces spaces ? spaces : spaces,
-          component instanceof Modules modules ? modules : modules);
+          component instanceof Spaces spaces ? spaces : spaces);
+    }
+
+    private Project with(Space space) {
+      return with(spaces.with(space));
     }
 
     private sealed interface Component {}
@@ -897,6 +901,18 @@ public final class Bach {
       public Version {
         ModuleDescriptor.Version.parse(value);
       }
+
+      Version with(String value) {
+        return new Version(value, date);
+      }
+
+      Version with(ZonedDateTime date) {
+        return new Version(value, date);
+      }
+
+      Version withDate(String text) {
+        return with(ZonedDateTime.parse(text));
+      }
     }
 
     public record Spaces(Space init, Space main, Space test) implements Component {
@@ -914,12 +930,14 @@ public final class Bach {
 
     public record Space(
         String name,
+        List<DeclaredModule> modules,
         int release,
         Optional<String> launcher,
         List<String> requires, // used to compute "--[processor-]module-path"
         List<String> additionalCompileJavacArguments) {
       public Space {
         Objects.requireNonNull(name);
+        Objects.requireNonNull(modules);
         var feature = Runtime.version().feature();
         if (release != 0 && (release < 9 || release > feature))
           throw new IndexOutOfBoundsException(
@@ -928,35 +946,54 @@ public final class Bach {
         Objects.requireNonNull(requires);
       }
 
+      public Space(String name, String... requires) {
+        this(
+            name,
+            List.of(),
+            DEFAULT_SPACE.release(),
+            Optional.empty(),
+            List.of(requires),
+            List.of());
+      }
+
+      private static <V> V value(ModuleSpace from, Function<ModuleSpace, V> with) {
+        var value = with.apply(from);
+        return value.equals(with.apply(DEFAULT_SPACE)) ? null : value;
+      }
+
+      public Space withModules(List<DeclaredModule> modules) {
+        return new Space(
+            name, modules, release, launcher, requires, additionalCompileJavacArguments);
+      }
+
+      public Space withParsing(Path root, ModuleSpace space) {
+        var modules = value(space, ModuleSpace::modules);
+        var release = value(space, ModuleSpace::release);
+        var launcher = value(space, ModuleSpace::launcher);
+        // TODO var requires = value(space, ModuleSpace::requires)
+        // TODO var additionalCompileJavacArguments = value(space, ModuleSpace::...)
+        return new Space(
+            name,
+            modules == null
+                ? this.modules
+                : Stream.of(modules).map(root::resolve).map(DeclaredModule::of).toList(),
+            release == null ? this.release : release,
+            launcher == null ? this.launcher : Optional.of(launcher),
+            requires,
+            additionalCompileJavacArguments);
+      }
+
       public Optional<Integer> targets() {
         return release == 0 ? Optional.empty() : Optional.of(release);
       }
     }
 
-    public record Modules(List<DeclaredModule> declaredModules) implements Component {
-      public Modules {
-        Objects.requireNonNull(declaredModules);
-      }
-
-      @Override
-      public String toString() {
-        return declaredModules.toString();
-      }
-    }
-
-    public record DeclaredModule(
-        String space, Path info, ModuleDescriptor descriptor, Folders folders) {
+    public record DeclaredModule(Path info, ModuleDescriptor descriptor, Folders folders) {
       public static DeclaredModule of(Path path) {
-        var uri = path.toUri().toString();
-        var space = uri.contains("/init/") ? "init" : uri.contains("/test/") ? "test" : "main";
-        return of(space, path);
-      }
-
-      public static DeclaredModule of(String space, Path path) {
         var info = path.endsWith("module-info.java") ? path : path.resolve("module-info.java");
         var descriptor = Core.ModuleDescriptorSupport.parse(info.normalize());
         var folders = Folders.of(info);
-        return new DeclaredModule(space, info, descriptor, folders);
+        return new DeclaredModule(info, descriptor, folders);
       }
 
       public String toName() {
@@ -1022,7 +1059,7 @@ public final class Bach {
       var paths = bach.configuration.paths;
 
       for (var space : project.spaces.list()) {
-        var declarations = project.declaredModules(space).toList();
+        var declarations = space.modules;
         if (declarations.isEmpty()) {
           out.println("No %s modules declared.".formatted(space.name()));
           continue;
@@ -1224,10 +1261,6 @@ public final class Bach {
       public Call with(String key, Object value, Object... values) {
         var call = with(Stream.of(key, value));
         return values.length == 0 ? call : call.with(Stream.of(values));
-      }
-
-      public Call withFindFiles(String glob) {
-        return withFindFiles(Path.of(""), glob);
       }
 
       public Call withFindFiles(Path start, String glob) {
