@@ -1,1 +1,1 @@
-@Bach.ProjectInfo(main = @Bach.ModuleSpace(release = 9))
+@Bach.ProjectInfo(main = @Bach.SpaceInfo(release = 9))

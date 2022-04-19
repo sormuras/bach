@@ -196,16 +196,16 @@ public final class Bach {
 
     String versionDate() default "";
 
-    ModuleSpace init() default @ModuleSpace();
+    SpaceInfo init() default @SpaceInfo();
 
-    ModuleSpace main() default @ModuleSpace();
+    SpaceInfo main() default @SpaceInfo();
 
-    ModuleSpace test() default @ModuleSpace();
+    SpaceInfo test() default @SpaceInfo();
   }
 
-  @ModuleSpace
+  @SpaceInfo
   @Retention(RetentionPolicy.RUNTIME)
-  public @interface ModuleSpace {
+  public @interface SpaceInfo {
     String[] modules() default {};
 
     String launcher() default "";
@@ -784,8 +784,8 @@ public final class Bach {
 
     private static final ProjectInfo DEFAULT_INFO =
         ProjectInfo.class.getAnnotation(ProjectInfo.class);
-    private static final ModuleSpace DEFAULT_SPACE =
-        ModuleSpace.class.getAnnotation(ModuleSpace.class);
+    private static final SpaceInfo DEFAULT_SPACE =
+        SpaceInfo.class.getAnnotation(SpaceInfo.class);
 
     public static Project of() {
       var init = new Space("init");
@@ -956,7 +956,7 @@ public final class Bach {
             List.of());
       }
 
-      private static <V> V value(ModuleSpace from, Function<ModuleSpace, V> with) {
+      private static <V> V value(SpaceInfo from, Function<SpaceInfo, V> with) {
         var value = with.apply(from);
         return value.equals(with.apply(DEFAULT_SPACE)) ? null : value;
       }
@@ -966,10 +966,10 @@ public final class Bach {
             name, modules, release, launcher, requires, additionalCompileJavacArguments);
       }
 
-      public Space withParsing(Path root, ModuleSpace space) {
-        var modules = value(space, ModuleSpace::modules);
-        var release = value(space, ModuleSpace::release);
-        var launcher = value(space, ModuleSpace::launcher);
+      public Space withParsing(Path root, SpaceInfo space) {
+        var modules = value(space, SpaceInfo::modules);
+        var release = value(space, SpaceInfo::release);
+        var launcher = value(space, SpaceInfo::launcher);
         // TODO var requires = value(space, ModuleSpace::requires)
         // TODO var additionalCompileJavacArguments = value(space, ModuleSpace::...)
         return new Space(
