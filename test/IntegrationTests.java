@@ -63,8 +63,8 @@ class IntegrationTests {
   void buildExampleProject(Path path, @TempDir Path temp) throws Exception {
     var bach = bach("--chroot", path.toString(), "--change-bach-out", temp.toString());
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
-    var name = bach.configuration().project().name().value();
-    if (OS.WINDOWS.isCurrentOs() && name.equals("processing-code")) {
+    var init = !bach.configuration().project().spaces().init().modules().isEmpty();
+    if (OS.WINDOWS.isCurrentOs() && init) {
       System.gc(); // try to release file handles and...
       Thread.sleep(123); // hope JAR files are not locked...
     }
