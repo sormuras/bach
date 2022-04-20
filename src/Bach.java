@@ -203,6 +203,8 @@ public final class Bach {
     }
 
     static Project newProjectAnnotation(Path info) {
+      var parent = Bach.class.getClassLoader();
+      if ("jdk.jshell".equals(parent.getClass().getModule().getName())) return DEFAULT_PROJECT;
       if (Files.notExists(info)) return DEFAULT_PROJECT;
       try {
         var temp = Files.createTempDirectory("bach-");
@@ -239,7 +241,6 @@ public final class Bach {
           throw new RuntimeException("Compiling " + info + " failed");
         }
         var urls = new URL[] {temp.toUri().toURL()};
-        var parent = Bach.class.getClassLoader();
         try (var loader = URLClassLoader.newInstance(urls, parent)) {
           return loader.loadClass(name).getAnnotation(Project.class);
         }
