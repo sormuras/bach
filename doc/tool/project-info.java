@@ -1,7 +1,7 @@
-@Bach.ProjectInfo (
+@Project(
   version = "123",
   versionDate = "2022-04-13T00:00Z",
-  main = @Bach.SpaceInfo (
+  main = @Space(
     modules = {
       "org.example",
       "org.example.app",

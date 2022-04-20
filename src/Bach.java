@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
@@ -94,19 +93,19 @@ public final class Bach {
 
   /** {@return the result of running the initial seed tool call} */
   private int main() {
-    var verbose = configuration.isVerbose();
-    var seed = configuration.tools.seed;
-    if (seed == null) {
+    var remnants = configuration.remnants;
+    if (remnants.isEmpty()) {
       run(Tool.Call.of("/?"));
       return 1;
     }
+    var verbose = configuration.isVerbose();
     var printer = configuration.printer;
     var paths = configuration.paths;
     try (var recording = new Recording()) {
       recording.start();
       try {
         if (verbose) printer.out("BEGIN");
-        run(seed);
+        run(Tool.Call.of(remnants));
         if (verbose) printer.out("END.");
         return 0;
       } catch (RuntimeException exception) {
@@ -137,7 +136,7 @@ public final class Bach {
   public void run(String name, List<String> arguments) {
     var verbose = configuration.isVerbose();
     var printer = configuration.printer;
-    var finder = configuration.tools.finder;
+    var finder = configuration.project.tools.finder;
 
     var tools = finder.find(name);
     if (tools.isEmpty()) throw new ToolNotFoundException(name);
@@ -187,35 +186,9 @@ public final class Bach {
     }
   }
 
-  @ProjectInfo
-  @Retention(RetentionPolicy.RUNTIME)
-  public @interface ProjectInfo {
-    String name() default "unnamed";
-
-    String version() default "0-ea";
-
-    String versionDate() default "";
-
-    SpaceInfo init() default @SpaceInfo();
-
-    SpaceInfo main() default @SpaceInfo();
-
-    SpaceInfo test() default @SpaceInfo();
-  }
-
-  @SpaceInfo
-  @Retention(RetentionPolicy.RUNTIME)
-  public @interface SpaceInfo {
-    String[] modules() default {};
-
-    String launcher() default "";
-
-    int release() default 0;
-  }
-
   /** Immutable settings. */
   public record Configuration(
-      Printer printer, Flags flags, Paths paths, Tools tools, Project project) {
+      Printer printer, Flags flags, Paths paths, Project project, List<String> remnants) {
     enum Flag {
       VERBOSE
     }
@@ -225,7 +198,7 @@ public final class Bach {
       var flags = EnumSet.noneOf(Flag.class);
       var root = Path.of("");
       var bout = Path.of(".bach", "out");
-      Tool.Call seed = null;
+      var projectProperties = new TreeMap<String, String>();
 
       var arguments = new ArrayDeque<>(List.of(args));
       while (!arguments.isEmpty()) {
@@ -246,12 +219,17 @@ public final class Bach {
             bout = Path.of(value).normalize();
             continue;
           }
+          if (key.startsWith("--project-")) {
+            projectProperties.put(key, value);
+            continue;
+          }
           throw new IllegalArgumentException("Unsupported option `%s`".formatted(key));
         }
-        seed = new Tool.Call(argument, arguments.stream().toList());
+        arguments.addFirst(argument); // restore full command
         break;
       }
-
+      var remnants = List.copyOf(arguments);
+      var info = Project.Info.newProjectInfoAnnotation(root.resolve("project-info.java"));
       var paths = new Paths(root, root.resolve(bout));
       var finder =
           Tool.Finder.compose(
@@ -259,7 +237,7 @@ public final class Bach {
                   Tool.of("bach/help", Core::help),
                   Tool.of("/?", Core::help),
                   Tool.of("/save", Core::save)),
-              Tool.Finder.ofBasicTools(paths.root(".bach", "basic-tools")),
+              Tool.Finder.ofProjectScripts(info.tools()),
               Tool.Finder.ofJavaTools(
                   paths.root(".bach", "external-tools"),
                   Path.of(System.getProperty("java.home"), "bin", "java"),
@@ -281,13 +259,16 @@ public final class Bach {
                   Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
                   Tool.ofNativeToolInJavaHome("jdeprscan"),
                   Tool.ofNativeToolInJavaHome("jfr")));
-      var tools = new Tools(finder, seed);
+
+      var tools = new Project.Tools(finder);
       var project =
           Project.of()
+              .with(tools)
               .withParsingDirectory(root)
-              .withParsingAnnotation(root.resolve("bach-project-info.java"));
+              .withParsingAnnotation(root, info)
+              .withParsingProperties(projectProperties);
 
-      return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, tools, project);
+      return new Configuration(printer, new Flags(Set.copyOf(flags)), paths, project, remnants);
     }
 
     public boolean isVerbose() {
@@ -319,8 +300,6 @@ public final class Bach {
         return out.resolve(Path.of(first, more));
       }
     }
-
-    public record Tools(Tool.Finder finder, Tool.Call seed) {}
   }
 
   /** Internal helpers. */
@@ -373,7 +352,7 @@ public final class Bach {
           """);
       if (bach.configuration.isVerbose()) {
         out.println("Available tools include:");
-        bach.configuration.tools.finder.findAll().stream()
+        bach.configuration.project.tools.finder.findAll().stream()
             .filter(Tool::isNotHidden)
             .sorted(Comparator.comparing(Tool::name))
             .forEach(tool -> out.printf("  - %s%n", tool.name()));
@@ -435,11 +414,14 @@ public final class Bach {
     }
 
     static int info(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      out.println("Info");
+      out.println("Configuration");
       out.println(bach.configuration.flags);
       out.println(bach.configuration.paths);
-      out.printf("Tools%n");
-      bach.configuration.tools.finder.findAll().stream()
+      out.println("Project");
+      out.println(bach.configuration.project.name);
+      out.println(bach.configuration.project.version);
+      out.println("Tools");
+      bach.configuration.project.tools.finder.findAll().stream()
           .sorted(Comparator.comparing(Tool::name))
           .forEach(tool -> out.printf("  - %s%n", tool.name()));
       return 0;
@@ -695,18 +677,6 @@ public final class Bach {
         }
       }
 
-      static Properties properties(Path path) {
-        var properties = new Properties();
-        if (Files.exists(path)) {
-          try {
-            properties.load(new FileInputStream(path.toFile()));
-          } catch (Exception exception) {
-            throw new RuntimeException(exception);
-          }
-        }
-        return properties;
-      }
-
       static boolean isJarFile(Path path) {
         return nameOrElse(path, "").endsWith(".jar") && Files.isRegularFile(path);
       }
@@ -780,69 +750,26 @@ public final class Bach {
   }
 
   /** Project model and project-related operators. */
-  public record Project(Name name, Version version, Spaces spaces) {
-
-    private static final ProjectInfo DEFAULT_INFO =
-        ProjectInfo.class.getAnnotation(ProjectInfo.class);
-    private static final SpaceInfo DEFAULT_SPACE =
-        SpaceInfo.class.getAnnotation(SpaceInfo.class);
+  public record Project(Name name, Version version, Spaces spaces, Tools tools) {
 
     public static Project of() {
       var init = new Space("init");
       var main = new Space("main", "init");
       var test = new Space("test", "main");
       return new Project(
-          new Name(DEFAULT_INFO.name()),
-          new Version(DEFAULT_INFO.version(), ZonedDateTime.now()),
-          new Spaces(init, main, test));
+          new Name(Info.DEFAULT_PROJECT.name()),
+          new Version(Info.DEFAULT_PROJECT.version(), ZonedDateTime.now()),
+          new Spaces(init, main, test),
+          new Tools(Tool.Finder.of()));
     }
 
-    public Project withParsingAnnotation(Path info) {
-      if (Files.notExists(info)) return this;
-      try {
-        var temp = Files.createTempDirectory("bach-");
-        var name = "Project4711";
-        var hook = Files.copy(info, temp.resolve(name + ".java"));
-        Files.writeString(hook, "interface " + name + " {}", StandardOpenOption.APPEND);
-        var javac = Tool.Call.of("javac").with("-d", temp).with(hook);
-        var sourcefile = System.getProperty("jdk.launcher.sourcefile");
-        if (sourcefile != null) javac = javac.with(sourcefile);
-        var codesource = Bach.class.getProtectionDomain().getCodeSource();
-        if (codesource != null) {
-          var codelocation = codesource.getLocation();
-          if (codelocation != null) {
-            var codepath = Path.of(codelocation.toURI());
-            javac = javac.with("--class-path", codepath);
-          }
-        }
-        ToolProvider.findFirst("javac")
-            .orElseThrow()
-            .run(System.out, System.err, javac.arguments().toArray(String[]::new));
-        var urls = new URL[] {temp.toUri().toURL()};
-        var parent = Bach.class.getClassLoader();
-        try (var loader = URLClassLoader.newInstance(urls, parent)) {
-          var project = loader.loadClass(name);
-          var annotation = project.getAnnotation(ProjectInfo.class);
-          var root = info.getParent() == null ? Path.of("") : info.getParent();
-          return withParsingAnnotation(root, annotation);
-        }
-      } catch (Exception exception) {
-        throw new RuntimeException("Parsing " + info + " failed", exception);
-      }
-    }
-
-    private static <V> V value(ProjectInfo info, Function<ProjectInfo, V> getter) {
-      var value = getter.apply(info);
-      return value.equals(getter.apply(DEFAULT_INFO)) ? null : value;
-    }
-
-    public Project withParsingAnnotation(Path root, ProjectInfo info) {
+    public Project withParsingAnnotation(Path root, Info.ProjectInfo info) {
       var project = this;
-      var name = value(info, ProjectInfo::name);
+      var name = Info.get(info, Info.ProjectInfo::name);
       project = name == null ? project : project.with(new Name(name));
-      var version = value(info, ProjectInfo::version);
+      var version = Info.get(info, Info.ProjectInfo::version);
       project = version == null ? project : project.with(project.version.with(version));
-      var date = value(info, ProjectInfo::versionDate);
+      var date = Info.get(info, Info.ProjectInfo::versionDate);
       project = date == null ? project : project.with(project.version.withDate(date));
       project = project.with(project.spaces.init.withParsing(root, info.init()));
       project = project.with(project.spaces.main.withParsing(root, info.main()));
@@ -873,15 +800,130 @@ public final class Bach {
       return project;
     }
 
+    public Project withParsingProperties(Map<String, String> map) {
+      var project = this;
+      var name = map.get("--project-name");
+      project = name == null ? project : project.with(new Name(name));
+      var version = map.get("--project-version");
+      project = version == null ? project : project.with(project.version.with(version));
+      var date = map.get("--project-version-date");
+      project = date == null ? project : project.with(project.version.withDate(date));
+      return project;
+    }
+
     private Project with(Component component) {
       return new Project(
           component instanceof Name name ? name : name,
           component instanceof Version version ? version : version,
-          component instanceof Spaces spaces ? spaces : spaces);
+          component instanceof Spaces spaces ? spaces : spaces,
+          component instanceof Tools tools ? tools : tools);
     }
 
     private Project with(Space space) {
       return with(spaces.with(space));
+    }
+
+    interface Info {
+
+      ProjectInfo DEFAULT_PROJECT = ProjectInfo.class.getAnnotation(ProjectInfo.class);
+      Space DEFAULT_SPACE = Space.class.getAnnotation(Space.class);
+
+      private static <V> V get(ProjectInfo from, Function<ProjectInfo, V> with) {
+        var value = with.apply(from);
+        return value.equals(with.apply(DEFAULT_PROJECT)) ? null : value;
+      }
+
+      private static <V> V get(Space from, Function<Space, V> with) {
+        var value = with.apply(from);
+        return value.equals(with.apply(DEFAULT_SPACE)) ? null : value;
+      }
+
+      static ProjectInfo newProjectInfoAnnotation(Path info) {
+        if (Files.notExists(info)) return DEFAULT_PROJECT;
+        try {
+          var temp = Files.createTempDirectory("bach-");
+          var name = "Project4711";
+          var lines =
+              Files.readAllLines(info).stream()
+                  .map(line -> line.replace("@Project", "@Bach.Project.Info.ProjectInfo"))
+                  .map(line -> line.replace("@Space", "@Bach.Project.Info.Space"))
+                  .map(line -> line.replace("@Tools", "@Bach.Project.Info.Tools"))
+                  .map(line -> line.replace("@Script", "@Bach.Project.Info.Tools.Script"))
+                  .toList();
+          var hook = Files.write(temp.resolve(name + ".java"), lines);
+          Files.writeString(hook, "interface " + name + " {}", StandardOpenOption.APPEND);
+
+          var javac = Tool.Call.of("javac").with("-d", temp).with(hook);
+
+          var sourcefile =
+              System.getProperty("bach.sourcefile", System.getProperty("jdk.launcher.sourcefile"));
+          if (sourcefile != null) javac = javac.with(sourcefile);
+          var codesource = Bach.class.getProtectionDomain().getCodeSource();
+          if (codesource != null) {
+            var codelocation = codesource.getLocation();
+            if (codelocation != null) {
+              var codepath = Path.of(codelocation.toURI());
+              javac = javac.with("--class-path", codepath);
+            }
+          }
+
+          var code =
+              ToolProvider.findFirst("javac")
+                  .orElseThrow()
+                  .run(System.out, System.err, javac.arguments().toArray(String[]::new));
+          if (code != 0) {
+            throw new RuntimeException("Compiling " + info + " failed");
+          }
+          var urls = new URL[] {temp.toUri().toURL()};
+          var parent = Bach.class.getClassLoader();
+          try (var loader = URLClassLoader.newInstance(urls, parent)) {
+            return loader.loadClass(name).getAnnotation(ProjectInfo.class);
+          }
+        } catch (Exception exception) {
+          throw new RuntimeException("Creating @Project from " + info + " failed", exception);
+        }
+      }
+
+      @ProjectInfo
+      @Retention(RetentionPolicy.RUNTIME)
+      @interface ProjectInfo {
+        String name() default "unnamed";
+
+        String version() default "0-ea";
+
+        String versionDate() default "";
+
+        Space init() default @Space();
+
+        Space main() default @Space();
+
+        Space test() default @Space();
+
+        Tools tools() default @Tools();
+      }
+
+      @Space
+      @Retention(RetentionPolicy.RUNTIME)
+      @interface Space {
+        String[] modules() default {};
+
+        String launcher() default "";
+
+        int release() default 0;
+      }
+
+      @Tools
+      @Retention(RetentionPolicy.RUNTIME)
+      @interface Tools {
+        Script[] scripts() default {};
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface Script {
+          String name();
+
+          String[] code() default {};
+        }
+      }
     }
 
     private sealed interface Component {}
@@ -928,6 +970,8 @@ public final class Bach {
       }
     }
 
+    public record Tools(Tool.Finder finder) implements Component {}
+
     public record Space(
         String name,
         List<DeclaredModule> modules,
@@ -950,15 +994,10 @@ public final class Bach {
         this(
             name,
             List.of(),
-            DEFAULT_SPACE.release(),
+            Info.DEFAULT_SPACE.release(),
             Optional.empty(),
             List.of(requires),
             List.of());
-      }
-
-      private static <V> V value(SpaceInfo from, Function<SpaceInfo, V> with) {
-        var value = with.apply(from);
-        return value.equals(with.apply(DEFAULT_SPACE)) ? null : value;
       }
 
       public Space withModules(List<DeclaredModule> modules) {
@@ -966,10 +1005,10 @@ public final class Bach {
             name, modules, release, launcher, requires, additionalCompileJavacArguments);
       }
 
-      public Space withParsing(Path root, SpaceInfo space) {
-        var modules = value(space, SpaceInfo::modules);
-        var release = value(space, SpaceInfo::release);
-        var launcher = value(space, SpaceInfo::launcher);
+      public Space withParsing(Path root, Info.Space space) {
+        var modules = Info.get(space, Info.Space::modules);
+        var release = Info.get(space, Info.Space::release);
+        var launcher = Info.get(space, Info.Space::launcher);
         // TODO var requires = value(space, ModuleSpace::requires)
         // TODO var additionalCompileJavacArguments = value(space, ModuleSpace::...)
         return new Space(
@@ -1249,6 +1288,15 @@ public final class Bach {
         return new Call(name, List.of()).with(Stream.of(arguments));
       }
 
+      public static Call of(List<?> command) {
+        var size = command.size();
+        if (size == 0) throw new IllegalArgumentException("Empty command");
+        var name = command.get(0).toString();
+        if (size == 1) return new Call(name, List.of());
+        if (size == 2) return new Call(name, List.of(command.get(1).toString()));
+        return new Call(name, List.of()).with(command.stream().skip(1));
+      }
+
       public Call with(Stream<?> objects) {
         var strings = objects.map(Object::toString);
         return new Call(name, Stream.concat(arguments.stream(), strings).toList());
@@ -1348,24 +1396,19 @@ public final class Bach {
         return Finder.of(ClassLoader.getSystemClassLoader());
       }
 
-      static Finder ofBasicTools(Path directory) {
-        record BasicToolProvider(String name, Properties properties) implements Operator {
+      static Finder ofProjectScripts(Project.Info.Tools tools) {
+        record ProjectScriptTool(String name, String[] values) implements Operator {
+          static ProjectScriptTool of(Project.Info.Tools.Script script) {
+            return new ProjectScriptTool("project-script/" + script.name(), script.code());
+          }
+
           @Override
           public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
             var verbose = bach.configuration.isVerbose();
             if (verbose) out.println("BEGIN # of " + name);
-            var numbers =
-                properties.stringPropertyNames().stream()
-                    .sorted(Comparator.comparing(Integer::parseInt))
-                    .toList();
-            for (var number : numbers) {
-              if (verbose) out.println(name + ':' + number);
-              var value = properties.getProperty(number);
+            for (var value : values) {
               var lines = value.lines().map(line -> replace(bach, line)).toList();
-              var name = lines.get(0);
-              if (name.toUpperCase().startsWith("GOTO")) throw new Error("GOTO IS TOO BASIC!");
-              var call = Tool.Call.of(name).with(lines.stream().skip(1));
-              bach.run(call);
+              bach.run(Tool.Call.of(lines));
             }
             if (verbose) out.println("END # of " + name);
             return 0;
@@ -1381,28 +1424,15 @@ public final class Bach {
           }
         }
 
-        record BasicToolFinder(Path directory) implements Finder {
+        record ProjectScriptFinder(List<Project.Info.Tools.Script> scripts) implements Finder {
+
           @Override
           public List<Tool> findAll() {
-            if (!Files.isDirectory(directory)) return List.of();
-            var list = new ArrayList<Tool>();
-            try (var paths = Files.newDirectoryStream(directory, "*.properties")) {
-              for (var path : paths) {
-                if (Files.isDirectory(path)) continue;
-                var namespace = path.getParent().getFileName().toString();
-                var filename = path.getFileName().toString();
-                var name = filename.substring(0, filename.length() - ".properties".length());
-                var properties = Core.PathSupport.properties(path);
-                list.add(Tool.of(new BasicToolProvider(namespace + "/" + name, properties)));
-              }
-            } catch (Exception exception) {
-              throw new RuntimeException(exception);
-            }
-            return List.copyOf(list);
+            return scripts.stream().map(ProjectScriptTool::of).map(Tool::of).toList();
           }
         }
 
-        return new BasicToolFinder(directory);
+        return new ProjectScriptFinder(List.of(tools.scripts()));
       }
 
       static Finder ofJavaTools(Path directory, Path java, String argsfile) {
