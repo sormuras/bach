@@ -49,8 +49,8 @@ class Tool3 {
     }
 
     static ToolFinder of(ToolProvider... providers) {
-      record ListToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
-      return new ListToolFinder(List.of(providers));
+      record DirectToolFinder(List<ToolProvider> findAll) implements ToolFinder {}
+      return new DirectToolFinder(List.of(providers));
     }
 
     static ToolFinder ofSystem() {
