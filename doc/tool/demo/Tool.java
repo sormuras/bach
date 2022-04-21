@@ -25,13 +25,12 @@ class Tool {
       }
     }
 
-    var JDK = Path.of(System.getProperty("java.home", "."), "bin");
     var finder =
         ToolFinder.compose(
             ToolFinder.of(new Banner(), new Chain()),
             ToolFinder.of(new Compile(), new Link(), new Run()),
             ToolFinder.ofSystem(),
-            ToolFinder.ofNativeTools(JDK));
+            ToolFinder.ofNativeTools(Path.of(System.getProperty("java.home"), "bin")));
 
     /* Handle special case: --list-tools */ {
       if (args[0].equals("--list-tools")) {
@@ -166,7 +165,7 @@ class Tool {
       return new ToolRunner() {
         public void run(String name, String... args) {
           var thread = Thread.currentThread().getId();
-          System.out.printf("|%2x| %s %s%n", thread, name, String.join(" ", args));
+          System.out.printf("|%2X| %s %s%n", thread, name, String.join(" ", args));
           var tool = finder.find(name).orElseThrow(() -> new NoSuchElementException(name));
           var code =
               tool instanceof ToolOperator operator
@@ -234,15 +233,17 @@ class Tool {
           ".bach/out/classes",
           "--module-source-path=.",
           "--module=" + String.join(",", modules));
-      modules.stream().parallel().forEach(
-          module ->
-              runner.run(
-                  "jar",
-                  "--create",
-                  "--file=" + out.resolve(module + ".jar"),
-                  "-C",
-                  "" + out.resolve("classes/" + module),
-                  "."));
+      modules.stream()
+          .sequential()
+          .forEach(
+              module ->
+                  runner.run(
+                      "jar",
+                      "--create",
+                      "--file=" + out.resolve(module + ".jar"),
+                      "-C",
+                      "" + out.resolve("classes/" + module),
+                      "."));
       return 0;
     }
   }

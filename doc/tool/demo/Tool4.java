@@ -18,10 +18,8 @@ class Tool4 {
     }
 
     var finder =
-        ToolFinder.compose(
-            //
-            ToolFinder.of(new Banner()),
-            //
+        ToolFinder.compose( //
+            ToolFinder.of(new Banner()), //
             ToolFinder.ofSystem());
 
     /* Handle special case: --list-tools */ {
