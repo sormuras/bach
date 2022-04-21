@@ -1,7 +1,17 @@
 # JDK Tools and Where to Find Them
 
 Java projects can be built using tools the Java Development Kit (JDK) provides.
-Let's write a Java Scripting tool that uses tools as primitives.
+Let's write a Java Scripting program that uses tools as primitives.
+
+The JDK does not include a "build" tool.
+
+Users resort to 3rd-party tools in order to transform Java source code into shippable products.
+
+The JDK does include a set of foundation tools: javac, jar, ..., jlink.
+
+This session explores ways how to make 
+the implicit connection between JDK tools and Java modules explicit
+so that users are enabled to build Java projects more easily.
 
 ## Outline
 
