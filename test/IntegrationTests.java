@@ -33,6 +33,7 @@ class IntegrationTests {
     bach.run("compile");
     assertLinesMatch(
         """
+        >> INTRO >>
         No init modules declared.
         Compile and package 3 main modules...
         >> JAVAC + JAR >>
@@ -46,6 +47,7 @@ class IntegrationTests {
     bach.run("launch", "first", '2', 0x3);
     assertLinesMatch(
         """
+        >> INTRO >>
         Example application is running.
         file.+?/main/modules/org.example.app.jar
           module org.example.app
