@@ -165,7 +165,8 @@ class Tool {
     static ToolRunner of(ToolFinder finder) {
       return new ToolRunner() {
         public void run(String name, String... args) {
-          System.out.printf("| %s %s%n", name, String.join(" ", args));
+          var thread = Thread.currentThread().getId();
+          System.out.printf("|%2x| %s %s%n", thread, name, String.join(" ", args));
           var tool = finder.find(name).orElseThrow(() -> new NoSuchElementException(name));
           var code =
               tool instanceof ToolOperator operator
@@ -233,7 +234,7 @@ class Tool {
           ".bach/out/classes",
           "--module-source-path=.",
           "--module=" + String.join(",", modules));
-      modules.forEach(
+      modules.stream().parallel().forEach(
           module ->
               runner.run(
                   "jar",
@@ -273,7 +274,7 @@ class Tool {
       try {
         var java = new ArrayList<String>();
         java.add(".bach/out/image/bin/java");
-        if (args.length == 0) java.add("--module=org.example.app/org.example.app.Main");
+        java.add("--module=org.example.app/org.example.app.Main");
         java.addAll(List.of(args));
         return new ProcessBuilder(java).inheritIO().start().waitFor();
       } catch (Exception e) {

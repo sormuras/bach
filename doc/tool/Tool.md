@@ -12,17 +12,17 @@ a few tools are executed live on the command-line in order to
 compile and link an example application.
 
 In order to execute command-line tools programmatically,
-the `ToolProvider` interface providing a way invoke tools
-without necessarily starting a new VM was introduced in Java 9.
+the `ToolProvider` interface was introduced in Java 9.
+It provides a way invoke tools without necessarily starting a new VM. 
 
 Leveraging the "Launch Single-File Source-Code Programs" feature
 of JDK Enhancement Proposal (JEP) 330 a standalone tool-running
 program called `Tool.java` is developed in seven steps.
 
-Abstractions being introduced are:
+Three abstractions are introduced along the way:
 
-- `ToolRunner` A runner of tools. Uses `ToolFinder` and provides run time context.
 - `ToolFinder` A finder of tools. Similar to what `ModuleFinder` is to `ModuleReference`.
+- `ToolRunner` A runner of tools. Uses `ToolFinder` and provides run time context.
 - `ToolOperator` An extension of `ToolProvider` to run tools within a tool run.
 
 ## Tools, Options, Examples
@@ -378,6 +378,8 @@ Explore more tool finders:
   <https://en.wikipedia.org/wiki/Unix_philosophy>
 * JEP 293: Guidelines for JDK Command-Line Tool Options
   <https://openjdk.java.net/jeps/293>
+* JDK-8275072: Enhance java.util.spi.ToolProvider
+  <https://bugs.openjdk.java.net/browse/JDK-8275072>
 * ARGument harVESTER - a simple command line parser written with Love and Java 15
   <https://github.com/forax/argvester>
 
@@ -388,5 +390,7 @@ Explore more tool finders:
 ### jtreg (7+)
 
 ### jextract (?)
+
+### junit (external)
 
 ### jreleaser (external)
