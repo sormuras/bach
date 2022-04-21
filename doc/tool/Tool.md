@@ -1,7 +1,7 @@
 # JDK Tools and Where to Find Them
 
 Java projects can be built using tools the Java Development Kit (JDK) provides.
-Or how to write a Java Scripting program that uses tools as primitives.
+Let's write a Java Scripting tool that uses tools as primitives.
 
 ## Outline
 
@@ -338,28 +338,28 @@ java demo/Tool6.java chain compile link
 
 ## `Tool.java`
 
-Explore more tool finders:
+Putting it all together to access all tools the JDK provides.
 
-* `ToolFinder.of(ModuleFinder)` and `ToolFinder.of(ModuleLayer)`
-  * Example: `of(ModuleFinder.of(Path.of("out", "modules")))`
-* `ToolFinder.ofBasicPrograms(Path directory)`
-  * Java Properties-based convention with keys as line numbers
-    and values a tool calls split into one line per argument.
-    ```properties
-    10 javac\n\
-       --version
-    20 GOTO 10
-    ```
+```shell
+java demo/Tool.java chain compile link run
+```
+
 * `ToolFinder.ofNativeTools(Path directory)`
   * Leveraging `ProcessBuilder` and `Process` API.
   * Example: `ofNativeTools(Path.of(System.getProperty("java.home"), "bin"))`
+
+Explore more tool finders:
+
 * `ToolFinder.ofJavaPrograms(Path directory)`
   * Single-File Source-Code Program `java Program.java ARGS...`
   * Executable JAR file `java -jar program.jar ARGS...`
 
+* `ToolFinder.of(ModuleFinder)` and `ToolFinder.of(ModuleLayer)`
+  * Example: `of(ModuleFinder.of(Path.of("out", "modules")))`
+
 ## `Bach.java`
 
-**TODO**
+_Want to see more?_
 
 ## Talk-Related Links
 
