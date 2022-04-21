@@ -1224,6 +1224,7 @@ public final class Bach {
         var modulePath =
             space.requires().stream()
                 .map(required -> paths.out(required, "modules"))
+                .filter(Files::isDirectory)
                 .map(Path::toString)
                 .collect(Collectors.joining(File.pathSeparator));
         if (!modulePath.isEmpty()) {
