@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -148,11 +149,11 @@ public final class Bach {
       names.addLast(name);
       if (tool.isNotHidden()) {
         if (verbose && names.size() > 1) printer.out(String.join(" | ", names));
-        var text = arguments.isEmpty() ? name : name + ' ' + String.join(" ", arguments);
+        var text = arguments.isEmpty() ? name : name + ' ' + Core.StringSupport.join(arguments);
         var operator = tool.provider instanceof Tool.Operator;
         if (names.size() > 1) printer.out(operator ? text : "  " + text);
       }
-      var code = run(tool.provider(), name, arguments);
+      var code = run(tool.provider, name, arguments);
       if (code != 0) {
         throw new RuntimeException("%s returned non-zero exit code: %d".formatted(name, code));
       }
@@ -215,6 +216,8 @@ public final class Bach {
                 .map(line -> line.replace("@Space", "@Bach.Info.Space"))
                 .map(line -> line.replace("@Tools", "@Bach.Info.Tools"))
                 .map(line -> line.replace("@Script", "@Bach.Info.Tools.Script"))
+                .map(line -> line.replace("@ExternalTool", "@Bach.Info.Tools.ExternalTool"))
+                .map(line -> line.replace("@Asset", "@Bach.Info.Asset"))
                 .toList();
         var hook = Files.write(temp.resolve(name + ".java"), lines);
         Files.writeString(hook, "interface " + name + " {}", StandardOpenOption.APPEND);
@@ -280,7 +283,16 @@ public final class Bach {
     @Tools
     @Retention(RetentionPolicy.RUNTIME)
     @interface Tools {
+      ExternalTool[] externals() default {};
+
       Script[] scripts() default {};
+
+      @Retention(RetentionPolicy.RUNTIME)
+      @interface ExternalTool {
+        String name();
+
+        Asset[] assets() default {};
+      }
 
       @Retention(RetentionPolicy.RUNTIME)
       @interface Script {
@@ -288,6 +300,13 @@ public final class Bach {
 
         String[] code() default {};
       }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Asset {
+      String name();
+
+      String from();
     }
   }
 
@@ -341,38 +360,9 @@ public final class Bach {
       var remnants = List.copyOf(arguments);
       var annotation = Info.newProjectAnnotation(root.resolve(info));
       var paths = new Paths(root, root.resolve(bout));
-      var finder =
-          Tool.Finder.compose(
-              Tool.Finder.of(
-                  Tool.of("bach/help", Core::help),
-                  Tool.of("/?", Core::help),
-                  Tool.of("/save", Core::save)),
-              Tool.Finder.ofProjectScripts(annotation.tools()),
-              Tool.Finder.ofJavaTools(
-                  paths.root(".bach", "external-tools"),
-                  Path.of(System.getProperty("java.home"), "bin", "java"),
-                  "java.args"),
-              Tool.Finder.of(
-                  Tool.of("bach/banner", Core::banner).with(Tool.Flag.HIDDEN),
-                  Tool.of("bach/checksum", Core::checksum),
-                  Tool.of("bach/load", Core::load),
-                  Tool.of("bach/load-and-verify", Core::loadAndVerify),
-                  Tool.of("bach/info", Core::info),
-                  Tool.of("bach/tree", Core::tree)),
-              Tool.Finder.of(
-                  Tool.of("project/build", Bach.Project::build),
-                  Tool.of("project/compile", Bach.Project::compile),
-                  Tool.of("project/launch", Bach.Project::launch)),
-              Tool.Finder.ofSystemTools(),
-              Tool.Finder.of(
-                  Tool.ofNativeToolInJavaHome("jarsigner"),
-                  Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
-                  Tool.ofNativeToolInJavaHome("jdeprscan"),
-                  Tool.ofNativeToolInJavaHome("jfr")));
-
-      var tools = new Project.Tools(finder);
+      var tools = Project.Tools.of(paths, annotation);
       var project =
-          Bach.Project.of()
+          Project.of()
               .with(tools)
               .withParsingDirectory(root)
               .withParsingAnnotation(root, annotation)
@@ -476,31 +466,41 @@ public final class Bach {
         return 1;
       }
       var target = Path.of(args[0]);
-      var source = URI.create(args[1]);
-      if (Files.notExists(target)) {
-        out.printf("Loading %s...", source);
-        var uri =
-            source.getScheme() == null
-                ? Path.of(args[1]).normalize().toAbsolutePath().toUri()
-                : source;
-        try (var stream = uri.toURL().openStream()) {
-          var parent = target.getParent();
-          if (parent != null) Files.createDirectories(parent);
-          var size = Files.copy(stream, target);
-          out.printf("Loaded %,12d %s", size, target.getFileName());
+      if (Files.exists(target)) return 0; // TODO Support "--reload" flag
+
+      if (args[1].startsWith("string:")) {
+        try {
+          var string = args[1].substring(7);
+          Files.writeString(target, string);
+          out.printf("Wrote %,12d %s%n", string.length(), target.getFileName());
+          return 0;
         } catch (Exception exception) {
           exception.printStackTrace(err);
           return 2;
         }
       }
-      return 0;
+
+      var paths = bach.configuration.paths;
+      var source = URI.create(args[1]);
+      var scheme = source.getScheme();
+      var uri = scheme == null ? paths.root(args[1]).normalize().toAbsolutePath().toUri() : source;
+      out.printf("Loading %s...%n", uri);
+      try (var stream = uri.toURL().openStream()) {
+        var parent = target.getParent();
+        if (parent != null) Files.createDirectories(parent);
+        var size = Files.copy(stream, target);
+        out.printf("Loaded %,12d %s%n", size, target.getFileName());
+        return 0;
+      } catch (Exception exception) {
+        exception.printStackTrace(err);
+        return 3;
+      }
     }
 
     static int loadAndVerify(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      var target = Path.of(args[0]);
-      var source = URI.create(args[1]);
-      bach.run(Tool.Call.of("load", target, source));
+      bach.run("load", args[0], args[1]);
 
+      var target = Path.of(args[0]);
       var calls = new ArrayList<Tool.Call>();
       Consumer<String> checker =
           string -> {
@@ -513,9 +513,11 @@ public final class Bach {
       var index = 2;
       while (index < args.length) checker.accept(args[index++]);
 
-      var fragment = source.getFragment();
-      var elements = fragment == null ? new String[0] : fragment.split("&");
-      for (var element : elements) checker.accept(element);
+      if (!args[1].startsWith("string:")) {
+        var fragment = URI.create(args[1]).getFragment();
+        var elements = fragment == null ? new String[0] : fragment.split("&");
+        for (var element : elements) checker.accept(element);
+      }
 
       if (calls.isEmpty()) throw new IllegalStateException("No expected checksum given.");
 
@@ -592,10 +594,10 @@ public final class Bach {
                 .forEach(out::println);
           }
         }
-        if (mode == Mode.DELETE || mode == Mode.CLEAN) {
+        if (mode == Mode.CREATE || mode == Mode.CLEAN) {
           Files.createDirectories(path);
         }
-        if (mode == Mode.CREATE || mode == Mode.CLEAN) {
+        if (mode == Mode.DELETE || mode == Mode.CLEAN) {
           try (var stream = Files.walk(path)) {
             var files = stream.sorted((p, q) -> -p.compareTo(q));
             for (var file : files.toArray(Path[]::new)) Files.deleteIfExists(file);
@@ -828,6 +830,16 @@ public final class Bach {
     }
 
     static final class StringSupport {
+      static String join(List<String> strings) {
+        return strings.stream().map(StringSupport::firstLine).collect(Collectors.joining(" "));
+      }
+
+      static String firstLine(String string) {
+        var lines = string.lines().toList();
+        var size = lines.size();
+        return size <= 1 ? string : lines.get(0) + "[...%d lines]".formatted(size);
+      }
+
       record Property(String key, String value) {}
 
       static Property parseProperty(String string) {
@@ -870,7 +882,7 @@ public final class Bach {
           new Name(Info.DEFAULT_PROJECT.name()),
           new Version(Info.DEFAULT_PROJECT.version(), ZonedDateTime.now()),
           new Spaces(init, main, test),
-          new Tools(Tool.Finder.of()));
+          new Tools(Tool.Finder.of(), List.of()));
     }
 
     public Project withParsingAnnotation(Path root, Info.Project info) {
@@ -977,7 +989,54 @@ public final class Bach {
       }
     }
 
-    public record Tools(Tool.Finder finder) implements Component {}
+    public record Asset(String name, String from) {
+      public static Asset of(Info.Asset info) {
+        return new Asset(info.name(), info.from());
+      }
+    }
+
+    public record ExternalTool(String name, List<Asset> assets) {
+      public static ExternalTool of(Info.Tools.ExternalTool info) {
+        return new ExternalTool(info.name(), Stream.of(info.assets()).map(Asset::of).toList());
+      }
+    }
+
+    public record Tools(Tool.Finder finder, List<ExternalTool> externals) implements Component {
+      public static Tools of(Configuration.Paths paths, Info.Project info) {
+        var finder =
+            Tool.Finder.compose(
+                Tool.Finder.of(
+                    Tool.of("bach/help", Core::help),
+                    Tool.of("/?", Core::help),
+                    Tool.of("/save", Core::save)),
+                Tool.Finder.ofProjectScripts(info.tools()),
+                Tool.Finder.ofJavaTools(
+                    paths.root(".bach", "external-tools"),
+                    Path.of(System.getProperty("java.home"), "bin", "java"),
+                    "java.args"),
+                Tool.Finder.of(
+                    Tool.of("bach/banner", Core::banner).with(Tool.Flag.HIDDEN),
+                    Tool.of("bach/checksum", Core::checksum),
+                    Tool.of("bach/load", Core::load),
+                    Tool.of("bach/load-and-verify", Core::loadAndVerify),
+                    Tool.of("bach/info", Core::info),
+                    Tool.of("bach/tree", Core::tree)),
+                Tool.Finder.of(
+                    Tool.of("project/build", Bach.Project::build),
+                    Tool.of("project/download", Bach.Project::download),
+                    Tool.of("project/compile", Bach.Project::compile),
+                    Tool.of("project/launch", Bach.Project::launch)),
+                Tool.Finder.ofSystemTools(),
+                Tool.Finder.of(
+                    Tool.ofNativeToolInJavaHome("jarsigner"),
+                    Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
+                    Tool.ofNativeToolInJavaHome("jdeprscan"),
+                    Tool.ofNativeToolInJavaHome("jfr")));
+
+        var externals = Stream.of(info.tools().externals()).map(ExternalTool::of).toList();
+        return new Tools(finder, externals);
+      }
+    }
 
     public record Space(
         String name,
@@ -1096,7 +1155,25 @@ public final class Bach {
     }
 
     static int build(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      bach.run("project/download");
       bach.run("project/compile");
+      return 0;
+    }
+
+    static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      for (var external : bach.configuration.project.tools.externals) {
+        var directory = bach.configuration.paths.root(".bach", "external-tools", external.name);
+        for (var asset : external.assets) {
+          var target = directory.resolve(asset.name);
+          var source = asset.from;
+          var call = Tool.Call.of("load-and-verify", target, source);
+          if (source.startsWith("string:")) {
+            var size = source.getBytes(StandardCharsets.UTF_8).length - 7;
+            call = call.with("SIZE=" + size);
+          }
+          bach.run(call);
+        }
+      }
       return 0;
     }
 
@@ -1474,7 +1551,7 @@ public final class Bach {
               command.add(javas.get(0).toString());
               return List.of(Tool.ofNativeTool(namespace + '/' + name, command));
             }
-            throw new UnsupportedOperationException("Unknown program layout: " + directory.toUri());
+            return List.of();
           }
         }
 

@@ -5,6 +5,27 @@
     test = @Space(modules = {}),
 
     tools = @Tools(
+
+        externals = {
+            @ExternalTool(
+                name = "sormuras-hello-java-07819f3ee7",
+                assets = {
+                    @Asset(
+                        name = "Hello.java",
+                        from = "https://github.com/sormuras/hello/raw/07819f3ee7/Hello.java#SIZE=200"
+                    ),
+                    @Asset(
+                        name = "README.md",
+                        from = """
+                               string:# Hello.java Program
+                               
+                               Find source code at <https://github.com/sormuras/hello/blob/07819f3ee7/Hello.java>
+                               """
+                    )
+                }
+            )
+        },
+
         scripts = {
             @Script(
                 name = "bootstrap",
