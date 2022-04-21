@@ -1,4 +1,9 @@
 @Project(
+
+    init = @Space(modules = {}),
+    main = @Space(modules = {}),
+    test = @Space(modules = {}),
+
     tools = @Tools(
         scripts = {
             @Script(
