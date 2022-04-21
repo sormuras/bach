@@ -148,10 +148,13 @@ public final class Bach {
     try {
       names.addLast(name);
       if (tool.isNotHidden()) {
-        if (verbose && names.size() > 1) printer.out(String.join(" | ", names));
+        if (verbose) {
+          var thread = Thread.currentThread().getId();
+          printer.out("[%2X] %s".formatted(thread, String.join(" | ", names)));
+        }
         var text = arguments.isEmpty() ? name : name + ' ' + Core.StringSupport.join(arguments);
         var operator = tool.provider instanceof Tool.Operator;
-        if (names.size() > 1) printer.out(operator ? text : "  " + text);
+        printer.out(operator ? text : "  " + text);
       }
       var code = run(tool.provider, name, arguments);
       if (code != 0) {
