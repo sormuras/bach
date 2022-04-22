@@ -27,6 +27,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestOutputStream;
@@ -464,16 +465,36 @@ public final class Bach {
     }
 
     static int load(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-      if (args.length != 2) {
-        err.println("Usage: load TARGET SOURCE");
+      record CLI(Optional<Boolean> reload, Path target, String source) {
+        static final String USAGE =
+            """
+            Usage: load [--reload] TARGET SOURCE
+            """;
+
+        static Optional<CLI> of(String... args) {
+          if (args.length < 2 || args.length > 3) return Optional.empty();
+          var reload = "--reload".equals(args[0]);
+          return Optional.of(
+              new CLI(
+                  reload ? Optional.of(Boolean.TRUE) : Optional.empty(),
+                  Path.of(args[reload ? 1 : 0]),
+                  args[reload ? 2 : 1]));
+        }
+      }
+      var optionalCLI = CLI.of(args);
+      if (optionalCLI.isEmpty()) {
+        err.println(CLI.USAGE);
         return 1;
       }
-      var target = Path.of(args[0]);
-      if (Files.exists(target)) return 0; // TODO Support "--reload" flag
+      var cli = optionalCLI.get();
+      var reload = cli.reload().orElse(Boolean.FALSE);
+      var target = cli.target();
+      if (Files.exists(target) && !reload) return 0;
 
-      if (args[1].startsWith("string:")) {
+      var source = cli.source();
+      if (source.startsWith("string:")) {
         try {
-          var string = args[1].substring(7);
+          var string = source.substring(7);
           Files.writeString(target, string);
           out.printf("Wrote %,12d %s%n", string.length(), target.getFileName());
           return 0;
@@ -484,14 +505,14 @@ public final class Bach {
       }
 
       var paths = bach.configuration.paths;
-      var source = URI.create(args[1]);
-      var scheme = source.getScheme();
-      var uri = scheme == null ? paths.root(args[1]).normalize().toAbsolutePath().toUri() : source;
+      var from = URI.create(source);
+      var scheme = from.getScheme();
+      var uri = scheme == null ? paths.root(source).normalize().toAbsolutePath().toUri() : from;
       out.printf("Loading %s...%n", uri);
       try (var stream = uri.toURL().openStream()) {
         var parent = target.getParent();
         if (parent != null) Files.createDirectories(parent);
-        var size = Files.copy(stream, target);
+        var size = Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
         out.printf("Loaded %,12d %s%n", size, target.getFileName());
         return 0;
       } catch (Exception exception) {
@@ -545,12 +566,12 @@ public final class Bach {
     static int save(Bach bach, PrintWriter out, PrintWriter err, String... args) {
       var usage =
           """
-        Usage: save TARGET VERSION
+          Usage: save TARGET VERSION
 
-        Examples:
-          save Bach.java 1.0
-          save .bach/Bach-HEAD.java HEAD
-        """;
+          Examples:
+            save Bach.java 1.0
+            save .bach/Bach-HEAD.java HEAD
+          """;
       if (args.length == 1 && args[0].equalsIgnoreCase("--help")) {
         out.print(usage);
         return 0;
@@ -563,7 +584,7 @@ public final class Bach {
       var version = args[1];
       var from = URI.create("https://github.com/sormuras/bach/raw/" + version + "/src/Bach.java");
       out.printf("<< %s%n", from);
-      bach.run("load", /* TODO "--replace-existing", */ target, from);
+      bach.run("load", "--reload", target, from);
       out.printf(">> %s%n", target);
       return 0;
     }
