@@ -8,6 +8,10 @@
 
         externals = {
             @ExternalTool(
+                name = "sormuras-hello-jar",
+                from = "https://github.com/sormuras/hello/releases/download/1-ea+1/hello-1-ea+1.jar#SIZE=909"
+            ),
+            @ExternalTool(
                 name = "sormuras-hello-java-07819f3ee7",
                 assets = {
                     @Asset(
@@ -27,6 +31,7 @@
         },
 
         scripts = {
+            @Script(name = "hello", code = "sormuras-hello-jar"),
             @Script(
                 name = "bootstrap",
                 code = {

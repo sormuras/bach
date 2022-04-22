@@ -295,6 +295,8 @@ public final class Bach {
       @interface ExternalTool {
         String name();
 
+        String from() default "";
+
         Asset[] assets() default {};
       }
 
@@ -494,6 +496,8 @@ public final class Bach {
       var source = cli.source();
       if (source.startsWith("string:")) {
         try {
+          var parent = target.getParent();
+          if (parent != null) Files.createDirectories(parent);
           var string = source.substring(7);
           Files.writeString(target, string);
           out.printf("Wrote %,12d %s%n", string.length(), target.getFileName());
@@ -1019,9 +1023,12 @@ public final class Bach {
       }
     }
 
-    public record ExternalTool(String name, List<Asset> assets) {
+    public record ExternalTool(String name, Optional<String> from, List<Asset> assets) {
       public static ExternalTool of(Info.Tools.ExternalTool info) {
-        return new ExternalTool(info.name(), Stream.of(info.assets()).map(Asset::of).toList());
+        return new ExternalTool(
+            info.name(),
+            info.from().isEmpty() ? Optional.empty() : Optional.of(info.from()),
+            Stream.of(info.assets()).map(Asset::of).toList());
       }
     }
 
@@ -1185,8 +1192,17 @@ public final class Bach {
     }
 
     static int download(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+      var calls = new ArrayList<Tool.Call>();
       for (var external : bach.configuration.project.tools.externals) {
         var directory = bach.configuration.paths.root(".bach", "external-tools", external.name);
+        if (external.from.isPresent()) {
+          var source = external.from.get();
+          var begin = source.lastIndexOf('/') + 1;
+          var end = source.indexOf('#', begin);
+          var name = source.substring(begin, end != -1 ? end : source.length());
+          var target = directory.resolve(name);
+          calls.add(Tool.Call.of("load-and-verify", target, source));
+        }
         for (var asset : external.assets) {
           var target = directory.resolve(asset.name);
           var source = asset.from;
@@ -1195,9 +1211,10 @@ public final class Bach {
             var size = source.getBytes(StandardCharsets.UTF_8).length - 7;
             call = call.with("SIZE=" + size);
           }
-          bach.run(call);
+          calls.add(call);
         }
       }
+      calls.forEach(bach::run);
       return 0;
     }
 
@@ -1515,9 +1532,10 @@ public final class Bach {
           public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
             var verbose = bach.configuration.isVerbose();
             if (verbose) out.println("BEGIN # of " + name);
-            for (var value : values) {
-              var lines = value.lines().map(line -> replace(bach, line)).toList();
-              bach.run(Tool.Call.of(lines));
+            for (int i = 0; i < values.length; i++) {
+              var lines = values[i].lines().map(line -> replace(bach, line)).toList();
+              var call = Call.of(lines);
+              bach.run(i == 0 ? call.with(Stream.of(args)) : call);
             }
             if (verbose) out.println("END # of " + name);
             return 0;
