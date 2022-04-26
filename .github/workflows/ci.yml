@@ -17,7 +17,13 @@ jobs:
       - name: 'Set up latest JDK'
         uses: oracle-actions/setup-java@v1
       - name: 'Bootstrap Bach ${{ github.sha }}'
-        run: java src/Bach.java bootstrap
+        run: java --show-version .bach/src/bootstrap.java
+      - name: 'Build Bach with Bach'
+        run: |
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TAG=$(<VERSION)-ea
+          VERSION=${TAG}+${SHA}
+          .bach/bin/bach .bach/src/build.java --project-version ${VERSION}
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v2
@@ -26,3 +32,4 @@ jobs:
           path: |
             LICENSE
             .bach/out/bach-logbook.jfr
+            .bach/out/modules

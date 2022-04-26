@@ -1,4 +1,4 @@
 module aggregator {
-    requires transitive java.se;
-    requires transitive jdk.management;
+  requires transitive java.se;
+  requires transitive jdk.management;
 }
