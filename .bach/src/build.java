@@ -32,9 +32,9 @@ class build {
     bach.run("banner", "Build test code space");
     var testModules = buildTestModules(bach, version, mainModules);
 
-    executeTests(bach, "com.github.sormuras.bach", mainModules, testModules);
     executeTests(bach, "test.base", mainModules, testModules);
     executeTests(bach, "test.integration", mainModules, testModules);
+    executeTestsInOtherVM(bach, "com.github.sormuras.bach", mainModules, testModules);
 
     bach.run("banner", "Generate documentation");
     generateApiDocumentation(bach, version);
@@ -180,6 +180,35 @@ class build {
             .with("--select-module", module)
             .with("--reports-dir", Path.of(".bach/out/test-reports/junit-" + module))
             .arguments());
+  }
+
+  static void executeTestsInOtherVM(Bach bach, String module, Path mainModules, Path testModules) {
+    bach.run("banner", "Execute tests of module " + module);
+    var moduleFinder =
+        ModuleFinder.of(
+            testModules.resolve(module + "@" + version(bach) + "+test.jar"),
+            mainModules,
+            testModules,
+            bach.configuration().paths().root(".bach", "external-modules"));
+    bach.run(
+        ToolCall.of("java")
+            .with("-enableassertions")
+            .with(
+                "--module-path",
+                Stream.of(
+                        testModules.resolve(module + "@" + version(bach) + "+test.jar"),
+                        mainModules,
+                        testModules,
+                        Path.of(".bach", "external-modules"))
+                    .map(Path::toString)
+                    .collect(Collectors.joining(File.pathSeparator)))
+            .with(
+                "--patch-module",
+                "com.github.sormuras.bach="
+                    + mainModules.resolve("com.github.sormuras.bach@" + version(bach) + ".jar"))
+            .with("--module", "org.junit.platform.console")
+            .with("--select-module", module)
+            .with("--reports-dir", Path.of(".bach/out/test-reports/junit-" + module)));
   }
 
   static void generateApiDocumentation(Bach bach, Version version) {
