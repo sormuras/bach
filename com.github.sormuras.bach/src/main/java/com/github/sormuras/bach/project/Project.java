@@ -2,7 +2,6 @@ package com.github.sormuras.bach.project;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -26,6 +25,10 @@ public record Project(Name name, Version version, Spaces spaces) {
     return new Project(name, version, spaces);
   }
 
+  public List<? extends NamedModule> modules() {
+    return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
+  }
+
   sealed interface Component permits Name, Spaces, Version {}
 
   private Project with(Component component) {
@@ -40,10 +43,15 @@ public record Project(Name name, Version version, Spaces spaces) {
   }
 
   public Project withParsingDirectory(Path directory) {
+    return withParsingDirectory(directory, "glob:**/module-info.java");
+  }
+
+  public Project withParsingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();
     if (name != null) project = project.with(new Name(name.toString()));
-    try (var stream = Files.find(directory, 9, Project::isModuleInfoJavaFile)) {
+    var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
+    try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
       var inits = new ArrayList<DeclaredModule>();
       var mains = new ArrayList<DeclaredModule>();
       var tests = new ArrayList<DeclaredModule>();
@@ -57,7 +65,7 @@ public record Project(Name name, Version version, Spaces spaces) {
       project = project.with(project.spaces.main().withModules(List.copyOf(mains)));
       project = project.with(project.spaces.test().withModules(List.copyOf(tests)));
     } catch (Exception exception) {
-      throw new RuntimeException("Find module-info.java files failed", exception);
+      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
     }
     return project;
   }
@@ -90,9 +98,5 @@ public record Project(Name name, Version version, Spaces spaces) {
           };
     }
     return project;
-  }
-
-  private static boolean isModuleInfoJavaFile(Path path, BasicFileAttributes... attributes) {
-    return "module-info.java".equals(path.getFileName().toString()) && Files.isRegularFile(path);
   }
 }
