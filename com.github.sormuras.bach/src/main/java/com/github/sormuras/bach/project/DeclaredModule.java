@@ -5,16 +5,13 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 
-public record DeclaredModule(Path info, ModuleDescriptor descriptor, Folders folders) {
+public record DeclaredModule(Path info, ModuleDescriptor descriptor, Folders folders)
+    implements NamedModule {
   public static DeclaredModule of(Path path) {
     var info = path.endsWith("module-info.java") ? path : path.resolve("module-info.java");
     var descriptor = ModuleDescriptorSupport.parse(info.normalize());
     var folders = Folders.of(info);
     return new DeclaredModule(info, descriptor, folders);
-  }
-
-  public String toName() {
-    return descriptor.name();
   }
 
   public List<Path> toModuleSourcePaths() {
