@@ -25,7 +25,7 @@ public record Project(Name name, Version version, Spaces spaces) {
     return new Project(name, version, spaces);
   }
 
-  public List<? extends NamedModule> modules() {
+  public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
   }
 

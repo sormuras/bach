@@ -3,7 +3,7 @@ package test.integration.project;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
-import com.github.sormuras.bach.project.NamedModule;
+import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.Project;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -31,6 +31,6 @@ class ProjectTests {
                     test.integration
                     """
             .lines(),
-        project.modules().stream().map(NamedModule::name).sorted());
+        project.modules().stream().map(DeclaredModule::name).sorted());
   }
 }
