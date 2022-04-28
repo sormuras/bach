@@ -109,7 +109,7 @@ public final class Bach implements ToolRunner {
   }
 
   private int run(ToolProvider provider, String name, List<String> arguments) {
-    var event = new RunEvent();
+    var event = new ToolRunEvent();
     event.name = name;
     event.args = String.join(" ", arguments);
     var printer = configuration.printer();

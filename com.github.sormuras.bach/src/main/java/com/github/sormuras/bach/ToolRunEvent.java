@@ -10,7 +10,7 @@ import jdk.jfr.StackTrace;
 @Name("Bach.RunEvent")
 @Label("Run")
 @StackTrace(false)
-final class RunEvent extends Event {
+final class ToolRunEvent extends Event {
   String name;
   String args;
   int code;
