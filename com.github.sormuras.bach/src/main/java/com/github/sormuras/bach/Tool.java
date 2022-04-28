@@ -7,21 +7,15 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 
 /** A tool reference. */
-public record Tool(Set<Flag> flags, String name, ToolProvider provider) {
+public record Tool(String name, ToolProvider provider) {
 
-  public enum Flag {
-    HIDDEN
-  }
-
-  public static Tool of(ToolProvider provider, Flag... flags) {
+  public static Tool of(ToolProvider provider) {
     var module = provider.getClass().getModule();
     var name = module.isNamed() ? module.getName() + '/' + provider.name() : provider.name();
-    return new Tool(Set.of(flags), name, provider);
+    return new Tool(name, provider);
   }
 
   public static Tool ofNativeToolInJavaHome(String name) {
@@ -31,15 +25,6 @@ public record Tool(Set<Flag> flags, String name, ToolProvider provider) {
 
   public static Tool ofNativeTool(String name, List<String> command) {
     return Tool.of(new NativeToolProvider(name, command));
-  }
-
-  public Tool with(Flag flag) {
-    var flags = Stream.concat(this.flags.stream(), Stream.of(flag)).toList();
-    return new Tool(Set.copyOf(flags), name, provider);
-  }
-
-  public boolean isNotHidden() {
-    return !flags.contains(Flag.HIDDEN);
   }
 
   public boolean isNameMatching(String text) {

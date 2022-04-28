@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Recording;
 
@@ -73,38 +74,47 @@ public final class Bach implements ToolRunner {
   }
 
   @Override
-  public void run(String name, List<String> arguments) {
-    run(configuration.finder(), name, arguments);
+  public void run(ToolCall call, Set<RunModifier> modifiers) {
+    run(configuration.finder(), call, modifiers);
   }
 
-  public void run(ToolFinder finder, String name, List<String> arguments) {
+  @Override
+  public void run(ToolFinder finder, ToolCall call, Set<RunModifier> modifiers) {
+    var name = call.name();
+    var arguments = call.arguments();
     var verbose = configuration.isVerbose();
     var printer = configuration.printer();
+    var visible = !modifiers.contains(RunModifier.HIDDEN);
+    var tccl = modifiers.contains(RunModifier.RUN_WITH_PROVIDERS_CLASS_LOADER);
 
     var tools = finder.find(name);
     if (tools.isEmpty()) throw new ToolNotFoundException(name);
     if (tools.size() != 1) throw new ToolNotUniqueException(name, tools);
-    var tool = tools.get(0);
+    var provider = tools.get(0).provider();
 
-    var names = stackedToolCallNames.get();
+    var stack = stackedToolCallNames.get();
+    var thread = Thread.currentThread();
+    var loader = thread.getContextClassLoader();
     try {
-      names.addLast(name);
-      if (tool.isNotHidden()) {
+      stack.addLast(name);
+      if (visible) {
         if (verbose) {
-          var thread = Thread.currentThread().getId();
-          printer.out("[%2X] %s".formatted(thread, String.join(" | ", names)));
+          printer.out("[%2X] %s".formatted(thread.getId(), String.join(" | ", stack)));
         }
         var flat = verbose ? name : name.substring(name.indexOf('/') + 1);
         var text = arguments.isEmpty() ? flat : flat + ' ' + StringSupport.join(arguments);
-        var operator = tool.provider() instanceof ToolOperator;
-        printer.out(operator ? text : "  " + text);
+        printer.out(provider instanceof ToolOperator ? text : "  " + text);
       }
-      var code = run(tool.provider(), name, arguments);
+      if (tccl) {
+        thread.setContextClassLoader(provider.getClass().getClassLoader());
+      }
+      var code = run(provider, name, arguments);
       if (code != 0) {
         throw new RuntimeException("%s returned non-zero exit code: %d".formatted(name, code));
       }
     } finally {
-      names.removeLast();
+      stack.removeLast();
+      thread.setContextClassLoader(loader);
     }
   }
 
@@ -116,7 +126,6 @@ public final class Bach implements ToolRunner {
     try (var out = new MirroringStringPrintWriter(printer.out());
         var err = new MirroringStringPrintWriter(printer.err())) {
       var args = arguments.toArray(String[]::new);
-      Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
       event.begin();
       if (provider instanceof ToolOperator operator) {
         event.code = operator.run(this, out, err, args);

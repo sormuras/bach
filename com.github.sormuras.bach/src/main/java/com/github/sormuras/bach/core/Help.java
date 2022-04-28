@@ -15,7 +15,6 @@ public class Help implements ToolOperator {
     if (bach.configuration().isVerbose()) {
       out.println("Available tools include:");
       bach.configuration().finder().findAll().stream()
-          .filter(Tool::isNotHidden)
           .sorted(Comparator.comparing(Tool::name))
           .forEach(tool -> out.printf("  - %s%n", tool.name()));
     }

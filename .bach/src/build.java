@@ -1,6 +1,7 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
+import com.github.sormuras.bach.ToolRunner;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
@@ -175,21 +176,14 @@ class build {
             bach.configuration().paths().root(".bach", "external-modules"));
     bach.run(
         ToolFinder.of(moduleFinder, true, module),
-        "junit",
         ToolCall.of("junit")
             .with("--select-module", module)
-            .with("--reports-dir", Path.of(".bach/out/test-reports/junit-" + module))
-            .arguments());
+            .with("--reports-dir", Path.of(".bach/out/test-reports/junit-" + module)),
+        ToolRunner.RunModifier.RUN_WITH_PROVIDERS_CLASS_LOADER);
   }
 
   static void executeTestsInOtherVM(Bach bach, String module, Path mainModules, Path testModules) {
     bach.run("banner", "Execute tests of module " + module);
-    var moduleFinder =
-        ModuleFinder.of(
-            testModules.resolve(module + "@" + version(bach) + "+test.jar"),
-            mainModules,
-            testModules,
-            bach.configuration().paths().root(".bach", "external-modules"));
     bach.run(
         ToolCall.of("java")
             .with("-enableassertions")

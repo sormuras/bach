@@ -89,7 +89,7 @@ public record Configuration(
             ToolFinder.ofSystemTools(),
             ToolFinder.of(
                 Tool.ofNativeToolInJavaHome("jarsigner"),
-                Tool.ofNativeToolInJavaHome("java").with(Tool.Flag.HIDDEN),
+                Tool.ofNativeToolInJavaHome("java"),
                 Tool.ofNativeToolInJavaHome("jdeprscan"),
                 Tool.ofNativeToolInJavaHome("jfr")));
 
