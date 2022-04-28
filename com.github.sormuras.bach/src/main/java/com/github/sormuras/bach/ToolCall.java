@@ -9,18 +9,22 @@ import java.util.stream.Stream;
 /** A command consisting of a tool name and a list of arguments. */
 public record ToolCall(String name, List<String> arguments) {
   public static ToolCall of(String name, Object... arguments) {
-    if (arguments.length == 0) return new ToolCall(name, List.of());
+    if (arguments.length == 0) return new ToolCall(name);
     if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString()));
-    return new ToolCall(name, List.of()).with(Stream.of(arguments));
+    return new ToolCall(name).with(Stream.of(arguments));
   }
 
   public static ToolCall of(List<String> command) {
     var size = command.size();
     if (size == 0) throw new IllegalArgumentException("Empty command");
     var name = command.get(0);
-    if (size == 1) return new ToolCall(name, List.of());
+    if (size == 1) return new ToolCall(name);
     if (size == 2) return new ToolCall(name, List.of(command.get(1).trim()));
-    return new ToolCall(name, List.of()).with(command.stream().skip(1).map(String::trim));
+    return new ToolCall(name).with(command.stream().skip(1).map(String::trim));
+  }
+
+  public ToolCall(String name) {
+    this(name, List.of());
   }
 
   public ToolCall with(Stream<?> objects) {
