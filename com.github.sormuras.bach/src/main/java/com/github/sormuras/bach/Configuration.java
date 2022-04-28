@@ -84,10 +84,8 @@ public record Configuration(
     var finder =
         ToolFinder.compose(
             ToolFinder.of(layer),
-            ToolFinder.ofJavaTools(
-                paths.root(".bach", "external-tools"),
-                Path.of(System.getProperty("java.home"), "bin", "java"),
-                "java.args"),
+            ToolFinder.of(ModuleFinder.of(paths.root(".bach", "external-modules")), false),
+            ToolFinder.ofJavaTools(paths.root(".bach", "external-tools")),
             ToolFinder.ofSystemTools(),
             ToolFinder.of(
                 Tool.ofNativeToolInJavaHome("jarsigner"),

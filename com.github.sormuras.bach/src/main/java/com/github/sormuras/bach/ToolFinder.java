@@ -77,6 +77,11 @@ public interface ToolFinder {
     return ToolFinder.of(ClassLoader.getSystemClassLoader());
   }
 
+  static ToolFinder ofJavaTools(Path directory) {
+    var java = Path.of(System.getProperty("java.home"), "bin", "java");
+    return ofJavaTools(directory, java, "java.args");
+  }
+
   static ToolFinder ofJavaTools(Path directory, Path java, String argsfile) {
     record ProgramToolFinder(Path path, Path java, String argsfile) implements ToolFinder {
 
