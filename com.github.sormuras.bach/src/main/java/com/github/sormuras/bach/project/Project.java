@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Modular project model. */
-public record Project(Name name, Version version, Spaces spaces) {
+public record Project(Name name, Version version, Spaces spaces, Tools tools) {
 
   @FunctionalInterface
   public interface Configurator {
@@ -22,20 +22,22 @@ public record Project(Name name, Version version, Spaces spaces) {
     var main = new Space("main", "init");
     var test = new Space("test", "main");
     var spaces = new Spaces(init, main, test);
-    return new Project(name, version, spaces);
+    var tools = new Tools(List.of());
+    return new Project(name, version, spaces, tools);
   }
 
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
   }
 
-  sealed interface Component permits Name, Spaces, Version {}
+  sealed interface Component permits Name, Version, Spaces, Tools {}
 
   private Project with(Component component) {
     return new Project(
         component instanceof Name name ? name : name,
         component instanceof Version version ? version : version,
-        component instanceof Spaces spaces ? spaces : spaces);
+        component instanceof Spaces spaces ? spaces : spaces,
+        component instanceof Tools tools ? tools : tools);
   }
 
   private Project with(Space space) {
@@ -49,7 +51,7 @@ public record Project(Name name, Version version, Spaces spaces) {
   public Project withParsingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();
-    if (name != null) project = project.with(new Name(name.toString()));
+    if (name != null) project = project.withName(name.toString());
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
     try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
       var inits = new ArrayList<DeclaredModule>();
@@ -91,12 +93,29 @@ public record Project(Name name, Version version, Spaces spaces) {
       var value = split < 0 ? remaining.removeFirst().trim() : argument.substring(split + 1);
       project =
           switch (key) {
-            case "--project-name" -> project.with(new Name(value));
-            case "--project-version" -> project.with(project.version.with(value));
-            case "--project-version-date" -> project.with(project.version.withDate(value));
+            case "--project-name" -> withName(value);
+            case "--project-version" -> withVersion(value);
+            case "--project-version-date" -> withVersionDate(value);
+            case "--project-targets-java" -> withTargetsJava(value);
             default -> throw new IllegalArgumentException(key);
           };
     }
     return project;
+  }
+
+  public Project withName(String string) {
+    return with(new Name(string));
+  }
+
+  public Project withVersion(String string) {
+    return with(version.with(string));
+  }
+
+  public Project withVersionDate(String string) {
+    return with(version.withDate(string));
+  }
+
+  public Project withTargetsJava(String string) {
+    return with(spaces.main().withTargetsJava(Integer.parseInt(string)));
   }
 }

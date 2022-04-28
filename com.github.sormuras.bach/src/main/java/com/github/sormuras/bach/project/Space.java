@@ -31,6 +31,10 @@ public record Space(
     return new Space(name, modules, release, launcher, requires, additionalCompileJavacArguments);
   }
 
+  public Space withTargetsJava(int release) {
+    return new Space(name, modules, release, launcher, requires, additionalCompileJavacArguments);
+  }
+
   public Optional<Integer> targets() {
     return release == 0 ? Optional.empty() : Optional.of(release);
   }

@@ -3,7 +3,7 @@ package com.github.sormuras.bach.project;
 import java.util.List;
 
 public record Spaces(Space init, Space main, Space test) implements Project.Component {
-  List<Space> list() {
+  public List<Space> list() {
     return List.of(init, main, test);
   }
 
