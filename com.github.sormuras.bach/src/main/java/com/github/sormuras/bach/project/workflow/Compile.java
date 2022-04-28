@@ -7,7 +7,6 @@ import com.github.sormuras.bach.internal.PathSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
 import java.io.File;
 import java.io.PrintWriter;
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
@@ -44,8 +43,7 @@ public class Compile implements ToolOperator {
           javac.with(
               "--module",
               declarations.stream()
-                  .map(DeclaredModule::descriptor)
-                  .map(ModuleDescriptor::name)
+                  .map(DeclaredModule::name)
                   .collect(Collectors.joining(",")));
       var map =
           declarations.stream()
