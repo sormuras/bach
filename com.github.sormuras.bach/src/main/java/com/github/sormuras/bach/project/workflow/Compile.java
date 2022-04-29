@@ -42,9 +42,7 @@ public class Compile implements ToolOperator {
       javac =
           javac.with(
               "--module",
-              declarations.stream()
-                  .map(DeclaredModule::name)
-                  .collect(Collectors.joining(",")));
+              declarations.stream().map(DeclaredModule::name).collect(Collectors.joining(",")));
       var map =
           declarations.stream()
               .collect(Collectors.toMap(DeclaredModule::name, DeclaredModule::toModuleSourcePaths));

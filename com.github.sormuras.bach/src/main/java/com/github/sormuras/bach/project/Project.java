@@ -88,21 +88,24 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
     while (!remaining.isEmpty()) {
       var argument = remaining.removeFirst().trim();
       if (argument.isBlank() || argument.startsWith("#")) continue;
-      // <- check for flags (key-only arguments) here
+      // <- parse flags (key-only arguments) here
       var split = argument.indexOf('=');
       var key = split < 0 ? argument : argument.substring(0, split);
       var value = split < 0 ? remaining.removeFirst().trim() : argument.substring(split + 1);
-      project =
-          switch (key) {
-            case "--project-name" -> project.withName(value);
-            case "--project-version" -> project.withVersion(value);
-            case "--project-version-date" -> project.withVersionDate(value);
-            case "--project-targets-java" -> project.withTargetsJava(value);
-            case "--project-launcher" -> project.withLauncher(value);
-            default -> throw new IllegalArgumentException(key);
-          };
+      project = project.withParsingArgument(key, value);
     }
     return project;
+  }
+
+  public Project withParsingArgument(String key, String value) {
+    return switch (key) {
+      case "--project-name" -> withName(value);
+      case "--project-version" -> withVersion(value);
+      case "--project-version-date" -> withVersionDate(value);
+      case "--project-targets-java" -> withTargetsJava(value);
+      case "--project-launcher" -> withLauncher(value);
+      default -> throw new IllegalArgumentException(key);
+    };
   }
 
   public Project withName(String string) {
