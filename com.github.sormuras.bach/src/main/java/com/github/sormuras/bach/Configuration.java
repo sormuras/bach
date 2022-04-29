@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.ModuleLayerSupport;
+import com.github.sormuras.bach.internal.StringPrintWriter;
 import com.github.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
@@ -24,6 +25,10 @@ public record Configuration(
     Project project,
     ToolFinder finder,
     List<String> remnants) {
+
+  public static Configuration of(String... args) {
+    return of(new StringPrintWriter(), new StringPrintWriter(), args);
+  }
 
   public static Configuration of(PrintWriter out, PrintWriter err, String... args) {
     var printer = new Printer(out, err);

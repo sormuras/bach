@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class StringPrintWriter extends PrintWriter {
-  StringPrintWriter() {
+  public StringPrintWriter() {
     super(new StringWriter());
   }
 
