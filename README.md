@@ -17,11 +17,7 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
 
 - Install [JDK] 17 or later.
 
-- Save a project-local copy of `Bach.java` and use it as single-file source-code program. 
-  ```text
-  echo /save Bach.java | jshell https://github.com/sormuras/bach/raw/main/src/Bach.java -
-  java Bach.java
-  ```
+- <https://github.com/sormuras/bach-init>
 
 ## Motivation
 
