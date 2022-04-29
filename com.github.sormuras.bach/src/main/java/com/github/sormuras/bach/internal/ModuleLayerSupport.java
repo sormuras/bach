@@ -3,14 +3,13 @@ package com.github.sormuras.bach.internal;
 import static java.lang.ModuleLayer.defineModulesWithOneLoader;
 import static java.lang.module.Configuration.resolveAndBind;
 
-import com.github.sormuras.bach.Bach;
 import java.lang.module.ModuleFinder;
 import java.util.List;
 import java.util.Set;
 
 public interface ModuleLayerSupport {
   static ModuleLayer layer(ModuleFinder finder, boolean assertions, String... roots) {
-    var parentClassLoader = Bach.class.getClassLoader();
+    var parentClassLoader = ModuleLayerSupport.class.getClassLoader();
     var parentModuleLayer = ModuleLayer.boot();
     var parents = List.of(parentModuleLayer.configuration());
     var configuration = resolveAndBind(ModuleFinder.of(), parents, finder, Set.of(roots));
