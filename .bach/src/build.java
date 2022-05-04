@@ -1,4 +1,5 @@
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolRunner;
@@ -18,6 +19,12 @@ class build {
 
   public static void main(String... args) {
     System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
+
+    if (args.length == 1 && "!".equals(args[0])) {
+      Main.main("build");
+      return;
+    }
+
     System.out.println("BEGIN");
     var bach = Bach.ofDefaults().with(ToolFinder.ofNativeToolsInJavaHome("java"));
     var version = version(bach);
