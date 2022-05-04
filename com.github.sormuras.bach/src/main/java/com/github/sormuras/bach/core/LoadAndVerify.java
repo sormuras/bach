@@ -27,7 +27,11 @@ public class LoadAndVerify implements ToolOperator {
           var property = StringSupport.parseProperty(string);
           var algorithm = property.key();
           var expected = property.value();
-          calls.add(ToolCall.of("checksum", target, algorithm, expected));
+          calls.add(
+              ToolCall.of("checksum")
+                  .with(target)
+                  .with("--algorithm", algorithm)
+                  .with("--expected", expected));
         };
 
     var index = 2;
