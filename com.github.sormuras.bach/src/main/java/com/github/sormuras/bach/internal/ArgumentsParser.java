@@ -170,6 +170,11 @@ public class ArgumentsParser<R extends Record> {
     }
   }
 
+  public static <R extends Record> ArgumentsParser<R> create(Class<R> schema)
+      throws InvalidMetaDescriptionException{
+    return create(MethodHandles.lookup(), schema);
+  }
+
   /**
    * Create an argument harvester from a meta description provided as a record.
    *
