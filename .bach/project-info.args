@@ -1,0 +1,4 @@
+--module-info-find-pattern
+  glob:*/src/{init,main,test}/{java,java-module}/module-info.java
+--project-version
+  17-M5

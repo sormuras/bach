@@ -1,21 +1,30 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.Main;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Tools tools) {
 
   @FunctionalInterface
-  public interface Configurator {
-    Project configure(Project project);
+  public interface Configurator extends UnaryOperator<Project> {
+    static Project apply(Project project, ModuleLayer layer) {
+      var configured = project;
+      for (var configurator : ServiceLoader.load(layer, Configurator.class)) {
+        configured = configurator.apply(configured);
+      }
+      return configured;
+    }
   }
 
-  public static Project of() {
+  public static Project ofDefaults() {
     var name = new Name("unnamed");
     var version = new Version("0-ea", ZonedDateTime.now());
     var init = new Space("init");
@@ -44,11 +53,45 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
     return with(spaces.with(space));
   }
 
-  public Project withParsingDirectory(Path directory) {
-    return withParsingDirectory(directory, "glob:**/module-info.java");
+  public Project withName(String string) {
+    return with(new Name(string));
   }
 
-  public Project withParsingDirectory(Path directory, String syntaxAndPattern) {
+  public Project withVersion(String string) {
+    return with(version.with(string));
+  }
+
+  public Project withVersionDate(String string) {
+    return with(version.withDate(string));
+  }
+
+  public Project withTargetsJava(String string) {
+    return with(spaces.main().withTargetsJava(Integer.parseInt(string)));
+  }
+
+  public Project withLauncher(String string) {
+    return with(spaces.main().withLauncher(string));
+  }
+
+  public Project withApplyingConfigurators(ModuleLayer layer) {
+    return Configurator.apply(this, layer);
+  }
+
+  public Project withParsingArguments(Main.Arguments arguments) {
+    var it = new AtomicReference<>(this);
+    arguments.project_name().ifPresent(name -> it.set(it.get().withName(name)));
+    arguments.project_version().ifPresent(version -> it.set(it.get().withVersion(version)));
+    arguments.project_version_date().ifPresent(date -> it.set(it.get().withVersionDate(date)));
+    arguments.project_targets_java().ifPresent(java -> it.set(it.get().withTargetsJava(java)));
+    arguments.project_launcher().ifPresent(launcher -> it.set(it.get().withLauncher(launcher)));
+    return it.get();
+  }
+
+  public Project withWalkingDirectory(Path directory) {
+    return withWalkingDirectory(directory, "glob:**/module-info.java");
+  }
+
+  public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();
     if (name != null) project = project.withName(name.toString());
@@ -70,61 +113,5 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
       throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
     }
     return project;
-  }
-
-  public Project withParsingArguments(Path arguments) {
-    if (Files.notExists(arguments)) return this;
-    try {
-      return withParsingArguments(Files.readAllLines(arguments));
-    } catch (Exception exception) {
-      throw new RuntimeException("Read all lines from file failed: " + arguments, exception);
-    }
-  }
-
-  public Project withParsingArguments(List<String> arguments) {
-    if (arguments.size() == 0) return this;
-    var remaining = new ArrayDeque<>(arguments);
-    var project = this;
-    while (!remaining.isEmpty()) {
-      var argument = remaining.removeFirst().trim();
-      if (argument.isBlank() || argument.startsWith("#")) continue;
-      // <- parse flags (key-only arguments) here
-      var split = argument.indexOf('=');
-      var key = split < 0 ? argument : argument.substring(0, split);
-      var value = split < 0 ? remaining.removeFirst().trim() : argument.substring(split + 1);
-      project = project.withParsingArgument(key, value);
-    }
-    return project;
-  }
-
-  public Project withParsingArgument(String key, String value) {
-    return switch (key) {
-      case "--project-name" -> withName(value);
-      case "--project-version" -> withVersion(value);
-      case "--project-version-date" -> withVersionDate(value);
-      case "--project-targets-java" -> withTargetsJava(value);
-      case "--project-launcher" -> withLauncher(value);
-      default -> throw new IllegalArgumentException(key);
-    };
-  }
-
-  public Project withName(String string) {
-    return with(new Name(string));
-  }
-
-  public Project withVersion(String string) {
-    return with(version.with(string));
-  }
-
-  public Project withVersionDate(String string) {
-    return with(version.withDate(string));
-  }
-
-  public Project withTargetsJava(String string) {
-    return with(spaces.main().withTargetsJava(Integer.parseInt(string)));
-  }
-
-  public Project withLauncher(String string) {
-    return with(spaces.main().withLauncher(string));
   }
 }

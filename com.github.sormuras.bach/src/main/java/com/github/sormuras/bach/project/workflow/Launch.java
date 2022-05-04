@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 public class Launch implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var launcher = bach.configuration().project().spaces().main().launcher();
+    var launcher = bach.project().spaces().main().launcher();
     var paths = bach.configuration().paths();
     if (launcher.isEmpty()) {
       err.println("No launcher defined. No start.");

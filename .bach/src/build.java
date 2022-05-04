@@ -19,16 +19,18 @@ class build {
   public static void main(String... args) {
     System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
     System.out.println("BEGIN");
-    var bach = Bach.of(args);
+    var bach = Bach.ofDefaults().with(ToolFinder.ofNativeToolsInJavaHome("java"));
     var version = version(bach);
 
     bach.run("banner", "Load required and missing external modules");
-    var libs = bach.configuration().paths().root(".bach", "external-modules");
+    var libs = Path.of(".bach", "external-modules");
     externalModules()
         .forEach((module, uri) -> bach.run("load-and-verify", libs.resolve(module + ".jar"), uri));
 
     bach.run("banner", "Build main code space");
     var mainModules = buildMainModules(bach, version);
+
+    bach.run("bach", "--help");
 
     bach.run("banner", "Build test code space");
     var testModules = buildTestModules(bach, version, mainModules);
@@ -112,7 +114,7 @@ class build {
             .with("--create")
             .with("--file", modules.resolve(file))
             .with("--module-version", version)
-            .with("--main-class", "com.github.sormuras.bach.Bach")
+            .with("--main-class", "com.github.sormuras.bach.Main")
             .with("-C", classes.resolve("com.github.sormuras.bach"), ".")
             .withFindFiles(Path.of("com.github.sormuras.bach").resolve("src/main/java"), "**/*"));
     return modules;
@@ -173,7 +175,7 @@ class build {
             testModules.resolve(module + "@" + version(bach) + "+test.jar"),
             mainModules,
             testModules,
-            bach.configuration().paths().root(".bach", "external-modules"));
+            Path.of(".bach", "external-modules"));
     bach.run(
         ToolFinder.of(moduleFinder, true, module),
         ToolCall.of("junit")
@@ -206,7 +208,7 @@ class build {
   }
 
   static void generateApiDocumentation(Bach bach, Version version) {
-    var api = bach.configuration().paths().out("documentation", "api");
+    var api = Path.of(".bach", "out", "documentation", "api");
     bach.run(
         ToolCall.of("javadoc")
             .with("--module", "com.github.sormuras.bach")

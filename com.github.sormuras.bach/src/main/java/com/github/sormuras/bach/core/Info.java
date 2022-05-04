@@ -17,8 +17,8 @@ public class Info implements ToolOperator {
         .sorted(Comparator.comparing(Tool::name))
         .forEach(tool -> out.printf("  - %s%n", tool.name()));
     out.println("Project");
-    out.println(bach.configuration().project().name());
-    out.println(bach.configuration().project().version());
+    out.println(bach.project().name());
+    out.println(bach.project().version());
     return 0;
   }
 }

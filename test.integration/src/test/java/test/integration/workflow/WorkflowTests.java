@@ -5,11 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Configuration;
+import com.github.sormuras.bach.Main;
+import com.github.sormuras.bach.Printer;
+import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
@@ -18,15 +19,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class WorkflowTests {
-  private static Bach bach(Object... args) {
-    return new Bach(Configuration.of(Stream.of(args).map(Object::toString).toArray(String[]::new)));
-  }
-
   @Test
   void buildDocTool(@TempDir Path temp) {
-    var bach = bach("--verbose", "--chroot", "doc/tool", "--change-bach-out", temp);
+    var bach =
+        bach(
+            ToolCall.of("bach")
+                .with("--verbose")
+                .with("--root-directory", "doc/tool")
+                .with("--output-directory", temp));
+
     var printer = bach.configuration().printer();
-    var project = bach.configuration().project();
+    var project = bach.project();
     var main = project.spaces().main();
 
     assertEquals("tool", project.name().value());
@@ -65,11 +68,13 @@ class WorkflowTests {
 
   @ParameterizedTest
   @MethodSource
-  void buildExampleProject(Path path, @TempDir Path temp) throws Exception {
-    var bach = bach("--chroot", path, "--change-bach-out", temp);
+  void buildExampleProject(Path example, @TempDir Path temp) throws Exception {
+    var bach =
+        bach(
+            ToolCall.of("bach").with("--root-directory", example).with("--output-directory", temp));
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
-    var init = !bach.configuration().project().spaces().init().modules().isEmpty();
-    if (OS.WINDOWS.isCurrentOs() && init) {
+    var init = !bach.project().spaces().init().modules().isEmpty();
+    if (init && OS.WINDOWS.isCurrentOs()) {
       System.gc(); // try to release file handles and...
       Thread.sleep(123); // hope JAR files are not locked...
     }
@@ -82,5 +87,9 @@ class WorkflowTests {
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
+  }
+
+  static Bach bach(ToolCall call) {
+    return Main.bach(Printer.ofSilence(), call.arguments().toArray(String[]::new));
   }
 }

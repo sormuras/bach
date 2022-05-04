@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.BiPredicate;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 
 /**
  * A finder of tools.
@@ -28,6 +29,10 @@ public interface ToolFinder {
 
   default List<Tool> find(String name, BiPredicate<Tool, String> filter) {
     return findAll().stream().filter(tool -> filter.test(tool, name)).toList();
+  }
+
+  default List<ToolFinder> finders() {
+    return List.of(this);
   }
 
   static ToolFinder of(Tool... tools) {
@@ -75,6 +80,17 @@ public interface ToolFinder {
 
   static ToolFinder ofSystemTools() {
     return ToolFinder.of(ClassLoader.getSystemClassLoader());
+  }
+
+  static ToolFinder ofNativeToolsInJavaHome(String name, String... more) {
+    var tools = new ArrayList<Tool>();
+    tools.add(Tool.ofNativeToolInJavaHome(name));
+    Stream.of(more).map(Tool::ofNativeToolInJavaHome).forEach(tools::add);
+    return ToolFinder.of(tools.toArray(Tool[]::new));
+  }
+
+  static ToolFinder ofJavaTools(String directory) {
+    return ofJavaTools(Path.of(directory));
   }
 
   static ToolFinder ofJavaTools(Path directory) {
@@ -131,6 +147,10 @@ public interface ToolFinder {
   }
 
   static ToolFinder compose(ToolFinder... finders) {
+    return compose(List.of(finders));
+  }
+
+  static ToolFinder compose(List<ToolFinder> finders) {
     record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
       @Override
       public List<Tool> findAll() {
@@ -142,6 +162,6 @@ public interface ToolFinder {
         return finders.stream().flatMap(finder -> finder.find(name).stream()).toList();
       }
     }
-    return new CompositeToolFinder(List.of(finders));
+    return new CompositeToolFinder(finders);
   }
 }

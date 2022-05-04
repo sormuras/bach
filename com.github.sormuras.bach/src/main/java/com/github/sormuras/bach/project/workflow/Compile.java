@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class Compile implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var project = bach.configuration().project();
+    var project = bach.project();
     var paths = bach.configuration().paths();
 
     for (var space : project.spaces().list()) {

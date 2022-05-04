@@ -41,7 +41,7 @@ class bootstrap {
         "--file=" + jar,
         "--module-version=" + version + "+" + Instant.now().truncatedTo(ChronoUnit.SECONDS),
         "--main-class",
-        module + ".Bach",
+        module + ".Main",
         "-C",
         classes.resolve(module).toString(),
         ".",

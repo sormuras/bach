@@ -6,6 +6,8 @@ import java.util.Set;
 public interface ToolRunner {
 
   enum RunModifier {
+    VERBOSE,
+    FORCE,
     HIDDEN,
     RUN_WITH_PROVIDERS_CLASS_LOADER
   }

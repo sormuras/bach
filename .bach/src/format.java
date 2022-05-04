@@ -1,9 +1,10 @@
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolFinder;
 
 class format {
   public static void main(String... args) throws Exception {
-    var bach = Bach.of(args);
+    var bach = Bach.ofDefaults().with(ToolFinder.ofJavaTools(".bach/external-tools"));
     if (bach.configuration().finder().find("format@1.15.0").isEmpty()) {
       bach.run(
           """
