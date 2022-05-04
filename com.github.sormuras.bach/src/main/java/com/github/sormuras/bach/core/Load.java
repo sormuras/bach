@@ -2,6 +2,7 @@ package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolOperator;
+import com.github.sormuras.bach.internal.ArgumentsParser;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Files;
@@ -10,31 +11,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 public class Load implements ToolOperator {
-
-  record Options(Optional<Boolean> reload, Path target, String source) {
-    static final String USAGE = """
-        Usage: load [--reload] TARGET SOURCE
-        """;
-
-    static Optional<Options> of(String... args) {
-      if (args.length < 2 || args.length > 3) return Optional.empty();
-      var reload = "--reload".equals(args[0]);
-      return Optional.of(
-          new Options(
-              reload ? Optional.of(Boolean.TRUE) : Optional.empty(),
-              Path.of(args[reload ? 1 : 0]),
-              args[reload ? 2 : 1]));
-    }
-  }
+  public record Options(Path target, String source, Optional<Boolean> reload) {}
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var optionalOptions = Options.of(args);
-    if (optionalOptions.isEmpty()) {
-      err.println(Options.USAGE);
-      return 1;
-    }
-    var options = optionalOptions.get();
+    var options = ArgumentsParser.create(Options.class).parse(args);
     var reload = options.reload().orElse(Boolean.FALSE);
     var target = options.target();
     if (Files.exists(target) && !reload) return 0;
