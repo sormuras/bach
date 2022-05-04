@@ -1,17 +1,22 @@
 package com.github.sormuras.bach.core;
 
+import com.github.sormuras.bach.internal.ArgumentsParser;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
 
 public class Tree implements ToolProvider {
-  enum Mode {
+  public enum Mode {
     CREATE,
     CLEAN,
     DELETE,
     PRINT
   }
+
+  public record Arguments(Optional<Mode> mode, List<Path> paths) {}
 
   @Override
   public String name() {
@@ -20,14 +25,9 @@ public class Tree implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    if (args.length != 2) {
-      out.println("""
-          Usage: tree create|clean|delete|print PATH
-          """);
-      return 1;
-    }
-    var mode = Mode.valueOf(args[0].toUpperCase());
-    var path = Path.of(args[1]);
+    var arguments = ArgumentsParser.create(Arguments.class).parse(args);
+    var mode = arguments.mode().orElse(Mode.PRINT);
+    var path = arguments.paths().isEmpty() ? Path.of("") : arguments.paths().get(0);
     try {
       if (mode == Mode.PRINT) {
         try (var stream = Files.walk(path)) {

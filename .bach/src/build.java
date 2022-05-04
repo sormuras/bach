@@ -106,7 +106,7 @@ class build {
             .with("-encoding", "UTF-8")
             .with("-d", classes));
     var modules = Path.of(".bach/out/modules");
-    bach.run(ToolCall.of("tree", "create", modules));
+    bach.run(ToolCall.of("tree", "--mode=CREATE", modules));
     var file = "com.github.sormuras.bach@" + version + ".jar";
     bach.run(
         ToolCall.of("jar")
@@ -145,7 +145,7 @@ class build {
             .with("-encoding", "UTF-8")
             .with("-d", testClasses));
     var modules = Path.of(".bach/out/test-modules");
-    bach.run(ToolCall.of("tree", "create", modules));
+    bach.run(ToolCall.of("tree", "--mode=CREATE", modules));
     var jars = new ArrayList<ToolCall>();
     for (var name : names) {
       var file = name + "@" + version + "+test.jar";
