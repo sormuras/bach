@@ -1,18 +1,22 @@
 package com.github.sormuras.bach.core;
 
-import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.internal.ArgumentsParser;
 import com.github.sormuras.bach.internal.PathSupport;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.spi.ToolProvider;
 
-public class Checksum implements ToolOperator {
+public class Checksum implements ToolProvider {
   public record Arguments(Path file, Optional<String> algorithm, Optional<String> expected) {}
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+  public String name() {
+    return "checksum";
+  }
+
+  @Override
+  public int run(PrintWriter out, PrintWriter err, String... args) {
     var arguments = ArgumentsParser.create(Arguments.class).parse(args);
     var path = arguments.file();
     var algorithm = arguments.algorithm().orElse("SHA-256");
