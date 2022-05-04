@@ -20,7 +20,6 @@ open /*test*/ module com.github.sormuras.bach {
       com.github.sormuras.bach.Main,
       com.github.sormuras.bach.core.Banner,
       com.github.sormuras.bach.core.Checksum,
-      com.github.sormuras.bach.core.Help,
       com.github.sormuras.bach.core.Info,
       com.github.sormuras.bach.core.Load,
       com.github.sormuras.bach.core.LoadAndVerify,
