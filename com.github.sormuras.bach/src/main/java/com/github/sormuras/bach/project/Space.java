@@ -40,6 +40,10 @@ public record Space(
         name, modules, release, Optional.of(launcher), requires, additionalCompileJavacArguments);
   }
 
+  public Optional<DeclaredModule> findDeclaredModule(String name) {
+    return modules.stream().filter(module -> module.name().equals(name)).findFirst();
+  }
+
   public Optional<Integer> targets() {
     return release == 0 ? Optional.empty() : Optional.of(release);
   }

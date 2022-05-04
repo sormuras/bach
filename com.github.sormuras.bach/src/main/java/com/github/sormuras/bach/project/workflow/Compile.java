@@ -12,14 +12,16 @@ import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Compile implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     var project = bach.project();
     var paths = bach.configuration().paths();
+    var spaces = project.spaces();
 
-    for (var space : project.spaces().list()) {
+    for (var space : spaces.list()) {
       var declarations = space.modules();
       if (declarations.isEmpty()) {
         out.println("No %s modules declared.".formatted(space.name()));
@@ -50,15 +52,33 @@ public class Compile implements ToolOperator {
         javac = javac.with("--module-source-path", moduleSourcePath);
       }
 
+      var externalModules = Stream.of(paths.root(".bach", "external-modules"));
+      var requiredModules =
+          space.requires().stream().map(required -> paths.out(required, "modules"));
       var modulePath =
-          space.requires().stream()
-              .map(required -> paths.out(required, "modules"))
+          Stream.concat(requiredModules, externalModules)
               .filter(Files::isDirectory)
               .map(Path::toString)
-              .collect(Collectors.joining(File.pathSeparator));
+              .toList();
       if (!modulePath.isEmpty()) {
-        javac = javac.with("--module-path", modulePath);
-        javac = javac.with("--processor-module-path", modulePath);
+        var path = String.join(File.pathSeparator, modulePath);
+        javac = javac.with("--module-path", path);
+        javac = javac.with("--processor-module-path", path);
+      }
+
+      // --patch-module
+      for (var declaration : declarations) {
+        var module = declaration.name();
+        var patches = new ArrayList<String>();
+        for (var requires : space.requires()) {
+          if (spaces.space(requires).findDeclaredModule(module).isEmpty()) {
+            continue;
+          }
+          patches.add(paths.out(requires, "modules", module + ".jar").toString());
+        }
+        if (patches.isEmpty()) continue;
+        var patch = String.join(File.pathSeparator, patches);
+        javac = javac.with("--patch-module", module + "=" + patch);
       }
 
       var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
@@ -80,7 +100,7 @@ public class Compile implements ToolOperator {
       var jarCommands = new ArrayList<ToolCall>();
       var jarFiles = new ArrayList<Path>();
       for (var module : declarations) {
-        var name = module.descriptor().name();
+        var name = module.name();
         var file = modules.resolve(name + ".jar");
 
         jarFiles.add(file);
@@ -102,7 +122,17 @@ public class Compile implements ToolOperator {
 
         jar = jar.with("-C", classes0.resolve(name), ".");
 
+        // include classes of patched module
+        for (var requires : space.requires()) {
+          var required = spaces.space(requires);
+          if (required.findDeclaredModule(name).isPresent()) {
+            var javaR = "java-" + required.targets().orElse(Runtime.version().feature());
+            jar = jar.with("-C", paths.out(requires, "classes", javaR, name), ".");
+          }
+        }
+
         for (var folder : module.folders().list().stream().skip(1).toList()) {
+          if ("java-module".equals(folder.path().getFileName().toString())) continue;
           var release = folder.release();
           var classesR = classes.resolve("java-" + release).resolve(name);
           javacCommands.add(

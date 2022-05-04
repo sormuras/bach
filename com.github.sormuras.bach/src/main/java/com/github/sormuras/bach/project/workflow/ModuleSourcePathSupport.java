@@ -32,7 +32,7 @@ class ModuleSourcePathSupport {
       }
     }
     return Stream.concat(
-            patterns.stream(),
+            Stream.of(String.join(File.pathSeparator, patterns)),
             specific.entrySet().stream().map(e -> toSpecificForm(e.getKey(), e.getValue())))
         .toList();
   }
