@@ -389,6 +389,10 @@ public class ArgumentsParser<R extends Record> {
   }
 
   public R parse(String... args) throws ArgumentParsingException {
+    return parse(false, args);
+  }
+
+  public R parse(boolean greedy, String... args) throws ArgumentParsingException {
     requireNonNull(args);
 
     var values = new Object[constructor.getParameterCount()];
@@ -428,6 +432,12 @@ public class ArgumentsParser<R extends Record> {
       }
       if (variadicList != null) { // variadic
         variadicList.add(variadicArg.convert(arg));
+        if (greedy) { // drain remaining arguments
+          for (var j = i + 1; j < args.length; j++) {
+            variadicList.add(variadicArg.convert(args[j]));
+          }
+          break;
+        }
         continue;
       }
 

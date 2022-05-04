@@ -46,7 +46,7 @@ public final class Main implements ToolProvider {
   /** {@return an instance of {@code Bach} using the printer and configured by the arguments} */
   public static Bach bach(Printer printer, String... args) {
     var parser = ArgumentsParser.create(Arguments.class);
-    var arguments = parser.parse(args);
+    var arguments = parser.parse(true, args);
     return bach(printer, parser, arguments);
   }
 
@@ -102,7 +102,7 @@ public final class Main implements ToolProvider {
   /** {@return the result of running the initial tool call} */
   private int run(Printer printer, String... args) {
     var parser = ArgumentsParser.create(Arguments.class);
-    var arguments = parser.parse(args);
+    var arguments = parser.parse(true, args);
     if (arguments.help().orElse(false)) {
       printer.out(parser.toHelp(name()));
       return 0;
