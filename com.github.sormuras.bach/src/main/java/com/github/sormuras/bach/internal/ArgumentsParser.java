@@ -157,11 +157,6 @@ public class ArgumentsParser<R extends Record> {
     this.variadicArg = variadicArg;
   }
 
-  /**
-   * Thrown when the record meta description is invalid.
-   *
-   * @see #create(Lookup, Class)
-   */
   public static class InvalidMetaDescriptionException extends RuntimeException {
     @Serial private static final long serialVersionUID = -3116126263566500943L;
 
@@ -171,22 +166,10 @@ public class ArgumentsParser<R extends Record> {
   }
 
   public static <R extends Record> ArgumentsParser<R> create(Class<R> schema)
-      throws InvalidMetaDescriptionException{
+      throws InvalidMetaDescriptionException {
     return create(MethodHandles.lookup(), schema);
   }
 
-  /**
-   * Create an argument harvester from a meta description provided as a record.
-   *
-   * @param lookup the lookup used to find the record constructor.
-   * @param schema a record class used as a meta description.
-   * @param <R> the type of the record.
-   * @return an instance of an arguments harvester configured with the record meta description.
-   * @throws InvalidMetaDescriptionException if the meta description is invalid, if the argument
-   *     kinds (positional, optional, variadic) are not in that order, if the type of an argument is
-   *     unknown (only String, Path and boolean, int, double are supported), if the variadic
-   *     argument type is not a list or a set.
-   */
   public static <R extends Record> ArgumentsParser<R> create(Lookup lookup, Class<R> schema)
       throws InvalidMetaDescriptionException {
     requireNonNull(lookup);
@@ -330,83 +313,18 @@ public class ArgumentsParser<R extends Record> {
         "no way to convert a String to a " + toClass + " for " + component);
   }
 
-  /**
-   * Annotation to refine the meta description of a record component corresponding to a command line
-   * argument. This annotation is not required and allows to enhance the meta description of an
-   * argument.
-   */
   @Target(RECORD_COMPONENT)
   @Retention(RUNTIME)
   public @interface Opt {
-    /**
-     * Name of the argument
-     *
-     * @return the name of the argument
-     */
     String name() default "";
 
-    /**
-     * Abbreviation used if the argument is an optional argument
-     *
-     * @return the name of the abbreviation
-     */
     String abbrev() default "";
 
-    /**
-     * The help line used by {@link #toHelp(String)}
-     *
-     * @return the help line of the argument
-     */
     String help() default "";
 
-    /**
-     * A text representation of the value of an optional (non boolean) argument
-     *
-     * @return A text representation of the value of an argument
-     */
     String valueHelp() default "";
   }
 
-  /**
-   * Print an help message from the meta description
-   *
-   * <p>By example with the record {@code enum LogLevel { error, warning } record Option( //
-   * positional argument @Opt(help = "the configuration file") Path config_file,
-   *
-   * <p><p><p><p><p><p><p><p><p><p><p>// optional argument // short or long version // e.g., -hello
-   * or --bind-address // arguments can be delimited by ' ', '=' or ':' // e.g., -hello:192.168.0.10
-   * // e.g., --bind-address=192.168.0.10 // e.g., --bind-address 192.168.0.10 @Opt(valueHelp =
-   * "address", help = "bind address of the service") Optional<String> bind_address,
-   *
-   * <p><p><p><p><p><p><p><p><p><p><p>// use enum to restrict possible arguments @Opt(valueHelp =
-   * "level", help = "logger level") Optional<LogLevel> log_level,
-   *
-   * <p><p><p><p><p><p><p><p><p><p><p>// flag argument // -v or --verbose @Opt(help = "logged data
-   * verbose mode") Optional<Boolean> verbose,
-   *
-   * <p><p><p><p><p><p><p><p><p><p><p>// variadic argument // use a collection like java.util.List
-   * or java.util.Set @Opt(help = "file names exposed as services") List<String> filenames ) {} }
-   *
-   * <p>A call to {@code toHelp("myapp")} return the following text
-   *
-   * <pre>
-   *  myapp <config-file> [options] <filenames...>
-   *    with:
-   *      config-file: the configuration file
-   *      filenames: file names exposed as services
-   *
-   *    options:
-   *       bind-address: bind address of the service
-   *         -hello address or --bind-address address
-   *       log-level: logger level
-   *         -l level or --log-level level
-   *       verbose: logged data verbose mode
-   *         -v or --verbose
-   * </pre>
-   *
-   * @param applicationName the name of the application
-   * @return a text describing the command line arguments
-   */
   public String toHelp(String applicationName) {
     var positionals =
         positionalArgs.stream().map(arg -> "<" + arg.info.name + ">").collect(joining(" "));
@@ -458,7 +376,6 @@ public class ArgumentsParser<R extends Record> {
     return null;
   }
 
-  /** Exception thrown if the arguments of a command line do not follow the meta description. */
   public static class ArgumentParsingException extends RuntimeException {
     @Serial private static final long serialVersionUID = 7615300674655629536L;
 
@@ -471,16 +388,6 @@ public class ArgumentsParser<R extends Record> {
     }
   }
 
-  /**
-   * Parse some command line arguments using the meta description of the current {@code ArgVester}.
-   * The value of the arguments are converted to the argument type and the value of an optional
-   * arguments not present is {@link Optional#empty()}.
-   *
-   * @param args the command line arguments
-   * @return a record containing the value of the arguments
-   * @throws ArgumentParsingException if the command line arguments do not follow the meta
-   *     description
-   */
   public R parse(String... args) throws ArgumentParsingException {
     requireNonNull(args);
 
