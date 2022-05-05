@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record Space(
+public record ProjectSpace(
     String name,
     List<DeclaredModule> modules,
     int release,
@@ -12,7 +12,7 @@ public record Space(
     List<String> requires, // used to compute "--[processor-]module-path"
     List<String> additionalCompileJavacArguments) {
 
-  public Space {
+  public ProjectSpace {
     Objects.requireNonNull(name);
     Objects.requireNonNull(modules);
     var feature = Runtime.version().feature();
@@ -23,20 +23,22 @@ public record Space(
     Objects.requireNonNull(requires);
   }
 
-  public Space(String name, String... requires) {
+  public ProjectSpace(String name, String... requires) {
     this(name, List.of(), 0, Optional.empty(), List.of(requires), List.of());
   }
 
-  public Space withModules(List<DeclaredModule> modules) {
-    return new Space(name, modules, release, launcher, requires, additionalCompileJavacArguments);
+  public ProjectSpace withModules(List<DeclaredModule> modules) {
+    return new ProjectSpace(
+        name, modules, release, launcher, requires, additionalCompileJavacArguments);
   }
 
-  public Space withTargetsJava(int release) {
-    return new Space(name, modules, release, launcher, requires, additionalCompileJavacArguments);
+  public ProjectSpace withTargetsJava(int release) {
+    return new ProjectSpace(
+        name, modules, release, launcher, requires, additionalCompileJavacArguments);
   }
 
-  public Space withLauncher(String launcher) {
-    return new Space(
+  public ProjectSpace withLauncher(String launcher) {
+    return new ProjectSpace(
         name, modules, release, Optional.of(launcher), requires, additionalCompileJavacArguments);
   }
 

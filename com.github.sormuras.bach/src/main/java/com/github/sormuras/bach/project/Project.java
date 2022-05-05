@@ -11,7 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 /** Modular project model. */
-public record Project(Name name, Version version, Spaces spaces, Tools tools) {
+public record Project(
+    ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
 
   @FunctionalInterface
   public interface Configurator extends UnaryOperator<Project> {
@@ -25,13 +26,13 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
   }
 
   public static Project ofDefaults() {
-    var name = new Name("unnamed");
-    var version = new Version("0-ea", ZonedDateTime.now());
-    var init = new Space("init");
-    var main = new Space("main", "init");
-    var test = new Space("test", "main");
-    var spaces = new Spaces(init, main, test);
-    var tools = new Tools(List.of());
+    var name = new ProjectName("unnamed");
+    var version = new ProjectVersion("0-ea", ZonedDateTime.now());
+    var init = new ProjectSpace("init");
+    var main = new ProjectSpace("main", "init");
+    var test = new ProjectSpace("test", "main");
+    var spaces = new ProjectSpaces(init, main, test);
+    var tools = new ProjectExternals(List.of());
     return new Project(name, version, spaces, tools);
   }
 
@@ -39,22 +40,22 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
     return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
   }
 
-  sealed interface Component permits Name, Version, Spaces, Tools {}
+  sealed interface Component permits ProjectName, ProjectVersion, ProjectSpaces, ProjectExternals {}
 
   private Project with(Component component) {
     return new Project(
-        component instanceof Name name ? name : name,
-        component instanceof Version version ? version : version,
-        component instanceof Spaces spaces ? spaces : spaces,
-        component instanceof Tools tools ? tools : tools);
+        component instanceof ProjectName name ? name : name,
+        component instanceof ProjectVersion version ? version : version,
+        component instanceof ProjectSpaces spaces ? spaces : spaces,
+        component instanceof ProjectExternals externals ? externals : externals);
   }
 
-  private Project with(Space space) {
+  private Project with(ProjectSpace space) {
     return with(spaces.with(space));
   }
 
   public Project withName(String string) {
-    return with(new Name(string));
+    return with(new ProjectName(string));
   }
 
   public Project withVersion(String string) {
@@ -66,11 +67,31 @@ public record Project(Name name, Version version, Spaces spaces, Tools tools) {
   }
 
   public Project withTargetsJava(String string) {
-    return with(spaces.main().withTargetsJava(Integer.parseInt(string)));
+    return withTargetsJava(Integer.parseInt(string));
   }
 
-  public Project withLauncher(String string) {
-    return with(spaces.main().withLauncher(string));
+  public Project withTargetsJava(int release) {
+    return withTargetsJava("main", release);
+  }
+
+  public Project withTargetsJava(String space, int release) {
+    return withTargetsJava(spaces.space(space), release);
+  }
+
+  public Project withTargetsJava(ProjectSpace space, int release) {
+    return with(space.withTargetsJava(release));
+  }
+
+  public Project withLauncher(String launcher) {
+    return withLauncher("main", launcher);
+  }
+
+  public Project withLauncher(String space, String launcher) {
+    return withLauncher(spaces.space(space), launcher);
+  }
+
+  public Project withLauncher(ProjectSpace space, String launcher) {
+    return with(space.withLauncher(launcher));
   }
 
   public Project withApplyingConfigurators(ModuleLayer layer) {

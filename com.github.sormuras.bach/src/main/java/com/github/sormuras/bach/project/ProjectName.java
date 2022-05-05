@@ -2,8 +2,8 @@ package com.github.sormuras.bach.project;
 
 import java.util.Objects;
 
-public record Name(String value) implements Project.Component {
-  public Name {
+public record ProjectName(String value) implements Project.Component {
+  public ProjectName {
     Objects.requireNonNull(value);
   }
 

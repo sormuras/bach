@@ -11,7 +11,7 @@ public class Download implements ToolOperator {
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
 
     var calls = new ArrayList<ToolCall>();
-    for (var external : bach.project().tools().externals()) {
+    for (var external : bach.project().externals().tools()) {
       var directory = bach.configuration().paths().root(".bach", "external-tools", external.name());
       if (external.from().isPresent()) {
         var source = external.from().get();
