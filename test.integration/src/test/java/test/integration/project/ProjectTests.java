@@ -17,6 +17,28 @@ class ProjectTests {
   }
 
   @Test
+  void parsingDirectoryWithDefaultPattern() {
+    var directory = Path.of("");
+    var project = Project.ofDefaults().withWalkingDirectory(directory);
+
+    assertEquals("bach", project.name().toString());
+    assertLinesMatch(
+        """
+        aggregator
+        >> ... >>
+        com.github.sormuras.bach
+        com.github.sormuras.bach
+        >> ... >>
+        test.base
+        test.integration
+        >> ... >>
+        world
+        """
+            .lines(),
+        project.modules().stream().map(DeclaredModule::name).sorted());
+  }
+
+  @Test
   void parsingDirectoryWithCustomPattern() {
     var directory = Path.of("");
     var pattern = "glob:*/src/{init,main,test}/{java,java-module}/module-info.java";
