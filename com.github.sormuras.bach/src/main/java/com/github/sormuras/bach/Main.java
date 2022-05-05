@@ -80,9 +80,9 @@ public final class Main implements ToolProvider {
     var project =
         Project.ofDefaults()
             .withWalkingDirectory(paths.root(), pattern)
-            .withParsingArguments(file)
+            .withApplyingArguments(file)
             .withApplyingConfigurators(layer)
-            .withParsingArguments(arguments);
+            .withApplyingArguments(arguments);
 
     return new Bach(configuration, project);
   }

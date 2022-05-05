@@ -16,12 +16,9 @@ public record Project(
 
   @FunctionalInterface
   public interface Configurator extends UnaryOperator<Project> {
-    static Project apply(Project project, ModuleLayer layer) {
-      var configured = project;
-      for (var configurator : ServiceLoader.load(layer, Configurator.class)) {
-        configured = configurator.apply(configured);
-      }
-      return configured;
+    static List<Configurator> load(ModuleLayer layer) {
+      var loader = ServiceLoader.load(layer, Configurator.class);
+      return loader.stream().map(ServiceLoader.Provider::get).toList();
     }
   }
 
@@ -94,11 +91,19 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
-  public Project withApplyingConfigurators(ModuleLayer layer) {
-    return Configurator.apply(this, layer);
+  public Project withApplyingConfigurators(List<Configurator> configurators) {
+    var project = this;
+    for (var configurator : configurators) {
+      project = configurator.apply(project);
+    }
+    return project;
   }
 
-  public Project withParsingArguments(Main.Arguments arguments) {
+  public Project withApplyingConfigurators(ModuleLayer layer) {
+    return withApplyingConfigurators(Configurator.load(layer));
+  }
+
+  public Project withApplyingArguments(Main.Arguments arguments) {
     var it = new AtomicReference<>(this);
     arguments.project_name().ifPresent(name -> it.set(it.get().withName(name)));
     arguments.project_version().ifPresent(version -> it.set(it.get().withVersion(version)));
