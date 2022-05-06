@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
@@ -15,6 +14,7 @@ import java.util.function.UnaryOperator;
 public record Project(
     ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
 
+  /** An interface for user-defined project configurator implementations. */
   @FunctionalInterface
   public interface Configurator extends UnaryOperator<Project> {
     static List<Configurator> load(ModuleLayer layer) {
@@ -23,6 +23,7 @@ public record Project(
     }
   }
 
+  /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
   public static Project ofDefaults() {
     var name = new ProjectName("unnamed");
     var version = new ProjectVersion("0-ea", ZonedDateTime.now());
@@ -34,6 +35,7 @@ public record Project(
     return new Project(name, version, spaces, externals);
   }
 
+  /** {@return a list of all modules declared by this project} */
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
   }
@@ -52,64 +54,85 @@ public record Project(
     return with(spaces.with(space));
   }
 
+  /** {@return new project instance with an additional external module locator} */
   public Project with(ExternalModuleLocator locator) {
     return with(externals.with(locator));
   }
 
+  /** {@return new project instance with an additional external tool} */
+  public Project with(ExternalTool tool) {
+    return with(externals.with(tool));
+  }
+
+  /** {@return new project instance using the given string as the project name} */
   public Project withName(String string) {
     return with(new ProjectName(string));
   }
 
+  /** {@return new project instance using the given string as the project version} */
   public Project withVersion(String string) {
     return with(version.with(string));
   }
 
+  /** {@return new project instance using the given string as the project version date} */
   public Project withVersionDate(String string) {
     return with(version.withDate(string));
   }
 
+  /**
+   * {@return new project instance setting main space's Java release feature number to the integer
+   * value of the given string}
+   */
   public Project withTargetsJava(String string) {
     return withTargetsJava(Integer.parseInt(string));
   }
 
+  /** {@return new project instance setting main space's Java release feature number} */
   public Project withTargetsJava(int release) {
     return withTargetsJava("main", release);
   }
 
+  /** {@return new project instance setting specified space's Java release feature number} */
   public Project withTargetsJava(String space, int release) {
     return withTargetsJava(spaces.space(space), release);
   }
 
+  /** {@return new project instance setting specified space's Java release feature number} */
   public Project withTargetsJava(ProjectSpace space, int release) {
     return with(space.withTargetsJava(release));
   }
 
+  /** {@return new project instance setting main space's launcher} */
   public Project withLauncher(String launcher) {
     return withLauncher("main", launcher);
   }
 
+  /** {@return new project instance setting specified space's launcher} */
   public Project withLauncher(String space, String launcher) {
     return withLauncher(spaces.space(space), launcher);
   }
 
+  /** {@return new project instance setting specified space's launcher} */
   public Project withLauncher(ProjectSpace space, String launcher) {
     return with(space.withLauncher(launcher));
   }
 
+  /** {@return new project instance with one or more additional modular dependences} */
   public Project withRequiresModule(String name, String... more) {
     return with(externals.withRequires(name).withRequires(more));
   }
 
+  /** {@return new project instance with an additional external module locator} */
   public Project withExternalModule(String name, String from) {
     var locator = new ExternalModuleLocator.SingleExternalModuleLocator(name, from);
     return with(locator);
   }
 
-  public Project withExternalModules(Map<String, String> map) {
-    var locator = new ExternalModuleLocator.MultiExternalModuleLocator(map);
-    return with(locator);
-  }
-
+  /**
+   * {@return new project instance with an additional external module library locator}
+   *
+   * @see <a href="https://github.com/sormuras/bach-external-modules">bach-external-modules</a>
+   */
   public Project withExternalModules(String library, String version, String... classifiers) {
     var locator =
         ExternalModuleLocator.SormurasBachExternalModulesProperties.of(
@@ -117,14 +140,12 @@ public record Project(
     return with(locator);
   }
 
+  /** {@return new project instance with an additional external tool} */
   public Project withExternalTool(String name, String from) {
-    return withExternalTool(new ExternalTool(name, Optional.of(from), List.of()));
+    return with(new ExternalTool(name, Optional.of(from), List.of()));
   }
 
-  public Project withExternalTool(ExternalTool tool) {
-    return with(externals.with(tool));
-  }
-
+  /** {@return new project instance with applying all given configurators} */
   public Project withApplyingConfigurators(List<Configurator> configurators) {
     var project = this;
     for (var configurator : configurators) {
@@ -133,10 +154,12 @@ public record Project(
     return project;
   }
 
+  /** {@return new project instance with applying all configurators loaded from the given layer} */
   public Project withApplyingConfigurators(ModuleLayer layer) {
     return withApplyingConfigurators(Configurator.load(layer));
   }
 
+  /** {@return new project instance configured according to the given arguments} */
   public Project withApplyingArguments(Main.Arguments arguments) {
     var it = new AtomicReference<>(this);
     arguments.project_name().ifPresent(name -> it.set(it.get().withName(name)));
@@ -147,10 +170,19 @@ public record Project(
     return it.get();
   }
 
+  /**
+   * {@return new project instance configured by finding all {@code module-info.java} files in the
+   * given directory tree}
+   */
   public Project withWalkingDirectory(Path directory) {
     return withWalkingDirectory(directory, "glob:**/module-info.java");
   }
 
+  /**
+   * {@return new project instance configured by finding {@code module-info.java} files in the
+   * matching the given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} given
+   * directory tree}
+   */
   public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();

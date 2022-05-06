@@ -6,7 +6,7 @@ import com.github.sormuras.bach.project.Project;
 public class Configurator implements Project.Configurator {
   @Override
   public Project apply(Project project) {
-    // Operate on the project instance preconfigured by Bach
+    // Operate on the preconfigured project instance.
     return project
         // Modules of main module space target Java release 17.
         // Modules of test module space target current Java release.
