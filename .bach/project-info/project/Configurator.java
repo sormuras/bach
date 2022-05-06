@@ -9,12 +9,11 @@ public class Configurator implements Project.Configurator {
     // Operate on the project instance preconfigured by Bach
     return project
         // Modules of main module space target Java release 17.
-        .withTargetsJava(17)
-
         // Modules of test module space target current Java release.
+        .withTargetsJava(17)
         .withTargetsJava("test", Runtime.version().feature())
 
-        // Main module space's main entry-point.
+        // Main module space's entry-point.
         .withLauncher(Main.class.getCanonicalName())
 
         // Additional names of external modules required by this project.
@@ -27,10 +26,10 @@ public class Configurator implements Project.Configurator {
         .withExternalModule(
             "com.github.sormuras.hello",
             """
-             https://github.com/sormuras/hello/releases\
-             /download/1-M3/com.github.sormuras.hello@1-M3.jar\
-             #SHA-256=0c993996571cee9555ef947eb198145ddc30a2d834fe606a6f16780afd8aea7b
-             """)
+            https://github.com/sormuras/hello/releases\
+            /download/1-M3/com.github.sormuras.hello@1-M3.jar\
+            #SHA-256=0c993996571cee9555ef947eb198145ddc30a2d834fe606a6f16780afd8aea7b
+            """)
         // Locate JUnit modules via https://github.com/sormuras/bach-external-modules
         .withExternalModules("junit", "5.8.2")
         // Locate tool "format@1.15.0" via an explicit URL with checksum fragments.
