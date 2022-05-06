@@ -1,5 +1,6 @@
 package test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Bach;
@@ -7,12 +8,15 @@ import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.project.DeclaredModule;
+import com.github.sormuras.bach.project.ExternalTool;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class MainTests {
   @Test
   void modules() {
+    var project = bach().project();
     assertLinesMatch(
         """
         com.github.sormuras.bach
@@ -21,7 +25,14 @@ class MainTests {
         test.integration
         """
             .lines(),
-        bach().project().modules().stream().map(DeclaredModule::name).sorted());
+        project.modules().stream().map(DeclaredModule::name).sorted());
+    assertEquals(
+        Set.of("com.github.sormuras.hello", "org.junit.platform.console"),
+        project.externals().requires());
+    assertLinesMatch(
+        """
+        format@.+""".lines(),
+        project.externals().tools().stream().map(ExternalTool::name).sorted());
   }
 
   static Bach bach(String... args) {

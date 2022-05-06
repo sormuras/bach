@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
@@ -29,15 +31,15 @@ public record Project(
     var main = new ProjectSpace("main", "init");
     var test = new ProjectSpace("test", "main");
     var spaces = new ProjectSpaces(init, main, test);
-    var tools = new ProjectExternals(List.of());
-    return new Project(name, version, spaces, tools);
+    var externals = ProjectExternals.of();
+    return new Project(name, version, spaces, externals);
   }
 
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
   }
 
-  sealed interface Component permits ProjectName, ProjectVersion, ProjectSpaces, ProjectExternals {}
+  sealed interface Component permits ProjectExternals, ProjectName, ProjectSpaces, ProjectVersion {}
 
   private Project with(Component component) {
     return new Project(
@@ -49,6 +51,10 @@ public record Project(
 
   private Project with(ProjectSpace space) {
     return with(spaces.with(space));
+  }
+
+  public Project with(ExternalModuleLocator locator) {
+    return with(externals.with(locator));
   }
 
   public Project withName(String string) {
@@ -89,6 +95,38 @@ public record Project(
 
   public Project withLauncher(ProjectSpace space, String launcher) {
     return with(space.withLauncher(launcher));
+  }
+
+  public Project withRequiresModule(String name, String... more) {
+    return with(externals.withRequires(name).withRequires(more));
+  }
+
+  public Project withExternalModule(String name, String from) {
+    var locator = new ExternalModuleLocator.SingleExternalModuleLocator(name, from);
+    return with(locator);
+  }
+
+  public Project withExternalModules(Map<String, String> map) {
+    var locator = new ExternalModuleLocator.MultiExternalModuleLocator(map);
+    return with(locator);
+  }
+
+  public Project withExternalModules(String library, String version, String... classifiers) {
+    var properties = new StringBuilder();
+    properties.append("https://github.com/sormuras/bach-external-modules/raw/main/properties");
+    properties.append('/').append(library);
+    properties.append('/').append(library).append('@').append(version);
+    for (var classifier : classifiers) properties.append('-').append(classifier);
+    properties.append("-modules.properties");
+    return this; // TODO
+  }
+
+  public Project withExternalTool(String name, String from) {
+    return withExternalTool(new ExternalTool(name, Optional.of(from), List.of()));
+  }
+
+  public Project withExternalTool(ExternalTool tool) {
+    return with(externals.with(tool));
   }
 
   public Project withApplyingConfigurators(List<Configurator> configurators) {
