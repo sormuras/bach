@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.TreeMap;
 
 /** An external module locator tries to link a module name to a remote location. */
 @FunctionalInterface
@@ -15,6 +16,10 @@ public interface ExternalModuleLocator {
 
   default Optional<String> find(String module) {
     return Optional.ofNullable(locate(module));
+  }
+
+  default Map<String, String> findAll() {
+    return Map.of();
   }
 
   default String caption() {
@@ -31,6 +36,11 @@ public interface ExternalModuleLocator {
     public String locate(String module) {
       return module().equals(module) ? uri : null;
     }
+
+    @Override
+    public Map<String, String> findAll() {
+      return Map.of(module, uri);
+    }
   }
 
   record MultiExternalModuleLocator(Map<String, String> map) implements ExternalModuleLocator {
@@ -43,6 +53,11 @@ public interface ExternalModuleLocator {
     @Override
     public String locate(String module) {
       return map.get(module);
+    }
+
+    @Override
+    public Map<String, String> findAll() {
+      return map;
     }
   }
 
@@ -67,18 +82,34 @@ public interface ExternalModuleLocator {
     }
 
     @Override
-    public String locate(String module) {
-      if (properties == null) {
-        try (var in = new URL(url).openStream()) {
-          var text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-          var temp = new Properties();
-          temp.load(new StringReader(text));
-          properties = temp; // last threads wins...
-        } catch (Exception exception) {
-          throw new RuntimeException(exception);
-        }
+    public String caption() {
+      return "SormurasBachExternalModulesProperties -> " + url;
+    }
+
+    private void ensurePropertiesAreInitialized() {
+      if (properties != null) return;
+      try (var in = new URL(url).openStream()) {
+        var text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        var temp = new Properties();
+        temp.load(new StringReader(text));
+        properties = temp; // last threads wins...
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
       }
+    }
+
+    @Override
+    public String locate(String module) {
+      ensurePropertiesAreInitialized();
       return properties.getProperty(module);
+    }
+
+    @Override
+    public Map<String, String> findAll() {
+      ensurePropertiesAreInitialized();
+      var map = new TreeMap<String, String>();
+      properties.stringPropertyNames().forEach(key -> map.put(key, properties.getProperty(key)));
+      return map;
     }
   }
 }
