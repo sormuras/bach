@@ -22,7 +22,7 @@ module com.github.sormuras.bach {
       com.github.sormuras.bach.core.LoadAndVerify,
       com.github.sormuras.bach.core.Tree,
       com.github.sormuras.bach.project.workflow.Build,
+      com.github.sormuras.bach.project.workflow.Cache,
       com.github.sormuras.bach.project.workflow.Compile,
-      com.github.sormuras.bach.project.workflow.Download,
       com.github.sormuras.bach.project.workflow.Launch;
 }

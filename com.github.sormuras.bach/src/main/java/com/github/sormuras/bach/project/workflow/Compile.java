@@ -22,7 +22,7 @@ public class Compile implements ToolOperator {
     var spaces = project.spaces();
 
     for (var space : spaces.list()) {
-      var declarations = space.modules();
+      var declarations = space.modules().list();
       if (declarations.isEmpty()) {
         out.println("No %s modules declared.".formatted(space.name()));
         continue;
@@ -71,7 +71,7 @@ public class Compile implements ToolOperator {
         var module = declaration.name();
         var patches = new ArrayList<String>();
         for (var requires : space.requires()) {
-          if (spaces.space(requires).findDeclaredModule(module).isEmpty()) {
+          if (spaces.space(requires).modules().find(module).isEmpty()) {
             continue;
           }
           patches.add(paths.out(requires, "modules", module + ".jar").toString());
@@ -125,7 +125,7 @@ public class Compile implements ToolOperator {
         // include classes of patched module
         for (var requires : space.requires()) {
           var required = spaces.space(requires);
-          if (required.findDeclaredModule(name).isPresent()) {
+          if (required.modules().find(name).isPresent()) {
             var javaR = "java-" + required.targets().orElse(Runtime.version().feature());
             jar = jar.with("-C", paths.out(requires, "classes", javaR, name), ".");
           }

@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.project;
 
+import java.lang.module.ModuleFinder;
+import java.util.ArrayList;
 import java.util.List;
 
 public record ProjectSpaces(ProjectSpace init, ProjectSpace main, ProjectSpace test)
@@ -22,5 +24,13 @@ public record ProjectSpaces(ProjectSpace init, ProjectSpace main, ProjectSpace t
       case "test" -> test;
       default -> throw new IllegalArgumentException("No such space: " + name);
     };
+  }
+
+  public ModuleFinder toModuleFinder() {
+    var finders = new ArrayList<ModuleFinder>();
+    finders.add(init.modules().toModuleFinder());
+    finders.add(main.modules().toModuleFinder());
+    finders.add(test.modules().toModuleFinder());
+    return ModuleFinder.compose(finders.toArray(ModuleFinder[]::new));
   }
 }

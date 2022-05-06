@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public record ProjectSpace(
     String name,
-    List<DeclaredModule> modules,
+    DeclaredModules modules,
     int release,
     Optional<String> launcher,
     List<String> requires, // used to compute "--[processor-]module-path"
@@ -24,10 +24,10 @@ public record ProjectSpace(
   }
 
   public ProjectSpace(String name, String... requires) {
-    this(name, List.of(), 0, Optional.empty(), List.of(requires), List.of());
+    this(name, DeclaredModules.of(), 0, Optional.empty(), List.of(requires), List.of());
   }
 
-  public ProjectSpace withModules(List<DeclaredModule> modules) {
+  public ProjectSpace withModules(DeclaredModules modules) {
     return new ProjectSpace(
         name, modules, release, launcher, requires, additionalCompileJavacArguments);
   }
@@ -40,10 +40,6 @@ public record ProjectSpace(
   public ProjectSpace withLauncher(String launcher) {
     return new ProjectSpace(
         name, modules, release, Optional.of(launcher), requires, additionalCompileJavacArguments);
-  }
-
-  public Optional<DeclaredModule> findDeclaredModule(String name) {
-    return modules.stream().filter(module -> module.name().equals(name)).findFirst();
   }
 
   public Optional<Integer> targets() {

@@ -4,7 +4,6 @@ import com.github.sormuras.bach.Main;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +35,7 @@ public record Project(
   }
 
   public List<DeclaredModule> modules() {
-    return spaces.list().stream().flatMap(space -> space.modules().stream()).toList();
+    return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
   }
 
   sealed interface Component permits ProjectExternals, ProjectName, ProjectSpaces, ProjectVersion {}
@@ -112,13 +111,10 @@ public record Project(
   }
 
   public Project withExternalModules(String library, String version, String... classifiers) {
-    var properties = new StringBuilder();
-    properties.append("https://github.com/sormuras/bach-external-modules/raw/main/properties");
-    properties.append('/').append(library);
-    properties.append('/').append(library).append('@').append(version);
-    for (var classifier : classifiers) properties.append('-').append(classifier);
-    properties.append("-modules.properties");
-    return this; // TODO
+    var locator =
+        ExternalModuleLocator.SormurasBachExternalModulesProperties.of(
+            library, version, classifiers);
+    return with(locator);
   }
 
   public Project withExternalTool(String name, String from) {
@@ -161,18 +157,25 @@ public record Project(
     if (name != null) project = project.withName(name.toString());
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
     try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
-      var inits = new ArrayList<DeclaredModule>();
-      var mains = new ArrayList<DeclaredModule>();
-      var tests = new ArrayList<DeclaredModule>();
+      var inits = DeclaredModules.of();
+      var mains = DeclaredModules.of();
+      var tests = DeclaredModules.of();
       for (var path : stream.toList()) {
         var uri = path.toUri().toString();
-        var list = uri.contains("/init/") ? inits : uri.contains("/test/") ? tests : mains;
         var module = DeclaredModule.of(path);
-        list.add(module);
+        if (uri.contains("/init/")) {
+          inits = inits.with(module);
+          continue;
+        }
+        if (uri.contains("/test/")) {
+          tests = tests.with(module);
+          continue;
+        }
+        mains = mains.with(module);
       }
-      project = project.with(project.spaces.init().withModules(List.copyOf(inits)));
-      project = project.with(project.spaces.main().withModules(List.copyOf(mains)));
-      project = project.with(project.spaces.test().withModules(List.copyOf(tests)));
+      project = project.with(project.spaces.init().withModules(inits));
+      project = project.with(project.spaces.main().withModules(mains));
+      project = project.with(project.spaces.test().withModules(tests));
     } catch (Exception exception) {
       throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
     }

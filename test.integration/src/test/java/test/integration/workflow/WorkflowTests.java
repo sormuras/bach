@@ -73,7 +73,7 @@ class WorkflowTests {
         bach(
             ToolCall.of("bach").with("--root-directory", example).with("--output-directory", temp));
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
-    var init = !bach.project().spaces().init().modules().isEmpty();
+    var init = !bach.project().spaces().init().modules().list().isEmpty();
     if (init && OS.WINDOWS.isCurrentOs()) {
       System.gc(); // try to release file handles and...
       Thread.sleep(123); // hope JAR files are not locked...

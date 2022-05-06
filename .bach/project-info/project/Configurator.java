@@ -20,7 +20,6 @@ public class Configurator implements Project.Configurator {
                 #SHA-256=0c993996571cee9555ef947eb198145ddc30a2d834fe606a6f16780afd8aea7b""")
         .withExternalModules(Map.of(/* here be name-from pairs */ ))
         .withExternalModules("junit", "5.8.2")
-        .withExternalModules("lwjgl", "3.3.1", "windows-x64")
         .withExternalTool(
             "format@1.15.0",
             """
