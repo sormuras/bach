@@ -3,15 +3,16 @@ import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolRunner;
+import com.github.sormuras.bach.project.ExternalModuleLocator;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,40 +54,11 @@ class build {
   }
 
   static Map<String, String> externalModules() {
-    var map = new LinkedHashMap<String, String>();
-    map.put(
-        "org.apiguardian.api",
-        "https://repo.maven.apache.org/maven2/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar#SIZE=6806");
-    map.put(
-        "org.junit.jupiter",
-        "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.8.1/junit-jupiter-5.8.1.jar#SIZE=6361");
-    map.put(
-        "org.junit.jupiter.api",
-        "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-api/5.8.1/junit-jupiter-api-5.8.1.jar#SIZE=193501");
-    map.put(
-        "org.junit.jupiter.engine",
-        "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-engine/5.8.1/junit-jupiter-engine-5.8.1.jar#SIZE=229680");
-    map.put(
-        "org.junit.jupiter.params",
-        "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter-params/5.8.1/junit-jupiter-params-5.8.1.jar#SIZE=575854");
-    map.put(
-        "org.junit.platform.commons",
-        "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-commons/1.8.1/junit-platform-commons-1.8.1.jar#SIZE=100451");
-    map.put(
-        "org.junit.platform.console",
-        "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console/1.8.1/junit-platform-console-1.8.1.jar#SIZE=488164");
-    map.put(
-        "org.junit.platform.engine",
-        "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-engine/1.8.1/junit-platform-engine-1.8.1.jar#SIZE=185778");
-    map.put(
-        "org.junit.platform.launcher",
-        "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-launcher/1.8.1/junit-platform-launcher-1.8.1.jar#SIZE=159560");
-    map.put(
-        "org.junit.platform.reporting",
-        "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-reporting/1.8.1/junit-platform-reporting-1.8.1.jar#SIZE=26175");
-    map.put(
-        "org.opentest4j",
-        "https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.2.0/opentest4j-1.2.0.jar#SIZE=7653");
+    var map =
+        new TreeMap<>(
+            ExternalModuleLocator.SormurasBachExternalModulesProperties.of("junit", "5.8.2")
+                .findAll());
+    map.remove("org.junit.vintage.engine"); // Exclude JUnit 4
     return map;
   }
 
