@@ -179,9 +179,9 @@ public record Project(
   }
 
   /**
-   * {@return new project instance configured by finding {@code module-info.java} files in the
-   * matching the given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} given
-   * directory tree}
+   * {@return new project instance configured by finding {@code module-info.java} files matching the
+   * given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} below the
+   * specified root directory}
    */
   public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
