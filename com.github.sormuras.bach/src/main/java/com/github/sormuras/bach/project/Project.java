@@ -124,7 +124,7 @@ public record Project(
 
   /** {@return new project instance with an additional external module locator} */
   public Project withExternalModule(String name, String from) {
-    var locator = new ExternalModuleLocator.SingleExternalModuleLocator(name, from);
+    var locator = new ExternalModuleLocator.SingleExternalModuleLocator(name.strip(), from.strip());
     return with(locator);
   }
 
@@ -142,7 +142,7 @@ public record Project(
 
   /** {@return new project instance with an additional external tool} */
   public Project withExternalTool(String name, String from) {
-    return with(new ExternalTool(name, Optional.of(from), List.of()));
+    return with(new ExternalTool(name.strip(), Optional.of(from.strip()), List.of()));
   }
 
   /** {@return new project instance with applying all given configurators} */
