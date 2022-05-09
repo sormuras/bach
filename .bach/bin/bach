@@ -2,7 +2,7 @@
 
 if [[ $1 == 'boot' ]]; then
   shift 1
-  jshell --module-path .bach/bin --add-modules ALL-MODULE-PATH .bach/bin/bach.jshell "$@"
+  jshell --module-path .bach/bin --add-modules ALL-DEFAULT .bach/bin/bach.jshell "$@"
   exit $?
 fi
 
@@ -23,12 +23,12 @@ fi
 if [[ -f ".bach/src/$1.java" ]]; then
   PROGRAM=".bach/src/$1.java"
   shift 1
-  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$PROGRAM" "$@"
+  java --module-path .bach/bin --add-modules ALL-DEFAULT "$PROGRAM" "$@"
   exit $?
 fi
 
 if [[ -f "$1" ]]; then
-  java --module-path .bach/bin --add-modules ALL-MODULE-PATH "$@"
+  java --module-path .bach/bin --add-modules ALL-DEFAULT "$@"
   exit $?
 fi
 

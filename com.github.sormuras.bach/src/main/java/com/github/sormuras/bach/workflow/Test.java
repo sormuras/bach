@@ -2,8 +2,12 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolOperator;
+import com.github.sormuras.bach.ToolRunner;
+import com.github.sormuras.bach.project.DeclaredModule;
 import java.io.PrintWriter;
+import java.lang.module.ModuleFinder;
 
 public class Test implements ToolOperator {
   @Override
@@ -26,6 +30,29 @@ public class Test implements ToolOperator {
       bach.run(java);
     }
 
-    void runJUnitPlatform() {}
+    void runJUnitPlatform() {
+      if (bach.configuration().finder().find("junit").isEmpty()) return;
+      for (var module : bach.project().spaces().test().modules()) {
+        runJUnitPlatform(module);
+      }
+    }
+
+    void runJUnitPlatform(DeclaredModule module) {
+      var name = module.name();
+      bach.run("banner", "Execute tests declared in module " + name);
+      var paths = bach.configuration().paths();
+      var moduleFinder =
+          ModuleFinder.of(
+              paths.out("test", "modules", name + ".jar"),
+              paths.out("main", "modules"),
+              paths.out("test", "modules"),
+              paths.root(".bach", "external-modules"));
+      bach.run(
+          ToolFinder.of(moduleFinder, true, name),
+          ToolCall.of("junit")
+              .with("--select-module", name)
+              .with("--reports-dir", paths.out("test-reports", "junit-" + name)),
+          ToolRunner.RunModifier.RUN_WITH_PROVIDERS_CLASS_LOADER);
+    }
   }
 }

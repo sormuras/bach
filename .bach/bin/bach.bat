@@ -2,7 +2,7 @@
 
 IF "%~1" == "boot" (
   REM SHIFT 1
-  jshell --module-path .bach\bin --add-modules ALL-MODULE-PATH .bach\bin\bach.jshell %2 %3 %4 %5 %6 %7 %8 %9
+  jshell --module-path .bach\bin --add-modules ALL-DEFAULT .bach\bin\bach.jshell %2 %3 %4 %5 %6 %7 %8 %9
   EXIT /B
 )
 
@@ -23,14 +23,14 @@ IF "%~1" == "init" (
 IF EXIST ".bach\src\%~1.java" (
   REM PROGRAM=
   REM SHIFT 1
-  java --module-path .bach\bin --add-modules ALL-MODULE-PATH ".bach\src\%~1.java" %2 %3 %4 %5 %6 %7 %8 %9
+  java --module-path .bach\bin --add-modules ALL-DEFAULT ".bach\src\%~1.java" %2 %3 %4 %5 %6 %7 %8 %9
   EXIT /B
 )
 
 IF EXIST "%~1" (
-  java --module-path .bach\bin --add-modules ALL-MODULE-PATH %*
+  java --module-path .bach\bin --add-modules ALL-DEFAULT %*
   EXIT /B
 )
 
-java --module-path .bach\bin --module com.github.sormuras.bach %*
+java --module-path .bach\bin --add-modules ALL-DEFAULT --module com.github.sormuras.bach %*
 EXIT /B
