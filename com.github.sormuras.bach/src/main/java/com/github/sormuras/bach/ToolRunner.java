@@ -21,6 +21,11 @@ public interface ToolRunner {
     run(ToolCall.of(name, arguments));
   }
 
+  /** Run the tool specified the given name and passing the given arguments. */
+  default void run(String name, String... arguments) {
+    run(name, List.of(arguments));
+  }
+
   /** Run the tool specified by its name and passing the given arguments. */
   default void run(String name, List<String> arguments) {
     run(new ToolCall(name, arguments));

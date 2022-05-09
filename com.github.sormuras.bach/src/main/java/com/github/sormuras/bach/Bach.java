@@ -38,7 +38,6 @@ public record Bach(Configuration configuration, Project project) implements Tool
 
     var tools = finder.find(name);
     if (tools.isEmpty()) throw new ToolNotFoundException(name);
-    if (tools.size() != 1) throw new ToolNotUniqueException(name, tools);
     var provider = tools.get(0).provider();
     var operator = provider instanceof ToolOperator;
     var run = force || operator || !configuration.isDryRun();

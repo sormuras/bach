@@ -72,15 +72,15 @@ public final class Main implements ToolProvider {
     arguments.verbose().ifPresent(verbose -> flags.add(Flag.VERBOSE));
     arguments.dry_run().ifPresent(verbose -> flags.add(Flag.DRY_RUN));
 
-    var configurator = loadProjectConfigurator(layer);
+    var configurators =
+        ServiceLoader.load(layer, Configurator.class).stream()
+            .map(ServiceLoader.Provider::get)
+            .toList();
+    if (configurators.size() >= 2)
+      throw new RuntimeException("Too many configurators: " + configurators);
 
     var configuration =
-        Configuration.ofDefaults()
-            .with(printer)
-            .with(paths)
-            .with(new Flags(flags))
-            .with(finder)
-            .with(configurator);
+        Configuration.ofDefaults().with(printer).with(paths).with(new Flags(flags)).with(finder);
 
     var pattern =
         arguments
@@ -91,7 +91,9 @@ public final class Main implements ToolProvider {
     var project = Project.ofDefaults();
     project = withWalkingDirectory(project, paths.root(), pattern);
     project = withApplyingArguments(project, file);
-    project = withApplyingConfigurator(project, configurator);
+    for (var configurator : configurators) {
+      project = withApplyingConfigurator(project, configurator);
+    }
     project = withApplyingArguments(project, arguments);
     return new Bach(configuration, project);
   }
@@ -201,15 +203,7 @@ public final class Main implements ToolProvider {
     }
   }
 
-  static ProjectInfoConfigurator loadProjectConfigurator(ModuleLayer layer) {
-    var loader = ServiceLoader.load(layer, ProjectInfoConfigurator.class);
-    return loader.stream()
-        .map(ServiceLoader.Provider::get)
-        .findFirst()
-        .orElseGet(ProjectInfoConfigurator::ofDefaults);
-  }
-
-  static Project withApplyingConfigurator(Project project, ProjectInfoConfigurator configurator) {
+  static Project withApplyingConfigurator(Project project, Configurator configurator) {
     return configurator.configure(project);
   }
 

@@ -21,7 +21,7 @@ class build {
   public static void main(String... args) {
     System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
 
-    if (args.length == 1 && "!".equals(args[0])) {
+    if (args.length == 0) {
       Main.main("build");
       return;
     }
