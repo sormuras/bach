@@ -1,11 +1,13 @@
 package project;
 
+import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Main;
+import com.github.sormuras.bach.ProjectInfoConfigurator;
 import com.github.sormuras.bach.project.Project;
 
-public class Configurator implements Project.Configurator {
+public class Configurator implements ProjectInfoConfigurator {
   @Override
-  public Project apply(Project project) {
+  public Project configure(Project project) {
     // Operate on the preconfigured project instance.
     return project
         // Modules of main module space target Java release 17.
@@ -41,5 +43,16 @@ public class Configurator implements Project.Configurator {
             #SIZE=3519780\
             &SHA-256=a356bb0236b29c57a3ab678f17a7b027aad603b0960c183a18f1fe322e4f38ea
             """);
+  }
+
+  @Override
+  public void onWorklowBuildBegin(Bach bach) {
+    bach.run("hello"); // provided by an external module
+    bach.run("world", System.getProperty("user.name", "?")); // provided by this module
+  }
+
+  @Override
+  public void onWorklowBuildEnd(Bach bach) {
+    bach.run("format@1.15.0", "--version"); // provided by an external tool
   }
 }

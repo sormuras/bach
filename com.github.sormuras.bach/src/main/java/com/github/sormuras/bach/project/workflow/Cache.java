@@ -15,6 +15,8 @@ import java.util.TreeSet;
 public class Cache implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+    bach.configuration().projectWorkflowListener().onWorklowCacheBegin(bach);
+
     cacheAllExternalTools(bach);
     cacheExternalModules(bach, bach.project().externals().requires());
     cacheExternalModules(
@@ -22,6 +24,8 @@ public class Cache implements ToolOperator {
         ModulesSupport.listMissingModules(
             List.of(bach.project().spaces().toModuleFinder()), Set.of()));
     cacheMissingExternalModules(bach);
+
+    bach.configuration().projectWorkflowListener().onWorklowCacheEnd(bach);
     return 0;
   }
 

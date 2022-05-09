@@ -1,27 +1,12 @@
 package com.github.sormuras.bach.project;
 
-import com.github.sormuras.bach.Main;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.ServiceLoader;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 /** Modular project model. */
 public record Project(
     ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
-
-  /** An interface for user-defined project configurator implementations. */
-  @FunctionalInterface
-  public interface Configurator extends UnaryOperator<Project> {
-    static List<Configurator> load(ModuleLayer layer) {
-      var loader = ServiceLoader.load(layer, Configurator.class);
-      return loader.stream().map(ServiceLoader.Provider::get).toList();
-    }
-  }
 
   /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
   public static Project ofDefaults() {
@@ -50,7 +35,7 @@ public record Project(
         component instanceof ProjectExternals externals ? externals : externals);
   }
 
-  private Project with(ProjectSpace space) {
+  public Project with(ProjectSpace space) {
     return with(spaces.with(space));
   }
 
@@ -143,74 +128,5 @@ public record Project(
   /** {@return new project instance with an additional external tool} */
   public Project withExternalTool(String name, String from) {
     return with(new ExternalTool(name.strip(), Optional.of(from.strip()), List.of()));
-  }
-
-  /** {@return new project instance with applying all given configurators} */
-  public Project withApplyingConfigurators(List<Configurator> configurators) {
-    var project = this;
-    for (var configurator : configurators) {
-      project = configurator.apply(project);
-    }
-    return project;
-  }
-
-  /** {@return new project instance with applying all configurators loaded from the given layer} */
-  public Project withApplyingConfigurators(ModuleLayer layer) {
-    return withApplyingConfigurators(Configurator.load(layer));
-  }
-
-  /** {@return new project instance configured according to the given arguments} */
-  public Project withApplyingArguments(Main.Arguments arguments) {
-    var it = new AtomicReference<>(this);
-    arguments.project_name().ifPresent(name -> it.set(it.get().withName(name)));
-    arguments.project_version().ifPresent(version -> it.set(it.get().withVersion(version)));
-    arguments.project_version_date().ifPresent(date -> it.set(it.get().withVersionDate(date)));
-    arguments.project_targets_java().ifPresent(java -> it.set(it.get().withTargetsJava(java)));
-    arguments.project_launcher().ifPresent(launcher -> it.set(it.get().withLauncher(launcher)));
-    return it.get();
-  }
-
-  /**
-   * {@return new project instance configured by finding all {@code module-info.java} files in the
-   * given directory tree}
-   */
-  public Project withWalkingDirectory(Path directory) {
-    return withWalkingDirectory(directory, "glob:**/module-info.java");
-  }
-
-  /**
-   * {@return new project instance configured by finding {@code module-info.java} files matching the
-   * given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} below the
-   * specified root directory}
-   */
-  public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
-    var project = this;
-    var name = directory.normalize().toAbsolutePath().getFileName();
-    if (name != null) project = project.withName(name.toString());
-    var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
-    try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
-      var inits = DeclaredModules.of();
-      var mains = DeclaredModules.of();
-      var tests = DeclaredModules.of();
-      for (var path : stream.toList()) {
-        var uri = path.toUri().toString();
-        var module = DeclaredModule.of(path);
-        if (uri.contains("/init/")) {
-          inits = inits.with(module);
-          continue;
-        }
-        if (uri.contains("/test/")) {
-          tests = tests.with(module);
-          continue;
-        }
-        mains = mains.with(module);
-      }
-      project = project.with(project.spaces.init().withModules(inits));
-      project = project.with(project.spaces.main().withModules(mains));
-      project = project.with(project.spaces.test().withModules(tests));
-    } catch (Exception exception) {
-      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
-    }
-    return project;
   }
 }

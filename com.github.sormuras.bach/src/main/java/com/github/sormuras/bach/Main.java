@@ -4,6 +4,8 @@ import com.github.sormuras.bach.internal.ArgumentsParser;
 import com.github.sormuras.bach.internal.ArgumentsParser.Opt;
 import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.ModuleLayerSupport;
+import com.github.sormuras.bach.project.DeclaredModule;
+import com.github.sormuras.bach.project.DeclaredModules;
 import com.github.sormuras.bach.project.Project;
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
@@ -12,6 +14,8 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import jdk.jfr.Recording;
@@ -68,8 +72,15 @@ public final class Main implements ToolProvider {
     arguments.verbose().ifPresent(verbose -> flags.add(Flag.VERBOSE));
     arguments.dry_run().ifPresent(verbose -> flags.add(Flag.DRY_RUN));
 
+    var configurator = loadProjectConfigurator(layer);
+
     var configuration =
-        Configuration.ofDefaults().with(printer).with(paths).with(new Flags(flags)).with(finder);
+        Configuration.ofDefaults()
+            .with(printer)
+            .with(paths)
+            .with(new Flags(flags))
+            .with(finder)
+            .with(configurator);
 
     var pattern =
         arguments
@@ -77,13 +88,11 @@ public final class Main implements ToolProvider {
             .or(file::module_info_find_pattern)
             .orElse("glob:**/module-info.java");
 
-    var project =
-        Project.ofDefaults()
-            .withWalkingDirectory(paths.root(), pattern)
-            .withApplyingArguments(file)
-            .withApplyingConfigurators(layer)
-            .withApplyingArguments(arguments);
-
+    var project = Project.ofDefaults();
+    project = withWalkingDirectory(project, paths.root(), pattern);
+    project = withApplyingArguments(project, file);
+    project = withApplyingConfigurator(project, configurator);
+    project = withApplyingArguments(project, arguments);
     return new Bach(configuration, project);
   }
 
@@ -190,5 +199,62 @@ public final class Main implements ToolProvider {
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
+  }
+
+  static ProjectInfoConfigurator loadProjectConfigurator(ModuleLayer layer) {
+    var loader = ServiceLoader.load(layer, ProjectInfoConfigurator.class);
+    return loader.stream()
+        .map(ServiceLoader.Provider::get)
+        .findFirst()
+        .orElseGet(ProjectInfoConfigurator::ofDefaults);
+  }
+
+  static Project withApplyingConfigurator(Project project, ProjectInfoConfigurator configurator) {
+    return configurator.configure(project);
+  }
+
+  static Project withApplyingArguments(Project project, Main.Arguments arguments) {
+    var it = new AtomicReference<>(project);
+    arguments.project_name().ifPresent(name -> it.set(it.get().withName(name)));
+    arguments.project_version().ifPresent(version -> it.set(it.get().withVersion(version)));
+    arguments.project_version_date().ifPresent(date -> it.set(it.get().withVersionDate(date)));
+    arguments.project_targets_java().ifPresent(java -> it.set(it.get().withTargetsJava(java)));
+    arguments.project_launcher().ifPresent(launcher -> it.set(it.get().withLauncher(launcher)));
+    return it.get();
+  }
+
+  /**
+   * {@return new project instance configured by finding {@code module-info.java} files matching the
+   * given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} below the
+   * specified root directory}
+   */
+  static Project withWalkingDirectory(Project project, Path directory, String syntaxAndPattern) {
+    var name = directory.normalize().toAbsolutePath().getFileName();
+    if (name != null) project = project.withName(name.toString());
+    var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
+    try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
+      var inits = DeclaredModules.of();
+      var mains = DeclaredModules.of();
+      var tests = DeclaredModules.of();
+      for (var path : stream.toList()) {
+        var uri = path.toUri().toString();
+        var module = DeclaredModule.of(path);
+        if (uri.contains("/init/")) {
+          inits = inits.with(module);
+          continue;
+        }
+        if (uri.contains("/test/")) {
+          tests = tests.with(module);
+          continue;
+        }
+        mains = mains.with(module);
+      }
+      project = project.with(project.spaces().init().withModules(inits));
+      project = project.with(project.spaces().main().withModules(mains));
+      project = project.with(project.spaces().test().withModules(tests));
+    } catch (Exception exception) {
+      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
+    }
+    return project;
   }
 }

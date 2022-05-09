@@ -10,7 +10,7 @@ public record ProjectSpaces(ProjectSpace init, ProjectSpace main, ProjectSpace t
     return List.of(init, main, test);
   }
 
-  ProjectSpaces with(ProjectSpace space) {
+  public ProjectSpaces with(ProjectSpace space) {
     return new ProjectSpaces(
         space.name().equals(init.name()) ? space : init,
         space.name().equals(main.name()) ? space : main,

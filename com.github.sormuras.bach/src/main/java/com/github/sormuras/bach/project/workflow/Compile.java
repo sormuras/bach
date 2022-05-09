@@ -17,6 +17,8 @@ import java.util.stream.Stream;
 public class Compile implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+    bach.configuration().projectWorkflowListener().onWorklowCompileBegin(bach);
+
     var project = bach.project();
     var paths = bach.configuration().paths();
     var spaces = project.spaces();
@@ -159,6 +161,8 @@ public class Compile implements ToolOperator {
             out.println("%s %11s %s".formatted(hash, size, file));
           });
     }
+
+    bach.configuration().projectWorkflowListener().onWorklowCompileEnd(bach);
     return 0;
   }
 }

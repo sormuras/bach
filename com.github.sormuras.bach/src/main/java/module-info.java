@@ -10,7 +10,7 @@ module com.github.sormuras.bach {
   requires jdk.jfr;
   requires jdk.jlink;
 
-  uses com.github.sormuras.bach.project.Project.Configurator;
+  uses com.github.sormuras.bach.ProjectInfoConfigurator;
   uses java.util.spi.ToolProvider;
 
   provides java.util.spi.ToolProvider with
