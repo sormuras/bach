@@ -20,19 +20,19 @@ if [[ $1 == 'init' ]]; then
   exit $?
 fi
 
-JAVA_LAUNCHER_ARGUMENTS=--module-path .bach/bin --add-modules=ALL-MODULE-PATH --add-modules ALL-DEFAULT
+#JAVA_LAUNCHER_ARGUMENTS=--module-path .bach/bin --add-modules=ALL-MODULE-PATH --add-modules ALL-DEFAULT
 
 if [[ -f ".bach/src/$1.java" ]]; then
   PROGRAM=".bach/src/$1.java"
   shift 1
-  java "$JAVA_LAUNCHER_ARGUMENTS" "$PROGRAM" "$@"
+  java --module-path .bach/bin --add-modules=ALL-MODULE-PATH --add-modules ALL-DEFAULT "$PROGRAM" "$@"
   exit $?
 fi
 
 if [[ -f "$1" ]]; then
-  java "$JAVA_LAUNCHER_ARGUMENTS" "$@"
+  java --module-path .bach/bin --add-modules=ALL-MODULE-PATH --add-modules ALL-DEFAULT "$@"
   exit $?
 fi
 
-java "$JAVA_LAUNCHER_ARGUMENTS" --module com.github.sormuras.bach "$@"
+java --module-path .bach/bin --add-modules=ALL-MODULE-PATH --add-modules ALL-DEFAULT --module com.github.sormuras.bach "$@"
 exit $?
