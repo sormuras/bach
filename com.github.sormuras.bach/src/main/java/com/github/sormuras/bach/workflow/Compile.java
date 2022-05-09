@@ -1,8 +1,9 @@
-package com.github.sormuras.bach.project.workflow;
+package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolOperator;
+import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
 import com.github.sormuras.bach.internal.PathSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
 import java.io.File;

@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.project.workflow;
+package com.github.sormuras.bach.internal;
 
 import java.io.File;
 import java.lang.module.FindException;
@@ -11,9 +11,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class ModuleSourcePathSupport {
+public interface ModuleSourcePathSupport {
 
-  public static List<String> compute(Map<String, List<Path>> map, boolean forceSpecificForm) {
+  static List<String> compute(Map<String, List<Path>> map, boolean forceSpecificForm) {
     var patterns = new TreeSet<String>(); // "src:etc/*/java"
     var specific = new TreeMap<String, List<Path>>(); // "foo=java:java-9"
     for (var entry : map.entrySet()) {
@@ -37,7 +37,7 @@ class ModuleSourcePathSupport {
         .toList();
   }
 
-  public static String toPatternForm(Path info, String module) {
+  static String toPatternForm(Path info, String module) {
     var root = info.getRoot();
     var deque = new ArrayDeque<String>();
     if (root != null) deque.add(root.toString());
@@ -54,7 +54,7 @@ class ModuleSourcePathSupport {
     return pattern;
   }
 
-  public static String toSpecificForm(String module, List<Path> paths) {
+  static String toSpecificForm(String module, List<Path> paths) {
     return module
         + '='
         + paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));

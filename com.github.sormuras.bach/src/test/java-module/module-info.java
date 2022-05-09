@@ -24,8 +24,9 @@ open /*test*/ module com.github.sormuras.bach {
       com.github.sormuras.bach.core.Load,
       com.github.sormuras.bach.core.LoadAndVerify,
       com.github.sormuras.bach.core.Tree,
-      com.github.sormuras.bach.project.workflow.Build,
-      com.github.sormuras.bach.project.workflow.Cache,
-      com.github.sormuras.bach.project.workflow.Compile,
-      com.github.sormuras.bach.project.workflow.Launch;
+      com.github.sormuras.bach.workflow.Build,
+      com.github.sormuras.bach.workflow.Cache,
+      com.github.sormuras.bach.workflow.Compile,
+      com.github.sormuras.bach.workflow.Launch,
+      com.github.sormuras.bach.workflow.Test;
 }

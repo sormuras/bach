@@ -1,4 +1,4 @@
-package com.github.sormuras.bach.project.workflow;
+package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolOperator;
@@ -9,6 +9,7 @@ public class Build implements ToolOperator {
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     bach.run("cache"); // go offline
     bach.run("compile");
+    bach.run("test");
     return 0;
   }
 }
