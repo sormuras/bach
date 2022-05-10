@@ -31,7 +31,7 @@ public interface ToolFinder {
     return findAll().stream().filter(tool -> filter.test(tool, name)).toList();
   }
 
-  default List<ToolFinder> finders() {
+  default List<ToolFinder> decompose() {
     return List.of(this);
   }
 
@@ -152,6 +152,11 @@ public interface ToolFinder {
 
   static ToolFinder compose(List<ToolFinder> finders) {
     record CompositeToolFinder(List<ToolFinder> finders) implements ToolFinder {
+      @Override
+      public List<ToolFinder> decompose() {
+        return finders;
+      }
+
       @Override
       public List<Tool> findAll() {
         return finders.stream().flatMap(finder -> finder.findAll().stream()).toList();

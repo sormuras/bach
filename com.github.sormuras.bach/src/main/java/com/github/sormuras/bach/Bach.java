@@ -16,7 +16,7 @@ public record Bach(Configuration configuration, Project project) implements Tool
   }
 
   public Bach with(ToolFinder... finders) {
-    var stream = Stream.concat(configuration.finder().finders().stream(), Stream.of(finders));
+    var stream = Stream.concat(configuration.finder().decompose().stream(), Stream.of(finders));
     var finder = ToolFinder.compose(stream.toList());
     return new Bach(configuration.with(finder), project);
   }
