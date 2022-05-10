@@ -28,7 +28,7 @@ jobs:
         if: always()
         uses: test-summary/action@v1
         with:
-          output: .bach/out/test-summary.md
+          # output: .bach/out/test-summary.md
           paths: .bach/out/test-reports/**/TEST-*.xml
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
@@ -39,4 +39,6 @@ jobs:
             LICENSE
             .bach/out/bach-logbook.jfr
             .bach/out/modules
-            .bach/out/test-summary.md
+    - name: "Create custom summary"
+      run: |
+        echo '### Hello summary! :rocket:' >> $GITHUB_STEP_SUMMARY
