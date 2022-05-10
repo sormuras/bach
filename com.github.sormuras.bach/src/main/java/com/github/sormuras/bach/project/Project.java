@@ -102,11 +102,6 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
-  /** {@return new project instance with a new module declaration added to the main space} */
-  public Project withModule(String info) {
-    return withModule("main", info);
-  }
-
   /** {@return new project instance with a new module declaration added to the specified space} */
   public Project withModule(String space, String info) {
     return withModule(spaces.space(space), DeclaredModule.of(info));
@@ -143,5 +138,15 @@ public record Project(
   /** {@return new project instance with an additional external tool} */
   public Project withExternalTool(String name, String from) {
     return with(new ExternalTool(name.strip(), Optional.of(from.strip()), List.of()));
+  }
+
+  /** {@return new project instance with more arguments for specified space's {@code javac} call} */
+  public Project withAdditionalCompileJavacArguments(String space, String... args) {
+    return withAdditionalCompileJavacArguments(spaces.space(space), args);
+  }
+
+  /** {@return new project instance with more arguments for specified space's {@code javac} call} */
+  public Project withAdditionalCompileJavacArguments(ProjectSpace space, String... args) {
+    return with(spaces.with(space.withAdditionalCompileJavacArguments(args)));
   }
 }

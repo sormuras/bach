@@ -20,9 +20,11 @@ class ProjectTests {
     var project =
         Project.ofDefaults()
             .withModule("init", "doc/example-projects/processing-code/processor/src/init/java")
-            .withModule("doc/example-projects/processing-code/production/src/main/java");
+            .withModule("main", "doc/example-projects/processing-code/production/src/main/java")
+            .withAdditionalCompileJavacArguments("test", "--verbose");
     assertEquals(2, project.modules().size());
     assertEquals(List.of("processor"), project.spaces().init().modules().names());
     assertEquals(List.of("production"), project.spaces().main().modules().names());
+    assertEquals(List.of("--verbose"), project.spaces().test().additionalCompileJavacArguments());
   }
 }

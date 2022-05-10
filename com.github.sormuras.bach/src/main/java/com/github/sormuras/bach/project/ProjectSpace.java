@@ -3,6 +3,7 @@ package com.github.sormuras.bach.project;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public record ProjectSpace(
     String name,
@@ -40,6 +41,11 @@ public record ProjectSpace(
   public ProjectSpace withLauncher(String launcher) {
     return new ProjectSpace(
         name, modules, release, Optional.of(launcher), requires, additionalCompileJavacArguments);
+  }
+
+  public ProjectSpace withAdditionalCompileJavacArguments(String... args) {
+    var arguments = Stream.concat(additionalCompileJavacArguments.stream(), Stream.of(args));
+    return new ProjectSpace(name, modules, release, launcher, requires, arguments.toList());
   }
 
   public Optional<Integer> targets() {
