@@ -87,6 +87,12 @@ public record Project(
     return with(space.withTargetsJava(release));
   }
 
+  /** {@return new project instance setting specified space's release argument and preview flag} */
+  public Project withEnablePreviewFeatures(String space) {
+    return withTargetsJava(space, Runtime.version().feature())
+        .withAdditionalCompileJavacArguments(space, "--enable-preview");
+  }
+
   /** {@return new project instance setting main space's launcher} */
   public Project withLauncher(String launcher) {
     return withLauncher("main", launcher);

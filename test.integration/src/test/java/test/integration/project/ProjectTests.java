@@ -21,10 +21,16 @@ class ProjectTests {
         Project.ofDefaults()
             .withModule("init", "doc/example-projects/processing-code/processor/src/init/java")
             .withModule("main", "doc/example-projects/processing-code/production/src/main/java")
-            .withAdditionalCompileJavacArguments("test", "--verbose");
+            .withEnablePreviewFeatures("test");
     assertEquals(2, project.modules().size());
-    assertEquals(List.of("processor"), project.spaces().init().modules().names());
-    assertEquals(List.of("production"), project.spaces().main().modules().names());
-    assertEquals(List.of("--verbose"), project.spaces().test().additionalCompileJavacArguments());
+    var init = project.spaces().init();
+    assertEquals(0, init.release());
+    assertEquals(List.of("processor"), init.modules().names());
+    var main = project.spaces().main();
+    assertEquals(0, main.release());
+    assertEquals(List.of("production"), main.modules().names());
+    var test = project.spaces().test();
+    assertEquals(Runtime.version().feature(), test.release());
+    assertEquals(List.of("--enable-preview"), test.additionalCompileJavacArguments());
   }
 }
