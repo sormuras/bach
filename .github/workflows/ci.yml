@@ -24,7 +24,7 @@ jobs:
           TAG=$(<VERSION)-ea
           VERSION=${TAG}+${SHA}
           .bach/bin/bach .bach/src/build.java --project-version ${VERSION}
-      - name: "Create test summary"
+      - name: 'Create test summary'
         if: always()
         uses: test-summary/action@v1
         with:
@@ -38,5 +38,5 @@ jobs:
             LICENSE
             .bach/out/bach-logbook.jfr
             .bach/out/modules
-    - name: "Create custom summary"
-      run: echo '### Hello summary! :rocket:' >> $GITHUB_STEP_SUMMARY
+      - name: 'Create rocket summary'
+        run: echo '### Hello summary! :rocket:' >> $GITHUB_STEP_SUMMARY
