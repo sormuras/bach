@@ -24,6 +24,12 @@ jobs:
           TAG=$(<VERSION)-ea
           VERSION=${TAG}+${SHA}
           .bach/bin/bach .bach/src/build.java --project-version ${VERSION}
+      - name: "Create test summary"
+        if: always()
+        uses: test-summary/action@v1
+        with:
+          output: .bach/out/test-summary.md
+          paths: .bach/out/test-reports/**/TEST-*.xml
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v2
@@ -33,3 +39,4 @@ jobs:
             LICENSE
             .bach/out/bach-logbook.jfr
             .bach/out/modules
+            .bach/out/test-summary.md
