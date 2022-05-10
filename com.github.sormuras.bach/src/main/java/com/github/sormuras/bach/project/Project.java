@@ -102,6 +102,21 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
+  /** {@return new project instance with a new module declaration added to the main space} */
+  public Project withModule(String info) {
+    return withModule("main", info);
+  }
+
+  /** {@return new project instance with a new module declaration added to the specified space} */
+  public Project withModule(String space, String info) {
+    return withModule(spaces.space(space), DeclaredModule.of(info));
+  }
+
+  /** {@return new project instance with a new module declaration added to the specified space} */
+  public Project withModule(ProjectSpace space, DeclaredModule module) {
+    return with(spaces.with(space.withModules(space.modules().with(module))));
+  }
+
   /** {@return new project instance with one or more additional modular dependences} */
   public Project withRequiresModule(String name, String... more) {
     return with(externals.withRequires(name).withRequires(more));

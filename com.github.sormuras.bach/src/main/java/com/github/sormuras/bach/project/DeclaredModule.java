@@ -7,6 +7,11 @@ import java.util.List;
 
 public record DeclaredModule(Path info, ModuleDescriptor descriptor, Folders folders)
     implements Comparable<DeclaredModule> {
+
+  public static DeclaredModule of(String path) {
+    return DeclaredModule.of(Path.of(path.strip()).normalize());
+  }
+
   public static DeclaredModule of(Path path) {
     var info = path.endsWith("module-info.java") ? path : path.resolve("module-info.java");
     var descriptor = ModuleDescriptorSupport.parse(info.normalize());
