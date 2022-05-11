@@ -35,6 +35,18 @@ class MainTests {
         project.externals().tools().stream().map(ExternalTool::name).sorted());
   }
 
+  @Test
+  void info() {
+    var bach = bach();
+    bach.run("info");
+    assertLinesMatch(
+        """
+        info
+        >> ... >>
+        """.lines(),
+        bach.configuration().printer().out().toString().lines());
+  }
+
   static Bach bach(String... args) {
     return bach(ToolCall.of("bach").with(Stream.of(args)));
   }
