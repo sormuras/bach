@@ -2,6 +2,7 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.ModuleLayerSupport;
 import com.github.sormuras.bach.internal.PathSupport;
+import java.lang.module.FindException;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -155,7 +156,11 @@ public interface ToolFinder {
     record SupplierToolFinder(Supplier<ToolFinder> supplier) implements ToolFinder {
       @Override
       public List<Tool> findAll() {
-        return supplier.get().findAll();
+        try {
+          return supplier.get().findAll();
+        } catch (FindException ignore) {
+          return List.of();
+        }
       }
     }
     return new SupplierToolFinder(supplier);

@@ -30,6 +30,6 @@ public record Paths(Path root, Path out) {
   }
 
   public Path externalTools(String first, String... more) {
-    return externalModules().resolve(Path.of(first, more));
+    return externalTools().resolve(Path.of(first, more));
   }
 }

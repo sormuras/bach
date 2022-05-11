@@ -141,6 +141,7 @@ public final class Main implements ToolProvider {
         return 0;
       } catch (RuntimeException exception) {
         printer.err(exception.getClass().getSimpleName() + ": " + exception.getMessage());
+        exception.printStackTrace(printer.err());
         return 2;
       } finally {
         recording.stop();
