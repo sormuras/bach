@@ -42,9 +42,14 @@ class MainTests {
     assertLinesMatch(
         """
         info
+        >>>>
+        Tools
+        >>>>
+                    bach -> com.github.sormuras.bach/bach [Main]
         >> ... >>
         """.lines(),
-        bach.configuration().printer().out().toString().lines());
+        bach.configuration().printer().out().toString().lines(),
+        bach.configuration().printer().toString());
   }
 
   static Bach bach(String... args) {
