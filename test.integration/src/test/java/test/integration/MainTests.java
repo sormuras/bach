@@ -47,7 +47,8 @@ class MainTests {
         >>>>
                     bach -> com.github.sormuras.bach/bach [Main]
         >> ... >>
-        """.lines(),
+        """
+            .lines(),
         bach.configuration().printer().out().toString().lines(),
         bach.configuration().printer().toString());
   }
