@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
@@ -78,6 +79,10 @@ public interface ToolFinder {
     return new ServiceLoaderToolFinder(layer, loader);
   }
 
+  static ToolFinder ofModularTools(Path... paths) {
+    return ofSupplier(() -> of(ModuleFinder.of(paths), false));
+  }
+
   static ToolFinder ofSystemTools() {
     return ToolFinder.of(ClassLoader.getSystemClassLoader());
   }
@@ -144,6 +149,16 @@ public interface ToolFinder {
       }
     }
     return new ProgramsToolFinder(directory, java, argsfile);
+  }
+
+  static ToolFinder ofSupplier(Supplier<ToolFinder> supplier) {
+    record SupplierToolFinder(Supplier<ToolFinder> supplier) implements ToolFinder {
+      @Override
+      public List<Tool> findAll() {
+        return supplier.get().findAll();
+      }
+    }
+    return new SupplierToolFinder(supplier);
   }
 
   static ToolFinder compose(ToolFinder... finders) {

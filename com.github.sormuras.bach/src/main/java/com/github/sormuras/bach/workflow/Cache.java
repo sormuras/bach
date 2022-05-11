@@ -28,7 +28,7 @@ public class Cache implements ToolOperator {
   void cacheAllExternalTools(Bach bach) {
     var calls = new ArrayList<ToolCall>();
     for (var external : bach.project().externals().tools()) {
-      var directory = bach.configuration().paths().root(".bach", "external-tools", external.name());
+      var directory = bach.configuration().paths().externalTools(external.name());
       if (external.from().isPresent()) {
         var source = external.from().get();
         var begin = source.lastIndexOf('/') + 1;
@@ -50,7 +50,7 @@ public class Cache implements ToolOperator {
     if (modules.isEmpty()) return;
     var printer = bach.configuration().printer();
     var verbose = bach.configuration().isVerbose();
-    var externals = bach.configuration().paths().root(".bach", "external-modules");
+    var externals = bach.configuration().paths().externalModules();
     var finder = ModuleFinder.of(externals);
     module_loop:
     for (var module : modules) {
@@ -71,7 +71,7 @@ public class Cache implements ToolOperator {
   void cacheMissingExternalModules(Bach bach) {
     var printer = bach.configuration().printer();
     var verbose = bach.configuration().isVerbose();
-    var externals = bach.configuration().paths().root(".bach", "external-modules");
+    var externals = bach.configuration().paths().externalModules();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
     while (true) {

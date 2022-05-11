@@ -5,11 +5,15 @@ import java.util.Set;
 public record Configuration(Printer printer, Flags flags, Paths paths, ToolFinder finder) {
 
   public static Configuration ofDefaults() {
-    return new Configuration(
-        Printer.ofSystem(),
-        new Flags(Set.of()),
-        Paths.ofCurrentWorkingDirectory(),
-        ToolFinder.ofSystemTools());
+    var printer = Printer.ofSystem();
+    var paths = Paths.ofCurrentWorkingDirectory();
+    var flags = new Flags(Set.of());
+    var finder =
+        ToolFinder.compose(
+            ToolFinder.ofModularTools(paths.externalModules()),
+            ToolFinder.ofJavaTools(paths.externalTools()),
+            ToolFinder.ofSystemTools());
+    return new Configuration(printer, flags, paths, finder);
   }
 
   public Configuration with(Printer printer) {

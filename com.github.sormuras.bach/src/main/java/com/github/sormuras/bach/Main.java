@@ -63,8 +63,8 @@ public final class Main implements ToolProvider {
     var finder =
         ToolFinder.compose(
             ToolFinder.of(layer),
-            ToolFinder.of(ModuleFinder.of(paths.root(".bach", "external-modules")), false),
-            ToolFinder.ofJavaTools(paths.root(".bach", "external-tools")),
+            ToolFinder.ofModularTools(paths.externalModules()),
+            ToolFinder.ofJavaTools(paths.externalTools()),
             ToolFinder.ofSystemTools(),
             ToolFinder.ofNativeToolsInJavaHome("jarsigner", "java", "jdeprscan", "jfr"));
 

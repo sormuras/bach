@@ -53,7 +53,7 @@ public class Compile implements ToolOperator {
         javac = javac.with("--module-source-path", moduleSourcePath);
       }
 
-      var externalModules = Stream.of(paths.root(".bach", "external-modules"));
+      var externalModules = Stream.of(paths.externalModules());
       var requiredModules =
           space.requires().stream().map(required -> paths.out(required, "modules"));
       var modulePath =

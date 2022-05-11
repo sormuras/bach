@@ -46,7 +46,7 @@ public class Test implements ToolOperator {
               paths.out("test", "modules", name + ".jar"),
               paths.out("main", "modules"),
               paths.out("test", "modules"),
-              paths.root(".bach", "external-modules"));
+              paths.externalModules());
       bach.run(
           ToolFinder.of(moduleFinder, true, name),
           ToolCall.of("junit")
