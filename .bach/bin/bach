@@ -10,12 +10,15 @@ if [[ $1 == 'init' ]]; then
 fi
 
 if [ "`echo .bach/bin/*.jar`" == ".bach/bin/*.jar" ]; then
-  if [[ ! -f '.bach/bach-init.version' ]]; then
+  if [[ -f '.bach/src/bootstrap.java' ]]; then
+    java .bach/src/bootstrap.java
+  elif [[ -f '.bach/bach-init.version' ]]; then
+    VERSION=$(<.bach/bach-init.version)
+    jshell -R-Dbach-version=$VERSION https://git.io/bach-init
+  else
     echo "Usage: bach init VERSION"
     exit 1
   fi
-  VERSION=$(<.bach/bach-init.version)
-  jshell -R-Dbach-version=$VERSION https://git.io/bach-init
 fi
 
 if [[ $1 == 'boot' ]]; then

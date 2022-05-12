@@ -10,12 +10,15 @@ IF "%~1" == "init" (
 )
 
 IF NOT EXIST ".bach\bin\*.jar" (
-  IF NOT EXIST ".bach\bach-init.version" (
+  IF EXIST ".bach\src\bootstrap.java" (
+    java .bach\src\bootstrap.java
+  ) ELSE IF EXIST ".bach\bach-init.version" (
+    SET /p VERSION=<.bach\bach-init.version
+    jshell -R-Dbach-version=%VERSION% https://git.io/bach-init
+  ) ELSE (
     ECHO "Usage: bach init VERSION"
     EXIT /B 1
   )
-  SET /p VERSION=<.bach\bach-init.version
-  jshell -R-Dbach-version=%VERSION% https://git.io/bach-init
 )
 
 IF "%~1" == "boot" (
