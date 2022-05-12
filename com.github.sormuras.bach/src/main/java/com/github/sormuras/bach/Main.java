@@ -233,6 +233,7 @@ public final class Main implements ToolProvider {
       var tests = DeclaredModules.of();
       for (var path : stream.toList()) {
         var uri = path.toUri().toString();
+        if (uri.contains("/.bach/")) continue;
         var module = DeclaredModule.of(path);
         if (uri.contains("/init/")) {
           inits = inits.with(module);
