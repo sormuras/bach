@@ -13,7 +13,7 @@ class bootstrap {
     var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
 
     var bin = Path.of(".bach/bin");
-    delete(bin, "com.github.sormuras.bach@*.jar");
+    delete(bin, "com.github.sormuras.bach*.jar");
     deleteWorkspaces();
 
     var classes = Path.of(".bach/out/.bootstrap");
