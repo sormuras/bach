@@ -7,16 +7,16 @@ import java.util.Comparator;
 import java.util.spi.ToolProvider;
 
 /** Compile and package Bach's main module. */
-class bootstrap {
+class init {
   public static void main(String... args) throws Exception {
     var module = "com.github.sormuras.bach";
-    var version = Files.readString(Path.of("VERSION")) + "+BOOTSTRAP";
+    var version = Files.readString(Path.of("VERSION")) + "+bach-init";
 
     var bin = Path.of(".bach/bin");
     delete(bin, "com.github.sormuras.bach*.jar");
     deleteWorkspaces();
 
-    var classes = Path.of(".bach/out/.bootstrap");
+    var classes = Path.of(".bach/out/bach-init");
     run(
         "javac",
         "--module",
