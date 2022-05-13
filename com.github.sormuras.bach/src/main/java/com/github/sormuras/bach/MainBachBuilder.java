@@ -8,7 +8,9 @@ import com.github.sormuras.bach.project.DeclaredModules;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
@@ -135,6 +137,13 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
     cli.project_version_date().ifPresent(date -> it.set(it.get().withVersionDate(date)));
     cli.project_targets_java().ifPresent(java -> it.set(it.get().withTargetsJava(java)));
     cli.project_launcher().ifPresent(launcher -> it.set(it.get().withLauncher(launcher)));
+    for (var libraryAndVersion : cli.project_with_external_modules()) {
+      var deque = new ArrayDeque<>(List.of(libraryAndVersion.split("[@:]")));
+      var library = deque.removeFirst();
+      var version = deque.removeFirst();
+      var classifiers = deque.toArray(String[]::new);
+      it.set(it.get().withExternalModules(library, version, classifiers));
+    }
     return it.get();
   }
 
