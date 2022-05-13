@@ -1,3 +1,4 @@
+/** Defines Bach's API. */
 module com.github.sormuras.bach {
   exports com.github.sormuras.bach;
   exports com.github.sormuras.bach.project;
