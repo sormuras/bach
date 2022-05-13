@@ -29,7 +29,15 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
     commandLineArguments.verbose().ifPresent(__ -> flags.add(Flag.VERBOSE));
     commandLineArguments.dry_run().ifPresent(__ -> flags.add(Flag.DRY_RUN));
 
-    var paths = Paths.ofRoot(commandLineArguments.root_directory().orElse(""));
+    var root = Path.of(commandLineArguments.root_directory().orElse(""));
+    var paths =
+        new Paths(
+            root,
+            commandLineArguments
+                .output_directory()
+                .map(Path::of)
+                .orElse(root.resolve(".bach/out")));
+
     var fileArguments = loadFileArguments(paths, "project-info.args");
     var projectInfoLayer = loadModuleLayer(paths, "project-info");
 
