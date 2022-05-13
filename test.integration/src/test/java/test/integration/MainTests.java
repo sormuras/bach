@@ -10,10 +10,10 @@ import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
+import com.github.sormuras.bach.project.ExternalModuleLocator.SingleExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SormurasBachExternalModulesProperties;
 import com.github.sormuras.bach.project.ExternalTool;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,8 @@ class MainTests {
             .with("--project-name", "NAME")
             .with("--project-version", "1.2.3")
             // ...
+            .with("--project-with-external-module", "org.example.foo@https//foo.jar")
+            .with("--project-with-external-module", "org.example.bar@https//bar.jar")
             .with("--project-with-external-modules", "junit@5.8.2")
             .with("--project-with-external-modules", "NAME@VERSION:OS:ARCH")
             // initial tool call
@@ -56,9 +58,13 @@ class MainTests {
     assertEquals("NAME", project.name().value());
     assertEquals("1.2.3", project.version().value());
     assertEquals(
-        List.of(
-            SormurasBachExternalModulesProperties.of("junit", "5.8.2").caption(),
-            SormurasBachExternalModulesProperties.of("NAME", "VERSION", "OS", "ARCH").caption()),
+        Stream.of(
+                new SingleExternalModuleLocator("org.example.foo", "https//foo.jar"),
+                new SingleExternalModuleLocator("org.example.bar", "https//bar.jar"),
+                SormurasBachExternalModulesProperties.of("junit", "5.8.2"),
+                SormurasBachExternalModulesProperties.of("NAME", "VERSION", "OS", "ARCH"))
+            .map(ExternalModuleLocator::caption)
+            .toList(),
         project.externals().locators().list().stream()
             .map(ExternalModuleLocator::caption)
             .toList());

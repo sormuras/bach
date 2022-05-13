@@ -19,6 +19,7 @@ public record CommandLineInterface(
     Optional<String> project_version_date,
     Optional<String> project_targets_java,
     Optional<String> project_launcher,
+    List<String> project_with_external_module,
     List<String> project_with_external_modules,
     // Initial Tool Call
     @Opt(help = "The initial tool call: TOOL-NAME [TOOL-ARGS...]") List<String> command) {}

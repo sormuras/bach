@@ -137,6 +137,12 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
     cli.project_version_date().ifPresent(date -> it.set(it.get().withVersionDate(date)));
     cli.project_targets_java().ifPresent(java -> it.set(it.get().withTargetsJava(java)));
     cli.project_launcher().ifPresent(launcher -> it.set(it.get().withLauncher(launcher)));
+    for (var moduleAndLocation : cli.project_with_external_module()) {
+      var split = moduleAndLocation.split("@");
+      var name = split[0];
+      var from = split[1]; // FEATURE Translate from Maven coordinates?
+      it.set(it.get().withExternalModule(name, from));
+    }
     for (var libraryAndVersion : cli.project_with_external_modules()) {
       var deque = new ArrayDeque<>(List.of(libraryAndVersion.split("[@:]")));
       var library = deque.removeFirst();
