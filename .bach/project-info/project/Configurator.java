@@ -1,11 +1,13 @@
 package project;
 
 import com.github.sormuras.bach.Main;
-import com.github.sormuras.bach.project.Project;
+import com.github.sormuras.bach.Paths;
+import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ToolFinder;
 
 public class Configurator implements com.github.sormuras.bach.Configurator {
   @Override
-  public Project configure(Project project) {
+  public Project configureProject(Project project) {
     // Operate on the preconfigured project instance.
     return project
         // Modules of main module space target Java release 17.
@@ -41,5 +43,15 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
             #SIZE=3519780\
             &SHA-256=a356bb0236b29c57a3ab678f17a7b027aad603b0960c183a18f1fe322e4f38ea
             """);
+  }
+
+  @Override
+  public ToolFinder configureToolFinder(Paths paths) {
+    return ToolFinder.compose(
+        ToolFinder.of(getClass().getModule().getLayer()),
+        ToolFinder.ofModularTools(paths.externalModules()),
+        ToolFinder.ofJavaTools(paths.externalTools()),
+        ToolFinder.ofSystemTools(),
+        ToolFinder.ofNativeToolsInJavaHome("jarsigner", "java", "jdeprscan", "jfr"));
   }
 }

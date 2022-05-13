@@ -2,7 +2,7 @@ package test.integration.project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.sormuras.bach.project.Project;
+import com.github.sormuras.bach.Project;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

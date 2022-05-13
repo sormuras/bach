@@ -1,9 +1,20 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.project.Project;
-
+@FunctionalInterface
 public interface Configurator {
-  default Project configure(Project project) {
-    return project;
+
+  static Configurator identity() {
+    return project -> project;
+  }
+
+  Project configureProject(Project project);
+
+  default ToolFinder configureToolFinder(Paths paths) {
+    return ToolFinder.compose(
+        ToolFinder.of(getClass().getModule().getLayer()),
+        ToolFinder.ofModularTools(paths.externalModules()),
+        ToolFinder.ofJavaTools(paths.externalTools()),
+        ToolFinder.ofSystemTools(),
+        ToolFinder.ofNativeToolsInJavaHome("java"));
   }
 }

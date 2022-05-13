@@ -2,7 +2,6 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.internal.MirroringStringPrintWriter;
 import com.github.sormuras.bach.internal.StringSupport;
-import com.github.sormuras.bach.project.Project;
 import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;

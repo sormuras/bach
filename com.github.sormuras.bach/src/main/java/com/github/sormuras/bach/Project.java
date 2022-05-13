@@ -1,5 +1,14 @@
-package com.github.sormuras.bach.project;
+package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.DeclaredModule;
+import com.github.sormuras.bach.project.ExternalModuleLocator;
+import com.github.sormuras.bach.project.ExternalTool;
+import com.github.sormuras.bach.project.ProjectComponent;
+import com.github.sormuras.bach.project.ProjectExternals;
+import com.github.sormuras.bach.project.ProjectName;
+import com.github.sormuras.bach.project.ProjectSpace;
+import com.github.sormuras.bach.project.ProjectSpaces;
+import com.github.sormuras.bach.project.ProjectVersion;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,9 +34,7 @@ public record Project(
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
   }
 
-  sealed interface Component permits ProjectExternals, ProjectName, ProjectSpaces, ProjectVersion {}
-
-  private Project with(Component component) {
+  private Project with(ProjectComponent component) {
     return new Project(
         component instanceof ProjectName name ? name : name,
         component instanceof ProjectVersion version ? version : version,
