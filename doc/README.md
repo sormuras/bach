@@ -1,6 +1,0 @@
-# Documentation
-
-## ServiveFinder
-
-[servicefinder](servicefinder)
-
