@@ -3,6 +3,7 @@
     <toRun name="All in module com.github.sormuras.bach" type="JUnit" />
     <toRun name="All in module test.base" type="JUnit" />
     <toRun name="All in module test.integration" type="JUnit" />
+    <toRun name="All in module test.workflow" type="JUnit" />
     <method v="2" />
   </configuration>
 </component>

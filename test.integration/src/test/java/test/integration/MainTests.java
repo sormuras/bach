@@ -23,6 +23,7 @@ class MainTests {
         com.github.sormuras.bach
         test.base
         test.integration
+        test.workflow
         """
             .lines(),
         project.modules().stream().map(DeclaredModule::name).sorted());

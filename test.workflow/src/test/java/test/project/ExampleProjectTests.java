@@ -1,4 +1,4 @@
-package test.integration.workflow;
+package test.project;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class WorkflowTests {
+class ExampleProjectTests {
 
   @ParameterizedTest
   @MethodSource
@@ -32,8 +32,8 @@ class WorkflowTests {
   }
 
   static List<Path> buildExampleProject() {
-    try (var stream =
-        Files.newDirectoryStream(Path.of("doc/example-projects"), Files::isDirectory)) {
+    var projects = Path.of("test.workflow/example-projects");
+    try (var stream = Files.newDirectoryStream(projects, Files::isDirectory)) {
       return StreamSupport.stream(stream.spliterator(), false).toList();
     } catch (Exception exception) {
       throw new RuntimeException(exception);

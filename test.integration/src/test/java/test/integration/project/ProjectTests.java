@@ -17,10 +17,11 @@ class ProjectTests {
 
   @Test
   void customProject() {
+    var base = "test.workflow/example-projects/processing-code";
     var project =
         Project.ofDefaults()
-            .withModule("init", "doc/example-projects/processing-code/processor/src/init/java")
-            .withModule("main", "doc/example-projects/processing-code/production/src/main/java")
+            .withModule("init", base + "/processor/src/init/java")
+            .withModule("main", base + "/production/src/main/java")
             .withEnablePreviewFeatures("test");
     assertEquals(2, project.modules().size());
     var init = project.spaces().init();
