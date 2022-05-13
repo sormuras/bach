@@ -1,4 +1,4 @@
-package test.integration.project;
+package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
