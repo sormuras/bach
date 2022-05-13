@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 public record ProjectExternals(
     Set<String> requires, ExternalModuleLocators locators, ExternalTools tools)
-    implements Project.Component {
+    implements ProjectComponent {
 
   public static ProjectExternals of() {
     return new ProjectExternals(Set.of(), ExternalModuleLocators.of(), ExternalTools.of());

@@ -2,7 +2,7 @@ package com.github.sormuras.bach.project;
 
 import java.util.Objects;
 
-public record ProjectName(String value) implements Project.Component {
+public record ProjectName(String value) implements ProjectComponent {
   public ProjectName {
     Objects.requireNonNull(value);
   }

@@ -3,7 +3,7 @@ package com.github.sormuras.bach.project;
 import java.lang.module.ModuleDescriptor;
 import java.time.ZonedDateTime;
 
-public record ProjectVersion(String value, ZonedDateTime date) implements Project.Component {
+public record ProjectVersion(String value, ZonedDateTime date) implements ProjectComponent {
   public ProjectVersion {
     ModuleDescriptor.Version.parse(value);
   }

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ProjectSpaces(ProjectSpace init, ProjectSpace main, ProjectSpace test)
-    implements Project.Component {
+    implements ProjectComponent {
   public List<ProjectSpace> list() {
     return List.of(init, main, test);
   }
