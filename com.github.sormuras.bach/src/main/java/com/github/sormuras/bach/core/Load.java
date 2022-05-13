@@ -2,7 +2,7 @@ package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolOperator;
-import com.github.sormuras.bach.internal.ArgumentsParser;
+import com.github.sormuras.bach.internal.ArgVester;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Files;
@@ -15,7 +15,7 @@ public class Load implements ToolOperator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var options = ArgumentsParser.create(Options.class).parse(args);
+    var options = ArgVester.create(Options.class).parse(args);
     var reload = options.reload().orElse(Boolean.FALSE);
     var target = options.target();
     if (Files.exists(target) && !reload) return 0;

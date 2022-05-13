@@ -1,6 +1,6 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.ArgumentsParser;
+import com.github.sormuras.bach.internal.ArgVester;
 import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.ModuleLayerSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
@@ -14,14 +14,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-record MainBachBuilder(Printer printer, ArgumentsParser<CommandLineInterface> parser) {
+record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) {
 
   MainBachBuilder(Printer printer) {
-    this(printer, ArgumentsParser.create(CommandLineInterface.class));
+    this(printer, ArgVester.create(CommandLineInterface.class));
   }
 
   Bach build(String... args) {
-    return build(parser.parse(true, args));
+    return build(parser.parse(args));
   }
 
   Bach build(CommandLineInterface commandLineArguments) {

@@ -1,6 +1,6 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.ArgumentsParser.Opt;
+import com.github.sormuras.bach.internal.ArgVester.Opt;
 import java.util.List;
 import java.util.Optional;
 

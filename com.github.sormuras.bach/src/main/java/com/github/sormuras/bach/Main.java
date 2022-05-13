@@ -33,7 +33,7 @@ public record Main(String name) implements ToolProvider {
   private int run(Printer printer, String... args) {
     var builder = new MainBachBuilder(printer);
     var parser = builder.parser();
-    var arguments = parser.parse(true, args);
+    var arguments = parser.parse(args);
     if (arguments.help().orElse(false)) {
       printer.out(parser.toHelp(name()));
       return 0;

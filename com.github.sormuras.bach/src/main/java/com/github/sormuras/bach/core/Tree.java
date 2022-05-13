@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.core;
 
-import com.github.sormuras.bach.internal.ArgumentsParser;
+import com.github.sormuras.bach.internal.ArgVester;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +25,7 @@ public class Tree implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var arguments = ArgumentsParser.create(Arguments.class).parse(args);
+    var arguments = ArgVester.create(Arguments.class).parse(args);
     var mode = arguments.mode().orElse(Mode.PRINT);
     var path = arguments.paths().isEmpty() ? Path.of("") : arguments.paths().get(0);
     try {

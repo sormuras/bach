@@ -1,6 +1,6 @@
 package com.github.sormuras.bach.core;
 
-import com.github.sormuras.bach.internal.ArgumentsParser;
+import com.github.sormuras.bach.internal.ArgVester;
 import com.github.sormuras.bach.internal.PathSupport;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -17,7 +17,7 @@ public class Checksum implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var arguments = ArgumentsParser.create(Arguments.class).parse(args);
+    var arguments = ArgVester.create(Arguments.class).parse(args);
     var path = arguments.file();
     var algorithm = arguments.algorithm().orElse("SHA-256");
     var computed = PathSupport.computeChecksum(path, algorithm);
