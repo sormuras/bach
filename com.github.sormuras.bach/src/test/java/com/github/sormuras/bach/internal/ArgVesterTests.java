@@ -95,7 +95,15 @@ class ArgVesterTests {
                 dynamicCheck(
                     "--module-info-find-pattern",
                     "SYNTAX:PATTERN",
-                    args.module_info_find_pattern()),
+                    args.module_info_find_pattern()))),
+        dynamicContainer(
+            "project properties",
+            Stream.of(
+                dynamicCheck("--project-name", "NAME", args.project_name()),
+                dynamicCheck("--project-version", "VERSION", args.project_version()),
+                dynamicCheck("--project-version-date", "DATE", args.project_version_date()),
+                dynamicCheck("--project-targets-java", "RELEASE", args.project_targets_java()),
+                dynamicCheck("--project-launcher", "LAUNCHER", args.project_launcher()),
                 dynamicCheck(
                     "--project-with-external-module",
                     List.of("M@A", "N@B"),
@@ -104,14 +112,6 @@ class ArgVesterTests {
                     "--project-with-external-modules",
                     List.of("X@V", "Y:V:C"),
                     args.project_with_external_modules()))),
-        dynamicContainer(
-            "project properties",
-            Stream.of(
-                dynamicCheck("--project-name", "NAME", args.project_name()),
-                dynamicCheck("--project-version", "VERSION", args.project_version()),
-                dynamicCheck("--project-version-date", "DATE", args.project_version_date()),
-                dynamicCheck("--project-targets-java", "RELEASE", args.project_targets_java()),
-                dynamicCheck("--project-launcher", "LAUNCHER", args.project_launcher()))),
         dynamicContainer(
             "initial tool call",
             Stream.of(dynamicCheck("command", List.of("TOOL-NAME", "TOOL-ARGS"), args.command()))));
