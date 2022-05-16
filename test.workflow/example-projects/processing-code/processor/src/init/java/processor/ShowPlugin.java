@@ -24,7 +24,7 @@ public class ShowPlugin implements Plugin, TaskListener {
 
   @Override
   public void init(JavacTask task, String... args) {
-    out = new PrintWriter(System.out);
+    out = new StringPrintWriter(); // new PrintWriter(System.out);
     out.printf("#%n# ShowPlugin.init%n#%n");
     treeUtils = DocTrees.instance(task);
     task.addTaskListener(this);

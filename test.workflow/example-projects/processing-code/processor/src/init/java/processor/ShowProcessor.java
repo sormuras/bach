@@ -22,7 +22,7 @@ public class ShowProcessor extends AbstractProcessor {
 
   @Override
   public void init(ProcessingEnvironment pEnv) {
-    out = new PrintWriter(System.out);
+    out = new StringPrintWriter(); // new PrintWriter(System.out);
     out.printf("#%n# ShowProcessor.init%n#%n");
     treeUtils = DocTrees.instance(pEnv);
   }

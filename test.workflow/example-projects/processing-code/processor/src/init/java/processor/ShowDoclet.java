@@ -39,7 +39,7 @@ public class ShowDoclet implements Doclet {
   public boolean run(DocletEnvironment environment) {
     DocTrees treeUtils = environment.getDocTrees();
     Set<? extends Element> elements = environment.getSpecifiedElements();
-    PrintWriter out = new PrintWriter(System.out);
+    PrintWriter out = new StringPrintWriter(); // new PrintWriter(System.out);
     out.printf("#%n# ShowDoclet.run%n#%n");
 
     new ShowCode(treeUtils).show(elements, out);
