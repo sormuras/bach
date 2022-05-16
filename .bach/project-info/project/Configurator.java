@@ -33,7 +33,7 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
             #SHA-256=0c993996571cee9555ef947eb198145ddc30a2d834fe606a6f16780afd8aea7b
             """)
         // Locate JUnit modules via https://github.com/sormuras/bach-external-modules
-        .withExternalModules("junit", "5.8.2")
+        .withExternalModules("junit", "5.9.0-M1")
         // Locate tool "format@1.15.0" via an explicit URL with checksum fragments.
         .withExternalTool(
             "format@1.15.0",
