@@ -21,7 +21,7 @@ public record Main(String name) implements ToolProvider {
 
   /** {@return an instance of {@code Bach} using the printer and configured by the arguments} */
   public static Bach bach(Printer printer, String... args) {
-    return new MainBachBuilder(printer).build(args);
+    return new MainSupport(printer).bach(args);
   }
 
   @Override
@@ -31,7 +31,7 @@ public record Main(String name) implements ToolProvider {
 
   /** {@return the result of running the initial tool call} */
   private int run(Printer printer, String... args) {
-    var builder = new MainBachBuilder(printer);
+    var builder = new MainSupport(printer);
     var parser = builder.parser();
     var arguments = parser.parse(args);
     if (arguments.help().orElse(false)) {
@@ -43,7 +43,7 @@ public record Main(String name) implements ToolProvider {
       printer.err("No initial command");
       return 1;
     }
-    var bach = builder.build(arguments);
+    var bach = builder.bach(arguments);
     return run(bach, ToolCall.of(arguments.command()));
   }
 

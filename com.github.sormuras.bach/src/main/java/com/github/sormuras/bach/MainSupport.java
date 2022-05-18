@@ -3,34 +3,27 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.internal.ArgVester;
 import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
 import com.github.sormuras.bach.internal.ModuleLayerSupport;
-import com.github.sormuras.bach.project.DeclaredModule;
-import com.github.sormuras.bach.project.DeclaredModules;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) {
+record MainSupport(Printer printer, ArgVester<CommandLineInterface> parser) {
 
-  MainBachBuilder(Printer printer) {
+  MainSupport(Printer printer) {
     this(printer, ArgVester.create(CommandLineInterface.class));
   }
 
-  Bach build(String... args) {
-    return build(parser.parse(args));
+  Bach bach(String... args) {
+    return bach(parser.parse(args));
   }
 
-  Bach build(CommandLineInterface commandLineArguments) {
-    var flags = EnumSet.noneOf(Flag.class);
-    commandLineArguments.verbose().ifPresent(__ -> flags.add(Flag.VERBOSE));
-    commandLineArguments.dry_run().ifPresent(__ -> flags.add(Flag.DRY_RUN));
-
+  Bach bach(CommandLineInterface commandLineArguments) {
     var root = Path.of(commandLineArguments.root_directory().orElse(""));
     var paths =
         new Paths(
@@ -45,12 +38,19 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
 
     var configurator = loadConfigurator(projectInfoLayer);
 
-    var configuration =
-        Configuration.ofDefaults()
-            .with(printer)
-            .with(paths)
-            .with(new Flags(flags))
-            .with(configurator.configureToolFinder(paths));
+    var flags =
+        configurator
+            .configureFlags()
+            .with(
+                Flag.VERBOSE,
+                commandLineArguments.verbose().or(fileArguments::verbose).orElse(false))
+            .with(
+                Flag.DRY_RUN,
+                commandLineArguments.dry_run().or(fileArguments::dry_run).orElse(false));
+
+    var finder = configurator.configureToolFinder(paths);
+
+    var configuration = new Configuration(printer, flags, paths, finder);
 
     var pattern =
         commandLineArguments
@@ -58,10 +58,8 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
             .or(fileArguments::module_info_find_pattern)
             .orElse("glob:**/module-info.java");
 
-    var project = Project.ofDefaults();
-    project = withWalkingDirectory(project, paths.root(), pattern);
+    var project = configurator.configureProject(paths, pattern);
     project = withApplyingArguments(project, fileArguments);
-    project = withApplyingConfigurator(project, configurator);
     project = withApplyingArguments(project, commandLineArguments);
     return new Bach(configuration, project);
   }
@@ -126,10 +124,6 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
     }
   }
 
-  static Project withApplyingConfigurator(Project project, Configurator configurator) {
-    return configurator.configureProject(project);
-  }
-
   static Project withApplyingArguments(Project project, CommandLineInterface cli) {
     var it = new AtomicReference<>(project);
     cli.project_name().ifPresent(name -> it.set(it.get().withName(name)));
@@ -151,41 +145,5 @@ record MainBachBuilder(Printer printer, ArgVester<CommandLineInterface> parser) 
       it.set(it.get().withExternalModules(library, version, classifiers));
     }
     return it.get();
-  }
-
-  /**
-   * {@return new project instance configured by finding {@code module-info.java} files matching the
-   * given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} below the
-   * specified root directory}
-   */
-  static Project withWalkingDirectory(Project project, Path directory, String syntaxAndPattern) {
-    var name = directory.normalize().toAbsolutePath().getFileName();
-    if (name != null) project = project.withName(name.toString());
-    var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
-    try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
-      var inits = DeclaredModules.of();
-      var mains = DeclaredModules.of();
-      var tests = DeclaredModules.of();
-      for (var path : stream.toList()) {
-        var uri = path.toUri().toString();
-        if (uri.contains("/.bach/")) continue;
-        var module = DeclaredModule.of(path);
-        if (uri.contains("/init/")) {
-          inits = inits.with(module);
-          continue;
-        }
-        if (uri.contains("/test/")) {
-          tests = tests.with(module);
-          continue;
-        }
-        mains = mains.with(module);
-      }
-      project = project.with(project.spaces().init().withModules(inits));
-      project = project.with(project.spaces().main().withModules(mains));
-      project = project.with(project.spaces().test().withModules(tests));
-    } catch (Exception exception) {
-      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
-    }
-    return project;
   }
 }

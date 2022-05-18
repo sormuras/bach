@@ -80,8 +80,12 @@ public interface ToolFinder {
     return new ServiceLoaderToolFinder(layer, loader);
   }
 
-  static ToolFinder ofModularTools(Path... paths) {
-    return ofSupplier(() -> of(ModuleFinder.of(paths), false));
+  static ToolFinder ofToolsInModuleLayer(Module module) {
+    return of(module.getLayer());
+  }
+
+  static ToolFinder ofToolsInModulePath(Path... paths) {
+    return ofToolFinderSupplier(() -> of(ModuleFinder.of(paths), false));
   }
 
   static ToolFinder ofSystemTools() {
@@ -93,10 +97,6 @@ public interface ToolFinder {
     tools.add(Tool.ofNativeToolInJavaHome(name));
     Stream.of(more).map(Tool::ofNativeToolInJavaHome).forEach(tools::add);
     return ToolFinder.of(tools.toArray(Tool[]::new));
-  }
-
-  static ToolFinder ofJavaTools(String directory) {
-    return ofJavaTools(Path.of(directory));
   }
 
   static ToolFinder ofJavaTools(Path directory) {
@@ -152,7 +152,7 @@ public interface ToolFinder {
     return new ProgramsToolFinder(directory, java, argsfile);
   }
 
-  static ToolFinder ofSupplier(Supplier<ToolFinder> supplier) {
+  static ToolFinder ofToolFinderSupplier(Supplier<ToolFinder> supplier) {
     record SupplierToolFinder(Supplier<ToolFinder> supplier) implements ToolFinder {
       @Override
       public List<Tool> findAll() {

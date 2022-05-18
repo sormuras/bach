@@ -48,8 +48,8 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
   @Override
   public ToolFinder configureToolFinder(Paths paths) {
     return ToolFinder.compose(
-        ToolFinder.of(getClass().getModule().getLayer()),
-        ToolFinder.ofModularTools(paths.externalModules()),
+        ToolFinder.ofToolsInModuleLayer(getClass().getModule()),
+        ToolFinder.ofToolsInModulePath(paths.externalModules()),
         ToolFinder.ofJavaTools(paths.externalTools()),
         ToolFinder.ofSystemTools(),
         ToolFinder.ofNativeToolsInJavaHome("jarsigner", "java", "jdeprscan", "jfr"));
