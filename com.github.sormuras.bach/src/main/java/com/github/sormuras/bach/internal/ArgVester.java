@@ -10,6 +10,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
+import java.io.PrintWriter;
 import java.io.Serial;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -34,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.spi.ToolProvider;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -678,6 +680,59 @@ public class ArgVester<R extends Record> {
       throw e;
     } catch (Throwable e) {
       throw new UndeclaredThrowableException(e);
+    }
+  }
+
+  public interface Program {
+    Optional<Boolean> help();
+
+    void main(Printer printer);
+  }
+
+  public record Printer(PrintWriter out, PrintWriter err) {
+    public void out(String line) {
+      out.println(line);
+      out.flush();
+    }
+
+    public void err(String line) {
+      err.println(line);
+      err.flush();
+    }
+  }
+
+  public interface Tool<T extends Record & Program> extends ToolProvider {
+
+    default Lookup lookup() {
+      return MethodHandles.lookup();
+    }
+
+    Class<T> meta();
+
+    @Override
+    default int run(PrintWriter out, PrintWriter err, String... args) {
+      try {
+        var parser = create(lookup(), meta());
+        try {
+          var program = parser.parse(args);
+          if (program.help().orElse(false)) {
+            out.println(parser.toHelp(name()));
+          } else {
+            var printer = new Printer(out, err);
+            program.main(printer);
+          }
+          return 0;
+        } catch (ArgumentParsingException exception) {
+          err.println(parser.toHelp(name()));
+          return 1;
+        } catch (Throwable throwable) {
+          throwable.printStackTrace(err);
+          return 2;
+        }
+      } catch (InvalidMetaDescriptionException exception) {
+        exception.printStackTrace(err);
+        return 3;
+      }
     }
   }
 }
