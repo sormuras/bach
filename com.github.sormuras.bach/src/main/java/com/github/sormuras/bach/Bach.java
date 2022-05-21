@@ -5,19 +5,12 @@ import com.github.sormuras.bach.internal.StringSupport;
 import java.util.List;
 import java.util.Set;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 
 /** Java Shell Builder. */
 public record Bach(Configuration configuration, Project project) implements ToolRunner {
 
   public static Bach ofDefaults() {
     return new Bach(Configuration.ofDefaults(), Project.ofDefaults());
-  }
-
-  public Bach with(ToolFinder... finders) {
-    var stream = Stream.concat(configuration.finder().decompose().stream(), Stream.of(finders));
-    var finder = ToolFinder.compose(stream.toList());
-    return new Bach(configuration.with(finder), project);
   }
 
   @Override

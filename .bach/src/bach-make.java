@@ -21,7 +21,7 @@ class make {
     System.setProperty("java.util.logging.config.file", ".bach/logging.properties");
 
     System.out.println("BEGIN");
-    var bach = Bach.ofDefaults().with(ToolFinder.ofNativeToolsInJavaHome("java"));
+    var bach = Bach.ofDefaults();
     var version = version(bach);
 
     bach.run("banner", "Load required and missing external modules");
@@ -160,6 +160,7 @@ class make {
   static void executeTestsInOtherVM(Bach bach, String module, Path mainModules, Path testModules) {
     bach.run("banner", "Execute tests of module " + module);
     bach.run(
+        ToolFinder.ofNativeToolsInJavaHome("java"),
         ToolCall.of("java")
             .with("-enableassertions")
             .with(
