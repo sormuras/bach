@@ -76,8 +76,7 @@ public record Bach(Configuration configuration, Project project) implements Tool
       event.commit();
       return event.code;
     } finally {
-      printer.out().flush();
-      printer.err().flush();
+      printer.flush();
     }
   }
 }

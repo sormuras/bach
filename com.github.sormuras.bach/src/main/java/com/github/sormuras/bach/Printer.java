@@ -28,4 +28,9 @@ public record Printer(PrintWriter out, PrintWriter err) {
   public void err(String string) {
     err.println(string);
   }
+
+  public void flush() {
+    out.flush();
+    err.flush();
+  }
 }
