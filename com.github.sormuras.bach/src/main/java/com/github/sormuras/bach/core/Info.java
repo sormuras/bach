@@ -4,7 +4,9 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Tool;
 import com.github.sormuras.bach.ToolOperator;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 public class Info implements ToolOperator {
