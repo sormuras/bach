@@ -1,5 +1,6 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.MainSupport;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.spi.ToolProvider;

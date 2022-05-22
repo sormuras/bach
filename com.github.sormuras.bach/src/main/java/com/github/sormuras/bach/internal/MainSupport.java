@@ -1,8 +1,13 @@
-package com.github.sormuras.bach;
+package com.github.sormuras.bach.internal;
 
-import com.github.sormuras.bach.internal.ArgVester;
-import com.github.sormuras.bach.internal.ModuleDescriptorSupport;
-import com.github.sormuras.bach.internal.ModuleLayerSupport;
+import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.CommandLineInterface;
+import com.github.sormuras.bach.Configuration;
+import com.github.sormuras.bach.Configurator;
+import com.github.sormuras.bach.Flag;
+import com.github.sormuras.bach.Paths;
+import com.github.sormuras.bach.Printer;
+import com.github.sormuras.bach.Project;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,17 +18,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-record MainSupport(Printer printer, ArgVester<CommandLineInterface> parser) {
+public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parser) {
 
-  MainSupport(Printer printer) {
+  public MainSupport(Printer printer) {
     this(printer, ArgVester.create(CommandLineInterface.class));
   }
 
-  Bach bach(String... args) {
+  public Bach bach(String... args) {
     return bach(parser.parse(args));
   }
 
-  Bach bach(CommandLineInterface commandLineArguments) {
+  public Bach bach(CommandLineInterface commandLineArguments) {
     var root = Path.of(commandLineArguments.root_directory().orElse(""));
     var paths =
         new Paths(
