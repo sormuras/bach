@@ -4,6 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * A list of source and resource folders, possibly targeted to a specific Java feature release
+ * version.
+ */
 public record Folders(List<Folder> list) {
   public static Folders of(Path info) {
     var parent = info.getParent();
@@ -17,7 +21,7 @@ public record Folders(List<Folder> list) {
           stream
               .filter(Files::isDirectory)
               .filter(path -> path.getFileName().toString().startsWith("java"))
-              .map(Folder::of)
+              .map(path -> Folder.of(path, FolderType.SOURCES))
               .sorted()
               .toList());
     } catch (Exception exception) {

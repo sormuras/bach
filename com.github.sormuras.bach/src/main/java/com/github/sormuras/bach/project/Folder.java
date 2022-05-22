@@ -4,7 +4,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-public record Folder(Path path, int release) implements Comparable<Folder> {
+/**
+ * Targets a folder to a Java feature version, with {@code 0} indicating no target version.
+ *
+ * @param path the directory
+ * @param release the Java feature release version to target, 0 for none
+ * @param types the set of types associated with the directory
+ */
+public record Folder(Path path, int release, FolderTypes types) implements Comparable<Folder> {
   static final Pattern RELEASE_PATTERN = Pattern.compile(".*?(\\d+)$");
 
   static int parseReleaseNumber(String string) {
@@ -12,10 +19,12 @@ public record Folder(Path path, int release) implements Comparable<Folder> {
     return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
   }
 
-  public static Folder of(Path path) {
+  public static Folder of(Path path, FolderType... folderTypes) {
     if (Files.notExists(path)) throw new IllegalArgumentException("No such path: " + path);
     if (Files.isRegularFile(path)) throw new IllegalArgumentException("Not a directory: " + path);
-    return new Folder(path, parseReleaseNumber(path.getFileName().toString()));
+    var release = parseReleaseNumber(path.getFileName().toString());
+    var types = FolderTypes.of(folderTypes);
+    return new Folder(path, release, types);
   }
 
   @Override
