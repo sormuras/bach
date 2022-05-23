@@ -3,6 +3,7 @@ package project;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 
 public class Configurator implements com.github.sormuras.bach.Configurator {
@@ -15,6 +16,17 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
         .withTargetsJava(17)
         .withTargetsJava("test", Runtime.version().feature())
 
+        // Main module compilation tweaks
+        .withAdditionalCompileJavacArguments(
+            "main",
+            ToolCall.of("javac")
+                .with("-g")
+                .with("-parameters")
+                .with("-Werror")
+                .with("-Xlint")
+                .with("-encoding", "UTF-8")
+                .arguments()
+                .toArray(String[]::new))
         // Main module space's entry-point.
         .withLauncher(Main.class.getCanonicalName())
 
