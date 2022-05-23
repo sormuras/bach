@@ -59,6 +59,7 @@ public class Test implements ToolOperator {
           ToolFinder.of(moduleFinder, true, name),
           ToolCall.of("junit")
               .with("--select-module", name)
+              .with("--details", "NONE")
               .with("--reports-dir", paths.out("test-reports", "junit-" + name)),
           ToolRunner.RunModifier.RUN_WITH_PROVIDERS_CLASS_LOADER);
     }
