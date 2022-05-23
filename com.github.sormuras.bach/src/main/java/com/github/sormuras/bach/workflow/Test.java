@@ -10,6 +10,14 @@ import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
 
 public class Test implements ToolOperator {
+
+  static final String NAME = "test";
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     var tester = new Tester(bach, out, err);

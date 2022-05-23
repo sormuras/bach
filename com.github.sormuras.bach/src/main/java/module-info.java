@@ -25,7 +25,8 @@ module com.github.sormuras.bach {
       com.github.sormuras.bach.workflow.Build,
       com.github.sormuras.bach.workflow.Cache,
       com.github.sormuras.bach.workflow.Compile,
-      com.github.sormuras.bach.workflow.Conserve,
+      com.github.sormuras.bach.workflow.CompileClasses,
+      com.github.sormuras.bach.workflow.CompileModules,
       com.github.sormuras.bach.workflow.Launch,
       com.github.sormuras.bach.workflow.Test;
 }

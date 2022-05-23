@@ -7,18 +7,9 @@ import java.io.PrintWriter;
 public class Build implements ToolOperator {
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    bach.run("cache"); // go offline
-
-    for (var space : bach.project().spaces().list()) {
-      if (space.modules().list().isEmpty()) {
-        out.println("No modules declared in %s space.".formatted(space.name()));
-        continue;
-      }
-      bach.run("compile", space.name()); // translate Java source files into class files
-      bach.run("conserve", space.name()); // store compiled classes in modular JAR files
-    }
-
-    bach.run("test");
+    bach.run(Cache.NAME); // go offline and verify cached assets
+    bach.run(Compile.NAME); // compile all modules spaces
+    bach.run(Test.NAME); // start launcher and execute testables in test space
     return 0;
   }
 }

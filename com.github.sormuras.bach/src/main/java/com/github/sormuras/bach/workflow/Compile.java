@@ -1,88 +1,33 @@
 package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolOperator;
-import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
-import com.github.sormuras.bach.project.DeclaredModule;
-import java.io.File;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Compile implements ToolOperator {
+
+  static final String NAME = "compile";
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var project = bach.project();
-    var paths = bach.configuration().paths();
-    var spaces = project.spaces();
-    var space = spaces.space(args[0]);
-    var declarations = space.modules().list();
-
-    out.println(
-        "Compile %d %s module%s..."
-            .formatted(declarations.size(), space.name(), declarations.size() == 1 ? "" : "s"));
-
-    var classes = paths.out(space.name(), "classes");
-
-    var javac = ToolCall.of("javac");
-
-    var release0 = space.targets();
-    if (release0.isPresent()) {
-      javac = javac.with("--release", release0.get());
-    }
-
-    javac =
-        javac.with(
-            "--module",
-            declarations.stream().map(DeclaredModule::name).collect(Collectors.joining(",")));
-    var map =
-        declarations.stream()
-            .collect(Collectors.toMap(DeclaredModule::name, DeclaredModule::toModuleSourcePaths));
-    for (var moduleSourcePath : ModuleSourcePathSupport.compute(map, false)) {
-      javac = javac.with("--module-source-path", moduleSourcePath);
-    }
-
-    var externalModules = Stream.of(paths.externalModules());
-    var requiredModules = space.requires().stream().map(required -> paths.out(required, "modules"));
-    var modulePath =
-        Stream.concat(requiredModules, externalModules)
-            .filter(Files::isDirectory)
-            .map(Path::toString)
-            .toList();
-    if (!modulePath.isEmpty()) {
-      var path = String.join(File.pathSeparator, modulePath);
-      javac = javac.with("--module-path", path);
-      javac = javac.with("--processor-module-path", path);
-    }
-
-    // --patch-module
-    for (var declaration : declarations) {
-      var module = declaration.name();
-      var patches = new ArrayList<String>();
-      for (var requires : space.requires()) {
-        if (spaces.space(requires).modules().find(module).isEmpty()) {
-          continue;
+    for (var space : bach.project().spaces().list()) {
+      var modules = space.modules().list();
+      if (modules.isEmpty()) {
+        if (bach.configuration().isVerbose()) {
+          out.println("No modules declared in %s space.".formatted(space.name()));
         }
-        patches.add(paths.out(requires, "modules", module + ".jar").toString());
+        continue;
       }
-      if (patches.isEmpty()) continue;
-      var patch = String.join(File.pathSeparator, patches);
-      javac = javac.with("--patch-module", module + "=" + patch);
+      var s = modules.size() == 1 ? "" : "s";
+      out.println("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
+      bach.run(CompileClasses.NAME, space.name()); // translate Java source files into class files
+      bach.run(CompileModules.NAME, space.name()); // archive compiled classes in modular JAR files
     }
-
-    var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
-    javac = javac.with("-d", classes0);
-
-    for (var additionalCompileJavacArgument : space.additionalCompileJavacArguments()) {
-      javac = javac.with(additionalCompileJavacArgument);
-    }
-
-    bach.run(javac);
-
     return 0;
   }
 }

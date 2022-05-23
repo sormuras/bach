@@ -7,6 +7,14 @@ import java.io.PrintWriter;
 import java.util.stream.Stream;
 
 public class Launch implements ToolOperator {
+
+  static final String NAME = "launch";
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     var launcher = bach.project().spaces().main().launcher();

@@ -10,7 +10,15 @@ import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
-public class Conserve implements ToolOperator {
+public class CompileModules implements ToolOperator {
+
+  static final String NAME = "compile-modules";
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     var project = bach.project();
@@ -18,14 +26,8 @@ public class Conserve implements ToolOperator {
     var spaces = project.spaces();
     var space = spaces.space(args[0]);
     var declarations = space.modules().list();
-
-    out.println(
-        "Conserve classes of %d %s module%s..."
-            .formatted(declarations.size(), space.name(), declarations.size() == 1 ? "" : "s"));
-
     var classes = paths.out(space.name(), "classes");
     var modules = paths.out(space.name(), "modules");
-
     var release0 = space.targets();
     var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
 

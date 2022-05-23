@@ -13,6 +13,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class Cache implements ToolOperator {
+
+  static final String NAME = "cache";
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     cacheAllExternalTools(bach);
