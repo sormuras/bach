@@ -28,9 +28,6 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
 
         // Modules of test module space target current Java release.
         .withTargetsJava("test", Runtime.version().feature())
-        // Test space execution tweaks
-        .withTweak(
-            "test", ToolCallTweak.WORKFLOW_TEST_JUNIT, junit -> junit.with("--details", "NONE"))
 
         // Additional names of external modules required by this project.
         // All other dependencies are acquired from `module-info.java` files.
