@@ -49,7 +49,8 @@ public interface Configurator {
     try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
       for (var path : stream.toList()) {
         var uri = path.toUri().toString();
-        if (uri.contains("/.bach/")) continue;
+        if (uri.contains("/.bach/")) continue; // exclude project-local modules
+        if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
         var module = DeclaredModule.of(path);
         if (uri.contains("/init/")) {
           project = project.withModule(project.spaces().init(), module);

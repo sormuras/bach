@@ -72,16 +72,23 @@ public class CompileModules implements ToolOperator {
         }
       }
 
-      for (var folder : module.folders().list().stream().skip(1).toList()) {
+      for (var folder : module.folders().list()) {
         if ("java-module".equals(folder.path().getFileName().toString())) continue;
         var release = folder.release();
-        var classesR = classes.resolve("java-" + release).resolve(name);
-        javacCommands.add(
-            ToolCall.of("javac")
-                .with("--release", release)
-                .with("-d", classesR)
-                .withFindFiles(folder.path(), "**.java"));
-        jar = jar.with("--release", release).with("-C", classesR, ".");
+        if (folder.isSources()) {
+          if (release == 0) continue;
+          var classesR = classes.resolve("java-" + release).resolve(name);
+          javacCommands.add(
+              ToolCall.of("javac")
+                  .with("--release", release)
+                  .with("-d", classesR)
+                  .withFindFiles(folder.path(), "**.java"));
+          jar = jar.with("--release", release).with("-C", classesR, ".");
+        }
+        if (folder.isResources()) {
+          if (release != 0) jar = jar.with("--release", release);
+          jar = jar.with("-C", folder.path(), ".");
+        }
       }
 
       jarCommands.add(jar);
@@ -95,8 +102,8 @@ public class CompileModules implements ToolOperator {
             out.println("JAR file not found: " + file);
             return;
           }
-          var size = PathSupport.computeChecksum(file, "SIZE");
           var hash = PathSupport.computeChecksum(file, "SHA-256");
+          var size = PathSupport.computeChecksum(file, "SIZE");
           out.println("%s %11s %s".formatted(hash, size, file));
         });
 
