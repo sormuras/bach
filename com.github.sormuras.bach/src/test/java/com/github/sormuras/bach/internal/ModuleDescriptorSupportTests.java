@@ -57,8 +57,6 @@ class ModuleDescriptorSupportTests {
             .requires("jdk.httpserver")
             .requires("jdk.xml.dom")
             .requires("org.junit.jupiter")
-            .requires("org.junit.platform.engine")
-            .requires("org.junit.platform.launcher")
             .build(),
         module);
   }
