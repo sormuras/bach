@@ -14,7 +14,6 @@ open /*test*/ module test.base {
   provides java.util.spi.ToolProvider with
       test.base.TestProvider1,
       test.base.TestProvider2;
-
   provides org.junit.platform.launcher.TestExecutionListener with
       test.base.ContainerFeed;
 }

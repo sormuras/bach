@@ -54,8 +54,9 @@ public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parse
                 commandLineArguments.dry_run().or(fileArguments::dry_run).orElse(false));
 
     var finder = configurator.configureToolFinder(paths);
+    var tweak = configurator.configureToolCallTweak();
 
-    var configuration = new Configuration(printer, flags, paths, finder);
+    var configuration = new Configuration(printer, flags, paths, finder, tweak);
 
     var pattern =
         commandLineArguments

@@ -4,6 +4,7 @@ import com.github.sormuras.bach.project.DeclaredModule;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/** Default settings. */
 @FunctionalInterface
 public interface Configurator {
 
@@ -21,6 +22,10 @@ public interface Configurator {
 
   default Flags configureFlags() {
     return Flags.of();
+  }
+
+  default ToolCallTweak configureToolCallTweak() {
+    return ToolCallTweak.identity();
   }
 
   default ToolFinder configureToolFinder(Paths paths) {

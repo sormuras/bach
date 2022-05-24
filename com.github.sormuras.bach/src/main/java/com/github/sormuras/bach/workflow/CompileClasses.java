@@ -2,6 +2,7 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
@@ -79,9 +80,7 @@ public class CompileClasses implements ToolOperator {
     var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
     javac = javac.with("-d", classes0);
 
-    for (var additionalCompileJavacArgument : space.additionalCompileJavacArguments()) {
-      javac = javac.with(additionalCompileJavacArgument);
-    }
+    javac = javac.with(space.tweak(ToolCallTweak.WORKFLOW_COMPILE_CLASSES_JAVAC));
 
     bach.run(javac);
 

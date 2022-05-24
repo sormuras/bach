@@ -3,7 +3,7 @@ package project;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolFinder;
 
 public class Configurator implements com.github.sormuras.bach.Configurator {
@@ -12,23 +12,25 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
     // Operate on the preconfigured project instance.
     return project
         // Modules of main module space target Java release 17.
-        // Modules of test module space target current Java release.
         .withTargetsJava(17)
-        .withTargetsJava("test", Runtime.version().feature())
-
-        // Main module compilation tweaks
-        .withAdditionalCompileJavacArguments(
-            "main",
-            ToolCall.of("javac")
-                .with("-g")
-                .with("-parameters")
-                .with("-Werror")
-                .with("-Xlint")
-                .with("-encoding", "UTF-8")
-                .arguments()
-                .toArray(String[]::new))
         // Main module space's entry-point.
         .withLauncher(Main.class.getCanonicalName())
+        // Main module tool call tweaks
+        .withTweak(
+            ToolCallTweak.WORKFLOW_COMPILE_CLASSES_JAVAC,
+            javac ->
+                javac
+                    .with("-g")
+                    .with("-parameters")
+                    .with("-Werror")
+                    .with("-Xlint")
+                    .with("-encoding", "UTF-8"))
+
+        // Modules of test module space target current Java release.
+        .withTargetsJava("test", Runtime.version().feature())
+        // Test space execution tweaks
+        .withTweak(
+            "test", ToolCallTweak.WORKFLOW_TEST_JUNIT, junit -> junit.with("--details", "NONE"))
 
         // Additional names of external modules required by this project.
         // All other dependencies are acquired from `module-info.java` files.
@@ -55,6 +57,11 @@ public class Configurator implements com.github.sormuras.bach.Configurator {
             #SIZE=3519780\
             &SHA-256=a356bb0236b29c57a3ab678f17a7b027aad603b0960c183a18f1fe322e4f38ea
             """);
+  }
+
+  @Override
+  public ToolCallTweak configureToolCallTweak() {
+    return ToolCallTweak.identity();
   }
 
   @Override

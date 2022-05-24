@@ -1,6 +1,8 @@
 package com.github.sormuras.bach;
 
-public record Configuration(Printer printer, Flags flags, Paths paths, ToolFinder finder) {
+/** Global settings. */
+public record Configuration(
+    Printer printer, Flags flags, Paths paths, ToolFinder finder, ToolCallTweak tweak) {
 
   public static Configuration ofDefaults() {
     var printer = Printer.ofSystem();
@@ -11,23 +13,8 @@ public record Configuration(Printer printer, Flags flags, Paths paths, ToolFinde
             ToolFinder.ofToolsInModulePath(paths.externalModules()),
             ToolFinder.ofJavaTools(paths.externalTools()),
             ToolFinder.ofSystemTools());
-    return new Configuration(printer, flags, paths, finder);
-  }
-
-  public Configuration with(Printer printer) {
-    return new Configuration(printer, flags, paths, finder);
-  }
-
-  public Configuration with(Flags flags) {
-    return new Configuration(printer, flags, paths, finder);
-  }
-
-  public Configuration with(Paths paths) {
-    return new Configuration(printer, flags, paths, finder);
-  }
-
-  public Configuration with(ToolFinder finder) {
-    return new Configuration(printer, flags, paths, finder);
+    var tweak = ToolCallTweak.identity();
+    return new Configuration(printer, flags, paths, finder, tweak);
   }
 
   public boolean isDryRun() {

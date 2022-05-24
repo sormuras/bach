@@ -2,10 +2,12 @@ package com.github.sormuras.bach.workflow;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
+import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.ToolRunner;
 import com.github.sormuras.bach.project.DeclaredModule;
+import com.github.sormuras.bach.project.ProjectSpace;
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
 
@@ -20,15 +22,15 @@ public class Test implements ToolOperator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var tester = new Tester(bach, out, err);
+    var tester = new Tester(bach, bach.project().spaces().test(), out, err);
     tester.runSpaceLauncher();
     tester.runJUnitPlatform();
     return 0;
   }
 
-  record Tester(Bach bach, PrintWriter out, PrintWriter err) {
+  record Tester(Bach bach, ProjectSpace space, PrintWriter out, PrintWriter err) {
     void runSpaceLauncher() {
-      var launcher = bach.project().spaces().test().launcher();
+      var launcher = space.launcher();
       if (launcher.isEmpty()) return;
       var paths = bach.configuration().paths();
       var java =
@@ -40,7 +42,7 @@ public class Test implements ToolOperator {
 
     void runJUnitPlatform() {
       if (bach.configuration().finder().find("junit").isEmpty()) return;
-      for (var module : bach.project().spaces().test().modules()) {
+      for (var module : space.modules()) {
         runJUnitPlatform(module);
       }
     }
@@ -59,8 +61,8 @@ public class Test implements ToolOperator {
           ToolFinder.of(moduleFinder, true, name),
           ToolCall.of("junit")
               .with("--select-module", name)
-              .with("--details", "NONE")
-              .with("--reports-dir", paths.out("test-reports", "junit-" + name)),
+              .with("--reports-dir", paths.out("test-reports", "junit-" + name))
+              .with(space.tweak(ToolCallTweak.WORKFLOW_TEST_JUNIT)),
           ToolRunner.RunModifier.RUN_WITH_PROVIDERS_CLASS_LOADER);
     }
   }

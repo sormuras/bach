@@ -97,7 +97,10 @@ public record Project(
   /** {@return new project instance setting specified space's release argument and preview flag} */
   public Project withEnablePreviewFeatures(String space) {
     return withTargetsJava(space, Runtime.version().feature())
-        .withAdditionalCompileJavacArguments(space, "--enable-preview");
+        .withTweak(
+            space,
+            "com.github.sormuras.bach/compile-classes::javac",
+            javac -> javac.with("--enable-preview"));
   }
 
   /** {@return new project instance setting main space's launcher} */
@@ -153,13 +156,18 @@ public record Project(
     return with(new ExternalTool(name.strip(), Optional.of(from.strip()), List.of()));
   }
 
-  /** {@return new project instance with more arguments for specified space's {@code javac} call} */
-  public Project withAdditionalCompileJavacArguments(String space, String... args) {
-    return withAdditionalCompileJavacArguments(spaces.space(space), args);
+  /** {@return new project instance with an additional tool call tweak for the main space} */
+  public Project withTweak(String id, ToolCallTweak tweak) {
+    return withTweak("main", id, tweak);
   }
 
-  /** {@return new project instance with more arguments for specified space's {@code javac} call} */
-  public Project withAdditionalCompileJavacArguments(ProjectSpace space, String... args) {
-    return with(spaces.with(space.withAdditionalCompileJavacArguments(args)));
+  /** {@return new project instance with an additional tool call tweak for the specified space} */
+  public Project withTweak(String space, String id, ToolCallTweak tweak) {
+    return withTweak(spaces.space(space), id, tweak);
+  }
+
+  /** {@return new project instance with an additional tool call tweak for the specified space} */
+  public Project withTweak(ProjectSpace space, String id, ToolCallTweak tweak) {
+    return with(spaces.with(space.withTweak(id, tweak)));
   }
 }

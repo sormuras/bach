@@ -41,6 +41,10 @@ public record ToolCall(String name, List<String> arguments) {
     return values.length == 0 ? call : call.with(Stream.of(values));
   }
 
+  public ToolCall with(ToolCallTweak tweak) {
+    return tweak.apply(this);
+  }
+
   public ToolCall withFindFiles(String glob) {
     return withFindFiles(Path.of(""), glob);
   }

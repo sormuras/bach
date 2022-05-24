@@ -3,6 +3,7 @@ package test.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ToolCall;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,10 @@ class ProjectTests {
     assertEquals(List.of("production"), main.modules().names());
     var test = project.spaces().test();
     assertEquals(Runtime.version().feature(), test.release());
-    assertEquals(List.of("--enable-preview"), test.additionalCompileJavacArguments());
+    assertEquals(
+        List.of("--enable-preview"),
+        ToolCall.of("javac")
+            .with(test.tweak("com.github.sormuras.bach/compile-classes::javac"))
+            .arguments());
   }
 }

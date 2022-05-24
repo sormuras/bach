@@ -20,8 +20,9 @@ public record Bach(Configuration configuration, Project project) implements Tool
 
   @Override
   public void run(ToolFinder finder, ToolCall call, Set<RunModifier> modifiers) {
-    var name = call.name();
-    var arguments = call.arguments();
+    var tweaked = call.with(configuration.tweak());
+    var name = tweaked.name();
+    var arguments = tweaked.arguments();
     var printer = configuration.printer();
     var verbose = configuration.isVerbose() || modifiers.contains(RunModifier.VERBOSE);
     var force = modifiers.contains(RunModifier.FORCE);
