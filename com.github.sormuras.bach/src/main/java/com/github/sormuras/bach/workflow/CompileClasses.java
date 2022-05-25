@@ -8,11 +8,8 @@ import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
 import com.github.sormuras.bach.project.DeclaredModule;
 import java.io.File;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CompileClasses implements ToolOperator {
 
@@ -49,17 +46,10 @@ public class CompileClasses implements ToolOperator {
       javac = javac.with("--module-source-path", moduleSourcePath);
     }
 
-    var externalModules = Stream.of(paths.externalModules());
-    var requiredModules = space.requires().stream().map(required -> paths.out(required, "modules"));
-    var modulePath =
-        Stream.concat(requiredModules, externalModules)
-            .filter(Files::isDirectory)
-            .map(Path::toString)
-            .toList();
-    if (!modulePath.isEmpty()) {
-      var path = String.join(File.pathSeparator, modulePath);
-      javac = javac.with("--module-path", path);
-      javac = javac.with("--processor-module-path", path);
+    var modulePath = space.toModulePath(paths);
+    if (modulePath.isPresent()) {
+      javac = javac.with("--module-path", modulePath.get());
+      javac = javac.with("--processor-module-path", modulePath.get());
     }
 
     // --patch-module
@@ -86,4 +76,6 @@ public class CompileClasses implements ToolOperator {
 
     return 0;
   }
+
+
 }

@@ -1,11 +1,16 @@
 package com.github.sormuras.bach.project;
 
+import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.ToolCallTweak;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 public record ProjectSpace(
     String name,
@@ -50,6 +55,18 @@ public record ProjectSpace(
 
   public Optional<Integer> targets() {
     return release == 0 ? Optional.empty() : Optional.of(release);
+  }
+
+  public Optional<String> toModulePath(Paths paths) {
+    var externalModules = Stream.of(paths.externalModules());
+    var requiredModules = requires.stream().map(required -> paths.out(required, "modules"));
+    var elements =
+        Stream.concat(requiredModules, externalModules)
+            .filter(Files::isDirectory)
+            .map(Path::toString)
+            .toList();
+    if (elements.isEmpty()) return Optional.empty();
+    return Optional.of(String.join(File.pathSeparator, elements));
   }
 
   public ToolCallTweak tweak(String id) {

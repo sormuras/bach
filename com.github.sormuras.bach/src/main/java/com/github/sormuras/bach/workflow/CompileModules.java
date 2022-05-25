@@ -78,11 +78,18 @@ public class CompileModules implements ToolOperator {
         if (folder.isSources()) {
           if (release == 0) continue;
           var classesR = classes.resolve("java-" + release).resolve(name);
-          javacCommands.add(
-              ToolCall.of("javac")
-                  .with("--release", release)
-                  .with("-d", classesR)
-                  .withFindFiles(folder.path(), "**.java"));
+          var javac = ToolCall.of("javac").with("--release", release);
+          var modulePath = space.toModulePath(paths);
+          if (modulePath.isPresent()) {
+            javac = javac.with("--module-path", modulePath.get());
+            javac = javac.with("--processor-module-path", modulePath.get());
+          }
+          javac = javac
+              .with("--class-path", classes0.resolve(name))
+              .with("-implicit:none")
+              .with("-d", classesR)
+              .withFindFiles(folder.path(), "**.java");
+          javacCommands.add(javac);
           jar = jar.with("--release", release).with("-C", classesR, ".");
         }
         if (folder.isResources()) {
