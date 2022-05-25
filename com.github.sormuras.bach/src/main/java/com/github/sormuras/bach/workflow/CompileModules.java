@@ -3,10 +3,8 @@ package com.github.sormuras.bach.workflow;
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolOperator;
-import com.github.sormuras.bach.internal.PathSupport;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
@@ -39,12 +37,10 @@ public class CompileModules implements ToolOperator {
 
     var javacCommands = new ArrayList<ToolCall>();
     var jarCommands = new ArrayList<ToolCall>();
-    var jarFiles = new ArrayList<Path>();
+
     for (var module : declarations) {
       var name = module.name();
       var file = modules.resolve(name + ".jar");
-
-      jarFiles.add(file);
 
       var jar = ToolCall.of("jar").with("--create").with("--file", file);
 
@@ -103,17 +99,7 @@ public class CompileModules implements ToolOperator {
     javacCommands.stream().parallel().forEach(bach::run);
     jarCommands.stream().parallel().forEach(bach::run);
 
-    jarFiles.forEach(
-        file -> {
-          if (Files.notExists(file)) {
-            out.println("JAR file not found: " + file);
-            return;
-          }
-          var hash = PathSupport.computeChecksum(file, "SHA-256");
-          var size = PathSupport.computeChecksum(file, "SIZE");
-          out.println("%s %11s %s".formatted(hash, size, file));
-        });
-
+    bach.run("checksum", "--list-dir", modules);
     return 0;
   }
 }
