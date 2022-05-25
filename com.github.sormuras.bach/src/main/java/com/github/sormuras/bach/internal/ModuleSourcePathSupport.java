@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.internal;
 
+import static java.util.function.Predicate.not;
+
 import java.io.File;
 import java.lang.module.FindException;
 import java.nio.file.Path;
@@ -34,6 +36,7 @@ public interface ModuleSourcePathSupport {
     return Stream.concat(
             Stream.of(String.join(File.pathSeparator, patterns)),
             specific.entrySet().stream().map(e -> toSpecificForm(e.getKey(), e.getValue())))
+        .filter(not(String::isEmpty))
         .toList();
   }
 

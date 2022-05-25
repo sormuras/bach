@@ -2,7 +2,6 @@ package com.github.sormuras.bach;
 
 import com.github.sormuras.bach.project.DeclaredModule;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 /** Default settings. */
 @FunctionalInterface
@@ -12,9 +11,9 @@ public interface Configurator {
     return project -> project;
   }
 
-  default Project configureProject(Paths paths, String syntaxAndPattern) {
+  default Project configureProject(Configuration configuration, String syntaxAndPattern) {
     var project = Project.ofDefaults();
-    project = withWalkingDirectory(project, paths.root(), syntaxAndPattern);
+    project = withWalkingDirectory(configuration, syntaxAndPattern, project);
     return configureProject(project);
   }
 
@@ -42,7 +41,16 @@ public interface Configurator {
    * given {@link java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern} below the
    * specified root directory}
    */
-  static Project withWalkingDirectory(Project project, Path directory, String syntaxAndPattern) {
+  static Project withWalkingDirectory(
+      Configuration configuration, String syntaxAndPattern, Project project) {
+    var verbose = configuration.isVerbose();
+    var printer = configuration.printer();
+    var directory = configuration.paths().root();
+    if (verbose) {
+      printer.out("Walking Directory");
+      printer.out("%20s = %s".formatted("directory", directory));
+      printer.out("%20s = %s".formatted("syntaxAndPattern", syntaxAndPattern));
+    }
     var name = directory.normalize().toAbsolutePath().getFileName();
     if (name != null) project = project.withName(name.toString());
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
@@ -51,7 +59,10 @@ public interface Configurator {
         var uri = path.toUri().toString();
         if (uri.contains("/.bach/")) continue; // exclude project-local modules
         if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
-        var module = DeclaredModule.of(directory.normalize(), path);
+        var module = DeclaredModule.of(directory, path);
+        if (verbose) {
+          printer.out("%20s = %s -> %s".formatted("path", path, module.name()));
+        }
         if (uri.contains("/init/")) {
           project = project.withModule(project.spaces().init(), module);
           continue;

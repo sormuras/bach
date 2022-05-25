@@ -23,7 +23,7 @@ public record DeclaredModule(
     var descriptor = ModuleDescriptorSupport.parse(info.normalize());
 
     // trivial case: "module-info.java" resides directly in content root directory
-    if (root.resolve("module-info.java").equals(info)) {
+    if (root.resolve("module-info.java").toUri().equals(info.toUri())) {
       return new DeclaredModule(root, info, descriptor, Folders.of(root), Map.of());
     }
 

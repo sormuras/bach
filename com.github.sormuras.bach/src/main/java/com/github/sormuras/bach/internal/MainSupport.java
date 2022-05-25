@@ -29,14 +29,24 @@ public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parse
   }
 
   public Bach bach(CommandLineInterface commandLineArguments) {
-    var root = Path.of(commandLineArguments.root_directory().orElse(""));
+    var verbose = commandLineArguments.verbose().orElse(false);
+    if (verbose) {
+      printer.out("System Properties");
+      Stream.of("user.dir", "java.home", "java.version")
+          .sorted()
+          .map(key -> "%20s = %s".formatted(key, System.getProperty(key)))
+          .forEach(printer::out);
+    }
+
+    var root = Path.of(commandLineArguments.root_directory().orElse("")).normalize();
     var paths =
         new Paths(
             root,
             commandLineArguments
                 .output_directory()
                 .map(Path::of)
-                .orElse(root.resolve(".bach/out")));
+                .orElse(root.resolve(".bach/out"))
+                .normalize());
 
     var fileArguments = loadFileArguments(paths, "project-info.args");
     var projectInfoLayer = loadModuleLayer(paths, "project-info");
@@ -58,15 +68,42 @@ public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parse
 
     var configuration = new Configuration(printer, flags, paths, finder, tweak);
 
+    if (verbose) {
+      printer.out("Configuration");
+      printer.out("  Flags");
+      printer.out("%20s = %s".formatted("set", flags.set()));
+      printer.out("  Paths");
+      printer.out("%20s = %s".formatted("root", paths.root()));
+      printer.out("%20s = %s".formatted("out", paths.out()));
+      printer.out("  Tool Finder and Tweak");
+      printer.out("%20s = %s".formatted("finder", finder));
+      printer.out("%20s = %s".formatted("tweak", tweak));
+    }
+
     var pattern =
         commandLineArguments
             .module_info_find_pattern()
             .or(fileArguments::module_info_find_pattern)
-            .orElse("glob:**/module-info.java");
+            .orElse("glob:**module-info.java");
 
-    var project = configurator.configureProject(paths, pattern);
+    var project = configurator.configureProject(configuration, pattern);
     project = withApplyingArguments(project, fileArguments);
     project = withApplyingArguments(project, commandLineArguments);
+
+    if (verbose) {
+      printer.out("Project");
+      printer.out("%20s = %s".formatted("name", project.name()));
+      printer.out("%20s = %s".formatted("version", project.version().value()));
+      printer.out("%20s = %s".formatted("version.date", project.version().date()));
+      printer.out("%20s = %s".formatted("modules #", project.modules().size()));
+      var init = project.spaces().init();
+      var main = project.spaces().main();
+      var test = project.spaces().test();
+      printer.out("%20s = %s".formatted("init modules", init.modules().names()));
+      printer.out("%20s = %s".formatted("main modules", main.modules().names()));
+      printer.out("%20s = %s".formatted("test modules", test.modules().names()));
+    }
+
     return new Bach(configuration, project);
   }
 
