@@ -80,11 +80,12 @@ public class CompileModules implements ToolOperator {
             javac = javac.with("--module-path", modulePath.get());
             javac = javac.with("--processor-module-path", modulePath.get());
           }
-          javac = javac
-              .with("--class-path", classes0.resolve(name))
-              .with("-implicit:none")
-              .with("-d", classesR)
-              .withFindFiles(folder.path(), "**.java");
+          javac =
+              javac
+                  .with("--class-path", classes0.resolve(name))
+                  .with("-implicit:none")
+                  .with("-d", classesR)
+                  .withFindFiles(folder.path(), "**.java");
           javacCommands.add(javac);
           jar = jar.with("--release", release).with("-C", classesR, ".");
         }

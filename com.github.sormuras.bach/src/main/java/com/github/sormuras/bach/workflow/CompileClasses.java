@@ -76,6 +76,4 @@ public class CompileClasses implements ToolOperator {
 
     return 0;
   }
-
-
 }
