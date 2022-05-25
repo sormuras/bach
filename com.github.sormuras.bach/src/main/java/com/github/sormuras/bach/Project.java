@@ -9,6 +9,7 @@ import com.github.sormuras.bach.project.ProjectName;
 import com.github.sormuras.bach.project.ProjectSpace;
 import com.github.sormuras.bach.project.ProjectSpaces;
 import com.github.sormuras.bach.project.ProjectVersion;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -119,8 +120,8 @@ public record Project(
   }
 
   /** {@return new project instance with a new module declaration added to the specified space} */
-  public Project withModule(String space, String info) {
-    return withModule(spaces.space(space), DeclaredModule.of(info));
+  public Project withModule(String space, Path root, String info) {
+    return withModule(spaces.space(space), DeclaredModule.of(root, Path.of(info)));
   }
 
   /** {@return new project instance with a new module declaration added to the specified space} */

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -19,10 +20,11 @@ class ProjectTests {
   @Test
   void customProject() {
     var base = "test.workflow/example-projects/processing-code";
+    var root = Path.of(base);
     var project =
         Project.ofDefaults()
-            .withModule("init", base + "/processor/src/init/java")
-            .withModule("main", base + "/production/src/main/java")
+            .withModule("init", root, base + "/processor/src/init/java")
+            .withModule("main", root, base + "/production/src/main/java")
             .withEnablePreviewFeatures("test");
     assertEquals(2, project.modules().size());
     var init = project.spaces().init();

@@ -30,6 +30,7 @@ public class CompileClasses implements ToolOperator {
     var classes = paths.out(space.name(), "classes");
 
     var javac = ToolCall.of("javac");
+
     var release0 = space.targets();
     if (release0.isPresent()) {
       javac = javac.with("--release", release0.get());
@@ -39,9 +40,10 @@ public class CompileClasses implements ToolOperator {
         javac.with(
             "--module",
             declarations.stream().map(DeclaredModule::name).collect(Collectors.joining(",")));
+
     var map =
         declarations.stream()
-            .collect(Collectors.toMap(DeclaredModule::name, DeclaredModule::toModuleSourcePaths));
+            .collect(Collectors.toMap(DeclaredModule::name, DeclaredModule::baseSourcePaths));
     for (var moduleSourcePath : ModuleSourcePathSupport.compute(map, false)) {
       javac = javac.with("--module-source-path", moduleSourcePath);
     }

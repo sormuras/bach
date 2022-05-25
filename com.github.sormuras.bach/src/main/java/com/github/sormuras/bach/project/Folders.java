@@ -3,34 +3,44 @@ package com.github.sormuras.bach.project;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
-/**
- * A list of source and resource folders, possibly targeted to a specific Java feature release
- * version.
- */
-public record Folders(List<Folder> list) {
-
-  public static Folders of(Path info) {
-    var parent = info.getParent();
-    if (parent == null) return new Folders(List.of());
-
-    if (!parent.getFileName().toString().startsWith("java"))
-      return new Folders(List.of(Folder.of(parent)));
-
-    var grandpa = parent.getParent();
-    if (grandpa == null) return new Folders(List.of(Folder.of(parent)));
-
-    try (var stream = Files.list(grandpa)) {
-      var folders = stream.filter(Folders::isSourcesOrResourcesDirectory).map(Folder::of);
-      return new Folders(folders.sorted().toList());
-    } catch (Exception exception) {
-      throw new RuntimeException("Listing entries of %s failed".formatted(info));
-    }
+/** A collection of source and resource directories. */
+public record Folders(List<Path> sources, List<Path> resources) {
+  public static Folders of(Path... sources) {
+    return new Folders(Stream.of(sources).map(Path::normalize).toList(), List.of());
   }
 
-  static boolean isSourcesOrResourcesDirectory(Path path) {
-    if (!Files.isDirectory(path)) return false;
-    var name = path.getFileName().toString();
-    return name.startsWith("java") || name.startsWith("resources");
+  public Folders withSiblings(Path container) {
+    return withSiblings(container, "");
+  }
+
+  public Folders withSiblings(Path container, int release) {
+    return withSiblings(container, "-" + release);
+  }
+
+  public Folders withSiblings(Path container, String suffix) {
+    var sources = container.resolve("java" + suffix);
+    var resources = container.resolve("resources" + suffix);
+    var folders = this;
+    if (Files.isDirectory(sources)) folders = folders.withSourcePath(sources);
+    if (Files.isDirectory(resources)) folders = folders.withResourcePath(resources);
+    return folders;
+  }
+
+  public Folders withSourcePath(Path candidate) {
+    var path = candidate.normalize();
+    if (sources.contains(path)) return this;
+    return new Folders(Stream.concat(sources.stream(), Stream.of(path)).toList(), resources);
+  }
+
+  public Folders withResourcePath(Path candidate) {
+    var path = candidate.normalize();
+    if (resources.contains(path)) return this;
+    return new Folders(sources, Stream.concat(resources.stream(), Stream.of(path)).toList());
+  }
+
+  public boolean isEmpty() {
+    return sources.isEmpty() && resources.isEmpty();
   }
 }

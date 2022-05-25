@@ -52,12 +52,22 @@ public class CompileModules implements ToolOperator {
       }
 
       var mainProgram = name.replace('.', '/') + "/Main.java";
-      var mainJava = module.toModuleSourcePaths().get(0).resolve(mainProgram);
-      if (Files.exists(mainJava)) {
+      var mainJava =
+          module.base().sources().stream()
+              .map(dir -> dir.resolve(mainProgram))
+              .filter(Files::isRegularFile)
+              .findFirst();
+      if (mainJava.isPresent()) {
         jar = jar.with("--main-class", name + ".Main");
       }
 
-      jar = jar.with("-C", classes0.resolve(name), ".");
+      // include base classes (from compile-classes) and resources
+      if (Files.isDirectory(classes0.resolve(name))) {
+        jar = jar.with("-C", classes0.resolve(name), ".");
+      }
+      for (var resources : module.base().resources()) {
+        jar = jar.with("-C", resources.resolve(name), ".");
+      }
 
       // include classes of patched module
       for (var requires : space.requires()) {
@@ -68,11 +78,10 @@ public class CompileModules implements ToolOperator {
         }
       }
 
-      for (var folder : module.folders().list()) {
-        if ("java-module".equals(folder.path().getFileName().toString())) continue;
-        var release = folder.release();
-        if (folder.isSources()) {
-          if (release == 0) continue;
+      // compile and include targeted classes and resources
+      for (var release : module.targeted().keySet().stream().sorted().toList()) {
+        var folders = module.targeted().get(release);
+        for (var sources : folders.sources()) {
           var classesR = classes.resolve("java-" + release).resolve(name);
           var javac = ToolCall.of("javac").with("--release", release);
           var modulePath = space.toModulePath(paths);
@@ -85,13 +94,16 @@ public class CompileModules implements ToolOperator {
                   .with("--class-path", classes0.resolve(name))
                   .with("-implicit:none")
                   .with("-d", classesR)
-                  .withFindFiles(folder.path(), "**.java");
+                  .withFindFiles(sources, "**.java");
           javacCommands.add(javac);
           jar = jar.with("--release", release).with("-C", classesR, ".");
         }
-        if (folder.isResources()) {
-          if (release != 0) jar = jar.with("--release", release);
-          jar = jar.with("-C", folder.path(), ".");
+
+        var needsReleaseArgument = folders.sources().isEmpty() && !folders.resources().isEmpty();
+        if (needsReleaseArgument) jar = jar.with("--release", release);
+
+        for (var resources : folders.resources()) {
+          jar = jar.with("-C", resources, ".");
         }
       }
 

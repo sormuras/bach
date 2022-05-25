@@ -51,7 +51,7 @@ public interface Configurator {
         var uri = path.toUri().toString();
         if (uri.contains("/.bach/")) continue; // exclude project-local modules
         if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
-        var module = DeclaredModule.of(path);
+        var module = DeclaredModule.of(directory.normalize(), path);
         if (uri.contains("/init/")) {
           project = project.withModule(project.spaces().init(), module);
           continue;
