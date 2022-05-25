@@ -1,4 +1,4 @@
-package test.project;
+package test.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
