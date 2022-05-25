@@ -66,7 +66,7 @@ public class CompileModules implements ToolOperator {
         jar = jar.with("-C", classes0.resolve(name), ".");
       }
       for (var resources : module.base().resources()) {
-        jar = jar.with("-C", resources.resolve(name), ".");
+        jar = jar.with("-C", resources, ".");
       }
 
       // include classes of patched module
