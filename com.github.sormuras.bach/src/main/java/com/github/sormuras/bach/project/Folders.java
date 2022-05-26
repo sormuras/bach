@@ -3,10 +3,23 @@ package com.github.sormuras.bach.project;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /** A collection of source and resource directories. */
 public record Folders(List<Path> sources, List<Path> resources) {
+
+  static Map<Integer, Folders> mapFoldersByJavaFeatureReleaseNumber(Path container) {
+    var targeted = new TreeMap<Integer, Folders>();
+    for (int release = 9; release <= Runtime.version().feature(); release++) {
+      var folders = Folders.of().withSiblings(container, release);
+      if (folders.isEmpty()) continue;
+      targeted.put(release, folders);
+    }
+    return Map.copyOf(targeted);
+  }
+
   public static Folders of(Path... sources) {
     return new Folders(Stream.of(sources).map(Path::normalize).toList(), List.of());
   }

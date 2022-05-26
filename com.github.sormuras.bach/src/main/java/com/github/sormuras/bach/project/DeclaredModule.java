@@ -5,7 +5,6 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 public record DeclaredModule(
     Path content, // content root of the entire module
@@ -20,16 +19,32 @@ public record DeclaredModule(
         moduleInfoJavaFileOrItsParentDirectory.endsWith("module-info.java")
             ? moduleInfoJavaFileOrItsParentDirectory
             : moduleInfoJavaFileOrItsParentDirectory.resolve("module-info.java");
-    var descriptor = ModuleDescriptorSupport.parse(info.normalize());
+
+    var relativized = root.relativize(info).normalize(); // ensure info is below root
+    var descriptor = ModuleDescriptorSupport.parse(info);
+    var name = descriptor.name();
 
     // trivial case: "module-info.java" resides directly in content root directory
-    if (root.resolve("module-info.java").toUri().equals(info.toUri())) {
-      return new DeclaredModule(root, info, descriptor, Folders.of(root), Map.of());
+    var system = root.getFileSystem();
+    if (system.getPathMatcher("glob:module-info.java").matches(relativized)) {
+      var base = Folders.of(root);
+      return new DeclaredModule(root, info, descriptor, base, Map.of());
+    }
+    // "java" case: "module-info.java" in direct "java" subdirectory with targeted resources
+    if (system.getPathMatcher("glob:java/module-info.java").matches(relativized)) {
+      var base = Folders.of(root).withSiblings(root);
+      var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(root);
+      return new DeclaredModule(root, info, descriptor, base, targeted);
+    }
+    // "<module>" case: "module-info.java" in direct subdirectory with the same name as the module
+    if (system.getPathMatcher("glob:" + name + "/module-info.java").matches(relativized)) {
+      var content = root.resolve(name);
+      var base = Folders.of(content).withSiblings(content);
+      var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(content);
+      return new DeclaredModule(content, info, descriptor, base, targeted);
     }
 
     // try to find module name in path elements
-    var name = descriptor.name();
-
     var parent = info.getParent();
     while (parent != null
         && !parent.equals(root)
@@ -53,13 +68,8 @@ public record DeclaredModule(
     // find base siblings
     var base = Folders.of(parent).withSiblings(container);
     // find targeted siblings
-    var targeted = new TreeMap<Integer, Folders>();
-    for (int release = 9; release <= Runtime.version().feature(); release++) {
-      var folders = Folders.of().withSiblings(container, release);
-      if (folders.isEmpty()) continue;
-      targeted.put(release, folders);
-    }
-    return new DeclaredModule(content, info, descriptor, base, Map.copyOf(targeted));
+    var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(container);
+    return new DeclaredModule(content, info, descriptor, base, targeted);
   }
 
   public String name() {
