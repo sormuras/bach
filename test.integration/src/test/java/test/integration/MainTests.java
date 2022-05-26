@@ -100,9 +100,9 @@ class MainTests {
         """
         info
         >>>>
-        Tools
+          Tools
         >>>>
-                    bach -> com.github.sormuras.bach/bach [Main]
+                        bach -> com.github.sormuras.bach/bach [Main]
         >> ... >>
         """
             .lines(),
