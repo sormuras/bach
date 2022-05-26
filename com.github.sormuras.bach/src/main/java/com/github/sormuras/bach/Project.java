@@ -11,12 +11,15 @@ import com.github.sormuras.bach.project.ProjectSpaces;
 import com.github.sormuras.bach.project.ProjectVersion;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
+import java.util.Formattable;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Optional;
 
 /** Modular project model. */
 public record Project(
-    ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
+    ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals)
+    implements Formattable {
 
   /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
   public static Project ofDefaults() {
@@ -30,11 +33,7 @@ public record Project(
     return new Project(name, version, spaces, externals);
   }
 
-  /** {@return a list of all modules declared by this project} */
-  public List<DeclaredModule> modules() {
-    return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
-  }
-
+  @SuppressWarnings("PatternVariableHidesField")
   private Project with(ProjectComponent component) {
     return new Project(
         component instanceof ProjectName name ? name : name,
@@ -170,5 +169,25 @@ public record Project(
   /** {@return new project instance with an additional tool call tweak for the specified space} */
   public Project withTweak(ProjectSpace space, String id, ToolCallTweak tweak) {
     return with(spaces.with(space.withTweak(id, tweak)));
+  }
+
+  /** {@return a list of all modules declared by this project} */
+  public List<DeclaredModule> modules() {
+    return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
+  }
+
+  @Override
+  public void formatTo(Formatter formatter, int flags, int width, int precision) {
+    formatter.format("Project%n");
+    formatter.format("%20s = %s%n", "name", name);
+    formatter.format("%20s = %s%n", "version", version.value());
+    formatter.format("%20s = %s%n", "version.date", version.date());
+    formatter.format("%20s = %s%n", "modules #", modules().size());
+    formatter.format("%20s = %s%n", "init modules", spaces.init().modules().names());
+    formatter.format("%20s = %s%n", "main modules", spaces.main().modules().names());
+    formatter.format("%20s = %s%n", "test modules", spaces.test().modules().names());
+    formatter.format("%s", "%s".formatted(spaces.init()).indent(2));
+    formatter.format("%s", "%s".formatted(spaces.main()).indent(2));
+    formatter.format("%s", "%s".formatted(spaces.test()).indent(2));
   }
 }

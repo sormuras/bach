@@ -5,6 +5,8 @@ import com.github.sormuras.bach.ToolCallTweak;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Formattable;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,7 +20,8 @@ public record ProjectSpace(
     int release,
     Optional<String> launcher,
     List<String> requires, // used to compute "--[processor-]module-path"
-    Map<String, ToolCallTweak> tweaks) {
+    Map<String, ToolCallTweak> tweaks)
+    implements Formattable {
 
   public ProjectSpace {
     Objects.requireNonNull(name);
@@ -71,5 +74,16 @@ public record ProjectSpace(
 
   public ToolCallTweak tweak(String id) {
     return tweaks.getOrDefault(id, ToolCallTweak.identity());
+  }
+
+  @Override
+  public void formatTo(Formatter formatter, int flags, int width, int precision) {
+    formatter.format(
+        """
+        Space
+        %20s = %s
+        %20s = %d
+        """
+            .formatted("name", name, "release", release));
   }
 }

@@ -69,15 +69,7 @@ public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parse
     var configuration = new Configuration(printer, flags, paths, finder, tweak);
 
     if (verbose) {
-      printer.out("Configuration");
-      printer.out("  Flags");
-      printer.out("%20s = %s".formatted("set", flags.set()));
-      printer.out("  Paths");
-      printer.out("%20s = %s".formatted("root", paths.root()));
-      printer.out("%20s = %s".formatted("out", paths.out()));
-      printer.out("  Tool Finder and Tweak");
-      printer.out("%20s = %s".formatted("finder", finder));
-      printer.out("%20s = %s".formatted("tweak", tweak));
+      printer.out("%s".formatted(configuration));
     }
 
     var pattern =
@@ -91,17 +83,7 @@ public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parse
     project = withApplyingArguments(project, commandLineArguments);
 
     if (verbose) {
-      printer.out("Project");
-      printer.out("%20s = %s".formatted("name", project.name()));
-      printer.out("%20s = %s".formatted("version", project.version().value()));
-      printer.out("%20s = %s".formatted("version.date", project.version().date()));
-      printer.out("%20s = %s".formatted("modules #", project.modules().size()));
-      var init = project.spaces().init();
-      var main = project.spaces().main();
-      var test = project.spaces().test();
-      printer.out("%20s = %s".formatted("init modules", init.modules().names()));
-      printer.out("%20s = %s".formatted("main modules", main.modules().names()));
-      printer.out("%20s = %s".formatted("test modules", test.modules().names()));
+      printer.out("%s".formatted(project));
     }
 
     return new Bach(configuration, project);
