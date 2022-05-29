@@ -29,7 +29,11 @@ public record DeclaredModules(List<DeclaredModule> list) implements Iterable<Dec
   }
 
   public List<String> names() {
-    return list.stream().map(DeclaredModule::name).toList();
+    return list.stream().sorted().map(DeclaredModule::name).toList();
+  }
+
+  public String names(String delimiter) {
+    return String.join(delimiter, names());
   }
 
   public ModuleFinder toModuleFinder() {
