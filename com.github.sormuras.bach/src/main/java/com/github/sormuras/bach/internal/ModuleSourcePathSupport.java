@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public interface ModuleSourcePathSupport {
 
@@ -55,8 +54,7 @@ public interface ModuleSourcePathSupport {
   }
 
   static String toSpecificForm(String module, List<Path> paths) {
-    return module
-        + '='
-        + paths.stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+    var joined = String.join(File.pathSeparator, paths.stream().map(Path::toString).toList());
+    return module + '=' + joined;
   }
 }
