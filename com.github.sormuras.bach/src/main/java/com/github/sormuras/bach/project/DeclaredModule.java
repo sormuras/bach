@@ -32,7 +32,7 @@ public record DeclaredModule(
     }
     // "java" case: "module-info.java" in direct "java" subdirectory with targeted resources
     if (system.getPathMatcher("glob:java/module-info.java").matches(relativized)) {
-      var base = Folders.of(root).withSiblings(root);
+      var base = Folders.of().withSiblings(root);
       var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(root);
       return new DeclaredModule(root, info, descriptor, base, targeted);
     }
