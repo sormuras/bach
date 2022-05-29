@@ -2,10 +2,13 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.internal.ModuleInfoFinder;
 import com.github.sormuras.bach.internal.ModuleInfoReference;
+import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
 import java.lang.module.ModuleFinder;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /** A sequence of declared modules. */
@@ -42,6 +45,12 @@ public record DeclaredModules(List<DeclaredModule> list) implements Iterable<Dec
             .map(module -> new ModuleInfoReference(module.info(), module.descriptor()))
             .toList();
     return new ModuleInfoFinder(moduleInfoReferences);
+  }
+
+  public List<String> toModuleSourcePaths() {
+    var map = new TreeMap<String, List<Path>>();
+    for (var module : list) map.put(module.name(), module.baseSourcePaths());
+    return ModuleSourcePathSupport.compute(map, false);
   }
 
   public DeclaredModules with(DeclaredModule... more) {

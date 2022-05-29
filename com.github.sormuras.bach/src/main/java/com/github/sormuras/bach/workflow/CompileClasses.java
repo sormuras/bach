@@ -4,12 +4,9 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolOperator;
-import com.github.sormuras.bach.internal.ModuleSourcePathSupport;
-import com.github.sormuras.bach.project.DeclaredModule;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class CompileClasses implements ToolOperator {
 
@@ -25,8 +22,7 @@ public class CompileClasses implements ToolOperator {
     var project = bach.project();
     var paths = bach.configuration().paths();
     var spaces = project.spaces();
-    var space = spaces.space(args[0]);
-    var declarations = space.modules().list();
+    var space = spaces.space(args[0]); // TODO Better argument handling
     var classes = paths.out(space.name(), "classes");
 
     var javac = ToolCall.of("javac");
@@ -36,12 +32,10 @@ public class CompileClasses implements ToolOperator {
       javac = javac.with("--release", release0.get());
     }
 
-    javac = javac.with("--module", space.modules().names(","));
+    var modules = space.modules();
+    javac = javac.with("--module", modules.names(","));
 
-    var map =
-        declarations.stream()
-            .collect(Collectors.toMap(DeclaredModule::name, DeclaredModule::baseSourcePaths));
-    for (var moduleSourcePath : ModuleSourcePathSupport.compute(map, false)) {
+    for (var moduleSourcePath : modules.toModuleSourcePaths()) {
       javac = javac.with("--module-source-path", moduleSourcePath);
     }
 
@@ -52,7 +46,7 @@ public class CompileClasses implements ToolOperator {
     }
 
     // --patch-module
-    for (var declaration : declarations) {
+    for (var declaration : modules.list()) {
       var module = declaration.name();
       var patches = new ArrayList<String>();
       for (var requires : space.requires()) {
