@@ -1,17 +1,15 @@
 package com.github.sormuras.bach.internal;
 
-import static java.util.function.Predicate.not;
-
 import java.io.File;
 import java.lang.module.FindException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public interface ModuleSourcePathSupport {
 
@@ -33,11 +31,10 @@ public interface ModuleSourcePathSupport {
         specific.put(name, paths);
       }
     }
-    return Stream.concat(
-            Stream.of(String.join(File.pathSeparator, patterns)),
-            specific.entrySet().stream().map(e -> toSpecificForm(e.getKey(), e.getValue())))
-        .filter(not(String::isEmpty))
-        .toList();
+    var list = new ArrayList<String>();
+    if (!patterns.isEmpty()) list.add(String.join(File.pathSeparator, patterns));
+    specific.forEach((module, paths) -> list.add(toSpecificForm(module, paths)));
+    return List.copyOf(list);
   }
 
   static String toPatternForm(Path info, String module) {
