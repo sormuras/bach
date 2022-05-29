@@ -36,10 +36,7 @@ public class CompileClasses implements ToolOperator {
       javac = javac.with("--release", release0.get());
     }
 
-    javac =
-        javac.with(
-            "--module",
-            declarations.stream().map(DeclaredModule::name).collect(Collectors.joining(",")));
+    javac = javac.with("--module", space.modules().names(","));
 
     var map =
         declarations.stream()
