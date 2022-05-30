@@ -23,6 +23,7 @@ open /*test*/ module com.github.sormuras.bach {
       com.github.sormuras.bach.core.Info,
       com.github.sormuras.bach.core.Load,
       com.github.sormuras.bach.core.LoadAndVerify,
+      com.github.sormuras.bach.core.LoadTool,
       com.github.sormuras.bach.core.Tree,
       com.github.sormuras.bach.workflow.Build,
       com.github.sormuras.bach.workflow.Cache,
