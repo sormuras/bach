@@ -28,8 +28,11 @@ public interface Configurator {
   }
 
   default ToolFinder configureToolFinder(Paths paths) {
+    var module = getClass().getModule();
     return ToolFinder.compose(
-        ToolFinder.ofToolsInModuleLayer(getClass().getModule()),
+        module == Configurator.class.getModule()
+            ? ToolFinder.of(/* no project-local tools */)
+            : ToolFinder.ofToolsInModuleLayer(module),
         ToolFinder.ofToolsInModulePath(paths.externalModules()),
         ToolFinder.ofJavaTools(paths.externalTools()),
         ToolFinder.ofSystemTools(),
