@@ -1,5 +1,7 @@
 package com.github.sormuras.bach.internal;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,6 +14,11 @@ public interface StringSupport {
     var lines = string.lines().toList();
     var size = lines.size();
     return size <= 1 ? string : lines.get(0) + "[...%d lines]".formatted(size);
+  }
+
+  static String parseFileName(String string) {
+    var path = string.indexOf(':') > 0 ? URI.create(string).getPath() : string;
+    return Path.of(path).getFileName().toString();
   }
 
   record Property(String key, String value) {}
