@@ -3,17 +3,21 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalTool;
+import com.github.sormuras.bach.project.Folders;
 import com.github.sormuras.bach.project.ProjectComponent;
 import com.github.sormuras.bach.project.ProjectExternals;
 import com.github.sormuras.bach.project.ProjectName;
 import com.github.sormuras.bach.project.ProjectSpace;
 import com.github.sormuras.bach.project.ProjectSpaces;
 import com.github.sormuras.bach.project.ProjectVersion;
+import java.lang.module.ModuleDescriptor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.Formattable;
 import java.util.Formatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Modular project model. */
@@ -118,6 +122,21 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
+  public Project withModule(String space, String module) {
+    return withModule(space, ModuleDescriptor.newModule(module).build());
+  }
+
+  public Project withModule(String space, ModuleDescriptor module) {
+    return withModule(
+        spaces.space(space),
+        new DeclaredModule(
+            Path.of(module.name()),
+            Path.of(module.name(), "src", space, "java", "module-info.java"),
+            module,
+            Folders.of(Path.of(module.name(), "src", space, "java")),
+            Map.of()));
+  }
+
   /** {@return new project instance with a new module declaration added to the specified space} */
   public Project withModule(String space, Path root, String info) {
     return withModule(spaces.space(space), DeclaredModule.of(root, Path.of(info)));
@@ -174,6 +193,36 @@ public record Project(
   /** {@return a list of all modules declared by this project} */
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
+  }
+
+  public void initializeInCurrentWorkingDirectory() {
+    initializeInDirectory("");
+  }
+
+  public void initializeInDirectory(String root) {
+    initializeInDirectory(Path.of(root));
+  }
+
+  public void initializeInDirectory(Path root) {
+    if (modules().isEmpty()) throw new IllegalStateException("No module declared");
+    try {
+      for (var space : spaces.list())
+        for (var module : space.modules().list()) {
+          var info = root.resolve(module.info());
+          Files.createDirectories(info.getParent());
+          Files.writeString(
+              info,
+              """
+              module %s {
+              // TODO exports
+              // TODO requires
+              }
+              """
+                  .formatted(module.name()));
+        }
+    } catch (Exception exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   @Override
