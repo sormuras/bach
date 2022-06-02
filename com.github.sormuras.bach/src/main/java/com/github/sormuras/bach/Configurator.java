@@ -31,7 +31,7 @@ public interface Configurator {
     var module = getClass().getModule();
     return ToolFinder.compose(
         module == Configurator.class.getModule()
-            ? ToolFinder.of(/* no project-local tools */)
+            ? ToolFinder.of(/* no project-local tools */ )
             : ToolFinder.ofToolsInModuleLayer(module),
         ToolFinder.ofToolsInModulePath(paths.externalModules()),
         ToolFinder.ofJavaTools(paths.externalTools()),
