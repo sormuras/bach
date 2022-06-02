@@ -122,6 +122,10 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
+  public Project withModule(String module) {
+    return withModule("main", module);
+  }
+
   public Project withModule(String space, String module) {
     return withModule(space, ModuleDescriptor.newModule(module).build());
   }
@@ -206,6 +210,36 @@ public record Project(
   public void initializeInDirectory(Path root) {
     if (modules().isEmpty()) throw new IllegalStateException("No module declared");
     try {
+      var configurator = root.resolve(".bach/project-info/project/Configurator.java");
+      Files.createDirectories(configurator.getParent());
+      Files.writeString(
+          configurator,
+          // language=java
+          """
+          package project;
+
+          import com.github.sormuras.bach.Project;
+
+          public class Configurator implements com.github.sormuras.bach.Configurator {
+            @Override
+            public Project configureProject(Project project) {
+              return project
+                  .withName("%s")
+                  .withVersion("%s");
+            }
+          }
+          """
+              .formatted(name.value(), version.value()));
+      Files.writeString(
+          root.resolve(".bach/project-info/module-info.java"),
+          // language=java
+          """
+          module project {
+            requires com.github.sormuras.bach;
+            provides com.github.sormuras.bach.Configurator with
+                project.Configurator;
+          }
+          """);
       for (var space : spaces.list())
         for (var module : space.modules().list()) {
           var info = root.resolve(module.info());

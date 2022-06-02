@@ -14,10 +14,12 @@ import org.junit.jupiter.api.io.TempDir;
 class ProjectInitializationTests {
 
   @Test
-  void scaffoldOneModulePerSpace(@TempDir Path temp) {
+  void initializeOneModulePerSpace(@TempDir Path temp) {
     Project.ofDefaults()
+        .withName("initializeOneModulePerSpace")
+        .withVersion("99")
         .withModule("init", "processor")
-        .withModule("main", "org.example.application")
+        .withModule("org.example.application")
         .withModule("test", "test.integration")
         .initializeInDirectory(temp);
 
@@ -29,6 +31,8 @@ class ProjectInitializationTests {
                 .with("--root-directory", temp)
                 .arguments()
                 .toArray(String[]::new));
+    assertEquals("initializeOneModulePerSpace", bach.project().name().value());
+    assertEquals("99", bach.project().version().value());
     bach.run("build");
 
     var paths = bach.configuration().paths();
