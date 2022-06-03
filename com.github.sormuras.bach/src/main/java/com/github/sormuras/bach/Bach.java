@@ -1,9 +1,11 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.internal.BachLoader;
 import com.github.sormuras.bach.internal.MirroringStringPrintWriter;
 import com.github.sormuras.bach.internal.StringSupport;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 
 /** Java Shell Builder. */
@@ -11,6 +13,22 @@ public record Bach(Configuration configuration, Project project) implements Tool
 
   public static Bach ofDefaults() {
     return new Bach(Configuration.ofDefaults(), Project.ofDefaults());
+  }
+
+  /** {@return an instance of {@code Bach} using system printer and configured by the arguments} */
+  public static Bach ofSystem(String... args) {
+    return of(Printer.ofSystem(), args);
+  }
+
+  /** {@return an instance of {@code Bach} using silent printer and configured by the arguments} */
+  public static Bach of(Printer printer, UnaryOperator<ToolCall> args) {
+    var bach = args.apply(ToolCall.of("bach"));
+    return of(printer, bach.arguments().toArray(String[]::new));
+  }
+
+  /** {@return an instance of {@code Bach} using the printer and configured by the arguments} */
+  public static Bach of(Printer printer, String... args) {
+    return new BachLoader(printer).load(args);
   }
 
   @Override

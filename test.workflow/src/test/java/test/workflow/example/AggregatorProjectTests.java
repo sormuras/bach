@@ -5,10 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.project.ProjectSpaces;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
@@ -29,14 +27,12 @@ class AggregatorProjectTests {
   AggregatorProjectTests(@TempDir Path temp) {
     var root = Path.of("test.workflow", "example-projects", "aggregator");
     this.bach =
-        Main.bach(
+        Bach.of(
             Printer.ofSilence(),
-            ToolCall.of("bach")
-                .with("--verbose")
-                .with("--root-directory", root)
-                .with("--output-directory", temp)
-                .arguments()
-                .toArray(String[]::new));
+            args ->
+                args.with("--verbose")
+                    .with("--root-directory", root)
+                    .with("--output-directory", temp));
   }
 
   @Nested

@@ -2,10 +2,9 @@ package test.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.sormuras.bach.Main;
+import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.Project;
-import com.github.sormuras.bach.ToolCall;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -24,13 +23,7 @@ class ProjectInitializationTests {
         .initializeInDirectory(temp);
 
     var bach =
-        Main.bach(
-            Printer.ofSilence(),
-            ToolCall.of("bach")
-                .with("--verbose")
-                .with("--root-directory", temp)
-                .arguments()
-                .toArray(String[]::new));
+        Bach.of(Printer.ofSilence(), args -> args.with("--verbose").with("--root-directory", temp));
     assertEquals("initializeOneModulePerSpace", bach.project().name().value());
     assertEquals("99", bach.project().version().value());
     bach.run("build");

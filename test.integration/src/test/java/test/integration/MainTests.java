@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SingleExternalModuleLocator;
@@ -22,28 +20,30 @@ import org.junit.jupiter.api.io.TempDir;
 class MainTests {
   @Test
   void allCommandLineArgumentsAreParsedCorrectlyIntoTheirModels(@TempDir Path temp) {
-    var call =
-        ToolCall.of("bach")
-            // global configuration
-            .with("--verbose")
-            .with("--dry-run")
-            // basic properties
-            .with("--root-directory", temp)
-            .with("--output-directory", temp.resolve("target"))
-            // project model
-            .with("--project-name", "NAME")
-            .with("--project-version", "1.2.3")
-            // ...
-            .with("--project-with-external-module", "org.example.foo@https//foo.jar")
-            .with("--project-with-external-module", "org.example.bar@https//bar.jar")
-            .with("--project-with-external-modules", "junit@5.8.2")
-            .with("--project-with-external-modules", "NAME@VERSION:OS:ARCH")
-            // initial tool call
-            .with("TOOL-NAME")
-            .with("--more-arguments")
-            .with(Stream.of(7, '8', 0x9));
+    var bach =
+        Bach.of(
+            Printer.ofSilence(),
+            args ->
+                args
+                    // global configuration
+                    .with("--verbose")
+                    .with("--dry-run")
+                    // basic properties
+                    .with("--root-directory", temp)
+                    .with("--output-directory", temp.resolve("target"))
+                    // project model
+                    .with("--project-name", "NAME")
+                    .with("--project-version", "1.2.3")
+                    // ...
+                    .with("--project-with-external-module", "org.example.foo@https//foo.jar")
+                    .with("--project-with-external-module", "org.example.bar@https//bar.jar")
+                    .with("--project-with-external-modules", "junit@5.8.2")
+                    .with("--project-with-external-modules", "NAME@VERSION:OS:ARCH")
+                    // initial tool call
+                    .with("TOOL-NAME")
+                    .with("--more-arguments")
+                    .with(Stream.of(7, '8', 0x9)));
 
-    var bach = bach(call);
     var configuration = bach.configuration();
     assertTrue(configuration.isVerbose());
     assertTrue(configuration.isDryRun());
@@ -72,7 +72,7 @@ class MainTests {
 
   @Test
   void modules() {
-    var project = bach().project();
+    var project = Bach.of(Printer.ofSilence()).project();
     assertLinesMatch(
         """
         com.github.sormuras.bach
@@ -94,7 +94,7 @@ class MainTests {
 
   @Test
   void info() {
-    var bach = bach();
+    var bach = Bach.of(Printer.ofSilence());
     bach.run("info");
     assertLinesMatch(
         """
@@ -108,13 +108,5 @@ class MainTests {
             .lines(),
         bach.configuration().printer().out().toString().lines(),
         bach.configuration().printer().toString());
-  }
-
-  static Bach bach(String... args) {
-    return bach(ToolCall.of("bach").with(Stream.of(args)));
-  }
-
-  static Bach bach(ToolCall call) {
-    return Main.bach(Printer.ofSilence(), call.arguments().toArray(String[]::new));
   }
 }

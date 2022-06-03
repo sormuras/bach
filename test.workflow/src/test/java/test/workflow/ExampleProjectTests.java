@@ -3,9 +3,7 @@ package test.workflow;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.github.sormuras.bach.Bach;
-import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Printer;
-import com.github.sormuras.bach.ToolCall;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,8 +19,12 @@ class ExampleProjectTests {
   @MethodSource
   void buildExampleProject(Path example, @TempDir Path temp) throws Exception {
     var bach =
-        bach(
-            ToolCall.of("bach").with("--root-directory", example).with("--output-directory", temp));
+        Bach.of(
+            Printer.ofSilence(),
+            args ->
+                args.with("--verbose")
+                    .with("--root-directory", example)
+                    .with("--output-directory", temp));
     assertDoesNotThrow(() -> bach.run("build"), bach.configuration().printer()::toString);
     var init = !bach.project().spaces().init().modules().list().isEmpty();
     if (init && OS.WINDOWS.isCurrentOs()) {
@@ -38,9 +40,5 @@ class ExampleProjectTests {
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
-  }
-
-  static Bach bach(ToolCall call) {
-    return Main.bach(Printer.ofSilence(), call.arguments().toArray(String[]::new));
   }
 }

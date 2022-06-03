@@ -18,17 +18,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-public record MainSupport(Printer printer, ArgVester<CommandLineInterface> parser) {
+public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser) {
 
-  public MainSupport(Printer printer) {
+  public BachLoader(Printer printer) {
     this(printer, ArgVester.create(CommandLineInterface.class));
   }
 
-  public Bach bach(String... args) {
-    return bach(parser.parse(args));
+  public Bach load(String... args) {
+    return load(parser.parse(args));
   }
 
-  public Bach bach(CommandLineInterface commandLineArguments) {
+  public Bach load(CommandLineInterface commandLineArguments) {
     var verbose = commandLineArguments.verbose().orElse(false);
     if (verbose) {
       printer.out("System Properties");

@@ -1,6 +1,6 @@
 package com.github.sormuras.bach;
 
-import com.github.sormuras.bach.internal.MainSupport;
+import com.github.sormuras.bach.internal.BachLoader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.spi.ToolProvider;
@@ -20,11 +20,6 @@ public record Main(String name) implements ToolProvider {
     return new Main("bach");
   }
 
-  /** {@return an instance of {@code Bach} using the printer and configured by the arguments} */
-  public static Bach bach(Printer printer, String... args) {
-    return new MainSupport(printer).bach(args);
-  }
-
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     return run(new Printer(out, err), args);
@@ -32,8 +27,8 @@ public record Main(String name) implements ToolProvider {
 
   /** {@return the result of running the initial tool call} */
   private int run(Printer printer, String... args) {
-    var builder = new MainSupport(printer);
-    var parser = builder.parser();
+    var loader = new BachLoader(printer); // use internal loader to pre-process arguments
+    var parser = loader.parser();
     var arguments = parser.parse(args);
     if (arguments.help().orElse(false)) {
       printer.out(parser.toHelp(name()));
@@ -44,7 +39,7 @@ public record Main(String name) implements ToolProvider {
       printer.err("No initial command");
       return 1;
     }
-    var bach = builder.bach(arguments);
+    var bach = loader.load(arguments);
     return run(bach, ToolCall.of(arguments.command()));
   }
 
