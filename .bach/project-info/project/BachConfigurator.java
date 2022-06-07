@@ -1,12 +1,13 @@
 package project;
 
+import com.github.sormuras.bach.Configurator;
 import com.github.sormuras.bach.Main;
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolFinder;
 
-public class Configurator implements com.github.sormuras.bach.Configurator {
+public class BachConfigurator implements Configurator {
   @Override
   public Project configureProject(Project project) {
     // Operate on the preconfigured project instance.
