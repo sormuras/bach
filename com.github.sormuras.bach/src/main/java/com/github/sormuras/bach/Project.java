@@ -194,6 +194,38 @@ public record Project(
     return with(spaces.with(space.withTweak(id, tweak)));
   }
 
+  /**
+   * {@return new project instance configured by finding {@code module-info.java} files below the
+   * specified root directory matching the given {@link
+   * java.nio.file.FileSystem#getPathMatcher(String) syntaxAndPattern}}
+   */
+  public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
+    var project = this;
+    var name = directory.normalize().toAbsolutePath().getFileName();
+    if (name != null) project = project.withName(name.toString());
+    var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
+    try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
+      for (var path : stream.toList()) {
+        var uri = path.toUri().toString();
+        if (uri.contains("/.bach/")) continue; // exclude project-local modules
+        if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
+        var module = DeclaredModule.of(directory, path);
+        if (uri.contains("/init/")) {
+          project = project.withModule(project.spaces().init(), module);
+          continue;
+        }
+        if (uri.contains("/test/")) {
+          project = project.withModule(project.spaces().test(), module);
+          continue;
+        }
+        project = project.withModule(project.spaces().main(), module);
+      }
+    } catch (Exception exception) {
+      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
+    }
+    return project;
+  }
+
   /** {@return a list of all modules declared by this project} */
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
