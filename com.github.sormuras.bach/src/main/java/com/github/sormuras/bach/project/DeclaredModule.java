@@ -10,8 +10,8 @@ public record DeclaredModule(
     Path content, // content root of the entire module
     Path info, // "module-info.java"
     ModuleDescriptor descriptor, // descriptor.name()
-    Folders base, // base sources and resources
-    Map<Integer, Folders> targeted)
+    DeclaredFolders base, // base sources and resources
+    Map<Integer, DeclaredFolders> targeted)
     implements Comparable<DeclaredModule> {
 
   public static DeclaredModule of(Path root, Path moduleInfoJavaFileOrItsParentDirectory) {
@@ -27,20 +27,20 @@ public record DeclaredModule(
     // trivial case: "module-info.java" resides directly in content root directory
     var system = root.getFileSystem();
     if (system.getPathMatcher("glob:module-info.java").matches(relativized)) {
-      var base = Folders.of(root);
+      var base = DeclaredFolders.of(root);
       return new DeclaredModule(root, info, descriptor, base, Map.of());
     }
     // "java" case: "module-info.java" in direct "java" subdirectory with targeted resources
     if (system.getPathMatcher("glob:java/module-info.java").matches(relativized)) {
-      var base = Folders.of().withSiblings(root);
-      var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(root);
+      var base = DeclaredFolders.of().withSiblings(root);
+      var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(root);
       return new DeclaredModule(root, info, descriptor, base, targeted);
     }
     // "<module>" case: "module-info.java" in direct subdirectory with the same name as the module
     if (system.getPathMatcher("glob:" + name + "/module-info.java").matches(relativized)) {
       var content = root.resolve(name);
-      var base = Folders.of(content).withSiblings(content);
-      var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(content);
+      var base = DeclaredFolders.of(content).withSiblings(content);
+      var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(content);
       return new DeclaredModule(content, info, descriptor, base, targeted);
     }
 
@@ -66,9 +66,9 @@ public record DeclaredModule(
     var container = parent.getParent();
     if (container == null) throw new UnsupportedOperationException("No container of: " + parent);
     // find base siblings
-    var base = Folders.of(parent).withSiblings(container);
+    var base = DeclaredFolders.of(parent).withSiblings(container);
     // find targeted siblings
-    var targeted = Folders.mapFoldersByJavaFeatureReleaseNumber(container);
+    var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(container);
     return new DeclaredModule(content, info, descriptor, base, targeted);
   }
 

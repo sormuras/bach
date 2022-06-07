@@ -8,31 +8,31 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /** A collection of source and resource directories. */
-public record Folders(List<Path> sources, List<Path> resources) {
+public record DeclaredFolders(List<Path> sources, List<Path> resources) {
 
-  static Map<Integer, Folders> mapFoldersByJavaFeatureReleaseNumber(Path container) {
-    var targeted = new TreeMap<Integer, Folders>();
+  static Map<Integer, DeclaredFolders> mapFoldersByJavaFeatureReleaseNumber(Path container) {
+    var targeted = new TreeMap<Integer, DeclaredFolders>();
     for (int release = 9; release <= Runtime.version().feature(); release++) {
-      var folders = Folders.of().withSiblings(container, release);
+      var folders = DeclaredFolders.of().withSiblings(container, release);
       if (folders.isEmpty()) continue;
       targeted.put(release, folders);
     }
     return Map.copyOf(targeted);
   }
 
-  public static Folders of(Path... sources) {
-    return new Folders(Stream.of(sources).map(Path::normalize).toList(), List.of());
+  public static DeclaredFolders of(Path... sources) {
+    return new DeclaredFolders(Stream.of(sources).map(Path::normalize).toList(), List.of());
   }
 
-  public Folders withSiblings(Path container) {
+  public DeclaredFolders withSiblings(Path container) {
     return withSiblings(container, "");
   }
 
-  public Folders withSiblings(Path container, int release) {
+  public DeclaredFolders withSiblings(Path container, int release) {
     return withSiblings(container, "-" + release);
   }
 
-  public Folders withSiblings(Path container, String suffix) {
+  public DeclaredFolders withSiblings(Path container, String suffix) {
     var sources = container.resolve("java" + suffix);
     var resources = container.resolve("resources" + suffix);
     var folders = this;
@@ -41,16 +41,18 @@ public record Folders(List<Path> sources, List<Path> resources) {
     return folders;
   }
 
-  public Folders withSourcePath(Path candidate) {
+  public DeclaredFolders withSourcePath(Path candidate) {
     var path = candidate.normalize();
     if (sources.contains(path)) return this;
-    return new Folders(Stream.concat(sources.stream(), Stream.of(path)).toList(), resources);
+    return new DeclaredFolders(
+        Stream.concat(sources.stream(), Stream.of(path)).toList(), resources);
   }
 
-  public Folders withResourcePath(Path candidate) {
+  public DeclaredFolders withResourcePath(Path candidate) {
     var path = candidate.normalize();
     if (resources.contains(path)) return this;
-    return new Folders(sources, Stream.concat(resources.stream(), Stream.of(path)).toList());
+    return new DeclaredFolders(
+        sources, Stream.concat(resources.stream(), Stream.of(path)).toList());
   }
 
   public boolean isEmpty() {

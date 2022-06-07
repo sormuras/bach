@@ -1,9 +1,9 @@
 package com.github.sormuras.bach;
 
+import com.github.sormuras.bach.project.DeclaredFolders;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalTool;
-import com.github.sormuras.bach.project.Folders;
 import com.github.sormuras.bach.project.ProjectComponent;
 import com.github.sormuras.bach.project.ProjectExternals;
 import com.github.sormuras.bach.project.ProjectName;
@@ -137,7 +137,7 @@ public record Project(
             Path.of(module.name()),
             Path.of(module.name(), "src", space, "java", "module-info.java"),
             module,
-            Folders.of(Path.of(module.name(), "src", space, "java")),
+            DeclaredFolders.of(Path.of(module.name(), "src", space, "java")),
             Map.of()));
   }
 

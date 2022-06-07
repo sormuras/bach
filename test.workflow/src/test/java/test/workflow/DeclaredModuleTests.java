@@ -2,8 +2,8 @@ package test.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.sormuras.bach.project.DeclaredFolders;
 import com.github.sormuras.bach.project.DeclaredModule;
-import com.github.sormuras.bach.project.Folders;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Map;
@@ -25,7 +25,7 @@ class DeclaredModuleTests {
                 .requires("java.se")
                 .requires("jdk.management")
                 .build(),
-            Folders.of(project),
+            DeclaredFolders.of(project),
             Map.of()),
         DeclaredModule.of(project, project.resolve("module-info.java")));
   }
@@ -39,7 +39,7 @@ class DeclaredModuleTests {
             project,
             project.resolve("module-info.java"),
             ModuleDescriptor.newModule("hello").build(),
-            Folders.of(project),
+            DeclaredFolders.of(project),
             Map.of()),
         DeclaredModule.of(project, project.resolve("module-info.java")));
   }
@@ -53,7 +53,7 @@ class DeclaredModuleTests {
             project.resolve("hello"),
             project.resolve("hello/module-info.java"),
             ModuleDescriptor.newModule("hello").requires("world").build(),
-            Folders.of(project.resolve("hello")),
+            DeclaredFolders.of(project.resolve("hello")),
             Map.of()),
         DeclaredModule.of(project.resolve("hello"), project.resolve("hello/module-info.java")));
 
@@ -62,7 +62,7 @@ class DeclaredModuleTests {
             project.resolve("world"),
             project.resolve("world/module-info.java"),
             ModuleDescriptor.newModule("world").build(),
-            Folders.of(project.resolve("world")),
+            DeclaredFolders.of(project.resolve("world")),
             Map.of()),
         DeclaredModule.of(project.resolve("world"), project.resolve("world/module-info.java")));
   }
@@ -77,10 +77,10 @@ class DeclaredModuleTests {
             conent,
             conent.resolve("java/module-info.java"),
             ModuleDescriptor.newModule("foo").build(),
-            Folders.of(conent.resolve("java")),
+            DeclaredFolders.of(conent.resolve("java")),
             Map.of(
-                11, Folders.of(conent.resolve("java-11")),
-                17, Folders.of(conent.resolve("java-17")))),
+                11, DeclaredFolders.of(conent.resolve("java-11")),
+                17, DeclaredFolders.of(conent.resolve("java-17")))),
         DeclaredModule.of(project, conent.resolve("java/module-info.java")));
   }
 
@@ -95,18 +95,18 @@ class DeclaredModuleTests {
             content,
             main.resolve("java/module-info.java"),
             ModuleDescriptor.newModule("foo").build(),
-            Folders.of(main.resolve("java")).withResourcePath(main.resolve("resources")),
+            DeclaredFolders.of(main.resolve("java")).withResourcePath(main.resolve("resources")),
             Map.of(
                 11,
-                Folders.of()
+                DeclaredFolders.of()
                     .withSourcePath(main.resolve("java-11"))
                     .withResourcePath(main.resolve("resources-11")),
                 13,
-                Folders.of().withResourcePath(main.resolve("resources-13")),
+                DeclaredFolders.of().withResourcePath(main.resolve("resources-13")),
                 15,
-                Folders.of().withSourcePath(main.resolve("java-15")),
+                DeclaredFolders.of().withSourcePath(main.resolve("java-15")),
                 17,
-                Folders.of().withSourcePath(main.resolve("java-17")))),
+                DeclaredFolders.of().withSourcePath(main.resolve("java-17")))),
         DeclaredModule.of(project, main.resolve("java/module-info.java")));
   }
 }
