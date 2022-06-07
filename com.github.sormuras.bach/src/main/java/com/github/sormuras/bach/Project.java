@@ -210,7 +210,7 @@ public record Project(
   public void initializeInDirectory(Path root) {
     if (modules().isEmpty()) throw new IllegalStateException("No module declared");
     try {
-      var configurator = root.resolve(".bach/project-info/project/Configurator.java");
+      var configurator = root.resolve(".bach/project-info/project/ProjectConfigurator.java");
       Files.createDirectories(configurator.getParent());
       Files.writeString(
           configurator,
@@ -218,9 +218,10 @@ public record Project(
           """
           package project;
 
+          import com.github.sormuras.bach.Configurator;
           import com.github.sormuras.bach.Project;
 
-          public class Configurator implements com.github.sormuras.bach.Configurator {
+          public class ProjectConfigurator implements Configurator {
             @Override
             public Project configureProject(Project project) {
               return project
@@ -237,7 +238,7 @@ public record Project(
           module project {
             requires com.github.sormuras.bach;
             provides com.github.sormuras.bach.Configurator with
-                project.Configurator;
+                project.ProjectConfigurator;
           }
           """);
       for (var space : spaces.list())

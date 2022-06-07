@@ -96,7 +96,7 @@ public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser
             .toList();
     if (configurators.size() >= 2)
       throw new RuntimeException("Too many configurators: " + configurators);
-    return configurators.isEmpty() ? Configurator.identity() : configurators.get(0);
+    return configurators.isEmpty() ? Configurator.ofDefaults() : configurators.get(0);
   }
 
   CommandLineInterface loadFileArguments(Paths paths, String name) {

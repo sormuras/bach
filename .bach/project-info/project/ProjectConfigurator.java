@@ -7,7 +7,7 @@ import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCallTweak;
 import com.github.sormuras.bach.ToolFinder;
 
-public class BachConfigurator implements Configurator {
+public class ProjectConfigurator implements Configurator {
   @Override
   public Project configureProject(Project project) {
     // Operate on the preconfigured project instance.

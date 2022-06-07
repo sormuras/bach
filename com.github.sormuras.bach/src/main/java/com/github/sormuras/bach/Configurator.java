@@ -4,11 +4,11 @@ import com.github.sormuras.bach.project.DeclaredModule;
 import java.nio.file.Files;
 
 /** Default settings. */
-@FunctionalInterface
 public interface Configurator {
 
-  static Configurator identity() {
-    return project -> project;
+  static Configurator ofDefaults() {
+    record DefaultConfigurator() implements Configurator {}
+    return new DefaultConfigurator();
   }
 
   default Project configureProject(Configuration configuration, String syntaxAndPattern) {
@@ -17,7 +17,9 @@ public interface Configurator {
     return configureProject(project);
   }
 
-  Project configureProject(Project project);
+  default Project configureProject(Project project) {
+    return project;
+  }
 
   default Flags configureFlags() {
     return Flags.of();
