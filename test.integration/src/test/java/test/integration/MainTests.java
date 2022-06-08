@@ -10,7 +10,6 @@ import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SingleExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SormurasBachExternalModulesProperties;
-import com.github.sormuras.bach.project.ExternalTool;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -89,7 +88,7 @@ class MainTests {
     assertLinesMatch(
         """
         format@.+""".lines(),
-        project.externals().tools().stream().map(ExternalTool::name).sorted());
+        project.externals().tools().stream().sorted());
   }
 
   @Test

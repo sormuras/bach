@@ -3,7 +3,6 @@ package com.github.sormuras.bach;
 import com.github.sormuras.bach.project.DeclaredFolders;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
-import com.github.sormuras.bach.project.ExternalTool;
 import com.github.sormuras.bach.project.ProjectComponent;
 import com.github.sormuras.bach.project.ProjectExternals;
 import com.github.sormuras.bach.project.ProjectName;
@@ -18,7 +17,6 @@ import java.util.Formattable;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** Modular project model. */
 public record Project(
@@ -53,11 +51,6 @@ public record Project(
   /** {@return new project instance with an additional external module locator} */
   public Project with(ExternalModuleLocator locator) {
     return with(externals.with(locator));
-  }
-
-  /** {@return new project instance with an additional external tool} */
-  public Project with(ExternalTool tool) {
-    return with(externals.with(tool));
   }
 
   /** {@return new project instance using the given string as the project name} */
@@ -175,8 +168,8 @@ public record Project(
   }
 
   /** {@return new project instance with an additional external tool} */
-  public Project withExternalTool(String name, String from) {
-    return with(new ExternalTool(name.strip(), Optional.of(from.strip()), List.of()));
+  public Project withExternalTool(String name) {
+    return with(externals.withExternalTool(name));
   }
 
   /** {@return new project instance with an additional tool call tweak for the main space} */
@@ -203,6 +196,17 @@ public record Project(
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();
     if (name != null) project = project.withName(name.toString());
+    var externals = directory.resolve(".bach/external-tools");
+    if (Files.isDirectory(externals)) {
+      try (var stream = Files.newDirectoryStream(externals, "*.properties")) {
+        for (var path : stream) {
+          var tool = path.getFileName().toString().replace(".properties", "");
+          project = project.withExternalTool(tool);
+        }
+      } catch (Exception exception) {
+        throw new RuntimeException("Stream files in %s failed".formatted(externals), exception);
+      }
+    }
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
     try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
       for (var path : stream.toList()) {

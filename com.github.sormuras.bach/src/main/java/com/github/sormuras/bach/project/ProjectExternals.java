@@ -4,11 +4,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public record ProjectExternals(
-    Set<String> requires, ExternalModuleLocators locators, ExternalTools tools)
+    Set<String> requires, ExternalModuleLocators locators, Set<String> tools)
     implements ProjectComponent {
 
   public static ProjectExternals of() {
-    return new ProjectExternals(Set.of(), ExternalModuleLocators.of(), ExternalTools.of());
+    return new ProjectExternals(Set.of(), ExternalModuleLocators.of(), Set.of());
   }
 
   public ProjectExternals withRequires(String... modules) {
@@ -20,7 +20,8 @@ public record ProjectExternals(
     return new ProjectExternals(requires, locators.with(more), tools);
   }
 
-  public ProjectExternals with(ExternalTool... more) {
-    return new ProjectExternals(requires, locators, tools.with(more));
+  public ProjectExternals withExternalTool(String... more) {
+    var tools = Set.copyOf(Stream.concat(tools().stream(), Stream.of(more)).toList());
+    return new ProjectExternals(requires, locators, tools);
   }
 }

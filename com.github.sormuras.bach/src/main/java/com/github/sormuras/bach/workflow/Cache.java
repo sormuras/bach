@@ -6,7 +6,6 @@ import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.internal.ModulesSupport;
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +22,7 @@ public class Cache implements ToolOperator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    cacheAllExternalTools(bach);
+    installAllExternalTools(bach);
     cacheExternalModules(bach, bach.project().externals().requires());
     cacheExternalModules(
         bach,
@@ -33,25 +32,10 @@ public class Cache implements ToolOperator {
     return 0;
   }
 
-  void cacheAllExternalTools(Bach bach) {
-    var calls = new ArrayList<ToolCall>();
-    for (var external : bach.project().externals().tools()) {
-      var directory = bach.configuration().paths().externalTools(external.name());
-      if (external.from().isPresent()) {
-        var source = external.from().get();
-        var begin = source.lastIndexOf('/') + 1;
-        var end = source.indexOf('#', begin);
-        var name = source.substring(begin, end != -1 ? end : source.length());
-        var target = directory.resolve(name);
-        calls.add(ToolCall.of("load-and-verify", target, source));
-      }
-      for (var asset : external.assets()) {
-        var target = directory.resolve(asset.name());
-        var source = asset.from();
-        calls.add(ToolCall.of("load-and-verify", target, source));
-      }
-    }
-    calls.forEach(bach::run);
+  void installAllExternalTools(Bach bach) {
+    bach.project().externals().tools().stream()
+        .map(tool -> ToolCall.of("install", tool))
+        .forEach(bach::run);
   }
 
   void cacheExternalModules(Bach bach, Collection<String> modules) {
