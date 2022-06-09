@@ -37,7 +37,10 @@ public class LoadAndVerify implements ToolOperator {
     var index = 2;
     while (index < args.length) checker.accept(args[index++]);
 
-    if (!args[1].startsWith("string:")) {
+    if (args[1].startsWith("string:")) {
+      var expected = args[1].length() - 7;
+      checker.accept("SIZE=" + expected);
+    } else {
       var fragment = URI.create(args[1]).getFragment();
       var elements = fragment == null ? new String[0] : fragment.split("&");
       for (var element : elements) checker.accept(element);
