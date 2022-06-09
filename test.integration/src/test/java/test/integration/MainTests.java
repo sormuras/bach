@@ -87,8 +87,9 @@ class MainTests {
         project.externals().requires());
     assertLinesMatch(
         """
-        format@.+""".lines(),
-        project.externals().tools().stream().sorted());
+        format@.+
+        jreleaser@.+
+        """.lines(), project.externals().tools().stream().sorted());
   }
 
   @Test

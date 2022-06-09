@@ -30,7 +30,8 @@ public record Tool(String name, ToolProvider provider) {
   public boolean isNameMatching(String text) {
     // name = "foo/bar" matches text = "foo/bar"
     // name = "foo/bar" matches text = "bar" because name ends with "/bar"
-    return name.equals(text) || name.endsWith('/' + text);
+    // name = "foo/bar@123" also matches = "bar"
+    return name.equals(text) || name.endsWith('/' + text) || name.contains('/' + text + '@');
   }
 
   record NativeToolProvider(String name, List<String> command) implements ToolProvider {
