@@ -43,9 +43,7 @@ public class ProjectConfigurator implements Configurator {
             https://github.com/sormuras/hello/releases\
             /download/1-M3/com.github.sormuras.hello@1-M3.jar\
             #SHA-256=0c993996571cee9555ef947eb198145ddc30a2d834fe606a6f16780afd8aea7b
-            """)
-        // Locate JUnit modules via https://github.com/sormuras/bach-external-modules
-        .withExternalModules("junit", "5.9.0-M1");
+            """);
   }
 
   @Override

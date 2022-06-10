@@ -1,24 +1,23 @@
 package com.github.sormuras.bach.project;
 
 import java.io.StringReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 
-/** An external module locator tries to link a module name to a remote location. */
+/** An external module locator links module names to their remote locations. */
 @FunctionalInterface
 public interface ExternalModuleLocator {
 
   String locate(String module);
 
-  default Optional<String> find(String module) {
-    return Optional.ofNullable(locate(module));
-  }
-
-  default Map<String, String> findAll() {
+  default Map<String, String> locations() {
     return Map.of();
   }
 
@@ -38,7 +37,7 @@ public interface ExternalModuleLocator {
     }
 
     @Override
-    public Map<String, String> findAll() {
+    public Map<String, String> locations() {
       return Map.of(module, uri);
     }
   }
@@ -56,60 +55,73 @@ public interface ExternalModuleLocator {
     }
 
     @Override
-    public Map<String, String> findAll() {
+    public Map<String, String> locations() {
       return map;
     }
   }
 
-  class SormurasBachExternalModulesProperties implements ExternalModuleLocator {
+  record PropertiesBundleModuleLocator(List<Properties> bundle) implements ExternalModuleLocator {
 
-    public static ExternalModuleLocator of(String library, String version, String... classifiers) {
-      var url = new StringBuilder();
-      url.append("https://github.com/sormuras/bach-external-modules/raw/main/properties");
-      url.append('/').append(library);
-      url.append('/').append(library).append('@').append(version);
-      for (var classifier : classifiers) url.append('-').append(classifier);
-      url.append("-modules.properties");
-      return new SormurasBachExternalModulesProperties(url.toString());
-    }
+    public static ExternalModuleLocator of(Path base) {
+      if (Files.notExists(base)) throw new IllegalArgumentException("Base must exist: " + base);
+      var filename = base.getFileName().toString();
+      if (!filename.endsWith(".properties")) throw new IllegalArgumentException(".properties");
+      var name = filename.substring(0, filename.length() - 11);
 
-    private final String url;
-    private volatile Properties properties;
-
-    public SormurasBachExternalModulesProperties(String url) {
-      this.url = url;
-      this.properties = null;
-    }
-
-    @Override
-    public String caption() {
-      return "SormurasBachExternalModulesProperties -> " + url;
-    }
-
-    private void ensurePropertiesAreInitialized() {
-      if (properties != null) return;
-      try (var in = new URL(url).openStream()) {
-        var text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        var temp = new Properties();
-        temp.load(new StringReader(text));
-        properties = temp; // last threads wins...
-      } catch (Exception exception) {
-        throw new RuntimeException(exception);
+      var suffixes = List.of(computeOsName(), computeOsArch());
+      var bundle = new ArrayList<Properties>();
+      for (int i = 0; i < suffixes.size(); i++) {
+        var joiner = new StringJoiner("_", "_", "");
+        for (int j = 0; j < suffixes.size() - i; j++) joiner.add(suffixes.get(j));
+        var file = base.resolveSibling(name + joiner + ".properties");
+        if (Files.notExists(file)) continue;
+        bundle.add(loadProperties(file));
       }
+      bundle.add(loadProperties(base));
+      return new PropertiesBundleModuleLocator(List.copyOf(bundle));
     }
 
     @Override
     public String locate(String module) {
-      ensurePropertiesAreInitialized();
-      return properties.getProperty(module);
+      for (var properties : bundle) {
+        var location = properties.getProperty(module);
+        if (location != null) return location;
+      }
+      return null;
     }
 
     @Override
-    public Map<String, String> findAll() {
-      ensurePropertiesAreInitialized();
+    public Map<String, String> locations() {
       var map = new TreeMap<String, String>();
-      properties.stringPropertyNames().forEach(key -> map.put(key, properties.getProperty(key)));
+      for (var properties : bundle) {
+        for (var module : properties.stringPropertyNames()) {
+          if (map.containsKey(module)) continue;
+          map.put(module, properties.getProperty(module));
+        }
+      }
       return map;
+    }
+
+    static String computeOsName() {
+      var os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+      if (os.contains("win")) return "windows";
+      if (os.contains("mac")) return "macos";
+      if (os.contains("lin")) return "linux";
+      return os;
+    }
+
+    static String computeOsArch() {
+      return System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+    }
+
+    static Properties loadProperties(Path file) {
+      var properties = new Properties();
+      try {
+        properties.load(new StringReader(Files.readString(file)));
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
+      return properties;
     }
   }
 }

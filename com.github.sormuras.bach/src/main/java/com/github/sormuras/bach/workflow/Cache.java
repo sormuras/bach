@@ -48,12 +48,12 @@ public class Cache implements ToolOperator {
     for (var module : modules) {
       if (finder.find(name()).isPresent()) continue;
       for (var locator : bach.project().externals().locators()) {
-        var location = locator.find(module);
-        if (location.isEmpty()) continue;
+        var location = locator.locate(module);
+        if (location == null) continue;
         if (verbose) {
           printer.out("Located module `%s` via %s".formatted(module, locator.caption()));
         }
-        bach.run("load-and-verify", externals.resolve(module + ".jar"), location.get());
+        bach.run("load-and-verify", externals.resolve(module + ".jar"), location);
         continue module_loop;
       }
       throw new RuntimeException("Can not locate module: " + module);

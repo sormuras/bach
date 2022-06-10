@@ -155,18 +155,6 @@ public record Project(
     return with(locator);
   }
 
-  /**
-   * {@return new project instance with an additional external module library locator}
-   *
-   * @see <a href="https://github.com/sormuras/bach-external-modules">bach-external-modules</a>
-   */
-  public Project withExternalModules(String library, String version, String... classifiers) {
-    var locator =
-        ExternalModuleLocator.SormurasBachExternalModulesProperties.of(
-            library, version, classifiers);
-    return with(locator);
-  }
-
   /** {@return new project instance with an additional external tool} */
   public Project withExternalTool(String name) {
     return with(externals.withExternalTool(name));
@@ -196,15 +184,28 @@ public record Project(
     var project = this;
     var name = directory.normalize().toAbsolutePath().getFileName();
     if (name != null) project = project.withName(name.toString());
-    var externals = directory.resolve(".bach/external-tools");
-    if (Files.isDirectory(externals)) {
-      try (var stream = Files.newDirectoryStream(externals, "*.properties")) {
+    var externalModules = directory.resolve(".bach/external-modules");
+    if (Files.isDirectory(externalModules)) {
+      var matcher = externalModules.getFileSystem().getPathMatcher("glob:**.properties");
+      try (var stream = Files.find(externalModules, 2, (p, a) -> matcher.matches(p))) {
+        for (var path : stream.toList()) {
+          var file = path.getFileName().toString();
+          if (file.indexOf('_') >= 0) continue;
+          project = project.with(ExternalModuleLocator.PropertiesBundleModuleLocator.of(path));
+        }
+      } catch (Exception exception) {
+        throw new RuntimeException("Find files in %s failed".formatted(externalModules), exception);
+      }
+    }
+    var externalTools = directory.resolve(".bach/external-tools");
+    if (Files.isDirectory(externalTools)) {
+      try (var stream = Files.newDirectoryStream(externalTools, "*.properties")) {
         for (var path : stream) {
           var tool = path.getFileName().toString().replace(".properties", "");
           project = project.withExternalTool(tool);
         }
       } catch (Exception exception) {
-        throw new RuntimeException("Stream files in %s failed".formatted(externals), exception);
+        throw new RuntimeException("Stream files in %s failed".formatted(externalTools), exception);
       }
     }
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);

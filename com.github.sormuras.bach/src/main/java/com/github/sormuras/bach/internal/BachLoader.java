@@ -167,7 +167,7 @@ public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser
       var library = deque.removeFirst();
       var version = deque.removeFirst();
       var classifiers = deque.toArray(String[]::new);
-      it.set(it.get().withExternalModules(library, version, classifiers));
+      // TODO it.set(it.get().withExternalModules(library, version, classifiers));
     }
     return it.get();
   }

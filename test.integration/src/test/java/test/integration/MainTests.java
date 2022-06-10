@@ -9,7 +9,6 @@ import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SingleExternalModuleLocator;
-import com.github.sormuras.bach.project.ExternalModuleLocator.SormurasBachExternalModulesProperties;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -36,8 +35,6 @@ class MainTests {
                     // ...
                     .with("--project-with-external-module", "org.example.foo@https//foo.jar")
                     .with("--project-with-external-module", "org.example.bar@https//bar.jar")
-                    .with("--project-with-external-modules", "junit@5.8.2")
-                    .with("--project-with-external-modules", "NAME@VERSION:OS:ARCH")
                     // initial tool call
                     .with("TOOL-NAME")
                     .with("--more-arguments")
@@ -59,9 +56,7 @@ class MainTests {
     assertEquals(
         Stream.of(
                 new SingleExternalModuleLocator("org.example.foo", "https//foo.jar"),
-                new SingleExternalModuleLocator("org.example.bar", "https//bar.jar"),
-                SormurasBachExternalModulesProperties.of("junit", "5.8.2"),
-                SormurasBachExternalModulesProperties.of("NAME", "VERSION", "OS", "ARCH"))
+                new SingleExternalModuleLocator("org.example.bar", "https//bar.jar"))
             .map(ExternalModuleLocator::caption)
             .toList(),
         project.externals().locators().list().stream()
@@ -89,7 +84,8 @@ class MainTests {
         """
         format@.+
         jreleaser@.+
-        """.lines(), project.externals().tools().stream().sorted());
+        """.lines(),
+        project.externals().tools().stream().sorted());
   }
 
   @Test
