@@ -43,6 +43,13 @@ public record DeclaredModule(
       var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(content);
       return new DeclaredModule(content, info, descriptor, base, targeted);
     }
+    // "maven-single" case: "module-info.java" in "src/<space>/java[-module]" directory
+    if (system.getPathMatcher("glob:src/*/{java,java-module}/module-info.java").matches(relativized)) {
+      var java = info.getParent();
+      var base = DeclaredFolders.of(java).withSiblings(java.getParent());
+      var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(java.getParent());
+      return new DeclaredModule(root, info, descriptor, base, targeted);
+    }
 
     // try to find module name in path elements
     var parent = info.getParent();
