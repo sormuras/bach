@@ -2,7 +2,6 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolRunner;
-import com.github.sormuras.bach.project.ExternalModuleLocator;
 import java.io.File;
 import java.lang.module.ModuleDescriptor.Version;
 import java.lang.module.ModuleFinder;
@@ -11,7 +10,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,12 +46,7 @@ class make {
   }
 
   static Map<String, String> externalModules() {
-    var map =
-        new TreeMap<>(
-            ExternalModuleLocator.SormurasBachExternalModulesProperties.of("junit", "5.9.0-M1")
-                .findAll());
-    map.remove("org.junit.vintage.engine"); // Exclude JUnit 4
-    return map;
+    return Map.of();
   }
 
   static Version version(Bach bach) {
