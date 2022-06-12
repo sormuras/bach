@@ -51,9 +51,10 @@ public record Checksum(
       }
       return;
     }
+    var expected = expected().get();
+    if (expected.equals("ANY")) return;
     var file = Path.of(files().get(0));
     var computed = PathSupport.computeChecksum(file, algorithm);
-    var expected = expected().get();
     if (computed.equalsIgnoreCase(expected)) return;
     throw new RuntimeException(
         """
