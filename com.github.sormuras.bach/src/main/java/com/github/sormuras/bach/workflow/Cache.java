@@ -4,6 +4,8 @@ import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolCall;
 import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.internal.ModulesSupport;
+import com.github.sormuras.bach.project.DeclaredModules;
+import com.github.sormuras.bach.project.ProjectSpace;
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
 import java.util.Collection;
@@ -24,10 +26,13 @@ public class Cache implements ToolOperator {
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     installAllExternalTools(bach);
     cacheExternalModules(bach, bach.project().externals().requires());
-    cacheExternalModules(
-        bach,
-        ModulesSupport.listMissingModules(
-            List.of(bach.project().spaces().toModuleFinder()), Set.of()));
+    var finders =
+        bach.project().spaces().list().stream()
+            .map(ProjectSpace::modules)
+            .map(DeclaredModules::toModuleFinder)
+            .toList();
+    var missing = ModulesSupport.listMissingModules(finders, Set.of());
+    cacheExternalModules(bach, missing);
     cacheMissingExternalModules(bach);
     return 0;
   }
@@ -46,7 +51,7 @@ public class Cache implements ToolOperator {
     var finder = ModuleFinder.of(externals);
     module_loop:
     for (var module : modules) {
-      if (finder.find(name()).isPresent()) continue;
+      if (finder.find(module).isPresent()) continue;
       for (var locator : bach.project().externals().locators()) {
         var location = locator.locate(module);
         if (location == null) continue;

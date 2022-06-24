@@ -9,6 +9,7 @@ import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.project.DeclaredModule;
 import com.github.sormuras.bach.project.ExternalModuleLocator;
 import com.github.sormuras.bach.project.ExternalModuleLocator.SingleExternalModuleLocator;
+import java.lang.module.ModuleDescriptor;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -86,6 +87,31 @@ class MainTests {
         jreleaser@.+
         """.lines(),
         project.externals().tools().stream().sorted());
+    assertLinesMatch(
+        """
+        java.base
+        jdk.compiler
+        jdk.jartool
+        jdk.javadoc
+        jdk.jdeps
+        jdk.jfr
+        jdk.jlink
+        org.junit.jupiter
+        test.base
+        """
+            .lines(),
+        project
+            .spaces()
+            .test()
+            .modules()
+            .toModuleFinder()
+            .find("com.github.sormuras.bach")
+            .orElseThrow()
+            .descriptor()
+            .requires()
+            .stream()
+            .map(ModuleDescriptor.Requires::name)
+            .sorted());
   }
 
   @Test

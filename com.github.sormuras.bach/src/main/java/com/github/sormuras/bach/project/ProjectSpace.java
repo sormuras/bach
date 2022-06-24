@@ -2,6 +2,7 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.ToolCallTweak;
+import com.github.sormuras.bach.internal.ModulesSupport;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,7 +84,17 @@ public record ProjectSpace(
         Space
         %20s = %s
         %20s = %d
+        %20s = %s
+        %20s = %s
         """
-            .formatted("name", name, "release", release));
+            .formatted(
+                "name",
+                name,
+                "release",
+                release,
+                "requires spaces",
+                requires,
+                "required modules",
+                ModulesSupport.required(modules.toModuleFinder())));
   }
 }
