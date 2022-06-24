@@ -44,7 +44,9 @@ public record DeclaredModule(
       return new DeclaredModule(content, info, descriptor, base, targeted);
     }
     // "maven-single" case: "module-info.java" in "src/<space>/java[-module]" directory
-    if (system.getPathMatcher("glob:src/*/{java,java-module}/module-info.java").matches(relativized)) {
+    if (system
+        .getPathMatcher("glob:src/*/{java,java-module}/module-info.java")
+        .matches(relativized)) {
       var java = info.getParent();
       var base = DeclaredFolders.of(java).withSiblings(java.getParent());
       var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(java.getParent());
