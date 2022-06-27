@@ -2,6 +2,7 @@ package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.sormuras.bach.Bach;
@@ -112,6 +113,12 @@ class MainTests {
             .stream()
             .map(ModuleDescriptor.Requires::name)
             .sorted());
+
+    var locators = project.externals().locators();
+    assertNotNull(locators.locate("org.apiguardian.api"));
+    assertNotNull(locators.locate("org.junit.jupiter"));
+    assertNotNull(locators.locate("org.junit.platform.commons"));
+    assertNotNull(locators.locate("org.opentest4j"));
   }
 
   @Test

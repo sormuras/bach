@@ -191,7 +191,7 @@ public record Project(
         for (var path : stream.toList()) {
           var file = path.getFileName().toString();
           if (file.indexOf('_') >= 0) continue;
-          project = project.with(ExternalModuleLocator.PropertiesBundleModuleLocator.of(path));
+          project = project.with(ExternalModuleLocator.PropertiesBasedModuleLocator.of(path));
         }
       } catch (Exception exception) {
         throw new RuntimeException("Find files in %s failed".formatted(externalModules), exception);

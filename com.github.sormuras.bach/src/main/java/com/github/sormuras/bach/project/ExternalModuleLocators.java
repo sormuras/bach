@@ -17,6 +17,14 @@ public record ExternalModuleLocators(List<ExternalModuleLocator> list)
     return list.iterator();
   }
 
+  public String locate(String module) {
+    for (var locator : list) {
+      var location = locator.locate(module);
+      if (location != null) return location;
+    }
+    return null;
+  }
+
   public ExternalModuleLocators with(ExternalModuleLocator... locators) {
     var stream = Stream.concat(list.stream(), Stream.of(locators));
     return new ExternalModuleLocators(stream.toList());
