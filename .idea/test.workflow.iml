@@ -4,6 +4,7 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/test.workflow">
       <sourceFolder url="file://$MODULE_DIR$/test.workflow/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test.workflow/src/test/resources" type="java-test-resource" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="test.base" />
