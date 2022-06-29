@@ -9,6 +9,7 @@ public record OperatingSystem(Name name, Architecture architecture) {
   public enum Name {
     ANY(".*"),
     LINUX("^linux.*"),
+    MAC("^(macos|osx|darwin).*"),
     WINDOWS("^windows.*");
 
     private final String identifier;
@@ -34,15 +35,17 @@ public record OperatingSystem(Name name, Architecture architecture) {
 
     public static Name of(String string) {
       var normalized = string.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "");
-      return Stream.of(WINDOWS, LINUX)
+      return Stream.of(LINUX, MAC, WINDOWS)
           .filter(platform -> platform.matches(normalized))
           .findFirst()
-          .orElseThrow(() -> new IllegalArgumentException("Unknown platform: " + string));
+          .orElseThrow(() -> new IllegalArgumentException("Unknown operating system: " + string));
     }
   }
 
   public enum Architecture {
     ANY(".*"),
+    ARM_32("^(arm|arm32)$"),
+    ARM_64("^(aarch64|arm64)$"),
     X86_32("^(x8632|x86|i[3-6]86|ia32|x32)$"),
     X86_64("^(x8664|amd64|ia32e|em64t|x64)$");
 
@@ -69,7 +72,7 @@ public record OperatingSystem(Name name, Architecture architecture) {
 
     public static Architecture of(String string) {
       var normalized = string.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "");
-      return Stream.of(X86_64, X86_32)
+      return Stream.of(X86_64, ARM_64, X86_32, ARM_32)
           .filter(architecture -> architecture.matches(normalized))
           .findFirst()
           .orElseThrow(() -> new IllegalArgumentException("Unknown architecture: " + string));
@@ -78,7 +81,8 @@ public record OperatingSystem(Name name, Architecture architecture) {
 
   public static final OperatingSystem ANY = new OperatingSystem(Name.ANY, Architecture.ANY);
 
-  public static final OperatingSystem SYSTEM = new OperatingSystem(Name.ofSystem(), Architecture.ofSystem());
+  public static final OperatingSystem SYSTEM =
+      new OperatingSystem(Name.ofSystem(), Architecture.ofSystem());
 
   public static OperatingSystem of(String classifier) {
     if (classifier == null || classifier.isEmpty()) return ANY;
