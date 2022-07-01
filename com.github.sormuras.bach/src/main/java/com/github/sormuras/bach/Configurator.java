@@ -26,12 +26,9 @@ public interface Configurator {
     return ToolCallTweak.identity();
   }
 
-  default ToolFinder configureToolFinder(Paths paths) {
-    var module = getClass().getModule();
+  default ToolFinder configureToolFinder(ToolFinder projectToolFinder, Paths paths) {
     return ToolFinder.compose(
-        module == Configurator.class.getModule()
-            ? ToolFinder.of(/* no project-local tools */ )
-            : ToolFinder.ofToolsInModuleLayer(module),
+        projectToolFinder,
         ToolFinder.ofToolsInModulePath(paths.externalModules()),
         ToolFinder.ofJavaTools(paths.externalTools()),
         ToolFinder.ofSystemTools(),

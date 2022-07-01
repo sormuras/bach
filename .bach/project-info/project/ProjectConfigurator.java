@@ -52,9 +52,9 @@ public class ProjectConfigurator implements Configurator {
   }
 
   @Override
-  public ToolFinder configureToolFinder(Paths paths) {
+  public ToolFinder configureToolFinder(ToolFinder projectToolFinder, Paths paths) {
     return ToolFinder.compose(
-        ToolFinder.ofToolsInModuleLayer(getClass().getModule()),
+        projectToolFinder,
         ToolFinder.ofToolsInModulePath(paths.externalModules()),
         ToolFinder.ofJavaTools(paths.externalTools()),
         ToolFinder.ofSystemTools(),

@@ -76,10 +76,6 @@ public interface ToolFinder {
     return new ServiceLoaderToolFinder(layer, loader);
   }
 
-  static ToolFinder ofToolsInModuleLayer(Module module) {
-    return of(module.getLayer());
-  }
-
   static ToolFinder ofToolsInModulePath(Path... paths) {
     return ofToolFinderSupplier(() -> of(ModuleFinder.of(paths), false));
   }

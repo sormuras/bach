@@ -8,6 +8,7 @@ import com.github.sormuras.bach.Flag;
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.Printer;
 import com.github.sormuras.bach.Project;
+import com.github.sormuras.bach.ToolFinder;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser
 
     var fileArguments = loadFileArguments(paths, "project-info.args");
     var projectInfoLayer = loadModuleLayer(paths, "project-info");
+    var projectToolFinder = ToolFinder.of(projectInfoLayer);
 
     var configurator = loadConfigurator(projectInfoLayer);
 
@@ -63,7 +65,7 @@ public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser
                 Flag.DRY_RUN,
                 commandLineArguments.dry_run().or(fileArguments::dry_run).orElse(false));
 
-    var finder = configurator.configureToolFinder(paths);
+    var finder = configurator.configureToolFinder(projectToolFinder, paths);
     var tweak = configurator.configureToolCallTweak();
 
     var configuration = new Configuration(printer, flags, paths, finder, tweak);
@@ -134,7 +136,7 @@ public record BachLoader(Printer printer, ArgVester<CommandLineInterface> parser
       var module = ModuleDescriptorSupport.parse(directory.resolve("module-info.java"));
       var javac = ToolProvider.findFirst("javac").orElseThrow();
       var location = Bach.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-      var target = paths.out(info.getFileName().toString());
+      var target = paths.out(name); // ".bach/out/project-info/"
       javac.run(
           printer.out(),
           printer.err(),
