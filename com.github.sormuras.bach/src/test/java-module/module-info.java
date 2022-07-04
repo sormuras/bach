@@ -6,6 +6,7 @@ open /*test*/ module com.github.sormuras.bach {
   exports com.github.sormuras.bach.project;
 
   requires java.base;
+  requires java.net.http;
   requires jdk.compiler;
   requires jdk.jartool;
   requires jdk.javadoc;
@@ -20,6 +21,7 @@ open /*test*/ module com.github.sormuras.bach {
       com.github.sormuras.bach.Main,
       com.github.sormuras.bach.core.Banner,
       com.github.sormuras.bach.core.Checksum.Tool,
+      com.github.sormuras.bach.core.Import,
       com.github.sormuras.bach.core.Info,
       com.github.sormuras.bach.core.Install,
       com.github.sormuras.bach.core.Load,

@@ -91,6 +91,7 @@ class MainTests {
     assertLinesMatch(
         """
         java.base
+        java.net.http
         jdk.compiler
         jdk.jartool
         jdk.javadoc
