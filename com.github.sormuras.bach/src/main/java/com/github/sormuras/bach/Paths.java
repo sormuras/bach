@@ -25,6 +25,10 @@ public record Paths(Path root, Path out) {
     return root(".bach", "external-modules");
   }
 
+  public Path externalModules(String first, String... more) {
+    return externalModules().resolve(Path.of(first, more));
+  }
+
   public Path externalTools() {
     return root(".bach", "external-tools");
   }
