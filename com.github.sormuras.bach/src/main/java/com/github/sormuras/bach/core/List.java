@@ -2,10 +2,14 @@ package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.Bach;
 import com.github.sormuras.bach.ToolOperator;
+import com.github.sormuras.bach.internal.ModulesSupport;
+import com.github.sormuras.bach.project.DeclaredModules;
+import com.github.sormuras.bach.project.ProjectSpace;
 import java.io.PrintWriter;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.util.ArrayList;
 import java.util.Set;
 
 public class List implements ToolOperator {
@@ -36,6 +40,22 @@ public class List implements ToolOperator {
         var size = names.size();
         out.printf(
             "  %d module%s in project's %s space%n", size, size == 1 ? "" : "s", space.name());
+      }
+    }
+    if (all || set.contains("missing-modules")) {
+      var finders = new ArrayList<ModuleFinder>();
+      finders.add(ModuleFinder.of(bach.configuration().paths().externalModules()));
+      finders.addAll(
+          bach.project().spaces().list().stream()
+              .map(ProjectSpace::modules)
+              .map(DeclaredModules::toModuleFinder)
+              .toList());
+      var modules = ModulesSupport.listMissingModules(finders, Set.of());
+      if (!modules.isEmpty()) {
+        if (set.size() != 1) out.println("\n## bach list missing-modules");
+        modules.forEach(out::println);
+        var size = modules.size();
+        out.printf("  %d missing module%s%n", size, size == 1 ? "" : "s");
       }
     }
     return 0;
