@@ -24,6 +24,10 @@ public class Cache implements ToolOperator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+    if (args.length != 0) {
+      cacheExternalModules(bach, Set.of(args));
+      return 0;
+    }
     installAllExternalTools(bach);
     cacheExternalModules(bach, bach.project().externals().requires());
     var finders =
