@@ -18,6 +18,7 @@ public interface ExternalPropertiesStorage {
   GitHub DEFAULT = new GitHub("sormuras", "bach-info", "HEAD");
 
   static ExternalPropertiesStorage find(String storage) {
+    if (storage == null || storage.isEmpty()) return DEFAULT;
     var scanner = new Scanner(storage);
     scanner.useDelimiter("/");
     var host = scanner.next(); // "github.com"
@@ -27,7 +28,7 @@ public interface ExternalPropertiesStorage {
       var hash = scanner.hasNext() ? String.join("/", scanner.tokens().toList()) : DEFAULT.hash();
       return new GitHub(user, repo, hash);
     }
-    return DEFAULT;
+    throw new RuntimeException("Storage not found: " + storage);
   }
 
   private static Map<String, List<String>> map(InputStream stream) throws Exception {
