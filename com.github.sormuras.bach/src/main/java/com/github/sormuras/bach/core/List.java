@@ -31,9 +31,10 @@ public class List implements ToolOperator {
       var size = names.size();
       out.printf("  %d external module%s in %s%n", size, size == 1 ? "" : "s", path);
     }
+    var project = bach.project();
     if (all || set.contains("project-modules")) {
       if (set.size() != 1) out.println("\n## bach list project-modules");
-      for (var space : bach.project().spaces().list()) {
+      for (var space : project.spaces().list()) {
         var names = space.modules().names();
         if (names.isEmpty()) continue;
         names.forEach(out::println);
@@ -46,11 +47,11 @@ public class List implements ToolOperator {
       var finders = new ArrayList<ModuleFinder>();
       finders.add(ModuleFinder.of(bach.configuration().paths().externalModules()));
       finders.addAll(
-          bach.project().spaces().list().stream()
+          project.spaces().list().stream()
               .map(ProjectSpace::modules)
               .map(DeclaredModules::toModuleFinder)
               .toList());
-      var modules = ModulesSupport.listMissingModules(finders, Set.of());
+      var modules = ModulesSupport.listMissingModules(finders, project.externals().requires());
       if (!modules.isEmpty()) {
         if (set.size() != 1) out.println("\n## bach list missing-modules");
         modules.forEach(out::println);
