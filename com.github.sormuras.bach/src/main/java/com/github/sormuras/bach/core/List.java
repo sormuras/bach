@@ -1,6 +1,8 @@
 package com.github.sormuras.bach.core;
 
 import com.github.sormuras.bach.Bach;
+import com.github.sormuras.bach.Tool;
+import com.github.sormuras.bach.ToolFinder;
 import com.github.sormuras.bach.ToolOperator;
 import com.github.sormuras.bach.internal.ModulesSupport;
 import com.github.sormuras.bach.project.DeclaredModules;
@@ -11,6 +13,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class List implements ToolOperator {
   @Override
@@ -60,6 +63,10 @@ public class List implements ToolOperator {
         out.printf("  %d missing module%s%n", size, size == 1 ? "" : "s");
       }
     }
+    if (all || set.contains("tools")) {
+      if (set.size() != 1) out.println("\n## bach list tools");
+      out.println(formatTools(bach.configuration().finder()));
+    }
     return 0;
   }
 
@@ -69,5 +76,26 @@ public class List implements ToolOperator {
         .map(ModuleDescriptor::toNameAndVersion)
         .sorted()
         .toList();
+  }
+
+  private static String formatTools(ToolFinder finder) {
+    var names = new TreeMap<String, java.util.List<Tool>>();
+    for (var tool : finder.findAll()) {
+      var name = tool.name().substring(tool.name().lastIndexOf('/') + 1);
+      names.computeIfAbsent(name, key -> new ArrayList<>()).add(tool);
+    }
+    var lines = new ArrayList<String>();
+    for (var entry : names.entrySet()) {
+      var name = entry.getKey();
+      var tools = entry.getValue();
+      var first = tools.get(0);
+      lines.add(formatLine("%20s -> %s [%s]", name, first));
+      tools.stream().skip(1).forEach(tool -> lines.add(formatLine("%20s    %s [%s]", "", tool)));
+    }
+    return String.join("\n", lines);
+  }
+
+  private static String formatLine(String format, String name, Tool tool) {
+    return format.formatted(name, tool.name(), tool.provider().getClass().getSimpleName());
   }
 }
