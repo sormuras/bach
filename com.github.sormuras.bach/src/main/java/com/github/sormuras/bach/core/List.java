@@ -34,13 +34,14 @@ public class List implements ToolOperator {
     var project = bach.project();
     if (all || set.contains("project-modules")) {
       if (set.size() != 1) out.println("\n## bach list project-modules");
+      var total = project.modules().size();
+      out.printf("project declares %d module%s%n", total, total == 1 ? "" : "s");
       for (var space : project.spaces().list()) {
         var names = space.modules().names();
         if (names.isEmpty()) continue;
         names.forEach(out::println);
         var size = names.size();
-        out.printf(
-            "  %d module%s in project's %s space%n", size, size == 1 ? "" : "s", space.name());
+        out.printf("  %d module%s in %s space%n", size, size == 1 ? "" : "s", space.name());
       }
     }
     if (all || set.contains("missing-modules")) {
