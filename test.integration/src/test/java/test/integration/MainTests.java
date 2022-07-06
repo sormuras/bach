@@ -128,13 +128,13 @@ class MainTests {
     bach.run("info");
     assertLinesMatch(
         """
-        info
-        >>>>
-          Tools
-        >>>>
-                        bach -> com.github.sormuras.bach/bach [Main]
-        >> ... >>
-        """
+                info
+                >>>>
+                Configuration
+                >>>>
+                Project 'bach .+'
+                >>>>
+                """
             .lines(),
         bach.configuration().printer().out().toString().lines(),
         bach.configuration().printer().toString());

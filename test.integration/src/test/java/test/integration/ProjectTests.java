@@ -1,7 +1,6 @@
 package test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import com.github.sormuras.bach.Project;
 import com.github.sormuras.bach.ToolCall;
@@ -16,20 +15,6 @@ class ProjectTests {
     var project = Project.ofDefaults();
     assertEquals("unnamed", project.name().toString());
     assertEquals(0, project.modules().size());
-    assertLinesMatch(
-        """
-        Project
-                        name = unnamed
-                     version = 0-ea
-                version.date = .+
-                   modules # = 0
-                init modules = []
-                main modules = []
-                test modules = []
-        >> SPACES >>
-        """
-            .lines(),
-        String.format("%s", project).lines());
   }
 
   @Test
