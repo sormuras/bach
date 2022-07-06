@@ -13,15 +13,12 @@ import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.Formattable;
-import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 
 /** Modular project model. */
 public record Project(
-    ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals)
-    implements Formattable {
+    ProjectName name, ProjectVersion version, ProjectSpaces spaces, ProjectExternals externals) {
 
   /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
   public static Project ofDefaults() {
@@ -295,20 +292,5 @@ public record Project(
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
-  }
-
-  @Override
-  public void formatTo(Formatter formatter, int flags, int width, int precision) {
-    formatter.format("Project%n");
-    formatter.format("%20s = %s%n", "name", name);
-    formatter.format("%20s = %s%n", "version", version.value());
-    formatter.format("%20s = %s%n", "version.date", version.date());
-    formatter.format("%20s = %s%n", "modules #", modules().size());
-    formatter.format("%20s = %s%n", "init modules", spaces.init().modules().names());
-    formatter.format("%20s = %s%n", "main modules", spaces.main().modules().names());
-    formatter.format("%20s = %s%n", "test modules", spaces.test().modules().names());
-    formatter.format("%s", "%s".formatted(spaces.init()).indent(2));
-    formatter.format("%s", "%s".formatted(spaces.main()).indent(2));
-    formatter.format("%s", "%s".formatted(spaces.test()).indent(2));
   }
 }

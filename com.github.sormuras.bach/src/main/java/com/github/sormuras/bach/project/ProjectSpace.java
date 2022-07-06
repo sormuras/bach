@@ -2,12 +2,9 @@ package com.github.sormuras.bach.project;
 
 import com.github.sormuras.bach.Paths;
 import com.github.sormuras.bach.ToolCallTweak;
-import com.github.sormuras.bach.internal.ModulesSupport;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Formattable;
-import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -21,8 +18,7 @@ public record ProjectSpace(
     int release,
     Optional<String> launcher,
     List<String> requires, // used to compute "--[processor-]module-path"
-    Map<String, ToolCallTweak> tweaks)
-    implements Formattable {
+    Map<String, ToolCallTweak> tweaks) {
 
   public ProjectSpace {
     Objects.requireNonNull(name);
@@ -75,26 +71,5 @@ public record ProjectSpace(
 
   public ToolCallTweak tweak(String id) {
     return tweaks.getOrDefault(id, ToolCallTweak.identity());
-  }
-
-  @Override
-  public void formatTo(Formatter formatter, int flags, int width, int precision) {
-    formatter.format(
-        """
-        Space
-        %20s = %s
-        %20s = %d
-        %20s = %s
-        %20s = %s
-        """
-            .formatted(
-                "name",
-                name,
-                "release",
-                release,
-                "requires spaces",
-                requires,
-                "required modules",
-                ModulesSupport.required(modules.toModuleFinder())));
   }
 }
