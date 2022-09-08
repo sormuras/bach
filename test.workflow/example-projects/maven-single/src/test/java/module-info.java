@@ -1,1 +1,0 @@
-open /* test */ module foo {}
