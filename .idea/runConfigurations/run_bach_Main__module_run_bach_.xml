@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run.bach.Main (module run.bach)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="run.bach.Main" />
+    <module name="run.bach" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="run.bach.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

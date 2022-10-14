@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="bach (.bach/bin/bach.java)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="bach" />
+    <module name="bach" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

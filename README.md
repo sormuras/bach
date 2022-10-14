@@ -17,7 +17,7 @@ Fast-forward to sections: ♥ [Motivation](#motivation), ✔ [Goals](#goals), an
 
 - Install [JDK] 17 or later.
 
-- <https://github.com/sormuras/bach-init>
+- Run `java .bach/bin/bach.java [<options>] <tool> [<args...>] [ + <tool> [<args...>]]`
 
 ## Motivation
 
@@ -69,8 +69,6 @@ Bach will **not**...
 
 [![jdk17](https://img.shields.io/badge/JDK-17-blue.svg)](https://jdk.java.net)
 ![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)
-
-
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
 [JDK]: https://jdk.java.net

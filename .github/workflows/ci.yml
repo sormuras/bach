@@ -16,27 +16,5 @@ jobs:
         uses: actions/checkout@v2
       - name: 'Set up latest JDK'
         uses: oracle-actions/setup-java@v1
-      - name: 'Initialize Bach ${{ github.sha }}'
-        run: java --show-version .bach/src/bach-init.java
-      - name: 'Build Bach with Bach'
-        run: |
-          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          TAG=$(<VERSION)-ea
-          VERSION=${TAG}+${SHA}
-          .bach/bin/bach .bach/src/build.java --project-version ${VERSION}
-      - name: 'Create test summary'
-        if: always()
-        uses: test-summary/action@v1
-        with:
-          paths: .bach/out/test-reports/**/TEST-*.xml
-      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.event.repository.name }}-build-${{ github.sha }}
-          path: |
-            LICENSE
-            .bach/out/bach-logbook.jfr
-            .bach/out/modules
-      - name: 'Create rocket summary'
-        run: echo '### Hello summary! :rocket:' >> $GITHUB_STEP_SUMMARY
+      - name: 'Run bach.java ${{ github.sha }}'
+        run: java --show-version .bach/bin/bach.java --version

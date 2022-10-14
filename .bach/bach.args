@@ -1,0 +1,6 @@
+#
+# Default arguments used by each bach tool run
+#
+
+--trust-signature-email
+  sormuras@gmail.com

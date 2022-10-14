@@ -1,5 +1,0 @@
-import com.github.sormuras.bach.*
-
-System.out.println()
-System.out.println("|  Booted " + Bach.class.getModule().getDescriptor().toNameAndVersion())
-System.out.println("|")
