@@ -16,5 +16,5 @@ jobs:
         uses: actions/checkout@v3
       - name: 'Set up latest JDK'
         uses: oracle-actions/setup-java@v1
-      - name: 'Run bach.java ${{ github.sha }}'
-        run: java --show-version .bach/bin/bach.java --version
+      - name: 'Build with Bach ${{ github.sha }}'
+        run: .bach/bin/bach build

@@ -69,7 +69,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
   public void operate(Bach bach, List<String> ignored) throws Exception {
     var calls = new ArrayList<>(bach.configuration().cli().calls());
     var first = calls.remove(0);
-    bach.run(ToolCall.of(first.command()), System.Logger.Level.DEBUG);
+    bach.run(bach.tools(), ToolCall.of(first.command()), System.Logger.Level.DEBUG);
     for (var next : calls) bach.run(ToolCall.of(next.command()));
   }
 }

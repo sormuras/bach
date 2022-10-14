@@ -1,6 +1,7 @@
 package project;
 
 import run.bach.*;
+import run.bach.project.Project;
 
 class ProjectLocalBach extends Bach {
   ProjectLocalBach(Configuration configuration) {
@@ -25,5 +26,12 @@ class ProjectLocalBach extends Bach {
   @Override
   protected Tools createTools() {
     return super.createTools();
+  }
+
+  @Override
+  protected Project createProject() {
+    return super.createProject()
+        .withRequiresModule("org.junit.jupiter")
+        .withRequiresModule("org.junit.platform.console");
   }
 }

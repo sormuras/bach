@@ -72,7 +72,7 @@ public class Bach implements ToolRunner {
             "java",
             "jfr",
             "jdeprscan"));
-    return new Tools(new ToolFinders(finders));
+    return new Tools("All Tools", new ToolFinders(finders));
   }
 
   protected Project createProject() {
@@ -119,12 +119,13 @@ public class Bach implements ToolRunner {
 
   @Override
   public void run(ToolCall call) {
-    run(call, System.Logger.Level.INFO);
+    run(tools, call, System.Logger.Level.INFO);
   }
 
-  void run(ToolCall call, System.Logger.Level level) {
+  public void run(ToolFinder finder, ToolCall call, System.Logger.Level level) {
     log(level, "+ %s".formatted(call.toCommandLine(" ")));
-    var tool = tools().get(call.name());
+    var name = call.name();
+    var tool = finder.findFirst(name).orElseThrow(() -> new ToolNotFoundException(name));
     var arguments = call.arguments();
     runTool(tool, arguments);
   }

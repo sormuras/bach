@@ -2,17 +2,19 @@ package run.bach;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
-public record Tools(ToolFinders finders) {
-  public Tool get(String string) {
-    for (var finder : finders.list()) {
-      var found = finder.findFirst(string);
-      if (found.isEmpty()) continue;
-      return found.get();
-    }
-    throw new RuntimeException("No such tool: " + string);
+public record Tools(String description, ToolFinders finders) implements ToolFinder {
+  @Override
+  public List<Tool> findAll() {
+    return finders.list().stream().flatMap(finder -> finder.findAll().stream()).toList();
+  }
+
+  @Override
+  public Optional<Tool> findFirst(String string) {
+    return finders.findFirst(string);
   }
 
   public String toString(int indent) {
