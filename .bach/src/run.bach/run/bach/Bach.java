@@ -7,6 +7,7 @@ import java.util.spi.ToolProvider;
 import run.bach.internal.LoadValidator;
 import run.bach.internal.PathSupport;
 import run.bach.internal.StringPrintWriterMirror;
+import run.bach.project.Project;
 
 public class Bach implements ToolRunner {
 
@@ -17,6 +18,7 @@ public class Bach implements ToolRunner {
   private final Browser browser;
   private final Locators locators;
   private final Tools tools;
+  private final Project project;
 
   public Bach(Configuration configuration) {
     this.configuration = configuration;
@@ -24,6 +26,7 @@ public class Bach implements ToolRunner {
     this.browser = createBrowser();
     this.locators = createLocators();
     this.tools = createTools();
+    this.project = createProject();
   }
 
   protected Browser createBrowser() {
@@ -72,6 +75,11 @@ public class Bach implements ToolRunner {
     return new Tools(new ToolFinders(finders));
   }
 
+  protected Project createProject() {
+    var moduleInfoFindPattern = "glob:*/src/{init,main,test}/{java,java-module}/module-info.java";
+    return Project.ofDefaults().withWalkingDirectory(paths.root(), moduleInfoFindPattern);
+  }
+
   public final Configuration configuration() {
     return configuration;
   }
@@ -90,6 +98,10 @@ public class Bach implements ToolRunner {
 
   public final Tools tools() {
     return tools;
+  }
+
+  public final Project project() {
+    return project;
   }
 
   public void debug(Object message) {

@@ -14,6 +14,7 @@ module run.bach {
   requires jdk.jpackage;
 
   exports run.bach;
+  exports run.bach.project;
 
   uses BachFactory;
   uses Locator;
