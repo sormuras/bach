@@ -1,3 +1,14 @@
 #!/usr/bin/env bash
-java `dirname -- "$0"`/bach.java "$@"
+
+if [[ -z "${JAVA_HOME}" ]]; then
+  echo JAVA_HOME not set, using `which java`
+  JAVA="java"
+else
+  JAVA="${JAVA_HOME}/bin/java"
+fi
+
+BACH=`dirname -- "$0"`/bach.java
+
+${JAVA} ${BACH} "$@"
+
 exit $?

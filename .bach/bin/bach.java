@@ -26,7 +26,8 @@ interface bach {
   }
 
   static int runBachTool(Path modules, String... args) throws Exception {
-    var process = new ProcessBuilder("java", "--module-path", modules.toString());
+    var java = Path.of(System.getProperty("java.home"), "bin", "java");
+    var process = new ProcessBuilder(java.toString(), "--module-path", modules.toString());
     process.command().add("--module");
     process.command().add("run.bach/run.bach.Main");
     process.command().addAll(List.of(args));
