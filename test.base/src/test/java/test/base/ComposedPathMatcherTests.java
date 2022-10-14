@@ -28,8 +28,7 @@ class ComposedPathMatcherTests {
         glob:1/suffix
         glob:2/suffix
         glob:3/suffix
-        """
-            .lines(),
+        """.lines(),
         ComposedPathMatcher.stream("glob", "suffix", "1", "2", "3"));
   }
 

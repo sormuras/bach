@@ -104,8 +104,7 @@ class FilesTests {
       assertLinesMatch(
           """
           test.base/src/test/java/module-info.java
-          """
-              .lines(),
+          """.lines(),
           paths().stream().filter(predicate).map(FilesTests::slashed));
     }
   }
