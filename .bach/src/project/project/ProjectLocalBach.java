@@ -30,8 +30,6 @@ class ProjectLocalBach extends Bach {
 
   @Override
   protected Project createProject() {
-    return super.createProject()
-        .withRequiresModule("org.junit.jupiter")
-        .withRequiresModule("org.junit.platform.console");
+    return super.createProject();
   }
 }
