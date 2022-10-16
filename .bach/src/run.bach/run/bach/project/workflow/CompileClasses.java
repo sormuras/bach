@@ -11,6 +11,8 @@ public class CompileClasses implements ToolOperator {
 
   static final String NAME = "compile-classes";
 
+  public CompileClasses() {}
+
   @Override
   public String name() {
     return NAME;

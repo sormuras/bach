@@ -8,6 +8,8 @@ public class Build implements ToolOperator {
 
   static final String NAME = "build";
 
+  public Build() {}
+
   @Override
   public String name() {
     return NAME;

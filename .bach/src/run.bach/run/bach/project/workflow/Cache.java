@@ -9,6 +9,8 @@ public class Cache implements ToolOperator {
 
   static final String NAME = "cache";
 
+  public Cache() {}
+
   @Override
   public String name() {
     return NAME;

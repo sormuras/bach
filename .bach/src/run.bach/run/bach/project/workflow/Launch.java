@@ -9,6 +9,8 @@ public class Launch implements ToolOperator {
 
   static final String NAME = "launch";
 
+  public Launch() {}
+
   @Override
   public String name() {
     return NAME;

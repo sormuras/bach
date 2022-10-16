@@ -8,6 +8,8 @@ public class Compile implements ToolOperator {
 
   static final String NAME = "compile";
 
+  public Compile() {}
+
   @Override
   public String name() {
     return NAME;

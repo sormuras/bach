@@ -30,7 +30,14 @@ interface bach {
   static Path compileBachModules(Path sources) {
     var classes = Path.of(".bach/bin/classes-" + Runtime.version().feature());
     var module = module(sources);
-    run("javac", "--module=" + module, "--module-source-path=" + sources, "-d", classes.toString());
+    run(
+        "javac",
+        "--module=" + module,
+        "--module-source-path=" + sources,
+        "-X" + "lint:all",
+        "-W" + "error",
+        "-d",
+        classes.toString());
     return classes;
   }
 

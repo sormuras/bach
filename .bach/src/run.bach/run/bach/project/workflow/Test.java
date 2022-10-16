@@ -13,6 +13,8 @@ public class Test implements ToolOperator {
 
   static final String NAME = "test";
 
+  public Test() {}
+
   @Override
   public String name() {
     return NAME;
