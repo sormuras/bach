@@ -11,7 +11,7 @@ import run.bach.project.Project;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.16-ea+0500";
+  public static final String VERSION = "2022.10.16-ea+0900";
 
   private final Configuration configuration;
   private final Paths paths;

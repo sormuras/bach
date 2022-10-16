@@ -55,7 +55,7 @@ interface bach {
   }
 
   static String readBachVersionFromFileOrElseReturnMain() throws Exception {
-    return Files.exists(BACH_VERSION_FILE) ? Files.readString(BACH_VERSION_FILE) : "main";
+    return Files.exists(BACH_VERSION_FILE) ? Files.readAllLines(BACH_VERSION_FILE).get(0) : "main";
   }
 
   static void run(String name, String... args) {
