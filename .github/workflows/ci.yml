@@ -35,6 +35,6 @@ jobs:
         run: |
           mkdir example && cd example
           echo Files.copy(URI.create("https://java.bach.run").toURL().openStream(), Files.createDirectories(Path.of(".bach/bin")).resolve("bach.java")) | jshell -
-          $JAVA_HOME_17_X64/bin/java .bach/bin/bach.java --verbose info
+          %JAVA_HOME_17_X64%\bin\java .bach\bin\bach.java --verbose info
           cd .. && rmdir /Q /S example
         shell: cmd
