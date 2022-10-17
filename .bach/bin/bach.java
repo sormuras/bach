@@ -19,8 +19,9 @@ interface bach {
     var reset = args.length > 0 && args[0].equals("reset");
     var version = reset && args.length > 1 ? args[1] : readBachVersionFromFileOrElseReturnMain();
     if (reset) {
-      acquireArchive(version); // acquire first before deleting anything
       System.out.printf("Reset Bach to version %s in progress...%n", version);
+      deleteTree(Path.of(".bach/tmp"));
+      acquireArchive(version); // get new sources first before deleting any existing sources
       deleteTree(Path.of(".bach/bin"));
       deleteTree(BACH_SOURCE_FOLDER.resolve("run.bach"));
     }
