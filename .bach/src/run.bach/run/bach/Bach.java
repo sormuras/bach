@@ -8,10 +8,11 @@ import run.bach.internal.LoadValidator;
 import run.bach.internal.PathSupport;
 import run.bach.internal.StringPrintWriterMirror;
 import run.bach.project.Project;
+import run.bach.project.ProjectComposer;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.18-ea+1105";
+  public static final String VERSION = "2022.10.18-ea+1400";
 
   private final Configuration configuration;
   private final Paths paths;
@@ -76,8 +77,12 @@ public class Bach implements ToolRunner {
   }
 
   protected Project createProject() {
-    var moduleInfoFindPattern = "glob:*/src/{init,main,test}/{java,java-module}/module-info.java";
-    return Project.ofDefaults().withWalkingDirectory(paths.root(), moduleInfoFindPattern);
+    var project = Project.ofDefaults();
+    project = project.withWalkingDirectory(paths.root(), "glob:**/module-info.java");
+    var composers = new ArrayList<ProjectComposer>();
+    ServiceLoader.load(ProjectComposer.class).forEach(composers::add);
+    for (var composer : composers) project = composer.composeProject(project);
+    return project;
   }
 
   public final Configuration configuration() {

@@ -17,6 +17,7 @@ module run.bach {
   uses run.bach.BachFactory;
   uses run.bach.Locator;
   uses run.bach.ToolOperator;
+  uses run.bach.project.ProjectComposer;
 
   provides java.util.spi.ToolProvider with
       run.bach.internal.tool.ListFilesTool,
