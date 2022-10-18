@@ -1,11 +1,9 @@
 package run.bach.project;
 
-import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 
 /** Modular project model. */
 public record Project(
@@ -89,28 +87,9 @@ public record Project(
     return with(space.withLauncher(launcher));
   }
 
-  public Project withModule(String module) {
-    return withModule("main", module);
-  }
-
-  public Project withModule(String space, String module) {
-    return withModule(space, ModuleDescriptor.newModule(module).build());
-  }
-
-  public Project withModule(String space, ModuleDescriptor module) {
-    return withModule(
-        spaces.space(space),
-        new DeclaredModule(
-            Path.of(module.name()),
-            Path.of(module.name(), "src", space, "java", "module-info.java"),
-            module,
-            DeclaredFolders.of(Path.of(module.name(), "src", space, "java")),
-            Map.of()));
-  }
-
   /** {@return new project instance with a new module declaration added to the specified space} */
-  public Project withModule(String space, Path root, String info) {
-    return withModule(spaces.space(space), DeclaredModule.of(root, Path.of(info)));
+  public Project withModule(String space, String root, String info) {
+    return withModule(spaces.space(space), DeclaredModule.of(Path.of(root), Path.of(info)));
   }
 
   /** {@return new project instance with a new module declaration added to the specified space} */
@@ -130,8 +109,8 @@ public record Project(
    */
   public Project withWalkingDirectory(Path directory, String syntaxAndPattern) {
     var project = this;
-    var name = directory.normalize().toAbsolutePath().getFileName();
-    if (name != null) project = project.withName(name.toString());
+    var directoryName = directory.normalize().toAbsolutePath().getFileName();
+    if (directoryName != null) project = project.withName(directoryName.toString());
     var matcher = directory.getFileSystem().getPathMatcher(syntaxAndPattern);
     try (var stream = Files.find(directory, 9, (p, a) -> matcher.matches(p))) {
       for (var path : stream.toList()) {
@@ -139,15 +118,20 @@ public record Project(
         if (uri.contains("/.bach/")) continue; // exclude project-local modules
         if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
         var module = DeclaredModule.of(directory, path);
-        if (uri.contains("/init/")) {
-          project = project.withModule(project.spaces().init(), module);
-          continue;
-        }
-        if (uri.contains("/test/")) {
-          project = project.withModule(project.spaces().test(), module);
-          continue;
-        }
-        project = project.withModule(project.spaces().main(), module);
+        var spaces = project.spaces();
+        var init = spaces.init();
+        var test = spaces.test();
+        var main = spaces.main();
+        var space = uri.contains("/init/") ? init : uri.contains("/test/") ? test : main;
+        project = project.withModule(space, module);
+        var name = module.name();
+        var launcher =
+            module.base().sources().stream()
+                .map(dir -> dir.resolve(name.replace('.', '/') + "/Main.java"))
+                .filter(Files::isRegularFile)
+                .findFirst();
+        if (launcher.isPresent())
+          project = project.withLauncher(space, name + '/' + name + ".Main");
       }
     } catch (Exception exception) {
       throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
