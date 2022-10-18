@@ -53,14 +53,12 @@ public class CompileModules implements ToolOperator {
         jar = jar.with("--date", date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
       }
 
-      var mainProgram = name.replace('.', '/') + "/Main.java";
-      var mainJava =
-          module.base().sources().stream()
-              .map(dir -> dir.resolve(mainProgram))
-              .filter(Files::isRegularFile)
-              .findFirst();
-      if (mainJava.isPresent()) {
-        jar = jar.with("--main-class", name + ".Main");
+      if (space.launcher().isPresent()) {
+        var launcher = space.launcher().get();
+        if (launcher.startsWith(name + '/')) {
+          var className = launcher.substring(name.length() + 1);
+          jar = jar.with("--main-class", className);
+        }
       }
 
       // include base classes (from compile-classes) and resources
