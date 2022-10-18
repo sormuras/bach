@@ -10,7 +10,6 @@ import java.util.spi.ToolProvider;
 
 interface bach {
 
-  Path BACH_SOURCE_FOLDER = Path.of(".bach", "src");
   Path BACH_VERSION_FILE = Path.of(".bach", "bach.version");
   Path GIT_IGNORE_FILE = Path.of(".bach", ".gitignore");
 
@@ -19,14 +18,27 @@ interface bach {
     var reset = args.length > 0 && args[0].equals("reset");
     var version = reset && args.length > 1 ? args[1] : readBachVersionFromFileOrElseReturnMain();
     if (reset) {
+      if (List.of("?", "/?", "-?", "-h", "--help").contains(version)) {
+        System.out.print(
+            """
+            Usage: bach reset <version>
+
+                A reset is performed by replacing a set of directory trees below the
+                `.bach/` folder with files extracted from a versioned Bach archive.
+
+            Values for version include: "main", "HEAD", git tags, and git commit SHAs.
+            """);
+        return;
+      }
       System.out.printf("Reset Bach to version %s in progress...%n", version);
-      deleteTree(Path.of(".bach/tmp"));
+      deleteTree(Path.of(".bach", "tmp"));
       acquireArchive(version); // get new sources first before deleting any existing sources
-      deleteTree(Path.of(".bach/bin"));
-      deleteTree(BACH_SOURCE_FOLDER.resolve("run.bach"));
+      deleteTree(Path.of(".bach", "bin"));
+      deleteTree(Path.of(".bach", "src", "run.bach"));
+      deleteTree(Path.of(".bach", "out"));
     }
     // extract and generate
-    if (Files.notExists(BACH_SOURCE_FOLDER.resolve("run.bach"))) {
+    if (Files.notExists(Path.of(".bach/src/run.bach"))) {
       extract(acquireArchive(version));
       //noinspection ResultOfMethodCallIgnored
       Path.of(".bach/bin/bach").toFile().setExecutable(true, true);
@@ -35,10 +47,11 @@ interface bach {
     }
     if (reset) {
       System.out.println("Reset done.");
+      bach.main("--version");
       return;
     }
     // compile and run
-    var modules = compileBachModules(BACH_SOURCE_FOLDER);
+    var modules = compileBachModules(Path.of(".bach/src"));
     var code = runBachTool(modules, args);
     if (code != 0) System.exit(code);
   }
