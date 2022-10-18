@@ -18,6 +18,7 @@ module run.bach {
   uses run.bach.Locator;
   uses run.bach.ToolOperator;
   uses run.bach.project.ProjectComposer;
+  uses run.bach.project.workflow.CompileClasses.JavacTweak;
 
   provides java.util.spi.ToolProvider with
       run.bach.internal.tool.ListFilesTool,

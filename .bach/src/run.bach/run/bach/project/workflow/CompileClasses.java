@@ -3,9 +3,12 @@ package run.bach.project.workflow;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
+import run.bach.Tweak;
+import run.bach.project.ProjectSpace;
 
 public class CompileClasses implements ToolOperator {
 
@@ -64,6 +67,17 @@ public class CompileClasses implements ToolOperator {
     var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
     javac = javac.with("-d", classes0);
 
+    for (var tweak : ServiceLoader.load(JavacTweak.class)) {
+      var context = new JavacTweak.TweakContext(bach, space);
+      javac = tweak.tweakWorkflowCompileClassesJavac(javac, context);
+    }
+
     bach.run(javac);
+  }
+
+  public interface JavacTweak extends Tweak {
+    record TweakContext(Bach bach, ProjectSpace space) {}
+
+    ToolCall tweakWorkflowCompileClassesJavac(ToolCall call, TweakContext context);
   }
 }
