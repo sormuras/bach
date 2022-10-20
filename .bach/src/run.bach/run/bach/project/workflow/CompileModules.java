@@ -24,6 +24,37 @@ public class CompileModules implements ToolOperator {
     return NAME;
   }
 
+  @Override
+  public void operate(Bach bach, List<String> arguments) {
+    var calls = new TreeMap<String, List<ToolCall>>();
+    var space = bach.project().spaces().space(arguments.get(0)); // TODO Better argument handling
+    for (var module : space.modules()) {
+      var context = new OperationContext(bach, space, module, calls);
+      var jar = createJarCall();
+      jar = jar.with("--create");
+      jar = jarWithFile(jar, context);
+      jar = jarWithModuleVersion(jar, context);
+      jar = jarWithDate(jar, context);
+      jar = jarWithLauncher(jar, context);
+      jar = jarWithBaseClassesAndResources(jar, context);
+      jar = jarWithClassesOfPatchedModule(jar, context); // instead of "--patch-module" at runtime
+      jar = jarWithTargetedClassesAndResources(jar, context);
+      context.withJarCall(jar);
+    }
+    var modules = bach.paths().out(space.name(), "modules");
+    if (Runtime.version().feature() < 19) {
+      try {
+        Files.createDirectories(modules); // ToolCall.of("tree").with("create").with(modules);
+      } catch (Exception exception) {
+        throw new RuntimeException("Create directories failed: " + modules);
+      }
+    }
+    for (var list : calls.values()) {
+      list.stream().parallel().forEach(bach::run);
+    }
+    bach.run("hash", modules.toString());
+  }
+
   protected ToolCall createJarCall() {
     return ToolCall.of("jar");
   }
@@ -131,38 +162,5 @@ public class CompileModules implements ToolOperator {
     public void withJarCall(ToolCall jar) {
       calls.computeIfAbsent("20 jar calls", __ -> new ArrayList<>()).add(jar);
     }
-  }
-
-  @Override
-  public void operate(Bach bach, List<String> arguments) {
-    var calls = new TreeMap<String, List<ToolCall>>();
-    var space = bach.project().spaces().space(arguments.get(0)); // TODO Better argument handling
-
-    for (var module : space.modules()) {
-      var context = new OperationContext(bach, space, module, calls);
-      var jar = createJarCall();
-      jar = jar.with("--create");
-      jar = jarWithFile(jar, context);
-      jar = jarWithModuleVersion(jar, context);
-      jar = jarWithDate(jar, context);
-      jar = jarWithLauncher(jar, context);
-      jar = jarWithBaseClassesAndResources(jar, context);
-      jar = jarWithClassesOfPatchedModule(jar, context); // instead of "--patch-module" at runtime
-      jar = jarWithTargetedClassesAndResources(jar, context);
-      context.withJarCall(jar);
-    }
-
-    var modules = bach.paths().out(space.name(), "modules");
-    if (Runtime.version().feature() < 19) {
-      try {
-        Files.createDirectories(modules); // ToolCall.of("tree").with("create").with(modules);
-      } catch (Exception exception) {
-        throw new RuntimeException("Create directories failed: " + modules);
-      }
-    }
-    for (var list : calls.values()) {
-      list.stream().parallel().forEach(bach::run);
-    }
-    bach.run("hash", modules.toString());
   }
 }

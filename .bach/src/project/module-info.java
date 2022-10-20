@@ -6,7 +6,7 @@ module project {
   provides run.bach.ToolTweak with
       project.JavacEncodingUtf8Tweak;
   provides run.bach.ToolOperator with
-      project.CompileModules,
+      project.CompileClasses,
       project.build,
       project.format;
 }
