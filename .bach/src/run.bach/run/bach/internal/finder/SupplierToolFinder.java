@@ -1,4 +1,4 @@
-package run.bach.internal.tool.finder;
+package run.bach.internal.finder;
 
 import java.lang.module.FindException;
 import java.util.List;

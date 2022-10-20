@@ -10,10 +10,10 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import run.bach.internal.ModulesSupport;
-import run.bach.internal.tool.finder.ArrayToolFinder;
-import run.bach.internal.tool.finder.JavaProgramsToolFinder;
-import run.bach.internal.tool.finder.ServiceLoaderToolFinder;
-import run.bach.internal.tool.finder.SupplierToolFinder;
+import run.bach.internal.finder.ArrayToolFinder;
+import run.bach.internal.finder.JavaProgramsToolFinder;
+import run.bach.internal.finder.ServiceLoaderToolFinder;
+import run.bach.internal.finder.SupplierToolFinder;
 
 @FunctionalInterface
 public interface ToolFinder {

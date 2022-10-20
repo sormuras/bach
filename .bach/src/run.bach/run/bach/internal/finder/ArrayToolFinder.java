@@ -1,4 +1,4 @@
-package run.bach.internal.tool.finder;
+package run.bach.internal.finder;
 
 import java.util.List;
 import run.bach.Tool;
