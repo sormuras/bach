@@ -14,7 +14,7 @@ module run.bach {
   exports run.bach.project.workflow;
 
   uses java.util.spi.ToolProvider;
-  uses run.bach.BachFactory;
+  uses run.bach.Bach.Factory;
   uses run.bach.Locator;
   uses run.bach.ToolOperator;
   uses run.bach.ToolTweak;

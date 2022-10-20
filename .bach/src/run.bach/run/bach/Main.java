@@ -50,7 +50,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
       }
       try {
         recording.start();
-        var bach = BachFactory.newBach(configuration);
+        var bach = Bach.of(configuration);
         bach.runToolOperator(this, List.of(args));
         return 0;
       } finally {

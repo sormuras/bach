@@ -14,6 +14,19 @@ public class Bach implements ToolRunner {
 
   public static final String VERSION = "2022.10.18-ea+1400";
 
+  @FunctionalInterface
+  public interface Factory {
+    Bach createBach(Configuration configuration);
+  }
+
+  public static Bach of(Configuration configuration) {
+    var factory = ServiceLoader.load(Factory.class).findFirst().orElse(Bach::new);
+    var bach = factory.createBach(configuration);
+    bach.debug("Initialized instance of " + bach.getClass());
+    bach.debug(bach.toString(0));
+    return bach;
+  }
+
   private final Configuration configuration;
   private final Paths paths;
   private final Browser browser;
