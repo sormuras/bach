@@ -1,4 +1,4 @@
-package run.bach;
+package run.bach.internal;
 
 import jdk.jfr.Category;
 import jdk.jfr.Enabled;
@@ -7,16 +7,16 @@ import jdk.jfr.Label;
 import jdk.jfr.Name;
 import jdk.jfr.StackTrace;
 
-sealed interface FlightRecorderEvent {
+public sealed interface FlightRecorderEvent {
   @Category("Bach")
   @Enabled(false)
   @StackTrace(false)
   abstract sealed class BachEvent extends Event implements FlightRecorderEvent {
     @Label("Tool Name")
-    String name;
+    public String name;
 
     @Label("Tool Arguments")
-    String args;
+    public String args;
   }
 
   @Enabled
@@ -28,8 +28,8 @@ sealed interface FlightRecorderEvent {
   @Label("Tool Provider Run")
   @Name("Bach.ToolProviderRun")
   final class ToolProviderRun extends BachEvent {
-    int code;
-    String out;
-    String err;
+    public int code;
+    public String out;
+    public String err;
   }
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
+import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.LoadValidator;
 import run.bach.internal.PathSupport;
 import run.bach.internal.StringPrintWriterMirror;
