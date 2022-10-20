@@ -6,7 +6,8 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
-public record Tools(String description, ToolFinders finders) implements ToolFinder {
+public record Tools(String description, ToolFinders finders, ToolTweaks tweaks)
+    implements ToolFinder {
   @Override
   public List<Tool> findAll() {
     return finders.list().stream().flatMap(finder -> finder.findAll().stream()).toList();

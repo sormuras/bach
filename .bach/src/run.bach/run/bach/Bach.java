@@ -73,7 +73,11 @@ public class Bach implements ToolRunner {
             "java",
             "jfr",
             "jdeprscan"));
-    return new Tools("All Tools", new ToolFinders(finders));
+
+    var tweaks = new ArrayList<ToolTweak>();
+    ServiceLoader.load(ToolTweak.class).forEach(tweaks::add);
+
+    return new Tools("All Tools", new ToolFinders(finders), new ToolTweaks(tweaks));
   }
 
   protected Project createProject() {
@@ -127,10 +131,11 @@ public class Bach implements ToolRunner {
     run(tools, call, System.Logger.Level.INFO);
   }
 
-  public void run(ToolFinder finder, ToolCall call, System.Logger.Level level) {
-    log(level, "+ %s".formatted(call.toCommandLine(" ")));
+  public void run(ToolFinder toolFinder, ToolCall toolCall, System.Logger.Level logLevel) {
+    var call = toolCall.withTweaks(tools().tweaks().list());
+    log(logLevel, "+ %s".formatted(call.toCommandLine(" ")));
     var name = call.name();
-    var tool = finder.findFirst(name).orElseThrow(() -> new ToolNotFoundException(name));
+    var tool = toolFinder.findFirst(name).orElseThrow(() -> new ToolNotFoundException(name));
     var arguments = call.arguments();
     runTool(tool, arguments);
   }

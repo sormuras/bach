@@ -5,15 +5,10 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /** A command description composed of the name and arguments of the tool call. */
 public record ToolCall(String name, List<String> arguments) {
-
-  /** An operator usually returning a copy of a tool call instance with additional arguments. */
-  @FunctionalInterface
-  public interface Composer extends UnaryOperator<ToolCall> {}
 
   public static ToolCall of(String name, Object... arguments) {
     if (arguments.length == 0) return new ToolCall(name);
@@ -76,5 +71,16 @@ public record ToolCall(String name, List<String> arguments) {
     } catch (Exception exception) {
       throw new RuntimeException("Find files failed in: " + start, exception);
     }
+  }
+
+  public ToolCall withTweaks(List<ToolTweak> tweaks) {
+    var tweaked = this;
+    for (var tweak : tweaks) tweaked = tweak.tweak(tweaked);
+    return tweaked;
+  }
+
+  public ToolCall with(int position, ToolTweak tweak) {
+    var call = ToolCall.of(name).with(arguments.stream().limit(position));
+    return tweak.tweak(call).with(arguments.stream().skip(position));
   }
 }

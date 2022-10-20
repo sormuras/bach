@@ -4,7 +4,6 @@ import java.util.List;
 
 @FunctionalInterface
 public interface ToolRunner {
-
   void run(ToolCall call);
 
   default void run(String tool, String... args) {
@@ -15,7 +14,7 @@ public interface ToolRunner {
     run(new ToolCall(tool, List.copyOf(arguments)));
   }
 
-  default void run(String tool, ToolCall.Composer composer) {
-    run(composer.apply(new ToolCall(tool)));
+  default void run(String tool, ToolTweak composer) {
+    run(new ToolCall(tool).withTweaks(List.of(composer)));
   }
 }

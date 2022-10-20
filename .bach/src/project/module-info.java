@@ -3,8 +3,8 @@ module project {
 
   provides run.bach.project.ProjectComposer with
       project.ProjectInfo;
-  provides run.bach.project.workflow.CompileClasses.JavacTweak with
-      project.CompileClassesJavacTweak;
+  provides run.bach.ToolTweak with
+      project.JavacEncodingUtf8Tweak;
   provides run.bach.ToolOperator with
       project.CompileModules,
       project.build,
