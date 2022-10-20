@@ -20,10 +20,7 @@ module run.bach {
   uses run.bach.ToolTweak;
 
   provides java.util.spi.ToolProvider with
-      run.bach.toolbox.ListFilesTool,
-      run.bach.toolbox.TreeCreateTool,
-      run.bach.toolbox.TreeDeleteTool,
-      run.bach.toolbox.TreeTool;
+      run.bach.toolbox.ListFilesTool;
   provides run.bach.ToolOperator with
       run.bach.toolbox.HashOperator,
       run.bach.toolbox.ImportOperator,
