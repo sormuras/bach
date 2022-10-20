@@ -1,15 +1,15 @@
-package run.bach.project.workflow;
+package run.bach.project;
 
 import java.util.List;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class Launch implements ToolOperator {
+public class LaunchOperator implements ToolOperator {
 
   static final String NAME = "launch";
 
-  public Launch() {}
+  public LaunchOperator() {}
 
   @Override
   public String name() {

@@ -8,8 +8,6 @@ import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.LoadValidator;
 import run.bach.internal.PathSupport;
 import run.bach.internal.StringPrintWriterMirror;
-import run.bach.project.Project;
-import run.bach.project.ProjectComposer;
 
 public class Bach implements ToolRunner {
 
@@ -32,7 +30,7 @@ public class Bach implements ToolRunner {
   private final Printer printer;
   private final Paths paths;
   private final Browser browser;
-  private final Locators locators;
+  private final ExternalModuleLocators locators;
   private final Tools tools;
   private final Project project;
 
@@ -50,13 +48,13 @@ public class Bach implements ToolRunner {
     return new Browser(new LoadValidator(this));
   }
 
-  protected Locators createLocators() {
-    var locators = new ArrayList<Locator>();
-    ServiceLoader.load(Locator.class).forEach(locators::add);
+  protected ExternalModuleLocators createLocators() {
+    var locators = new ArrayList<ExternalModuleLocator>();
+    ServiceLoader.load(ExternalModuleLocator.class).forEach(locators::add);
     PathSupport.list(paths().externalModules(), PathSupport::isPropertiesFile).stream()
-        .map(Locator::ofProperties)
+        .map(ExternalModuleLocator::ofProperties)
         .forEach(locators::add);
-    return new Locators(locators);
+    return new ExternalModuleLocators(locators);
   }
 
   protected Paths createPaths() {
@@ -99,8 +97,8 @@ public class Bach implements ToolRunner {
   protected Project createProject() {
     var project = Project.ofDefaults();
     project = project.withWalkingDirectory(paths.root(), "glob:**/module-info.java");
-    var composers = new ArrayList<ProjectComposer>();
-    ServiceLoader.load(ProjectComposer.class).forEach(composers::add);
+    var composers = new ArrayList<Project.Composer>();
+    ServiceLoader.load(Project.Composer.class).forEach(composers::add);
     for (var composer : composers) project = composer.composeProject(project);
     return project;
   }
@@ -117,7 +115,7 @@ public class Bach implements ToolRunner {
     return browser;
   }
 
-  public final Locators locators() {
+  public final ExternalModuleLocators locators() {
     return locators;
   }
 

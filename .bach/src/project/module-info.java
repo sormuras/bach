@@ -1,10 +1,10 @@
 module project {
   requires run.bach;
 
-  provides run.bach.project.ProjectComposer with
+  provides run.bach.Project.Composer with
       project.ProjectInfo;
   provides run.bach.ToolTweak with
-      project.JavacEncodingUtf8Tweak;
+      project.CallWithUtf8EncodingTweak;
   provides run.bach.ToolOperator with
       project.CompileClasses,
       project.build,

@@ -1,3 +1,5 @@
+import run.bach.ExternalModuleLocator;
+
 /** Defines Bach's API. */
 module run.bach {
   requires transitive java.net.http;
@@ -11,14 +13,13 @@ module run.bach {
 
   exports run.bach;
   exports run.bach.project;
-  exports run.bach.project.workflow;
 
   uses java.util.spi.ToolProvider;
   uses run.bach.Bach.Factory;
-  uses run.bach.Locator;
+  uses ExternalModuleLocator;
   uses run.bach.ToolOperator;
   uses run.bach.ToolTweak;
-  uses run.bach.project.ProjectComposer;
+  uses run.bach.Project.Composer;
 
   provides java.util.spi.ToolProvider with
       run.bach.internal.tool.ListFilesTool,
@@ -39,11 +40,11 @@ module run.bach {
       run.bach.internal.tool.ListModulesOperator,
       run.bach.internal.tool.ListToolsOperator,
       run.bach.internal.tool.SignatureOperator,
-      run.bach.project.workflow.Build,
-      run.bach.project.workflow.Cache,
-      run.bach.project.workflow.Compile,
-      run.bach.project.workflow.CompileClasses,
-      run.bach.project.workflow.CompileModules,
-      run.bach.project.workflow.Launch,
-      run.bach.project.workflow.Test;
+      run.bach.project.BuildOperator,
+      run.bach.project.CacheOperator,
+      run.bach.project.CompileOperator,
+      run.bach.project.CompileClassesOperator,
+      run.bach.project.CompileModulesOperator,
+      run.bach.project.LaunchOperator,
+      run.bach.project.TestOperator;
 }

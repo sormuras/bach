@@ -1,18 +1,18 @@
-package run.bach.project.workflow;
+package run.bach.project;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import run.bach.Bach;
+import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
-import run.bach.project.ProjectSpace;
 
-public class CompileClasses implements ToolOperator {
+public class CompileClassesOperator implements ToolOperator {
 
   static final String NAME = "compile-classes";
 
-  public CompileClasses() {}
+  public CompileClassesOperator() {}
 
   @Override
   public String name() {
@@ -88,5 +88,5 @@ public class CompileClasses implements ToolOperator {
     return javac.with("-d", classes);
   }
 
-  public record OperationContext(Bach bach, ProjectSpace space) {}
+  public record OperationContext(Bach bach, Project.Space space) {}
 }

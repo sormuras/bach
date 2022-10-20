@@ -1,14 +1,14 @@
-package run.bach.project.workflow;
+package run.bach.project;
 
 import java.util.List;
 import run.bach.Bach;
 import run.bach.ToolOperator;
 
-public class Compile implements ToolOperator {
+public class CompileOperator implements ToolOperator {
 
   static final String NAME = "compile";
 
-  public Compile() {}
+  public CompileOperator() {}
 
   @Override
   public String name() {
@@ -27,8 +27,12 @@ public class Compile implements ToolOperator {
       }
       var s = modules.size() == 1 ? "" : "s";
       bach.info("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
-      bach.run(CompileClasses.NAME, space.name()); // translate Java source files into class files
-      bach.run(CompileModules.NAME, space.name()); // archive compiled classes in modular JAR files
+      bach.run(
+          CompileClassesOperator.NAME,
+          space.name()); // translate Java source files into class files
+      bach.run(
+          CompileModulesOperator.NAME,
+          space.name()); // archive compiled classes in modular JAR files
     }
   }
 }

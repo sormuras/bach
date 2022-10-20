@@ -1,19 +1,19 @@
-package run.bach.project.workflow;
+package run.bach.project;
 
 import java.lang.module.ModuleFinder;
 import java.util.List;
 import run.bach.Bach;
+import run.bach.DeclaredModule;
+import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolFinder;
 import run.bach.ToolOperator;
-import run.bach.project.DeclaredModule;
-import run.bach.project.ProjectSpace;
 
-public class Test implements ToolOperator {
+public class TestOperator implements ToolOperator {
 
   static final String NAME = "test";
 
-  public Test() {}
+  public TestOperator() {}
 
   @Override
   public String name() {
@@ -27,7 +27,7 @@ public class Test implements ToolOperator {
     tester.runJUnitPlatform();
   }
 
-  record Tester(Bach bach, ProjectSpace space) {
+  record Tester(Bach bach, Project.Space space) {
     void runSpaceLauncher() {
       var launcher = space.launcher();
       if (launcher.isEmpty()) return;

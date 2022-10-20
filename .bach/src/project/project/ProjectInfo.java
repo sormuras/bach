@@ -2,9 +2,9 @@ package project;
 
 import java.time.ZonedDateTime;
 import run.bach.Bach;
-import run.bach.project.Project;
+import run.bach.Project;
 
-public class ProjectInfo implements run.bach.project.ProjectComposer {
+public class ProjectInfo implements Project.Composer {
   @Override
   public Project composeProject(Project project) {
     return project

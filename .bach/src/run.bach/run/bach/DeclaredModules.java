@@ -1,4 +1,4 @@
-package run.bach.project;
+package run.bach;
 
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;

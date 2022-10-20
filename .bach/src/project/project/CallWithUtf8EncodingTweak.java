@@ -3,7 +3,7 @@ package project;
 import run.bach.ToolCall;
 import run.bach.ToolTweak;
 
-public class JavacEncodingUtf8Tweak implements ToolTweak {
+public class CallWithUtf8EncodingTweak implements ToolTweak {
   @Override
   public ToolCall tweak(ToolCall call) {
     return switch (call.name()) {

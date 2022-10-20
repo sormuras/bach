@@ -1,15 +1,15 @@
-package run.bach.project.workflow;
+package run.bach.project;
 
 import java.util.List;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class Cache implements ToolOperator {
+public class CacheOperator implements ToolOperator {
 
   static final String NAME = "cache";
 
-  public Cache() {}
+  public CacheOperator() {}
 
   @Override
   public String name() {
