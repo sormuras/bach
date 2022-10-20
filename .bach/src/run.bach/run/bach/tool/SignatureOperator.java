@@ -1,4 +1,4 @@
-package run.bach.internal.tool;
+package run.bach.tool;
 
 import java.net.URI;
 import java.net.http.HttpClient;
