@@ -6,6 +6,7 @@ import java.util.List;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
+import run.bach.project.ProjectSpace;
 
 public class CompileClasses implements ToolOperator {
 
@@ -20,37 +21,53 @@ public class CompileClasses implements ToolOperator {
 
   @Override
   public void operate(Bach bach, List<String> arguments) {
-    var project = bach.project();
-    var paths = bach.paths();
-    var spaces = project.spaces();
-    var space = spaces.space(arguments.get(0)); // TODO Better argument handling
-    var classes = paths.out(space.name(), "classes");
+    var space = bach.project().spaces().space(arguments.get(0)); // TODO Better argument handling
+    var context = new OperationContext(bach, space);
+    var javac = createJavacCall();
+    javac = javacWithRelease(javac, context);
+    javac = javacWithModules(javac, context);
+    javac = javacWithModuleSourcePaths(javac, context);
+    javac = javacWithModulePaths(javac, context);
+    javac = javacWithModulePatches(javac, context);
+    javac = javacWithDestinationDirectory(javac, context);
+    bach.run(javac);
+  }
 
-    var javac = ToolCall.of("javac");
+  protected ToolCall createJavacCall() {
+    return ToolCall.of("javac");
+  }
 
-    var release0 = space.targets();
-    if (release0.isPresent()) {
-      javac = javac.with("--release", release0.get());
-    }
+  protected ToolCall javacWithRelease(ToolCall javac, OperationContext context) {
+    return context.space().targets().map(feature -> javac.with("--release", feature)).orElse(javac);
+  }
 
-    var modules = space.modules();
-    javac = javac.with("--module", modules.names(","));
+  protected ToolCall javacWithModules(ToolCall javac, OperationContext context) {
+    return javac.with("--module", context.space().modules().names(","));
+  }
 
-    for (var moduleSourcePath : modules.toModuleSourcePaths()) {
+  protected ToolCall javacWithModuleSourcePaths(ToolCall javac, OperationContext context) {
+    for (var moduleSourcePath : context.space().modules().toModuleSourcePaths()) {
       javac = javac.with("--module-source-path", moduleSourcePath);
     }
+    return javac;
+  }
 
-    var modulePath = space.toModulePath(paths);
+  protected ToolCall javacWithModulePaths(ToolCall javac, OperationContext context) {
+    var modulePath = context.space().toModulePath(context.bach().paths());
     if (modulePath.isPresent()) {
       javac = javac.with("--module-path", modulePath.get());
       javac = javac.with("--processor-module-path", modulePath.get());
     }
+    return javac;
+  }
 
-    // --patch-module
-    for (var declaration : modules.list()) {
+  protected ToolCall javacWithModulePatches(ToolCall javac, OperationContext context) {
+    var paths = context.bach().paths();
+    var spaces = context.bach().project().spaces();
+    for (var declaration : context.space().modules().list()) {
       var module = declaration.name();
       var patches = new ArrayList<String>();
-      for (var requires : space.requires()) {
+      for (var requires : context.space().requires()) {
         if (spaces.space(requires).modules().find(module).isEmpty()) {
           continue;
         }
@@ -60,10 +77,16 @@ public class CompileClasses implements ToolOperator {
       var patch = String.join(File.pathSeparator, patches);
       javac = javac.with("--patch-module", module + "=" + patch);
     }
-
-    var classes0 = classes.resolve("java-" + release0.orElse(Runtime.version().feature()));
-    javac = javac.with("-d", classes0);
-
-    bach.run(javac);
+    return javac;
   }
+
+  protected ToolCall javacWithDestinationDirectory(ToolCall javac, OperationContext context) {
+    var paths = context.bach().paths();
+    var space = context.space();
+    var feature = space.targets().orElse(Runtime.version().feature());
+    var classes = paths.out(space.name(), "classes").resolve("java-" + feature);
+    return javac.with("-d", classes);
+  }
+
+  public record OperationContext(Bach bach, ProjectSpace space) {}
 }
