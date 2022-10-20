@@ -20,7 +20,7 @@ public class Compile implements ToolOperator {
     for (var space : bach.project().spaces().list()) {
       var modules = space.modules().list();
       if (modules.isEmpty()) {
-        if (bach.configuration().cli().verbose()) {
+        if (bach.cli().verbose()) {
           bach.info("No modules declared in %s space.".formatted(space.name()));
         }
         continue;

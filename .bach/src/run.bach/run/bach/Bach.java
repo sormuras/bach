@@ -12,30 +12,32 @@ import run.bach.project.ProjectComposer;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.18-ea+1400";
+  public static final String VERSION = "2022.10.20-ea";
 
   @FunctionalInterface
   public interface Factory {
-    Bach createBach(Configuration configuration);
+    Bach createBach(CLI cli, Printer printer);
   }
 
-  public static Bach of(Configuration configuration) {
+  public static Bach of(CLI cli, Printer printer) {
     var factory = ServiceLoader.load(Factory.class).findFirst().orElse(Bach::new);
-    var bach = factory.createBach(configuration);
+    var bach = factory.createBach(cli, printer);
     bach.debug("Initialized instance of " + bach.getClass());
     bach.debug(bach.toString(0));
     return bach;
   }
 
-  private final Configuration configuration;
+  private final CLI cli;
+  private final Printer printer;
   private final Paths paths;
   private final Browser browser;
   private final Locators locators;
   private final Tools tools;
   private final Project project;
 
-  public Bach(Configuration configuration) {
-    this.configuration = configuration;
+  public Bach(CLI cli, Printer printer) {
+    this.cli = cli;
+    this.printer = printer;
     this.paths = createPaths();
     this.browser = createBrowser();
     this.locators = createLocators();
@@ -57,7 +59,7 @@ public class Bach implements ToolRunner {
   }
 
   protected Paths createPaths() {
-    return Paths.ofRoot(configuration.cli().rootPath());
+    return Paths.ofRoot(cli.rootPath());
   }
 
   protected Tools createTools() {
@@ -102,8 +104,8 @@ public class Bach implements ToolRunner {
     return project;
   }
 
-  public final Configuration configuration() {
-    return configuration;
+  public final CLI cli() {
+    return cli;
   }
 
   public final Paths paths() {
@@ -136,7 +138,7 @@ public class Bach implements ToolRunner {
 
   public void log(System.Logger.Level level, Object message) {
     var text = String.valueOf(message);
-    configuration().printer().printMessage(level, text);
+    printer.printMessage(level, text);
   }
 
   @Override
@@ -190,7 +192,6 @@ public class Bach implements ToolRunner {
     var event = new FlightRecorderEvent.ToolProviderRun();
     event.name = provider.name();
     event.args = String.join(" ", arguments);
-    var printer = configuration.printer();
     var args = arguments.toArray(String[]::new);
     try (var out = new StringPrintWriterMirror(printer.out());
         var err = new StringPrintWriterMirror(printer.err())) {
@@ -207,12 +208,20 @@ public class Bach implements ToolRunner {
 
   public String toString(int indent) {
     return """
+            Command-Line Interface
+            %s
+            Printer
+            %s
             Paths
             %s
             Tool Finders
             %s
             """
-        .formatted(paths.toString(indent + 2), tools.finders().toString(indent + 2))
+        .formatted(
+            cli.toString(2),
+            printer.toString(2),
+            paths.toString(indent + 2),
+            tools.finders().toString(indent + 2))
         .indent(indent)
         .stripTrailing();
   }

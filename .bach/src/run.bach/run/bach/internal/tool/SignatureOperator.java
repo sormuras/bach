@@ -21,7 +21,7 @@ public record SignatureOperator(String name) implements ToolOperator {
     assert arguments.get(0).equals("--verify");
     assert arguments.get(1).equals("--file");
     var file = Path.of(arguments.get(2));
-    verify(bach, file, bach.configuration().cli().trustSignatureEmails());
+    verify(bach, file, bach.cli().trustSignatureEmails());
   }
 
   void verify(Bach bach, Path file, List<String> emails) throws Exception {

@@ -33,13 +33,12 @@ public record Main(String name) implements ToolProvider, ToolOperator {
               .withParsingCommandLineArguments(preliminaryPaths.root(".bach/bach.args"))
               .withParsingCommandLineArguments(List.of(args));
       var printer = new Printer(out, err, cli.printerThreshold(), cli.printerMargin());
-      var configuration = new Configuration(cli, printer);
       var verbose = cli.verbose();
       var version = cli.version();
       if (verbose || version) {
         out.println("Bach " + Bach.VERSION);
         if (version) return 0;
-        out.println(configuration.toString(0));
+        out.println(cli.toString(0));
       }
       if (cli.help() || cli.calls().isEmpty()) {
         out.println(
@@ -50,7 +49,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
       }
       try {
         recording.start();
-        var bach = Bach.of(configuration);
+        var bach = Bach.of(cli, printer);
         bach.runToolOperator(this, List.of(args));
         return 0;
       } finally {
@@ -67,7 +66,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
 
   @Override
   public void operate(Bach bach, List<String> ignored) throws Exception {
-    var calls = new ArrayList<>(bach.configuration().cli().calls());
+    var calls = new ArrayList<>(bach.cli().calls());
     var first = calls.remove(0);
     bach.run(bach.tools(), ToolCall.of(first.command()), System.Logger.Level.DEBUG);
     for (var next : calls) bach.run(ToolCall.of(next.command()));
