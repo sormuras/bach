@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
 import run.bach.Bach;
+import run.bach.ExternalAssetsRepository;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
-import run.bach.internal.Repository;
 
 public record ImportOperator(String name) implements ToolOperator {
   public ImportOperator() {
@@ -22,13 +22,13 @@ public record ImportOperator(String name) implements ToolOperator {
       bach.info("Usage: bach import [--help] [--from <repository>] <locators...>");
       return;
     }
-    var info = Repository.Info.EXTERNAL_MODULES_LOCATOR;
+    var info = ExternalAssetsRepository.Info.EXTERNAL_MODULES_LOCATOR;
     var from = cli.from();
     var names = cli.names();
 
     bach.debug("Import external modules locator from repository: %s".formatted(from.home()));
     if (names.isEmpty() || names.contains("?")) {
-      var walker = Repository.walk(bach.browser().client(), from);
+      var walker = ExternalAssetsRepository.walk(bach.browser().client(), from);
       var locators = walker.map().get(info);
       if (locators == null || locators.isEmpty()) {
         bach.info("No external modules locator index file found in " + from);
@@ -64,8 +64,8 @@ public record ImportOperator(String name) implements ToolOperator {
       return __help.orElse(false);
     }
 
-    Repository from() {
-      return __from.map(Repository::of).orElse(Repository.DEFAULT);
+    ExternalAssetsRepository from() {
+      return __from.map(ExternalAssetsRepository::of).orElse(ExternalAssetsRepository.DEFAULT);
     }
 
     CLI withParsingCommandLineArguments(List<String> args) {

@@ -1,4 +1,4 @@
-package run.bach.internal;
+package run.bach;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -16,11 +16,11 @@ import java.util.TreeMap;
 import java.util.zip.ZipInputStream;
 
 /** A repository for external files mapping external assets. */
-public interface Repository {
+public interface ExternalAssetsRepository {
 
   GitHub DEFAULT = new GitHub("sormuras", "bach-info", "HEAD");
 
-  static Repository of(String slug) {
+  static ExternalAssetsRepository of(String slug) {
     if (slug == null || slug.isEmpty()) return DEFAULT;
     var scanner = new Scanner(slug);
     scanner.useDelimiter("/");
@@ -38,7 +38,7 @@ public interface Repository {
     return new Walker(Walker.mapDirectoryTree(path));
   }
 
-  static Walker walk(HttpClient client, Repository repository) {
+  static Walker walk(HttpClient client, ExternalAssetsRepository repository) {
     try {
       var request = HttpRequest.newBuilder(URI.create(repository.zip())).build();
       var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -55,7 +55,7 @@ public interface Repository {
 
   String zip();
 
-  record GitHub(String user, String repo, String hash) implements Repository {
+  record GitHub(String user, String repo, String hash) implements ExternalAssetsRepository {
     @Override
     public String home() {
       var joiner = new StringJoiner("/", "https://github.com/", "");

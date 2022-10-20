@@ -11,7 +11,7 @@ import run.bach.internal.PathSupport;
 
 /** An external modules locator maps module names to their remote locations. */
 @FunctionalInterface
-public interface ExternalModuleLocator {
+public interface ExternalModulesLocator {
   String locate(String name, OperatingSystem os);
 
   default String locate(String name) {
@@ -22,7 +22,7 @@ public interface ExternalModuleLocator {
     return getClass().getSimpleName();
   }
 
-  static ExternalModuleLocator ofProperties(Path file) {
+  static ExternalModulesLocator ofProperties(Path file) {
     var properties = PathSupport.properties(file);
     var annotation =
         Optional.ofNullable(properties.remove("@description"))
@@ -43,7 +43,7 @@ public interface ExternalModuleLocator {
   }
 
   record PropertiesLocator(String description, Properties properties)
-      implements ExternalModuleLocator {
+      implements ExternalModulesLocator {
     @Override
     public String locate(String module, OperatingSystem os) {
       var moduleAndOperatingSystem = module + '|' + os.name();

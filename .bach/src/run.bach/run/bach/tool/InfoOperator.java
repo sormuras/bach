@@ -2,8 +2,8 @@ package run.bach.tool;
 
 import java.util.List;
 import run.bach.Bach;
+import run.bach.ExternalAssetsRepository;
 import run.bach.ToolOperator;
-import run.bach.internal.Repository;
 
 public record InfoOperator(String name) implements ToolOperator {
   public InfoOperator() {
@@ -15,13 +15,13 @@ public record InfoOperator(String name) implements ToolOperator {
     if (arguments.isEmpty()) {
       var root = bach.paths().root();
       bach.info("External asset information files in " + root.toUri());
-      bach.info(Repository.walk(root).toString(0));
+      bach.info(ExternalAssetsRepository.walk(root).toString(0));
       return;
     }
     for (var slug : arguments) {
-      var repository = Repository.of(slug);
+      var repository = ExternalAssetsRepository.of(slug);
       bach.info("External asset information files in " + repository.home());
-      var walker = Repository.walk(bach.browser().client(), repository);
+      var walker = ExternalAssetsRepository.walk(bach.browser().client(), repository);
       bach.info(walker.toString(0));
     }
   }

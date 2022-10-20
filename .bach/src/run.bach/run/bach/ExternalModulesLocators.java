@@ -3,8 +3,8 @@ package run.bach;
 import java.util.List;
 import java.util.StringJoiner;
 
-public record ExternalModuleLocators(List<ExternalModuleLocator> list) {
-  public ExternalModuleLocators(List<ExternalModuleLocator> list) {
+public record ExternalModulesLocators(List<ExternalModulesLocator> list) {
+  public ExternalModulesLocators(List<ExternalModulesLocator> list) {
     this.list = List.copyOf(list);
   }
 

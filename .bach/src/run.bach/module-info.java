@@ -14,7 +14,7 @@ module run.bach {
 
   uses java.util.spi.ToolProvider;
   uses run.bach.Bach.Factory;
-  uses run.bach.ExternalModuleLocator;
+  uses run.bach.ExternalModulesLocator;
   uses run.bach.Project.Composer;
   uses run.bach.ToolOperator;
   uses run.bach.ToolTweak;

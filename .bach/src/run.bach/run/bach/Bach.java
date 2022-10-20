@@ -30,7 +30,7 @@ public class Bach implements ToolRunner {
   private final Printer printer;
   private final Paths paths;
   private final Browser browser;
-  private final ExternalModuleLocators locators;
+  private final ExternalModulesLocators locators;
   private final Tools tools;
   private final Project project;
 
@@ -39,7 +39,7 @@ public class Bach implements ToolRunner {
     this.printer = printer;
     this.paths = createPaths();
     this.browser = createBrowser();
-    this.locators = createLocators();
+    this.locators = createExternalModulesLocators();
     this.tools = createTools();
     this.project = createProject();
   }
@@ -48,13 +48,13 @@ public class Bach implements ToolRunner {
     return new Browser(new LoadValidator(this));
   }
 
-  protected ExternalModuleLocators createLocators() {
-    var locators = new ArrayList<ExternalModuleLocator>();
-    ServiceLoader.load(ExternalModuleLocator.class).forEach(locators::add);
+  protected ExternalModulesLocators createExternalModulesLocators() {
+    var locators = new ArrayList<ExternalModulesLocator>();
+    ServiceLoader.load(ExternalModulesLocator.class).forEach(locators::add);
     PathSupport.list(paths().externalModules(), PathSupport::isPropertiesFile).stream()
-        .map(ExternalModuleLocator::ofProperties)
+        .map(ExternalModulesLocator::ofProperties)
         .forEach(locators::add);
-    return new ExternalModuleLocators(locators);
+    return new ExternalModulesLocators(locators);
   }
 
   protected Paths createPaths() {
@@ -115,7 +115,7 @@ public class Bach implements ToolRunner {
     return browser;
   }
 
-  public final ExternalModuleLocators locators() {
+  public final ExternalModulesLocators locators() {
     return locators;
   }
 

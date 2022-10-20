@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
 import run.bach.Bach;
+import run.bach.ExternalAssetsRepository;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
-import run.bach.internal.Repository;
 
 public record InstallOperator(String name) implements ToolOperator {
 
@@ -26,13 +26,13 @@ public record InstallOperator(String name) implements ToolOperator {
       bach.info("Usage: bach import [--help] [--from <repository>] <tools...>");
       return;
     }
-    var index = Repository.Info.EXTERNAL_TOOL_DIRECTORY;
+    var index = ExternalAssetsRepository.Info.EXTERNAL_TOOL_DIRECTORY;
     var from = cli.from();
     var names = cli.names();
 
     bach.debug("Install tool directory index file from repository: %s".formatted(from.home()));
     if (names.isEmpty() || names.contains("?")) {
-      var walker = Repository.walk(bach.browser().client(), from);
+      var walker = ExternalAssetsRepository.walk(bach.browser().client(), from);
       var tools = walker.map().get(index);
       if (tools == null || tools.isEmpty()) {
         bach.info("No tool directory index files found in " + from);
@@ -67,7 +67,7 @@ public record InstallOperator(String name) implements ToolOperator {
   void explodeToolDirectory(Bach bach, Path file) {
     var properties = PathSupport.properties(file);
     var name = file.getFileName().toString();
-    var extension = Repository.Info.EXTERNAL_TOOL_DIRECTORY.extension();
+    var extension = ExternalAssetsRepository.Info.EXTERNAL_TOOL_DIRECTORY.extension();
     var parent = file.resolveSibling(name.substring(0, name.length() - extension.length()));
     for (var key : properties.stringPropertyNames()) {
       if (key.startsWith("@")) continue;
@@ -91,8 +91,8 @@ public record InstallOperator(String name) implements ToolOperator {
       return __help.orElse(false);
     }
 
-    Repository from() {
-      return __from.map(Repository::of).orElse(Repository.DEFAULT);
+    ExternalAssetsRepository from() {
+      return __from.map(ExternalAssetsRepository::of).orElse(ExternalAssetsRepository.DEFAULT);
     }
 
     CLI withParsingCommandLineArguments(List<String> args) {
