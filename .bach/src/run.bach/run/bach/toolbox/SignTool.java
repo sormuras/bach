@@ -10,10 +10,10 @@ import run.bach.Bach;
 import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
-public record SignatureOperator(String name) implements ToolOperator {
+public record SignTool(String name) implements ToolOperator {
 
-  public SignatureOperator() {
-    this("signature");
+  public SignTool() {
+    this("sign");
   }
 
   @Override

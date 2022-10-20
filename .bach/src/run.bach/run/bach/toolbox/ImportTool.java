@@ -10,8 +10,8 @@ import run.bach.ExternalAssetsRepository;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public record ImportOperator(String name) implements ToolOperator {
-  public ImportOperator() {
+public record ImportTool(String name) implements ToolOperator {
+  public ImportTool() {
     this("import");
   }
 
@@ -19,19 +19,19 @@ public record ImportOperator(String name) implements ToolOperator {
   public void operate(Bach bach, List<String> arguments) {
     var cli = new CLI().withParsingCommandLineArguments(arguments);
     if (cli.help()) {
-      bach.info("Usage: bach import [--help] [--from <repository>] <locators...>");
+      bach.info("Usage: %s [--from <repository>] <locators...>".formatted(name()));
       return;
     }
     var info = ExternalAssetsRepository.Info.EXTERNAL_MODULES_LOCATOR;
     var from = cli.from();
     var names = cli.names();
 
-    bach.debug("Import external modules locator from repository: %s".formatted(from.home()));
+    bach.debug("Import external modules locators from repository: %s".formatted(from.home()));
     if (names.isEmpty() || names.contains("?")) {
       var walker = ExternalAssetsRepository.walk(bach.browser().client(), from);
       var locators = walker.map().get(info);
       if (locators == null || locators.isEmpty()) {
-        bach.info("No external modules locator index file found in " + from);
+        bach.info("No external modules locator info file found in " + from);
         return;
       }
       var joiner = new StringJoiner("\n");
@@ -43,7 +43,7 @@ public record ImportOperator(String name) implements ToolOperator {
         joiner.add(command.toCommandLine(" "));
       }
       var size = locators.size();
-      joiner.add("    %d locator%s".formatted(size, size == 1 ? "" : "s"));
+      joiner.add("    %d external modules locator%s".formatted(size, size == 1 ? "" : "s"));
       bach.info(joiner.toString());
       return;
     }

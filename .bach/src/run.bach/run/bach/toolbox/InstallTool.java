@@ -13,9 +13,9 @@ import run.bach.ToolCall;
 import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
-public record InstallOperator(String name) implements ToolOperator {
+public record InstallTool(String name) implements ToolOperator {
 
-  public InstallOperator() {
+  public InstallTool() {
     this("install");
   }
 
@@ -23,14 +23,14 @@ public record InstallOperator(String name) implements ToolOperator {
   public void operate(Bach bach, List<String> arguments) {
     var cli = new CLI().withParsingCommandLineArguments(arguments);
     if (cli.help()) {
-      bach.info("Usage: bach import [--help] [--from <repository>] <tools...>");
+      bach.info("Usage: %s [--from <repository>] <tools...>".formatted(name()));
       return;
     }
     var index = ExternalAssetsRepository.Info.EXTERNAL_TOOL_DIRECTORY;
     var from = cli.from();
     var names = cli.names();
 
-    bach.debug("Install tool directory index file from repository: %s".formatted(from.home()));
+    bach.debug("Install tool directory info file from repository: %s".formatted(from.home()));
     if (names.isEmpty() || names.contains("?")) {
       var walker = ExternalAssetsRepository.walk(bach.browser().client(), from);
       var tools = walker.map().get(index);
@@ -47,7 +47,7 @@ public record InstallOperator(String name) implements ToolOperator {
         joiner.add(command.toCommandLine(" "));
       }
       var size = tools.size();
-      joiner.add("    %d tool%s".formatted(size, size == 1 ? "" : "s"));
+      joiner.add("    %d tool directory info fil%s".formatted(size, size == 1 ? "" : "s"));
       bach.info(joiner.toString());
       return;
     }
@@ -61,7 +61,7 @@ public record InstallOperator(String name) implements ToolOperator {
   }
 
   void acquireToolDirectory(Bach bach, String source, Path target) {
-    bach.run("load-file", source, target.toString());
+    bach.run("load", "file", source, target.toString());
   }
 
   void explodeToolDirectory(Bach bach, Path file) {
@@ -78,7 +78,7 @@ public record InstallOperator(String name) implements ToolOperator {
       }
       var source = URI.create(value);
       var target = parent.resolve(key);
-      bach.run("load-file", source.toString(), target.toString());
+      bach.run("load", "file", source.toString(), target.toString());
     }
   }
 

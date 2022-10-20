@@ -11,8 +11,8 @@ import run.bach.Bach;
 import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
-public record HashOperator(String name) implements ToolOperator {
-  public HashOperator() {
+public record HashTool(String name) implements ToolOperator {
+  public HashTool() {
     this("hash");
   }
 

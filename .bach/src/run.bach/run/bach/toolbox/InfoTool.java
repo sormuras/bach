@@ -5,8 +5,8 @@ import run.bach.Bach;
 import run.bach.ExternalAssetsRepository;
 import run.bach.ToolOperator;
 
-public record InfoOperator(String name) implements ToolOperator {
-  public InfoOperator() {
+public record InfoTool(String name) implements ToolOperator {
+  public InfoTool() {
     this("info");
   }
 

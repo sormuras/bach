@@ -25,7 +25,7 @@ public record LoadValidator(Bach bach) implements Browser.Validator {
               .with(target));
     }
     if (calls.isEmpty() && bach.cli().online()) {
-      calls.add(ToolCall.of("signature").with("--verify").with("--file", target));
+      calls.add(ToolCall.of("sign").with("--verify").with("--file", target));
     }
     if (PathSupport.isJarFile(target)) {
       calls.add(ToolCall.of("jar").with("--validate").with("--file", target));

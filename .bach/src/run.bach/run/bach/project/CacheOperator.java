@@ -19,9 +19,9 @@ public class CacheOperator implements ToolOperator {
   @Override
   public void operate(Bach bach, List<String> arguments) {
     if (!arguments.isEmpty()) {
-      bach.run(ToolCall.of("load-modules").with(arguments.stream()));
+      bach.run(ToolCall.of("load", "modules").with(arguments.stream()));
       return;
     }
-    bach.run(ToolCall.of("load-modules").with(bach.project().externals().requires().stream()));
+    bach.run(ToolCall.of("load", "modules").with(bach.project().externals().requires().stream()));
   }
 }
