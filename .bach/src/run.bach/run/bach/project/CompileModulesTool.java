@@ -13,11 +13,11 @@ import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class CompileModulesOperator implements ToolOperator {
+public class CompileModulesTool implements ToolOperator {
 
   static final String NAME = "compile-modules";
 
-  public CompileModulesOperator() {}
+  public CompileModulesTool() {}
 
   @Override
   public String name() {

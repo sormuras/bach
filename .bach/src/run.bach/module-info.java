@@ -27,11 +27,11 @@ module run.bach {
       run.bach.toolbox.ListTool,
       run.bach.toolbox.LoadTool,
       run.bach.toolbox.SignTool,
-      run.bach.project.BuildOperator,
-      run.bach.project.CacheOperator,
-      run.bach.project.CompileOperator,
-      run.bach.project.CompileClassesOperator,
-      run.bach.project.CompileModulesOperator,
-      run.bach.project.LaunchOperator,
-      run.bach.project.TestOperator;
+      run.bach.project.BuildTool,
+      run.bach.project.CacheTool,
+      run.bach.project.CompileTool,
+      run.bach.project.CompileClassesTool,
+      run.bach.project.CompileModulesTool,
+      run.bach.project.LaunchTool,
+      run.bach.project.TestTool;
 }

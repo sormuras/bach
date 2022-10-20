@@ -4,11 +4,11 @@ import java.util.List;
 import run.bach.Bach;
 import run.bach.ToolOperator;
 
-public class CompileOperator implements ToolOperator {
+public class CompileTool implements ToolOperator {
 
   static final String NAME = "compile";
 
-  public CompileOperator() {}
+  public CompileTool() {}
 
   @Override
   public String name() {
@@ -28,11 +28,9 @@ public class CompileOperator implements ToolOperator {
       var s = modules.size() == 1 ? "" : "s";
       bach.info("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
       bach.run(
-          CompileClassesOperator.NAME,
-          space.name()); // translate Java source files into class files
+          CompileClassesTool.NAME, space.name()); // translate Java source files into class files
       bach.run(
-          CompileModulesOperator.NAME,
-          space.name()); // archive compiled classes in modular JAR files
+          CompileModulesTool.NAME, space.name()); // archive compiled classes in modular JAR files
     }
   }
 }

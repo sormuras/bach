@@ -5,11 +5,11 @@ import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class CacheOperator implements ToolOperator {
+public class CacheTool implements ToolOperator {
 
   static final String NAME = "cache";
 
-  public CacheOperator() {}
+  public CacheTool() {}
 
   @Override
   public String name() {

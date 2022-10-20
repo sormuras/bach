@@ -9,11 +9,11 @@ import run.bach.ToolCall;
 import run.bach.ToolFinder;
 import run.bach.ToolOperator;
 
-public class TestOperator implements ToolOperator {
+public class TestTool implements ToolOperator {
 
   static final String NAME = "test";
 
-  public TestOperator() {}
+  public TestTool() {}
 
   @Override
   public String name() {

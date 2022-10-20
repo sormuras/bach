@@ -5,11 +5,11 @@ import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class LaunchOperator implements ToolOperator {
+public class LaunchTool implements ToolOperator {
 
   static final String NAME = "launch";
 
-  public LaunchOperator() {}
+  public LaunchTool() {}
 
   @Override
   public String name() {

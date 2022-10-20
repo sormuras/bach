@@ -1,9 +1,9 @@
 package project;
 
 import run.bach.ToolCall;
-import run.bach.project.CompileClassesOperator;
+import run.bach.project.CompileClassesTool;
 
-public class CompileClasses extends CompileClassesOperator {
+public class CompileClasses extends CompileClassesTool {
   @Override
   protected ToolCall javacWithDestinationDirectory(ToolCall javac, OperationContext context) {
     javac = javac.with("-deprecation"); // Output source locations where deprecated APIs are used

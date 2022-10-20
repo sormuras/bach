@@ -8,11 +8,11 @@ import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
-public class CompileClassesOperator implements ToolOperator {
+public class CompileClassesTool implements ToolOperator {
 
   static final String NAME = "compile-classes";
 
-  public CompileClassesOperator() {}
+  public CompileClassesTool() {}
 
   @Override
   public String name() {
