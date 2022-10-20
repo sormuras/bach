@@ -1,4 +1,4 @@
-package run.bach.tool;
+package run.bach.toolbox;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
