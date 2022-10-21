@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import run.bach.Bach;
 import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
@@ -17,8 +16,9 @@ public record HashTool(String name) implements ToolOperator {
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    var cli = new CLI().withParsingCommandLineArguments(arguments);
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    var cli = new CLI().withParsingCommandLineArguments(operation.arguments());
     if (cli.help()) {
       bach.info("%s [--algorithm <name>] [--expected <value>] path <more...>".formatted(name()));
       return;

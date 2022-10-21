@@ -1,7 +1,6 @@
 package run.bach.project;
 
 import java.lang.module.ModuleFinder;
-import java.util.List;
 import run.bach.Bach;
 import run.bach.DeclaredModule;
 import run.bach.Project;
@@ -10,18 +9,16 @@ import run.bach.ToolFinder;
 import run.bach.ToolOperator;
 
 public class TestTool implements ToolOperator {
-
-  static final String NAME = "test";
-
   public TestTool() {}
 
   @Override
   public String name() {
-    return NAME;
+    return "test";
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
+  public void run(Operation operation) {
+    var bach = operation.bach();
     var tester = new Tester(bach, bach.project().spaces().test());
     tester.runSpaceLauncher();
     tester.runJUnitPlatform();

@@ -17,15 +17,16 @@ public record LoadTool(String name) implements ToolOperator {
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    if (arguments.isEmpty()) {
-      bach.info("Usage: %s <operation> <arg> [args...]".formatted(name()));
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    if (operation.arguments().isEmpty()) {
+      bach.info("Usage: %s <asset> <arg> [args...]".formatted(name()));
       return;
     }
     var browser = bach.browser();
-    var deque = new ArrayDeque<>(arguments);
-    var operation = deque.pop();
-    switch (operation) {
+    var deque = new ArrayDeque<>(operation.arguments());
+    var asset = deque.pop();
+    switch (asset) {
       case "file" -> browser.load(URI.create(deque.pop()), Path.of(deque.pop()));
       case "head" -> bach.info(browser.head(URI.create(deque.pop())));
       case "headers" -> {
@@ -37,7 +38,7 @@ public record LoadTool(String name) implements ToolOperator {
       case "module" -> loadModule(bach, deque.stream().toList());
       case "modules" -> loadModules(bach, deque.stream().toList());
       case "text" -> bach.info(browser.read(URI.create(deque.pop())));
-      default -> throw new UnsupportedOperationException(operation);
+      default -> throw new IllegalArgumentException(asset);
     }
   }
 

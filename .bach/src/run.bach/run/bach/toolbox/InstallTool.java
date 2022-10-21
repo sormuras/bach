@@ -14,14 +14,14 @@ import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
 public record InstallTool(String name) implements ToolOperator {
-
   public InstallTool() {
     this("install");
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    var cli = new CLI().withParsingCommandLineArguments(arguments);
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    var cli = new CLI().withParsingCommandLineArguments(operation.arguments());
     if (cli.help()) {
       bach.info("Usage: %s [--from <repository>] <tools...>".formatted(name()));
       return;

@@ -11,13 +11,14 @@ import run.bach.ToolOperator;
 import run.bach.internal.PathSupport;
 
 public record SignTool(String name) implements ToolOperator {
-
   public SignTool() {
     this("sign");
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) throws Exception {
+  public void run(Operation operation) throws Exception {
+    var bach = operation.bach();
+    var arguments = operation.arguments();
     assert arguments.get(0).equals("--verify");
     assert arguments.get(1).equals("--file");
     var file = Path.of(arguments.get(2));

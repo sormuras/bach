@@ -1,7 +1,5 @@
 package run.bach.toolbox;
 
-import java.util.List;
-import run.bach.Bach;
 import run.bach.ToolOperator;
 
 public record ListTool(String name) implements ToolOperator {
@@ -10,12 +8,13 @@ public record ListTool(String name) implements ToolOperator {
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    if (arguments.isEmpty()) {
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    if (operation.arguments().isEmpty()) {
       bach.info("Usage: %s {tools}".formatted(name()));
       return;
     }
-    if (arguments.contains("tools")) {
+    if (operation.arguments().contains("tools")) {
       bach.info(bach.tools().toString(0));
     }
   }

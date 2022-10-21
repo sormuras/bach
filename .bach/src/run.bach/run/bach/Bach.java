@@ -11,7 +11,7 @@ import run.bach.internal.StringPrintWriterMirror;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.20";
+  public static final String VERSION = "2022.10.21-ea";
 
   @FunctionalInterface
   public interface Factory {
@@ -176,7 +176,7 @@ public class Bach implements ToolRunner {
     event.args = String.join(" ", arguments);
     try {
       event.begin();
-      operator.operate(this, arguments);
+      operator.run(new ToolOperator.Operation(this, arguments));
       event.end();
     } catch (RuntimeException exception) {
       throw exception;

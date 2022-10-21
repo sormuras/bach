@@ -1,13 +1,12 @@
 package project;
 
-import java.util.List;
-import run.bach.*;
+import run.bach.ToolOperator;
 
 public final class format implements ToolOperator {
   @Override
-  public void operate(Bach bach, List<String> arguments) {
+  public void run(Operation operation) {
     var name = "google-java-format@1.15.0";
-    bach.run("install", name);
-    bach.run(name, format -> format.with("--replace").withFindFiles("**.java"));
+    operation.run("install", name);
+    operation.run(name, format -> format.with("--replace").withFindFiles("**.java"));
   }
 }

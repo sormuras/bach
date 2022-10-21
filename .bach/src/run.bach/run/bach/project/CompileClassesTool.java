@@ -2,26 +2,23 @@ package run.bach.project;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 import run.bach.Bach;
 import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
 public class CompileClassesTool implements ToolOperator {
-
-  static final String NAME = "compile-classes";
-
   public CompileClassesTool() {}
 
   @Override
   public String name() {
-    return NAME;
+    return "compile-classes";
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    var space = bach.project().spaces().space(arguments.get(0)); // TODO Better argument handling
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    var space = bach.project().spaces().space(operation.arguments().get(0));
     var context = new OperationContext(bach, space);
     var javac = createJavacCall();
     javac = javacWithRelease(javac, context);

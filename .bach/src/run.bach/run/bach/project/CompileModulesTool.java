@@ -14,20 +14,18 @@ import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
 public class CompileModulesTool implements ToolOperator {
-
-  static final String NAME = "compile-modules";
-
   public CompileModulesTool() {}
 
   @Override
   public String name() {
-    return NAME;
+    return "compile-modules";
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
+  public void run(Operation operation) {
+    var bach = operation.bach();
     var calls = new TreeMap<String, List<ToolCall>>();
-    var space = bach.project().spaces().space(arguments.get(0)); // TODO Better argument handling
+    var space = bach.project().spaces().space(operation.arguments().get(0));
     for (var module : space.modules()) {
       var context = new OperationContext(bach, space, module, calls);
       var jar = createJarCall();

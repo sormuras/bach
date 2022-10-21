@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
-import run.bach.Bach;
 import run.bach.ExternalAssetsRepository;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
@@ -16,8 +15,9 @@ public record ImportTool(String name) implements ToolOperator {
   }
 
   @Override
-  public void operate(Bach bach, List<String> arguments) {
-    var cli = new CLI().withParsingCommandLineArguments(arguments);
+  public void run(Operation operation) {
+    var bach = operation.bach();
+    var cli = new CLI().withParsingCommandLineArguments(operation.arguments());
     if (cli.help()) {
       bach.info("Usage: %s [--from <repository>] <locators...>".formatted(name()));
       return;

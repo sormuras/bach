@@ -65,7 +65,8 @@ public record Main(String name) implements ToolProvider, ToolOperator {
   }
 
   @Override
-  public void operate(Bach bach, List<String> ignored) throws Exception {
+  public void run(Operation operation) throws Exception {
+    var bach = operation.bach();
     var calls = new ArrayList<>(bach.cli().calls());
     var first = calls.remove(0);
     bach.run(bach.tools(), ToolCall.of(first.command()), System.Logger.Level.DEBUG);
