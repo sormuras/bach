@@ -14,6 +14,7 @@ public class ProjectInfo implements Project.Composer {
         .withTargetsJava("17")
         .withRequiresModule("java.base")
         .withModule("main", ".bach/src/run.bach", ".bach/src/run.bach/module-info.java")
+        .withModule("main", ".bach/src/project", ".bach/src/project/module-info.java")
         .withLauncher("run.bach/run.bach.Main");
   }
 }

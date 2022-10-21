@@ -9,7 +9,6 @@ import java.lang.module.ModuleReference;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,15 +21,6 @@ public interface ModulesSupport {
     var layers = List.of(parentModuleLayer);
     var controller = defineModulesWithOneLoader(configuration, layers, parentClassLoader);
     return controller.layer();
-  }
-
-  static void consumeAllNames(ModuleFinder finder, Consumer<String> consumer) {
-    finder.findAll().stream()
-        .map(ModuleReference::descriptor)
-        .map(ModuleDescriptor::toNameAndVersion)
-        .sorted()
-        .map(string -> string.indent(2).stripTrailing())
-        .forEach(consumer);
   }
 
   static List<String> listMissingNames(List<ModuleFinder> finders, Set<String> more) {
