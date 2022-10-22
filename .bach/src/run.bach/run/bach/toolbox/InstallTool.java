@@ -61,7 +61,7 @@ public record InstallTool(String name) implements ToolOperator {
   }
 
   void acquireToolDirectory(Bach bach, String source, Path target) {
-    bach.run("load", "file", source, target.toString());
+    bach.run(LoadTool.class, "file", source, target.toString());
   }
 
   void explodeToolDirectory(Bach bach, Path file) {
@@ -78,7 +78,7 @@ public record InstallTool(String name) implements ToolOperator {
       }
       var source = URI.create(value);
       var target = parent.resolve(key);
-      bach.run("load", "file", source.toString(), target.toString());
+      bach.run(LoadTool.class, "file", source.toString(), target.toString());
     }
   }
 

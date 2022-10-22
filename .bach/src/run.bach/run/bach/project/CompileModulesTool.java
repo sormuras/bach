@@ -12,6 +12,7 @@ import run.bach.DeclaredModule;
 import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
+import run.bach.toolbox.HashTool;
 
 public class CompileModulesTool implements ToolOperator {
   public CompileModulesTool() {}
@@ -50,7 +51,7 @@ public class CompileModulesTool implements ToolOperator {
     for (var list : calls.values()) {
       list.stream().parallel().forEach(bach::run);
     }
-    bach.run("hash", modules.toString());
+    bach.run(HashTool.class, modules.toString());
   }
 
   protected ToolCall createJarCall() {

@@ -51,7 +51,7 @@ public record ImportTool(String name) implements ToolOperator {
     for (var name : names) {
       var source = from.source(info, name);
       var target = bach.paths().externalModules(name + info.extension());
-      bach.run("load-file", source, target.toString());
+      bach.run(LoadTool.class, "file", source, target.toString());
     }
   }
 
