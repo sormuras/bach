@@ -11,7 +11,7 @@ import run.bach.internal.StringPrintWriterMirror;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.21";
+  public static final String VERSION = "2022.10.22-ea";
 
   @FunctionalInterface
   public interface Factory {
@@ -154,7 +154,7 @@ public class Bach implements ToolRunner {
     runTool(tool, arguments);
   }
 
-  void runTool(Tool tool, List<String> arguments) {
+  private void runTool(Tool tool, List<String> arguments) {
     if (tool instanceof Tool.ToolOperatorTool it) {
       runToolOperator(it.operator(), arguments);
       return;
@@ -187,7 +187,7 @@ public class Bach implements ToolRunner {
     }
   }
 
-  int runToolProvider(ToolProvider provider, List<String> arguments) {
+  private int runToolProvider(ToolProvider provider, List<String> arguments) {
     var event = new FlightRecorderEvent.ToolProviderRun();
     event.name = provider.name();
     event.args = String.join(" ", arguments);
