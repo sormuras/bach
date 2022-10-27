@@ -4,12 +4,11 @@ The `.bach` directory contains all Bach-related assets.
 
 ## Directory `.bach/bin`
 
-The `.bach/bin` directory contains scripts and modules used to build modular Java projects.
+The `.bach/bin` directory contains files used to bootstrap, initialize, reset, and start Bach.
 
-### Scripts
-
-- `bach`: Launch script for Linux and MacOS
-- `bach.bat`: Launch script for Windows
+- `bach`: Start script for Linux and macOS
+- `bach.bat`: Start script for Windows
+- `bach.java`: Single-file source-code Java program used to bootstrap, initialize, reset, and start Bach
 
 ### Modules
 
@@ -39,10 +38,10 @@ An external tool program is either:
 
 - a single-file source-code program as described by (JEP 330)[https://openjdk.java.net/jeps/330],
 - or a single executable JAR file,
-- or a customly packaged Java program that is launched by a `java.launch` configuration file.
+- or a custom packaged Java program that is launched by a `java.launch` configuration file.
 
-## Directory `.bach/workspace`
+## Directory `.bach/out`
 
-The `.bach/workspace` directory is created by Bach to store intermediate and final assets.
-Usually, Bach stores reusable modules of library projects in `.bach/workspace/modules`.
-Custom runtime images of application projects are stored in `.bach/workspace/image`.
+The `.bach/out` directory is created by Bach to store intermediate and final assets.
+By default, Bach stores reusable modules of library projects in `.bach/out/modules`.
+Custom runtime images of application projects are stored in `.bach/out/images/<name>`.
