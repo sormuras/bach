@@ -11,7 +11,7 @@ import run.bach.internal.StringPrintWriterMirror;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.22-ea";
+  public static final String VERSION = "2022.10.26-ea";
 
   @FunctionalInterface
   public interface Factory {
@@ -94,9 +94,20 @@ public class Bach implements ToolRunner {
     return new Tools("All Tools", new ToolFinders(finders), new ToolTweaks(tweaks));
   }
 
+  protected Project.Info createProjectInfo() {
+    var module = ModuleLayer.boot().findModule("project");
+    if (module.isPresent() && module.get().isAnnotationPresent(Project.Info.class)) {
+      return module.get().getAnnotation(Project.Info.class);
+    }
+    return Bach.class.getModule().getAnnotation(Project.Info.class);
+  }
+
   protected Project createProject() {
-    var project = Project.ofDefaults();
-    project = project.withWalkingDirectory(paths.root(), "glob:**/module-info.java");
+    var info = createProjectInfo();
+    var syntaxAndPattern = info.findModuleInfoSyntax() + ':' + info.findModuleInfoPattern();
+    var project = Project.ofDefaults()
+            .withWalkingDirectory(paths.root(), syntaxAndPattern)
+            .withWalkingAnnotation(info);
     var composers = new ArrayList<Project.Composer>();
     ServiceLoader.load(Project.Composer.class).forEach(composers::add);
     for (var composer : composers) project = composer.composeProject(project);
@@ -215,12 +226,15 @@ public class Bach implements ToolRunner {
             %s
             Tool Finders
             %s
+            Project
+            %s
             """
         .formatted(
             cli.toString(2),
             printer.toString(2),
             paths.toString(indent + 2),
-            tools.finders().toString(indent + 2))
+            tools.finders().toString(indent + 2),
+            project)
         .indent(indent)
         .stripTrailing();
   }

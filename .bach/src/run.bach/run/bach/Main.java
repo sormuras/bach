@@ -26,12 +26,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     try (var recording = new Recording()) {
-      var preliminaryCLI = new CLI().withParsingCommandLineArguments(List.of(args));
-      var preliminaryPaths = Paths.ofRoot(preliminaryCLI.rootPath());
-      var cli =
-          new CLI()
-              .withParsingCommandLineArguments(preliminaryPaths.root(".bach/bach.args"))
-              .withParsingCommandLineArguments(List.of(args));
+      var cli = new CLI().withParsingCommandLineArguments(List.of(args));
       var printer = new Printer(out, err, cli.printerThreshold(), cli.printerMargin());
       var verbose = cli.verbose();
       var version = cli.version();
@@ -50,16 +45,27 @@ public record Main(String name) implements ToolProvider, ToolOperator {
       try {
         recording.start();
         var bach = Bach.of(cli, printer);
+        bach.info(
+            "Bach %s // Java %s // %s (%s) // \"%s\" (%s)"
+                .formatted(
+                    Bach.VERSION,
+                    Runtime.version(),
+                    System.getProperty("os.name"),
+                    System.getProperty("os.arch"),
+                    bach.paths().root(),
+                    bach.paths().root().toUri()));
         bach.runToolOperator(this, List.of(args));
         return 0;
       } finally {
-        var dir = Files.createDirectories(preliminaryPaths.out());
+        var dir = Files.createDirectories(Paths.ofRoot(cli.rootPath()).out());
         Files.writeString(dir.resolve("bach-printer.log"), printer.toHistoryString(0));
         recording.stop();
         recording.dump(dir.resolve("bach-events.jfr"));
       }
     } catch (Exception exception) {
-      err.println(exception.getMessage());
+      var message = exception.getMessage();
+      if (message != null) err.println(message);
+      else exception.printStackTrace(err);
       return 1;
     }
   }

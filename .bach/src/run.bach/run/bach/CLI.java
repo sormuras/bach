@@ -96,11 +96,6 @@ public record CLI(
     return joiner.toString().indent(indent).stripTrailing();
   }
 
-  public CLI withParsingCommandLineArguments(Path file) {
-    if (Files.notExists(file)) return this;
-    return withParsingCommandLineArguments(expandArgumentsFile(file));
-  }
-
   public CLI withParsingCommandLineArguments(List<String> args) {
     var arguments = new ArrayDeque<>(args);
     // extract components

@@ -1,6 +1,10 @@
 package run.bach;
 
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.module.ModuleDescriptor;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,10 +18,21 @@ import java.util.stream.Stream;
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Externals externals) {
 
+  @Target(ElementType.MODULE)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Info {
+    String name() default "unnamed";
+    String version() default "0-ea";
+    String findModuleInfoPattern() default "**module-info.java";
+    String findModuleInfoSyntax() default "glob";
+    int multiReleaseBaseJava() default 0; // with 0 meaning: no `--release=N` argument is generated
+  }
+
   /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
   public static Project ofDefaults() {
-    var name = new Name("unnamed");
-    var version = new Version("0-ea", ZonedDateTime.now());
+    var info = Project.class.getModule().getAnnotation(Info.class);
+    var name = new Name(info.name());
+    var version = new Version(info.version(), ZonedDateTime.now());
     var init = new Space("init");
     var main = new Space("main", "init");
     var test = new Space("test", "main");
@@ -107,6 +122,13 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     return with(externals.withRequires(name).withRequires(more));
   }
 
+  public Project withWalkingAnnotation(Info info) {
+    var project = this;
+    project = project.withName(info.name());
+    project = project.with(project.spaces.main().withTargetsJava(info.multiReleaseBaseJava()));
+    return project;
+  }
+
   /**
    * {@return new project instance configured by finding {@code module-info.java} files below the
    * specified root directory matching the given {@link
@@ -123,12 +145,15 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
         if (uri.contains("/.bach/")) continue; // exclude project-local modules
         if (uri.matches(".*?/java-\\d+.*")) continue; // exclude non-base modules
         var module = DeclaredModule.of(directory, path);
-        var spaces = project.spaces();
-        var init = spaces.init();
-        var test = spaces.test();
-        var main = spaces.main();
-        var space = uri.contains("/init/") ? init : uri.contains("/test/") ? test : main;
-        project = project.withModule(space, module);
+        if (uri.contains("/init/")) {
+          project = project.withModule(project.spaces().init(), module);
+          continue;
+        }
+        if (uri.contains("/test/")) {
+          project = project.withModule(project.spaces().test(), module);
+          continue;
+        }
+        project = project.withModule(project.spaces().main(), module);
         var name = module.name();
         var launcher =
             module.base().sources().stream()
@@ -136,10 +161,10 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
                 .filter(Files::isRegularFile)
                 .findFirst();
         if (launcher.isPresent())
-          project = project.withLauncher(space, name + '/' + name + ".Main");
+          project = project.withLauncher(project.spaces().main(), name + '/' + name + ".Main");
       }
     } catch (Exception exception) {
-      throw new RuntimeException("Find with %s failed".formatted(syntaxAndPattern), exception);
+      throw new RuntimeException("Find with %s failed: %s".formatted(syntaxAndPattern, exception), exception);
     }
     return project;
   }

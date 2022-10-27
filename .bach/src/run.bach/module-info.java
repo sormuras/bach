@@ -1,4 +1,5 @@
 /** Defines Bach's API. */
+@run.bach.Project.Info
 module run.bach {
   requires transitive java.net.http;
   requires jdk.compiler;
