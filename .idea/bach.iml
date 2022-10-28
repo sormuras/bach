@@ -3,13 +3,9 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/.bach/bin" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/tmp" />
+      <sourceFolder url="file://$MODULE_DIR$/bin" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/out" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/bin/classes-17" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/bin/classes-18" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/bin/classes-19" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/bin/classes-20" />
+      <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />

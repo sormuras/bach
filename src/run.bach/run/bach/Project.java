@@ -22,9 +22,13 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Info {
     String name() default "unnamed";
+
     String version() default "0-ea";
+
     String findModuleInfoPattern() default "**module-info.java";
+
     String findModuleInfoSyntax() default "glob";
+
     int multiReleaseBaseJava() default 0; // with 0 meaning: no `--release=N` argument is generated
   }
 
@@ -164,7 +168,8 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
           project = project.withLauncher(project.spaces().main(), name + '/' + name + ".Main");
       }
     } catch (Exception exception) {
-      throw new RuntimeException("Find with %s failed: %s".formatted(syntaxAndPattern, exception), exception);
+      throw new RuntimeException(
+          "Find with %s failed: %s".formatted(syntaxAndPattern, exception), exception);
     }
     return project;
   }

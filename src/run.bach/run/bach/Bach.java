@@ -105,7 +105,8 @@ public class Bach implements ToolRunner {
   protected Project createProject() {
     var info = createProjectInfo();
     var syntaxAndPattern = info.findModuleInfoSyntax() + ':' + info.findModuleInfoPattern();
-    var project = Project.ofDefaults()
+    var project =
+        Project.ofDefaults()
             .withWalkingDirectory(paths.root(), syntaxAndPattern)
             .withWalkingAnnotation(info);
     var composers = new ArrayList<Project.Composer>();

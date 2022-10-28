@@ -7,13 +7,12 @@ import run.bach.Project;
 public class Info implements Project.Composer {
   @Override
   public Project composeProject(Project project) {
-    return project
+    return Project.ofDefaults()
         .withVersion(Bach.VERSION)
         .withVersionDate(ZonedDateTime.now().toString())
         .withTargetsJava("17")
         .withRequiresModule("java.base")
-        .withModule("main", ".bach/src/run.bach", ".bach/src/run.bach/module-info.java")
-        .withModule("main", ".bach/project", ".bach/project/module-info.java")
+        .withModule("main", "src/run.bach", "src/run.bach/module-info.java")
         .withLauncher("run.bach/run.bach.Main");
   }
 }

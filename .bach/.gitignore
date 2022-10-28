@@ -1,6 +1,2 @@
 /external-tools/*/
 /out/
-/tmp/
-
-*.class
-*.jar
