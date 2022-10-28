@@ -28,7 +28,7 @@ Download [`bach.java`](.bach/bin/bach.java) program into the `.bach/bin` subdire
 - Linux `echo 'Files.copy(URI.create("https://java.bach.run").toURL().openStream(), Files.createDirectories(Path.of(".bach/bin")).resolve("bach.java"))' | jshell -`
 - Windows `echo Files.copy(URI.create("https://java.bach.run").toURL().openStream(), Files.createDirectories(Path.of(".bach/bin")).resolve("bach.java")) | jshell -`
 
-> Note that https://java.bach.run forwards to https://raw.githubusercontent.com/sormuras/bach/main/.bach/bin/bach.java
+> Note that https://java.bach.run forwards to https://raw.githubusercontent.com/sormuras/bach/main/bin/bach.java
 
 Run Bach using the Java launcher.
 
