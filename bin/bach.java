@@ -11,7 +11,7 @@ record bach(boolean verbose, Path home, Path root) {
   public static void main(String... args) throws Exception {
     var arguments = List.of(args);
     var verbose = arguments.indexOf("--verbose") == 0; // similar to Bach's CLI "--verbose" flag
-    var root = computeRootPath(arguments).normalize(); // similar to Bach's CLI "--root-path=PATH"
+    var root = computeRootPath(arguments).normalize(); // similar to Bach's CLI "--root-path[=]PATH"
     var home = computeBachHomePath(System.getProperty("bach.home")).normalize();
     var java = Path.of(System.getProperty("java.home"), "bin", "java" /*.exe*/);
     var bach = new bach(arguments.isEmpty() || verbose, home, root);
@@ -111,6 +111,8 @@ record bach(boolean verbose, Path home, Path root) {
     var path = Path.of(location.toURI());
     if (path.endsWith("bin/bach.java")) return path.getParent().getParent();
     if (path.endsWith("bach.java")) return path.getParent();
+    var env = System.getenv("BACH_HOME");
+    if (env != null) return Path.of(env);
     return path; // "bach.class" in a directory structure or in a JAR file
   }
 
