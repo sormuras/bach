@@ -14,27 +14,12 @@ jobs:
       - name: 'Check out repository'
         uses: actions/checkout@v3
       - name: 'Build Bach with Bach ${{ github.sha }}'
-        run: $JAVA_HOME_17_X64/bin/java .bach/bin/bach.java build
-  quick-start-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Check out repository'
-        uses: actions/checkout@v3
-      - name: 'Create an example project'
-        run: |
-          mkdir example && cd example
-          echo 'Files.copy(URI.create("https://java.bach.run").toURL().openStream(), Files.createDirectories(Path.of(".bach/bin")).resolve("bach.java"))' | jshell -
-          $JAVA_HOME_17_X64/bin/java .bach/bin/bach.java --verbose info
-          cd .. && rm --recursive --force example
-  quick-start-windows:
-    runs-on: windows-latest
-    steps:
-      - name: 'Check out repository'
-        uses: actions/checkout@v3
-      - name: 'Create an example project'
-        run: |
-          mkdir example && cd example
-          echo Files.copy(URI.create("https://java.bach.run").toURL().openStream(), Files.createDirectories(Path.of(".bach/bin")).resolve("bach.java")) | jshell -
-          %JAVA_HOME_17_X64%\bin\java .bach\bin\bach.java --verbose info
-          cd .. && rmdir /Q /S example
-        shell: cmd
+        run: $JAVA_HOME_17_X64/bin/java bin/bach.java build
+      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ github.sha }}
+          path: |
+            .bach/out/*
+            .bach/out/main/modules/*.jar
