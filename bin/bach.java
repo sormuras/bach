@@ -9,6 +9,12 @@ import java.util.stream.Stream;
 
 record bach(boolean verbose, Path home, Path root) {
   public static void main(String... args) throws Exception {
+    var feature = Runtime.version().feature();
+    if (feature < 17) {
+      System.err.println("Java " + Runtime.version() + " in " + System.getProperty("java.home"));
+      throw new AssertionError("At least Java 17 is required");
+    }
+
     var arguments = List.of(args);
     var verbose = arguments.indexOf("--verbose") == 0; // similar to Bach's CLI "--verbose" flag
     var root = computeRootPath(arguments).normalize(); // similar to Bach's CLI "--root-path[=]PATH"
@@ -38,7 +44,7 @@ record bach(boolean verbose, Path home, Path root) {
       var bin = bach.home().resolve("bin");
       if (ModuleFinder.of(bin).find("run.bach").isEmpty()) {
         var sources = bach.home().resolve("src");
-        var classes = bach.home().resolve("out/bootstrap/classes-" + Runtime.version().feature());
+        var classes = bach.home().resolve("out/bootstrap/classes-" + feature);
         bach.verbose("Compile %s module from %s to %s".formatted("run.bach", sources, classes));
         if (!Files.isRegularFile(sources.resolve("run.bach" + "/module-info.java"))) {
           throw new UnsupportedOperationException("acquire sources");
@@ -67,7 +73,7 @@ record bach(boolean verbose, Path home, Path root) {
       var name = "project";
       var sources = bach.root().resolve(".bach");
       if (Files.isRegularFile(sources.resolve(name + "/module-info.java"))) {
-        var classes = sources.resolve("out/.bach/classes/java-" + Runtime.version().feature());
+        var classes = sources.resolve("out/.bach/classes/java-" + feature);
         bach.verbose("Compile %s module from %s to %s".formatted(name, sources, classes));
         bach.run(
             "javac",

@@ -11,7 +11,7 @@ import run.bach.internal.StringPrintWriterMirror;
 
 public class Bach implements ToolRunner {
 
-  public static final String VERSION = "2022.10.26-ea";
+  public static final String VERSION = "2022.10.28";
 
   @FunctionalInterface
   public interface Factory {
