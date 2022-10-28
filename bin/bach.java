@@ -1,7 +1,10 @@
 import java.io.File;
 import java.lang.module.ModuleFinder;
+import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.spi.ToolProvider;
@@ -38,6 +41,14 @@ record bach(boolean verbose, Path home, Path root) {
                 bach.root(),
                 bach.root().toUri(),
                 java));
+
+    var reset = arguments.indexOf("reset");
+    if (reset >= 0) {
+      var version = arguments.size() <= reset + 1 ? "main" : arguments.get(reset + 1);
+      bach.reset(version);
+      main("--version");
+      return;
+    }
 
     var modulePaths = new ArrayList<Path>();
     /* "run.bach" */ {
@@ -128,6 +139,76 @@ record bach(boolean verbose, Path home, Path root) {
     var distinct = mapped.distinct().toList();
     if (distinct.isEmpty()) throw new IllegalArgumentException("No valid entry in: " + paths);
     return String.join(File.pathSeparator, distinct);
+  }
+
+  void deleteTree(Path root) throws Exception {
+    if (Files.notExists(root)) return;
+    try (var stream = Files.walk(root)) {
+      var files = stream.sorted((p, q) -> -p.compareTo(q));
+      for (var file : files.toArray(Path[]::new)) Files.deleteIfExists(file);
+    }
+  }
+
+  void reset(String version) throws Exception {
+    var env = System.getenv("BACH_HOME");
+    if (env != null && Path.of(env).equals(home)) {
+      throw new AssertionError("No reset in BACH_HOME = " + env);
+    }
+    if (version.isBlank() || List.of("?", "/?", "-?", "-h", "--help").contains(version)) {
+      System.out.print(
+          """
+              Usage: bach reset <version>
+
+                  A reset is performed by replacing a set of directory trees below the
+                  BACH_HOME folder with files extracted from a versioned Bach archive.
+
+              Values for version include: "main", "HEAD", git tags, and git commit SHAs.
+              """);
+      return;
+    }
+    System.out.printf("Reset Bach to version %s in progress...%n", version);
+    var tmp = home.resolve("out/tmp");
+    deleteTree(tmp);
+    var zip = tmp.resolve("bach-archive-" + version + ".zip");
+    // get archive first before deleting any existing sources
+    if (Files.notExists(zip)) {
+      download("https://github.com/sormuras/bach/archive/" + version + ".zip", zip);
+    }
+    deleteTree(home.resolve("bin"));
+    deleteTree(home.resolve("src/run.bach"));
+    /* unzip archive */ {
+      verbose("<< %s".formatted(zip.toUri()));
+      var files = new ArrayList<Path>();
+      try (var fs = FileSystems.newFileSystem(zip)) {
+        var binaries = fs.getPathMatcher("glob:/*/bin/*");
+        var sources = fs.getPathMatcher("glob:/*/src/**");
+        for (var root : fs.getRootDirectories()) {
+          try (var stream = Files.walk(root)) {
+            var list = stream.filter(Files::isRegularFile).toList();
+            for (var file : list) {
+              if (binaries.matches(file) || sources.matches(file)) {
+                var target = home.resolve(file.subpath(1, file.getNameCount()).toString());
+                verbose(target.toUri().toString());
+                Files.createDirectories(target.getParent());
+                Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+                files.add(target);
+              }
+            }
+          }
+        }
+      }
+      verbose(">> %d files copied".formatted(files.size()));
+    }
+    System.out.println("Reset done.");
+  }
+
+  void download(String uri, Path file) throws Exception {
+    verbose("<< %s".formatted(uri));
+    Files.createDirectories(file.getParent());
+    try (var stream = new URL(uri).openStream()) {
+      var size = Files.copy(stream, file);
+      verbose(">> %,7d %s".formatted(size, file.getFileName()));
+    }
   }
 
   void run(String name, Object... args) {
