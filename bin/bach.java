@@ -1,10 +1,13 @@
 import java.io.File;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,8 +24,8 @@ record bach(boolean verbose, Path home, Path root) {
 
     var arguments = List.of(args);
     var verbose = arguments.isEmpty() || arguments.indexOf("!") == 0;
-    var root = computeRootPath(arguments).normalize(); // similar to Bach's CLI "--root-path[=]PATH"
-    var home = computeBachHomePath(System.getProperty("bach.home")).normalize();
+    var home = relativize(computeBachHome(System.getProperty("bach.home")));
+    var root = relativize(computeRootPath(arguments)); // similar to Bach's CLI "--root-path[=]PATH"
     var bach = new bach(verbose, home, root);
 
     if (arguments.indexOf("!") == 0) {
@@ -34,22 +37,22 @@ record bach(boolean verbose, Path home, Path root) {
       throw new UnsupportedOperationException(arguments.toString());
     }
 
-    var finder = ModuleFinder.of(bach.home("bin"));
-    if (finder.find("run.bach").isEmpty()) {
-      if (Files.isRegularFile(bach.home("src", "run.bach", "module-info.java"))) {
-        var src = bach.home("src");
-        var jar = bach.home("bin", "run.bach.jar");
-        bach.bootstrapBachModule(src, jar);
+    if (bach.isBachModuleMissing()) {
+      if (bach.isBachSourcePresent()) {
+        assert Files.isRegularFile(bach.home("bin", "bach"));
+        assert Files.isRegularFile(bach.home("bin", "bach.bat"));
+        assert Files.isRegularFile(bach.home("bin", "bach.java"));
+        bach.compileBachModule(bach.home("src"), "src", bach.home("bin", "run.bach.jar"));
       } else {
         bach.reset();
       }
     }
 
-    var code = bach.run(arguments);
+    var code = bach.runBach(arguments);
     if (code != 0) System.exit(code);
   }
 
-  static Path computeBachHomePath(String property) throws Exception {
+  static Path computeBachHome(String property) throws Exception {
     if (property != null) return Path.of(property);
     var code = bach.class.getProtectionDomain().getCodeSource();
     if (code == null) throw new AssertionError("No code source available for: " + bach.class);
@@ -73,12 +76,9 @@ record bach(boolean verbose, Path home, Path root) {
     return Path.of("");
   }
 
-  static void delete(Path root) throws Exception {
-    if (Files.notExists(root)) return;
-    try (var stream = Files.walk(root)) {
-      var files = stream.sorted((p, q) -> -p.compareTo(q));
-      for (var file : files.toArray(Path[]::new)) Files.deleteIfExists(file);
-    }
+  static Path relativize(Path path) {
+    if (!path.isAbsolute()) return path;
+    return Path.of("").toAbsolutePath().relativize(path.normalize().toAbsolutePath());
   }
 
   static String join(List<Path> paths) {
@@ -97,19 +97,38 @@ record bach(boolean verbose, Path home, Path root) {
     return root.resolve(Path.of(first, more));
   }
 
-  void bootstrapBachModule(Path sources, Path jar) {
+  boolean isBachModuleMissing() {
+    return ModuleFinder.of(home("bin")).find("run.bach").isEmpty();
+  }
+
+  boolean isBachSourcePresent() {
+    return Files.isRegularFile(home("src", "run.bach", "module-info.java"));
+  }
+
+  void compileBachModule(Path sources, String version, Path jar) throws Exception {
     var module = "run.bach";
-    var classes = home("out", ".bach", "classes-" + Runtime.version().feature());
+    try {
+      ModuleDescriptor.Version.parse(version);
+    } catch (IllegalArgumentException exception) {
+      var now = LocalDateTime.now();
+      version =
+          now.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+              + "-src+"
+              + now.format(DateTimeFormatter.ofPattern("HH.mm.ss"));
+    }
+    var tmp = Files.createTempDirectory("bach-" + version + "-");
+    var classes = tmp.resolve("classes-" + Runtime.version().feature());
     verbose("Compile %s module from %s to %s".formatted(module, sources, classes));
-    run(
+    runTool(
         "javac",
         "--module=" + module,
         "--module-source-path=" + sources,
+        "--module-version=" + version,
         "-X" + "lint:all",
         "-W" + "error",
         "-d",
         classes);
-    run(
+    runTool(
         "jar",
         "--create",
         "--file=" + jar,
@@ -117,16 +136,21 @@ record bach(boolean verbose, Path home, Path root) {
         "-C",
         classes.resolve(module),
         ".");
+    removeDirectoryTree(tmp);
   }
 
   Optional<Path> buildProjectModule() {
-    if (Files.notExists(root(".bach", "project", "module-info.java"))) return Optional.empty();
+    var project = root(".bach", "project", "module-info.java");
+    if (Files.notExists(project)) {
+      verbose("No project descriptor found: " + project);
+      return Optional.empty();
+    }
     var feature = Runtime.version().feature();
     var sources = root(".bach");
     var classes = root(".bach", "out", ".bach", "classes-" + feature);
 
-    verbose("Compile project module from %s to %s".formatted(sources, classes));
-    run(
+    verbose("Compile project module from %s to %s".formatted(project, classes));
+    runTool(
         "javac",
         "--module=project",
         "--module-source-path=" + sources, // with project/module-info.java
@@ -138,12 +162,12 @@ record bach(boolean verbose, Path home, Path root) {
     return Optional.of(classes);
   }
 
+  /** Re-initialize all files in {@code HOME/bin}. */
   void reset() throws Exception {
     var console = System.console();
     if (console == null) throw new IllegalStateException("No console for reading user input");
     var version =
-        console.readLine(
-            """
+        console.readLine("""
             Enter version of Bach to install.
             >\s""");
     reset(version == null ? "?" : version);
@@ -164,7 +188,7 @@ record bach(boolean verbose, Path home, Path root) {
     }
     verbose("Reset to version %s in progress...".formatted(version));
     // load to temp
-    var tmp = home("out", "tmp");
+    var tmp = Files.createTempDirectory("bach-" + version + "-");
     var zip = tmp.resolve("bach-archive-" + version + ".zip");
     if (Files.notExists(zip)) {
       download("https://github.com/sormuras/bach/archive/" + version + ".zip", zip);
@@ -172,19 +196,22 @@ record bach(boolean verbose, Path home, Path root) {
     var sources = tmp.resolve("bach-archive-" + version);
     unzip(zip, sources);
     var jar = tmp.resolve("bach-" + version + ".jar");
-    bootstrapBachModule(sources.resolve("src"), jar);
+    compileBachModule(sources.resolve("src"), version, jar);
     var git = Files.isDirectory(home(".git"));
     if (git) {
       System.out.println("Found .git directory in " + home());
       return;
     }
     var bin = home("bin");
-    delete(bin);
+    removeDirectoryTree(bin);
     Files.createDirectories(bin);
-    Files.copy(sources.resolve("bin/bach"), home("bin/bach")).toFile().setExecutable(true, true);
+    Files.copy(sources.resolve("bin/bach"), home("bin/bach"));
     Files.copy(sources.resolve("bin/bach.bat"), home("bin/bach.bat"));
     Files.copy(sources.resolve("bin/bach.java"), home("bin/bach.java"));
     Files.copy(jar, home("bin/run.bach.jar"));
+    //noinspection ResultOfMethodCallIgnored
+    home("bin", "bach").toFile().setExecutable(true, true);
+    removeDirectoryTree(tmp);
     verbose("Reset done.");
   }
 
@@ -209,7 +236,7 @@ record bach(boolean verbose, Path home, Path root) {
           for (var file : list) {
             if (binaries.matches(file) || sources.matches(file)) {
               var target = dir.resolve(file.subpath(1, file.getNameCount()).toString());
-              verbose(target.toUri().toString());
+              // verbose(target.toUri().toString());
               Files.createDirectories(target.getParent());
               Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
               files.add(target);
@@ -221,7 +248,16 @@ record bach(boolean verbose, Path home, Path root) {
     verbose(">> %d files copied".formatted(files.size()));
   }
 
-  void run(String name, Object... args) {
+  void removeDirectoryTree(Path root) throws Exception {
+    if (Files.notExists(root)) return;
+    verbose("Remove directory tree " + root);
+    try (var stream = Files.walk(root)) {
+      var files = stream.sorted((p, q) -> -p.compareTo(q));
+      for (var file : files.toArray(Path[]::new)) Files.deleteIfExists(file);
+    }
+  }
+
+  void runTool(String name, Object... args) {
     var tool = ToolProvider.findFirst(name).orElseThrow();
     var strings = Stream.of(args).map(Object::toString).toList();
     verbose(name + " " + String.join(" ", strings));
@@ -229,7 +265,7 @@ record bach(boolean verbose, Path home, Path root) {
     if (code != 0) throw new RuntimeException(name + " returned error code " + code);
   }
 
-  int run(List<String> arguments) throws Exception {
+  int runBach(List<String> arguments) throws Exception {
     var modulePaths = new ArrayList<>(List.of(home("bin")));
     buildProjectModule().ifPresent(modulePaths::add);
 
@@ -239,6 +275,7 @@ record bach(boolean verbose, Path home, Path root) {
     process.command().add("--add-modules=ALL-DEFAULT,ALL-MODULE-PATH");
     process.command().add("--module=run.bach");
     process.command().addAll(arguments);
+    verbose("Launch Bach in %s (%s)".formatted(root.toString().isEmpty() ? "." : root, root.toUri()));
     verbose(String.join(" ", process.command()));
     return process.inheritIO().start().waitFor();
   }

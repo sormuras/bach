@@ -1,14 +1,13 @@
 package project;
 
 import java.time.ZonedDateTime;
-import run.bach.Bach;
 import run.bach.Project;
 
 public class Info implements Project.Composer {
   @Override
   public Project composeProject(Project project) {
     return Project.ofDefaults()
-        .withVersion(Bach.VERSION)
+        .withVersion("2022-ea")
         .withVersionDate(ZonedDateTime.now().toString())
         .withTargetsJava("17")
         .withRequiresModule("java.base")

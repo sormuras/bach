@@ -25,13 +25,14 @@ public record Main(String name) implements ToolProvider, ToolOperator {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
+    var descriptor = Bach.class.getModule().getDescriptor();
     try (var recording = new Recording()) {
       var cli = new CLI().withParsingCommandLineArguments(List.of(args));
       var printer = new Printer(out, err, cli.printerThreshold(), cli.printerMargin());
       var verbose = cli.verbose();
       var version = cli.version();
       if (verbose || version) {
-        out.println("Bach " + Bach.VERSION);
+        out.println("Bach " + descriptor.version().map(Object::toString).orElse("?"));
         if (version) return 0;
         out.println(cli.toString(0));
       }
@@ -46,9 +47,9 @@ public record Main(String name) implements ToolProvider, ToolOperator {
         recording.start();
         var bach = Bach.of(cli, printer);
         bach.info(
-            "Bach %s // Java %s // %s (%s) // \"%s\" (%s)"
+            "Bach (%s) // Java %s // %s (%s) // \"%s\" (%s)"
                 .formatted(
-                    Bach.VERSION,
+                    descriptor.toNameAndVersion(),
                     Runtime.version(),
                     System.getProperty("os.name"),
                     System.getProperty("os.arch"),
