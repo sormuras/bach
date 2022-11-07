@@ -1,7 +1,6 @@
 package run.bach;
 
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.spi.ToolProvider;
@@ -45,8 +44,8 @@ public record Main(String name) implements ToolProvider, ToolOperator {
       }
       try {
         recording.start();
-        var bach = Bach.of(cli, printer);
-        bach.info(
+        var bach = Bach.of(cli, printer, recording);
+        bach.debug(
             "Bach (%s) // Java %s // %s (%s) // \"%s\" (%s)"
                 .formatted(
                     descriptor.toNameAndVersion(),
@@ -58,10 +57,7 @@ public record Main(String name) implements ToolProvider, ToolOperator {
         bach.runToolOperator(this, List.of(args));
         return 0;
       } finally {
-        var dir = Files.createDirectories(Paths.ofRoot(cli.rootPath()).out());
-        Files.writeString(dir.resolve("bach-printer.log"), printer.toHistoryString(0));
         recording.stop();
-        recording.dump(dir.resolve("bach-events.jfr"));
       }
     } catch (Exception exception) {
       var message = exception.getMessage();

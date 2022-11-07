@@ -1,9 +1,12 @@
 package run.bach;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
+import jdk.jfr.Recording;
 import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.LoadValidator;
 import run.bach.internal.PathSupport;
@@ -13,12 +16,12 @@ public class Bach implements ToolRunner {
 
   @FunctionalInterface
   public interface Factory {
-    Bach createBach(CLI cli, Printer printer);
+    Bach createBach(CLI cli, Printer printer, Recording recording);
   }
 
-  public static Bach of(CLI cli, Printer printer) {
+  public static Bach of(CLI cli, Printer printer, Recording recording) {
     var factory = ServiceLoader.load(Factory.class).findFirst().orElse(Bach::new);
-    var bach = factory.createBach(cli, printer);
+    var bach = factory.createBach(cli, printer, recording);
     bach.debug("Initialized instance of " + bach.getClass());
     bach.debug(bach.toString(0));
     return bach;
@@ -26,15 +29,17 @@ public class Bach implements ToolRunner {
 
   private final CLI cli;
   private final Printer printer;
+  private final Recording recording;
   private final Paths paths;
   private final Browser browser;
   private final ExternalModulesLocators locators;
   private final Tools tools;
   private final Project project;
 
-  public Bach(CLI cli, Printer printer) {
+  public Bach(CLI cli, Printer printer, Recording recording) {
     this.cli = cli;
     this.printer = printer;
+    this.recording = recording;
     this.paths = createPaths();
     this.browser = createBrowser();
     this.locators = createExternalModulesLocators();
@@ -236,5 +241,15 @@ public class Bach implements ToolRunner {
             project)
         .indent(indent)
         .stripTrailing();
+  }
+
+  public void writeLogbook() throws Exception {
+    writeLogbook(paths.out());
+  }
+
+  public void writeLogbook(Path path) throws Exception {
+    var dir = Files.createDirectories(path);
+    Files.writeString(dir.resolve("bach-printer.log"), printer.toHistoryString(0));
+    recording.dump(dir.resolve("bach-events.jfr"));
   }
 }

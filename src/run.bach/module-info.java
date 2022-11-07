@@ -6,7 +6,7 @@ module run.bach {
   requires jdk.jartool;
   requires jdk.javadoc;
   requires jdk.jdeps;
-  requires jdk.jfr;
+  requires transitive jdk.jfr;
   requires jdk.jlink;
   requires jdk.jpackage;
 
@@ -21,6 +21,7 @@ module run.bach {
   uses run.bach.ToolTweak;
 
   provides run.bach.ToolOperator with
+      run.bach.toolbox.DumpTool,
       run.bach.toolbox.HashTool,
       run.bach.toolbox.ImportTool,
       run.bach.toolbox.InfoTool,
