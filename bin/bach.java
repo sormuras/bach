@@ -121,6 +121,7 @@ record bach(boolean verbose, Path home, Path root) {
     verbose("Compile %s module from %s to %s".formatted(module, sources, classes));
     runTool(
         "javac",
+        "--release=17",
         "--module=" + module,
         "--module-source-path=" + sources,
         "--module-version=" + version,
