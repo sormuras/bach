@@ -30,6 +30,7 @@ module run.bach {
       run.bach.toolbox.SignTool,
       run.bach.project.BuildTool,
       run.bach.project.CacheTool,
+      run.bach.project.CleanTool,
       run.bach.project.CompileTool,
       run.bach.project.CompileClassesTool,
       run.bach.project.CompileModulesTool,
