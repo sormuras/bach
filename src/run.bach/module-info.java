@@ -35,4 +35,6 @@ module run.bach {
       run.bach.project.CompileModulesTool,
       run.bach.project.LaunchTool,
       run.bach.project.TestTool;
+  provides java.util.spi.ToolProvider with
+      run.bach.toolbox.TreeTool;
 }
