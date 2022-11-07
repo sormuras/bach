@@ -48,7 +48,7 @@ record bach(boolean verbose, Path home, Path root) {
       }
     }
 
-    var code = bach.runBach(arguments);
+    var code = bach.start(arguments);
     if (code != 0) System.exit(code);
   }
 
@@ -265,7 +265,7 @@ record bach(boolean verbose, Path home, Path root) {
     if (code != 0) throw new RuntimeException(name + " returned error code " + code);
   }
 
-  int runBach(List<String> arguments) throws Exception {
+  int start(List<String> arguments) throws Exception {
     var modulePaths = new ArrayList<>(List.of(home("bin")));
     buildProjectModule().ifPresent(modulePaths::add);
 
@@ -275,7 +275,7 @@ record bach(boolean verbose, Path home, Path root) {
     process.command().add("--add-modules=ALL-DEFAULT,ALL-MODULE-PATH");
     process.command().add("--module=run.bach");
     process.command().addAll(arguments);
-    verbose("Launch Bach in %s (%s)".formatted(root.toString().isEmpty() ? "." : root, root.toUri()));
+    verbose("Start Bach %s (%s)".formatted(root.toString().isEmpty() ? "." : root, root.toUri()));
     verbose(String.join(" ", process.command()));
     return process.inheritIO().start().waitFor();
   }
