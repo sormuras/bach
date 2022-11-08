@@ -1,4 +1,4 @@
-@run.bach.Project.Info(name = "Bach")
+@run.bach.Project.Info(name = "Bach", targetsJava = 17)
 module project {
   requires run.bach;
 

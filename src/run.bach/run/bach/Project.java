@@ -29,7 +29,7 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
 
     String findModuleInfoSyntax() default "glob";
 
-    int multiReleaseBaseJava() default 0; // with 0 meaning: no `--release=N` argument is generated
+    int targetsJava() default 0; // with 0 meaning: no `--release=N` argument is generated
   }
 
   /** {@return an {@code "unnamed 0-ea"} project with empty init, main, and test module spaces} */
@@ -129,7 +129,7 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   public Project withWalkingAnnotation(Info info) {
     var project = this;
     project = project.withName(info.name());
-    project = project.with(project.spaces.main().withTargetsJava(info.multiReleaseBaseJava()));
+    project = project.withTargetsJava(info.targetsJava());
     return project;
   }
 
