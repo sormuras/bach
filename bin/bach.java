@@ -136,6 +136,9 @@ record bach(boolean verbose, Path home, Path root) {
         "--main-class=" + module + ".Main",
         "-C",
         classes.resolve(module),
+        ".",
+        "-C",
+        sources.resolve(module),
         ".");
     removeDirectoryTree(tmp);
   }
