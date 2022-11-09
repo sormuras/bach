@@ -31,7 +31,7 @@ public class TestTool implements ToolOperator {
       var paths = bach.paths();
       var java =
           ToolCall.of("java")
-              .with("--module-path", space.toModulePath(paths))
+              .with("--module-path", space.toModulePath(paths).orElse("."))
               .with("--module", launcher.get());
       bach.run(java);
     }
