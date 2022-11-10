@@ -20,7 +20,7 @@ public record ListTool(String name) implements ToolOperator {
   public void run(Operation operation) {
     var bach = operation.bach();
     if (operation.arguments().isEmpty()) {
-      bach.info("Usage: %s {tools}".formatted(name()));
+      bach.info("Usage: %s {modules, tools}".formatted(name()));
       return;
     }
     if (operation.arguments().contains("modules")) {
