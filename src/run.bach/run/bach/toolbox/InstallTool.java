@@ -47,7 +47,7 @@ public record InstallTool(String name) implements ToolOperator {
         joiner.add(command.toCommandLine(" "));
       }
       var size = tools.size();
-      joiner.add("    %d tool directory info fil%s".formatted(size, size == 1 ? "" : "s"));
+      joiner.add("    %d tool directory info file%s".formatted(size, size == 1 ? "" : "s"));
       bach.info(joiner.toString());
       return;
     }
