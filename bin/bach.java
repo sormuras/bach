@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -78,7 +79,9 @@ record bach(boolean verbose, Path home, Path root) {
 
   static Path relativize(Path path) {
     if (!path.isAbsolute()) return path;
-    return Path.of("").toAbsolutePath().relativize(path.normalize().toAbsolutePath());
+    var cwd = Path.of("").toAbsolutePath();
+    if (!Objects.equals(cwd.getRoot(), path.getRoot())) return path;
+    return cwd.relativize(path.normalize().toAbsolutePath());
   }
 
   static String join(List<Path> paths) {
