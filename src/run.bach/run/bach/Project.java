@@ -60,6 +60,10 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       ModuleDescriptor.Version.parse(value);
       timestamp.toInstant();
     }
+
+    public Version(String value) {
+      this(value, ZonedDateTime.now());
+    }
   }
 
   public record Spaces(List<Space> list) implements Component {
