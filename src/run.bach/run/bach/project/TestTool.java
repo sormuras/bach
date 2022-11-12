@@ -19,7 +19,9 @@ public class TestTool implements ToolOperator {
   @Override
   public void run(Operation operation) {
     var bach = operation.bach();
-    var tester = new Tester(bach, bach.project().spaces().test());
+    var spaces = bach.project().spaces();
+    if (!spaces.names().contains("test")) return;
+    var tester = new Tester(bach, spaces.space("test"));
     tester.runSpaceLauncher();
     tester.runJUnitPlatform();
   }

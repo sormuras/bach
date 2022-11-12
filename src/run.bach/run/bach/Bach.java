@@ -97,25 +97,9 @@ public class Bach implements ToolRunner {
     return new Tools("All Tools", new ToolFinders(finders), new ToolTweaks(tweaks));
   }
 
-  protected Project.Info createProjectInfo() {
-    var module = ModuleLayer.boot().findModule("project");
-    if (module.isPresent() && module.get().isAnnotationPresent(Project.Info.class)) {
-      return module.get().getAnnotation(Project.Info.class);
-    }
-    return Bach.class.getModule().getAnnotation(Project.Info.class);
-  }
-
   protected Project createProject() {
-    var info = createProjectInfo();
-    var syntaxAndPattern = info.findModuleInfoSyntax() + ':' + info.findModuleInfoPattern();
-    var project =
-        Project.ofDefaults()
-            .withWalkingDirectory(paths.root(), syntaxAndPattern)
-            .withWalkingAnnotation(info);
-    var composers = new ArrayList<Project.Composer>();
-    ServiceLoader.load(Project.Composer.class).forEach(composers::add);
-    for (var composer : composers) project = composer.composeProject(project);
-    return project;
+    var factory = ServiceLoader.load(Project.Factory.class).findFirst().orElse(Project::ofDefaults);
+    return factory.createProject(this);
   }
 
   public final CLI cli() {

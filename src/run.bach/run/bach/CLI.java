@@ -17,6 +17,9 @@ public record CLI(
     Optional<String> __printer_threshold,
     Optional<String> __printer_margin,
     Optional<String> __root_path,
+    Optional<String> __project_name,
+    Optional<String> __project_version,
+    Optional<String> __project_version_timestamp,
     List<String> __trust_signature_email,
     List<Call> calls) {
 
@@ -30,6 +33,9 @@ public record CLI(
 
   public CLI() {
     this(
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
@@ -106,6 +112,9 @@ public record CLI(
     var printerThreshold = __printer_threshold.orElse(null);
     var printerMargin = __printer_margin.orElse(null);
     var rootPath = __root_path.orElse(null);
+    var projectName = __project_name.orElse(null);
+    var projectVersion = __project_version.orElse(null);
+    var projectVersionTimestamp = __project_version_timestamp.orElse(null);
     var trustSignatureEmails = new ArrayList<>(trustSignatureEmails());
     var calls = new ArrayList<>(calls());
     // handle options by parsing flags and key-value paris
@@ -155,6 +164,18 @@ public record CLI(
           rootPath = pop ? arguments.pop() : argument.substring(val);
           continue;
         }
+        if (key.equals("--project-name")) {
+          projectName = pop ? arguments.pop() : argument.substring(val);
+          continue;
+        }
+        if (key.equals("--project-version")) {
+          projectVersion = pop ? arguments.pop() : argument.substring(val);
+          continue;
+        }
+        if (key.equals("--project-version-timestamp")) {
+          projectVersionTimestamp = pop ? arguments.pop() : argument.substring(val);
+          continue;
+        }
         if (key.equals("--trust-signature-email")) {
           var value = pop ? arguments.pop() : argument.substring(val);
           trustSignatureEmails.addAll(List.of(value.split(",")));
@@ -188,6 +209,9 @@ public record CLI(
         Optional.ofNullable(printerThreshold),
         Optional.ofNullable(printerMargin),
         Optional.ofNullable(rootPath),
+        Optional.ofNullable(projectName),
+        Optional.ofNullable(projectVersion),
+        Optional.ofNullable(projectVersionTimestamp),
         List.copyOf(trustSignatureEmails),
         List.copyOf(calls));
   }

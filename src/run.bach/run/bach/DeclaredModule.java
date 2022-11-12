@@ -14,6 +14,10 @@ public record DeclaredModule(
     Map<Integer, DeclaredFolders> targeted)
     implements Comparable<DeclaredModule> {
 
+  public static DeclaredModule of(String root, String moduleInfoJavaFileOrItsParentDirectory) {
+    return DeclaredModule.of(Path.of(root), Path.of(moduleInfoJavaFileOrItsParentDirectory));
+  }
+
   public static DeclaredModule of(Path root, Path moduleInfoJavaFileOrItsParentDirectory) {
     var info =
         moduleInfoJavaFileOrItsParentDirectory.endsWith("module-info.java")

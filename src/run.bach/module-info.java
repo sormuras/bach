@@ -1,5 +1,4 @@
 /** Defines Bach's API. */
-@run.bach.Project.Info
 module run.bach {
   requires transitive java.net.http;
   requires jdk.compiler;
@@ -16,7 +15,7 @@ module run.bach {
   uses java.util.spi.ToolProvider;
   uses run.bach.Bach.Factory;
   uses run.bach.ExternalModulesLocator;
-  uses run.bach.Project.Composer;
+  uses run.bach.Project.Factory;
   uses run.bach.ToolOperator;
   uses run.bach.ToolTweak;
 

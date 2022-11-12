@@ -1,8 +1,7 @@
-@run.bach.Project.Info(name = "Bach", targetsJava = 17)
 module project {
   requires run.bach;
 
-  provides run.bach.Project.Composer with
+  provides run.bach.Project.Factory with
       project.Info;
   provides run.bach.ToolOperator with
       project.overlay.CompileClasses,

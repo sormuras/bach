@@ -70,8 +70,8 @@ public class CompileModulesTool implements ToolOperator {
   protected ToolCall jarWithDate(ToolCall jar, OperationContext context) {
     if (Runtime.version().feature() < 19) return jar;
     var project = context.bach().project();
-    var date = project.version().date().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-    return jar.with("--date", date);
+    var timestamp = project.version().timestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    return jar.with("--date", timestamp);
   }
 
   protected ToolCall jarWithLauncher(ToolCall jar, OperationContext context) {
