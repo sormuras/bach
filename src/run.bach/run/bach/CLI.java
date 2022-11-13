@@ -2,6 +2,7 @@ package run.bach;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,6 +79,18 @@ public record CLI(
 
   public Path rootPath() {
     return __root_path.map(Path::of).orElse(Path.of(""));
+  }
+
+  public String projectName(String defaultName) {
+    return __project_name.orElse(defaultName);
+  }
+
+  public String projectVersion(String defaultVersion) {
+    return __project_version.orElse(defaultVersion);
+  }
+
+  public ZonedDateTime projectVersionTimestampOrNow() {
+    return __project_version_timestamp().map(ZonedDateTime::parse).orElseGet(ZonedDateTime::now);
   }
 
   public List<String> trustSignatureEmails() {

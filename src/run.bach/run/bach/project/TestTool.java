@@ -2,7 +2,6 @@ package run.bach.project;
 
 import java.lang.module.ModuleFinder;
 import run.bach.Bach;
-import run.bach.DeclaredModule;
 import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolFinder;
@@ -45,7 +44,7 @@ public class TestTool implements ToolOperator {
       }
     }
 
-    void runJUnitPlatform(DeclaredModule module) {
+    void runJUnitPlatform(Project.DeclaredModule module) {
       var name = module.name();
       var paths = bach.paths();
       var moduleFinder =

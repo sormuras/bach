@@ -2,13 +2,21 @@ package run.bach;
 
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Stream;
+import run.bach.internal.ModuleDescriptorSupport;
+import run.bach.internal.ModuleInfoFinder;
+import run.bach.internal.ModuleInfoReference;
+import run.bach.internal.ModuleSourcePathSupport;
 
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Externals externals) {
@@ -16,13 +24,8 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   /** {@return an {@code "unnamed 0-ea"} project with no module source code spaces} */
   public static Project ofDefaults(Bach bach) {
     var cli = bach.cli();
-    var name = new Name(cli.__project_name().orElse("unnamed"));
-    var version =
-        new Version(
-            cli.__project_version().orElse("0-ea"),
-            cli.__project_version_timestamp()
-                .map(ZonedDateTime::parse)
-                .orElseGet(ZonedDateTime::now));
+    var name = new Name(cli.projectName("unnamed"));
+    var version = new Version(cli.projectVersion("0-ea"), cli.projectVersionTimestampOrNow());
     var spaces = new Spaces();
     var externals = new Externals();
     return new Project(name, version, spaces, externals);
@@ -42,9 +45,7 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     Project createProject(Bach bach);
   }
 
-  public sealed interface Component {}
-
-  public record Name(String value) implements Component {
+  public record Name(String value) {
     public Name {
       if (value.isBlank()) throw new IllegalArgumentException("Name must not be blank");
     }
@@ -55,7 +56,7 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     }
   }
 
-  public record Version(String value, ZonedDateTime timestamp) implements Component {
+  public record Version(String value, ZonedDateTime timestamp) {
     public Version {
       ModuleDescriptor.Version.parse(value);
       timestamp.toInstant();
@@ -64,9 +65,13 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     public Version(String value) {
       this(value, ZonedDateTime.now());
     }
+
+    public Version with(ZonedDateTime timestamp) {
+      return new Version(value, timestamp);
+    }
   }
 
-  public record Spaces(List<Space> list) implements Component {
+  public record Spaces(List<Space> list) {
     public Spaces(Space... spaces) {
       this(List.of(spaces));
     }
@@ -106,6 +111,10 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       this(name, DeclaredModules.of(), 0, Optional.empty(), List.of(requires));
     }
 
+    public Space withModule(Path contentRoot, Path moduleInfo) {
+      return withModules(DeclaredModule.of(contentRoot, moduleInfo));
+    }
+
     public Space withModules(DeclaredModule... more) {
       return withModules(modules.with(more));
     }
@@ -139,7 +148,197 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     }
   }
 
-  public record Externals(Set<String> requires) implements Component {
+  /** A sequence of declared modules. */
+  public record DeclaredModules(List<DeclaredModule> list) implements Iterable<DeclaredModule> {
+
+    public static DeclaredModules of(DeclaredModule... modules) {
+      return of(List.of(modules));
+    }
+
+    public static DeclaredModules of(List<DeclaredModule> modules) {
+      return new DeclaredModules(modules.stream().sorted().toList());
+    }
+
+    public Optional<DeclaredModule> find(String name) {
+      return list.stream().filter(module -> module.name().equals(name)).findFirst();
+    }
+
+    @Override
+    public Iterator<DeclaredModule> iterator() {
+      return list.iterator();
+    }
+
+    public List<String> names() {
+      return list.stream().sorted().map(DeclaredModule::name).toList();
+    }
+
+    public String names(String delimiter) {
+      return String.join(delimiter, names());
+    }
+
+    public ModuleFinder toModuleFinder() {
+      var moduleInfoReferences =
+          list.stream()
+              .map(module -> new ModuleInfoReference(module.info(), module.descriptor()))
+              .toList();
+      return new ModuleInfoFinder(moduleInfoReferences);
+    }
+
+    public List<String> toModuleSourcePaths() {
+      var map = new TreeMap<String, List<Path>>();
+      for (var module : list) map.put(module.name(), module.baseSourcePaths());
+      return ModuleSourcePathSupport.compute(map, false);
+    }
+
+    public DeclaredModules with(DeclaredModule... more) {
+      var stream = Stream.concat(list.stream(), Stream.of(more)).sorted();
+      return new DeclaredModules(stream.toList());
+    }
+  }
+
+  public record DeclaredModule(
+      Path content, // content root of the entire module
+      Path info, // "module-info.java"
+      ModuleDescriptor descriptor, // descriptor.name()
+      DeclaredFolders base, // base sources and resources
+      Map<Integer, DeclaredFolders> targeted)
+      implements Comparable<DeclaredModule> {
+
+    public static DeclaredModule of(Path root, Path moduleInfoJavaFileOrItsParentDirectory) {
+      var info =
+          moduleInfoJavaFileOrItsParentDirectory.endsWith("module-info.java")
+              ? moduleInfoJavaFileOrItsParentDirectory
+              : moduleInfoJavaFileOrItsParentDirectory.resolve("module-info.java");
+
+      var relativized = root.relativize(info).normalize(); // ensure info is below root
+      var descriptor = ModuleDescriptorSupport.parse(info);
+      var name = descriptor.name();
+
+      // trivial case: "module-info.java" resides directly in content root directory
+      var system = root.getFileSystem();
+      if (system.getPathMatcher("glob:module-info.java").matches(relativized)) {
+        var base = DeclaredFolders.of(root);
+        return new DeclaredModule(root, info, descriptor, base, Map.of());
+      }
+      // "java" case: "module-info.java" in direct "java" subdirectory with targeted resources
+      if (system.getPathMatcher("glob:java/module-info.java").matches(relativized)) {
+        var base = DeclaredFolders.of().withSiblings(root);
+        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(root);
+        return new DeclaredModule(root, info, descriptor, base, targeted);
+      }
+      // "<module>" case: "module-info.java" in direct subdirectory with the same name as the module
+      if (system.getPathMatcher("glob:" + name + "/module-info.java").matches(relativized)) {
+        var content = root.resolve(name);
+        var base = DeclaredFolders.of(content).withSiblings(content);
+        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(content);
+        return new DeclaredModule(content, info, descriptor, base, targeted);
+      }
+      // "maven-single" case: "module-info.java" in "src/<space>/java[-module]" directory
+      if (system
+          .getPathMatcher("glob:src/*/{java,java-module}/module-info.java")
+          .matches(relativized)) {
+        var java = info.getParent();
+        var base = DeclaredFolders.of(java).withSiblings(java.getParent());
+        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(java.getParent());
+        return new DeclaredModule(root, info, descriptor, base, targeted);
+      }
+
+      // try to find module name in path elements
+      var parent = info.getParent();
+      while (parent != null
+          && !parent.equals(root)
+          && !parent.getFileName().toString().equals(name)) {
+        parent = parent.getParent();
+      }
+
+      if (parent == null || parent.equals(root))
+        throw new UnsupportedOperationException("Module name not in path: " + info);
+      var content = parent;
+
+      return of(content, info, descriptor);
+    }
+
+    static DeclaredModule of(Path content, Path info, ModuleDescriptor descriptor) {
+      // "module-info.java" resides in a subdirectory, usually named "java" or "java-module"
+      var parent = info.getParent();
+      if (parent == null) throw new UnsupportedOperationException("No parent of: " + info);
+      var container = parent.getParent();
+      if (container == null) throw new UnsupportedOperationException("No container of: " + parent);
+      // find base siblings
+      var base = DeclaredFolders.of(parent).withSiblings(container);
+      // find targeted siblings
+      var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(container);
+      return new DeclaredModule(content, info, descriptor, base, targeted);
+    }
+
+    public String name() {
+      return descriptor.name();
+    }
+
+    public List<Path> baseSourcePaths() {
+      return base.sources();
+    }
+
+    @Override
+    public int compareTo(DeclaredModule other) {
+      return name().compareTo(other.name());
+    }
+  }
+
+  /** A collection of source and resource directories. */
+  public record DeclaredFolders(List<Path> sources, List<Path> resources) {
+
+    static Map<Integer, DeclaredFolders> mapFoldersByJavaFeatureReleaseNumber(Path container) {
+      var targeted = new TreeMap<Integer, DeclaredFolders>();
+      for (int release = 9; release <= Runtime.version().feature(); release++) {
+        var folders = DeclaredFolders.of().withSiblings(container, release);
+        if (folders.isEmpty()) continue;
+        targeted.put(release, folders);
+      }
+      return Map.copyOf(targeted);
+    }
+
+    public static DeclaredFolders of(Path... sources) {
+      return new DeclaredFolders(Stream.of(sources).map(Path::normalize).toList(), List.of());
+    }
+
+    public DeclaredFolders withSiblings(Path container) {
+      return withSiblings(container, "");
+    }
+
+    public DeclaredFolders withSiblings(Path container, int release) {
+      return withSiblings(container, "-" + release);
+    }
+
+    public DeclaredFolders withSiblings(Path container, String suffix) {
+      var sources = container.resolve("java" + suffix);
+      var resources = container.resolve("resources" + suffix);
+      var folders = this;
+      if (Files.isDirectory(sources)) folders = folders.withSourcePath(sources);
+      if (Files.isDirectory(resources)) folders = folders.withResourcePath(resources);
+      return folders;
+    }
+
+    public DeclaredFolders withSourcePath(Path candidate) {
+      var path = candidate.normalize();
+      if (sources.contains(path)) return this;
+      return new DeclaredFolders(
+          Stream.concat(sources.stream(), Stream.of(path)).toList(), resources);
+    }
+
+    public DeclaredFolders withResourcePath(Path candidate) {
+      var path = candidate.normalize();
+      if (resources.contains(path)) return this;
+      return new DeclaredFolders(
+          sources, Stream.concat(resources.stream(), Stream.of(path)).toList());
+    }
+
+    public boolean isEmpty() {
+      return sources.isEmpty() && resources.isEmpty();
+    }
+  }
+
+  public record Externals(Set<String> requires) {
 
     public Externals() {
       this(Set.of());

@@ -1,6 +1,5 @@
 package run.bach.project;
 
-import run.bach.DeclaredModules;
 import run.bach.Project;
 import run.bach.ToolOperator;
 import run.bach.internal.ModulesSupport;
@@ -20,7 +19,7 @@ public class CacheTool implements ToolOperator {
     var finders =
         project.spaces().list().stream()
             .map(Project.Space::modules)
-            .map(DeclaredModules::toModuleFinder)
+            .map(Project.DeclaredModules::toModuleFinder)
             .toList();
     var missing = ModulesSupport.listMissingNames(finders, project.externals().requires());
     if (missing.isEmpty()) return;

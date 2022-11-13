@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import run.bach.Bach;
-import run.bach.DeclaredModule;
 import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
@@ -145,7 +144,10 @@ public class CompileModulesTool implements ToolOperator {
   }
 
   public record OperationContext(
-      Bach bach, Project.Space space, DeclaredModule module, Map<String, List<ToolCall>> calls) {
+      Bach bach,
+      Project.Space space,
+      Project.DeclaredModule module,
+      Map<String, List<ToolCall>> calls) {
     public Path classes() {
       return bach.paths().out(space().name(), "classes");
     }
