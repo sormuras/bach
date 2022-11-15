@@ -6,7 +6,8 @@ module project {
   provides run.bach.ToolOperator with
       project.overlay.CompileClasses,
       project.toolbox.build,
-      project.toolbox.format;
+      project.toolbox.format,
+      project.toolbox.rebuild;
   provides run.bach.ToolTweak with
       project.tweak.CallWithUtf8EncodingTweak;
 }
