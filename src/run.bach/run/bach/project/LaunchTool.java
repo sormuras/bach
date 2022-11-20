@@ -1,6 +1,5 @@
 package run.bach.project;
 
-import run.bach.Project;
 import run.bach.ToolCall;
 import run.bach.ToolOperator;
 
@@ -17,7 +16,7 @@ public class LaunchTool implements ToolOperator {
     var bach = operation.bach();
     var main = bach.project().spaces().space("main");
     var launcher = main.launcher().orElseThrow(() -> new Error("No launcher defined. No start."));
-    var modulePath = new Project.Space("runtime", "main").toModulePath(bach.paths()).orElse(".");
+    var modulePath = main.toRuntimeSpace().toModulePath(bach.paths()).orElse(".");
     var java =
         ToolCall.of("java")
             .with("--module-path", modulePath)

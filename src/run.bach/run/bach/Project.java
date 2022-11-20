@@ -31,6 +31,10 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     return new Project(name, version, spaces, externals);
   }
 
+  public Project(Name name, Version version, Space... spaces) {
+    this(name, version, new Spaces(spaces), new Externals());
+  }
+
   /** {@return a list of all modules declared by this project} */
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
@@ -43,6 +47,19 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   @FunctionalInterface
   public interface Factory {
     Project createProject(Bach bach);
+
+    default Name newProjectName(CLI cli, String defaultName) {
+      return new Project.Name(cli.projectName(defaultName));
+    }
+
+    default Version newProjectVersion(CLI cli, String defaultVersion) {
+      return new Project.Version(
+          cli.projectVersion(defaultVersion), cli.projectVersionTimestampOrNow());
+    }
+
+    default ModuleDescriptor describeModule(Path info) {
+      return ModuleDescriptorSupport.parse(info);
+    }
   }
 
   public record Name(String value) {
@@ -65,10 +82,6 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     public Version(String value) {
       this(value, ZonedDateTime.now());
     }
-
-    public Version with(ZonedDateTime timestamp) {
-      return new Version(value, timestamp);
-    }
   }
 
   public record Spaces(List<Space> list) {
@@ -88,47 +101,26 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
 
   public record Space(
       String name,
-      DeclaredModules modules,
+      List<String> requires, // used to compute "--[processor-]module-path"
       int release,
       Optional<String> launcher,
-      List<String> requires // used to compute "--[processor-]module-path"
-      ) {
+      DeclaredModules modules) {
 
     public Space {
       if (name.isBlank()) throw new IllegalArgumentException("Space name must not be blank");
-      if (modules == null) throw new IllegalArgumentException("Space modules must not be null");
-      //noinspection OptionalAssignedToNull
-      if (launcher == null) throw new IllegalArgumentException("Space launcher must not be null");
       if (requires == null) throw new IllegalArgumentException("Space requires must not be null");
       var feature = Runtime.version().feature();
       if (release != 0 && (release < 9 || release > feature)) {
         var message = "Java release %d not in range of %d..%d".formatted(release, 9, feature);
         throw new IndexOutOfBoundsException(message);
       }
+      //noinspection OptionalAssignedToNull
+      if (launcher == null) throw new IllegalArgumentException("Space launcher must not be null");
+      if (modules == null) throw new IllegalArgumentException("Space modules must not be null");
     }
 
-    public Space(String name, String... requires) {
-      this(name, DeclaredModules.of(), 0, Optional.empty(), List.of(requires));
-    }
-
-    public Space withModule(Path contentRoot, Path moduleInfo) {
-      return withModules(DeclaredModule.of(contentRoot, moduleInfo));
-    }
-
-    public Space withModules(DeclaredModule... more) {
-      return withModules(modules.with(more));
-    }
-
-    public Space withModules(DeclaredModules modules) {
-      return new Space(name, modules, release, launcher, requires);
-    }
-
-    public Space withTargetsJava(int release) {
-      return new Space(name, modules, release, launcher, requires);
-    }
-
-    public Space withLauncher(String launcher) {
-      return new Space(name, modules, release, Optional.of(launcher), requires);
+    public Space(String name, int release, String launcher, DeclaredModule... modules) {
+      this(name, List.of(), release, Optional.of(launcher), new DeclaredModules(modules));
     }
 
     public Optional<Integer> targets() {
@@ -146,17 +138,17 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       if (elements.isEmpty()) return Optional.empty();
       return Optional.of(String.join(File.pathSeparator, elements));
     }
+
+    public Space toRuntimeSpace() {
+      return new Space("runtime", List.of(name), 0, Optional.empty(), new DeclaredModules());
+    }
   }
 
   /** A sequence of declared modules. */
   public record DeclaredModules(List<DeclaredModule> list) implements Iterable<DeclaredModule> {
 
-    public static DeclaredModules of(DeclaredModule... modules) {
-      return of(List.of(modules));
-    }
-
-    public static DeclaredModules of(List<DeclaredModule> modules) {
-      return new DeclaredModules(modules.stream().sorted().toList());
+    public DeclaredModules(DeclaredModule... modules) {
+      this(List.of(modules));
     }
 
     public Optional<DeclaredModule> find(String name) {
@@ -186,13 +178,8 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
 
     public List<String> toModuleSourcePaths() {
       var map = new TreeMap<String, List<Path>>();
-      for (var module : list) map.put(module.name(), module.baseSourcePaths());
+      for (var module : list) map.put(module.name(), module.base().sources());
       return ModuleSourcePathSupport.compute(map, false);
-    }
-
-    public DeclaredModules with(DeclaredModule... more) {
-      var stream = Stream.concat(list.stream(), Stream.of(more)).sorted();
-      return new DeclaredModules(stream.toList());
     }
   }
 
@@ -204,79 +191,21 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       Map<Integer, DeclaredFolders> targeted)
       implements Comparable<DeclaredModule> {
 
-    public static DeclaredModule of(Path root, Path moduleInfoJavaFileOrItsParentDirectory) {
-      var info =
-          moduleInfoJavaFileOrItsParentDirectory.endsWith("module-info.java")
-              ? moduleInfoJavaFileOrItsParentDirectory
-              : moduleInfoJavaFileOrItsParentDirectory.resolve("module-info.java");
-
-      var relativized = root.relativize(info).normalize(); // ensure info is below root
-      var descriptor = ModuleDescriptorSupport.parse(info);
-      var name = descriptor.name();
-
-      // trivial case: "module-info.java" resides directly in content root directory
-      var system = root.getFileSystem();
-      if (system.getPathMatcher("glob:module-info.java").matches(relativized)) {
-        var base = DeclaredFolders.of(root);
-        return new DeclaredModule(root, info, descriptor, base, Map.of());
-      }
-      // "java" case: "module-info.java" in direct "java" subdirectory with targeted resources
-      if (system.getPathMatcher("glob:java/module-info.java").matches(relativized)) {
-        var base = DeclaredFolders.of().withSiblings(root);
-        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(root);
-        return new DeclaredModule(root, info, descriptor, base, targeted);
-      }
-      // "<module>" case: "module-info.java" in direct subdirectory with the same name as the module
-      if (system.getPathMatcher("glob:" + name + "/module-info.java").matches(relativized)) {
-        var content = root.resolve(name);
-        var base = DeclaredFolders.of(content).withSiblings(content);
-        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(content);
-        return new DeclaredModule(content, info, descriptor, base, targeted);
-      }
-      // "maven-single" case: "module-info.java" in "src/<space>/java[-module]" directory
-      if (system
-          .getPathMatcher("glob:src/*/{java,java-module}/module-info.java")
-          .matches(relativized)) {
-        var java = info.getParent();
-        var base = DeclaredFolders.of(java).withSiblings(java.getParent());
-        var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(java.getParent());
-        return new DeclaredModule(root, info, descriptor, base, targeted);
-      }
-
-      // try to find module name in path elements
-      var parent = info.getParent();
-      while (parent != null
-          && !parent.equals(root)
-          && !parent.getFileName().toString().equals(name)) {
-        parent = parent.getParent();
-      }
-
-      if (parent == null || parent.equals(root))
-        throw new UnsupportedOperationException("Module name not in path: " + info);
-      var content = parent;
-
-      return of(content, info, descriptor);
+    public DeclaredModule(Path content) {
+      this(content, content.resolve("module-info.java"));
     }
 
-    static DeclaredModule of(Path content, Path info, ModuleDescriptor descriptor) {
-      // "module-info.java" resides in a subdirectory, usually named "java" or "java-module"
-      var parent = info.getParent();
-      if (parent == null) throw new UnsupportedOperationException("No parent of: " + info);
-      var container = parent.getParent();
-      if (container == null) throw new UnsupportedOperationException("No container of: " + parent);
-      // find base siblings
-      var base = DeclaredFolders.of(parent).withSiblings(container);
-      // find targeted siblings
-      var targeted = DeclaredFolders.mapFoldersByJavaFeatureReleaseNumber(container);
-      return new DeclaredModule(content, info, descriptor, base, targeted);
+    public DeclaredModule(Path content, Path info) {
+      this(
+          content,
+          info,
+          ModuleDescriptorSupport.parse(info),
+          new Project.DeclaredFolders(info.getParent()),
+          Map.of());
     }
 
     public String name() {
       return descriptor.name();
-    }
-
-    public List<Path> baseSourcePaths() {
-      return base.sources();
     }
 
     @Override
@@ -288,49 +217,8 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   /** A collection of source and resource directories. */
   public record DeclaredFolders(List<Path> sources, List<Path> resources) {
 
-    static Map<Integer, DeclaredFolders> mapFoldersByJavaFeatureReleaseNumber(Path container) {
-      var targeted = new TreeMap<Integer, DeclaredFolders>();
-      for (int release = 9; release <= Runtime.version().feature(); release++) {
-        var folders = DeclaredFolders.of().withSiblings(container, release);
-        if (folders.isEmpty()) continue;
-        targeted.put(release, folders);
-      }
-      return Map.copyOf(targeted);
-    }
-
-    public static DeclaredFolders of(Path... sources) {
-      return new DeclaredFolders(Stream.of(sources).map(Path::normalize).toList(), List.of());
-    }
-
-    public DeclaredFolders withSiblings(Path container) {
-      return withSiblings(container, "");
-    }
-
-    public DeclaredFolders withSiblings(Path container, int release) {
-      return withSiblings(container, "-" + release);
-    }
-
-    public DeclaredFolders withSiblings(Path container, String suffix) {
-      var sources = container.resolve("java" + suffix);
-      var resources = container.resolve("resources" + suffix);
-      var folders = this;
-      if (Files.isDirectory(sources)) folders = folders.withSourcePath(sources);
-      if (Files.isDirectory(resources)) folders = folders.withResourcePath(resources);
-      return folders;
-    }
-
-    public DeclaredFolders withSourcePath(Path candidate) {
-      var path = candidate.normalize();
-      if (sources.contains(path)) return this;
-      return new DeclaredFolders(
-          Stream.concat(sources.stream(), Stream.of(path)).toList(), resources);
-    }
-
-    public DeclaredFolders withResourcePath(Path candidate) {
-      var path = candidate.normalize();
-      if (resources.contains(path)) return this;
-      return new DeclaredFolders(
-          sources, Stream.concat(resources.stream(), Stream.of(path)).toList());
+    public DeclaredFolders(Path... sources) {
+      this(Stream.of(sources).map(Path::normalize).toList(), List.of());
     }
 
     public boolean isEmpty() {
@@ -339,14 +227,12 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
   }
 
   public record Externals(Set<String> requires) {
-
-    public Externals() {
-      this(Set.of());
+    public Externals {
+      if (requires == null) throw new NullPointerException("External requires must not be null");
     }
 
-    public Externals withRequires(String... modules) {
-      var requires = Set.copyOf(Stream.concat(requires().stream(), Stream.of(modules)).toList());
-      return new Externals(requires);
+    public Externals(String... requires) {
+      this(Set.of(requires));
     }
   }
 }
