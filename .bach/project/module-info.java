@@ -12,7 +12,7 @@ import run.bach.Command;
         """)
 @Command(
     name = "test",
-    args = {"test-jars", "test.bach"})
+    args = {"test-jars", "+", "test.bach"})
 @Command(
     name = "test-jars",
     line =
