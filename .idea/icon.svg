@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<svg
+        width="120" height="130"
+        viewBox="0 0 120 130"
+        xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <title>bach</title>
+ <g class="layer">
+  <title>Layer 1</title>
+  <rect fill="#0000ff" height="37" id="svg_1" stroke="#000000" width="40" x="36" y="29"/>
+  <ellipse cx="77" cy="69" fill="#ff7f00" id="svg_2" rx="30" ry="34" stroke="#000000"/>
+  <text x="60" y="70">bach</text>
+ </g>
+</svg>

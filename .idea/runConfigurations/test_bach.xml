@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="test.bach" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="test.bach.Main" />
+    <module name="test.bach" />
+    <option name="VM_PARAMETERS" value="-ea" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
