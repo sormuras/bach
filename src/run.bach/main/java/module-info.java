@@ -8,7 +8,6 @@ module run.bach {
   requires jdk.jpackage;
 
   exports run.bach;
-  exports run.bach.internal;
 
   uses java.util.spi.ToolProvider;
   uses run.bach.ToolFinder;
