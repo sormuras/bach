@@ -54,14 +54,5 @@ public record Printer(
     out(text);
   }
 
-  public String toHistoryString(int indent) {
-    var joiner = new StringJoiner("\n");
-    for (var message : history) {
-      joiner.add("| %s %s".formatted(message.level, message.instant));
-      joiner.add(message.text);
-    }
-    return joiner.toString().indent(indent).stripTrailing();
-  }
-
   public record Message(Instant instant, System.Logger.Level level, String text) {}
 }

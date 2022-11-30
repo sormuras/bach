@@ -1,4 +1,4 @@
-package run.bach.score;
+package run.duke.base;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;

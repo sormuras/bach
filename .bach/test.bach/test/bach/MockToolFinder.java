@@ -2,9 +2,9 @@ package test.bach;
 
 import java.util.List;
 import java.util.Optional;
-import run.bach.Tool;
-import run.bach.ToolFinder;
-import run.bach.ToolRunner;
+import run.duke.Tool;
+import run.duke.ToolFinder;
+import run.duke.ToolRunner;
 
 public record MockToolFinder() implements ToolFinder {
 

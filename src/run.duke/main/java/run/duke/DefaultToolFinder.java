@@ -1,13 +1,10 @@
-package run.bach.internal;
+package run.duke;
 
 import java.util.List;
 import java.util.Optional;
-import run.bach.Tool;
-import run.bach.ToolFinder;
-import run.bach.ToolRunner;
 
-public record InstanceToolFinder(String description, List<Tool> tools) implements ToolFinder {
-  public InstanceToolFinder(String description, Tool... tools) {
+public record DefaultToolFinder(String description, List<Tool> tools) implements ToolFinder {
+  public DefaultToolFinder(String description, Tool... tools) {
     this(description, List.of(tools));
   }
 

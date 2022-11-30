@@ -1,5 +1,6 @@
 module test.bach {
   requires run.bach;
+  requires run.duke;
   requires jdk.jfr;
 
   uses java.util.spi.ToolProvider; // in test.bach.Main
@@ -9,6 +10,6 @@ module test.bach {
       test.bach.Main,
       test.bach.ToolboxTests,
       test.bach.ToolTests;
-  provides run.bach.ToolFinder with
+  provides run.duke.ToolFinder with
       test.bach.MockToolFinder;
 }

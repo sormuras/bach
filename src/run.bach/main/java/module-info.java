@@ -1,20 +1,15 @@
-/** Defines Bach's API. */
+/** Defines the API of Bach. */
 module run.bach {
   requires jdk.compiler;
-  requires jdk.jartool;
-  requires jdk.javadoc;
-  requires jdk.jdeps;
-  requires jdk.jlink;
-  requires jdk.jpackage;
+  requires transitive run.duke;
 
   exports run.bach;
+  exports run.bach.tool;
 
   uses java.util.spi.ToolProvider;
-  uses run.bach.ToolFinder;
+  uses run.bach.ProjectFactory;
+  uses run.duke.ToolFinder;
 
-  provides java.util.spi.ToolProvider with
-      run.bach.score.CheckJavaReleaseTool,
-      run.bach.score.CheckJavaVersionTool;
-  provides run.bach.ToolFinder with
-      run.bach.score.BachToolFinder;
+  provides run.duke.ToolFinder with
+      run.bach.ProjectToolFinder;
 }

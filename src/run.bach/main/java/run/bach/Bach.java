@@ -1,13 +1,14 @@
 package run.bach;
 
-import run.bach.internal.ToolNotFoundException;
-
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
+import run.duke.ToolCall;
+import run.duke.ToolNotFoundException;
+import run.duke.Toolbox;
 
-public record Bach(Options options, Printer printer, Toolbox toolbox) implements ToolRunner {
+public record Bach(Options options, Folders folders, Printer printer, Toolbox toolbox) implements Workbench {
   public Bach {
     printer.log(Level.DEBUG, "Bach initialized");
     printer.log(Level.DEBUG, "  printer: " + printer.threshold());
@@ -19,7 +20,7 @@ public record Bach(Options options, Printer printer, Toolbox toolbox) implements
     var tool = call.name();
     var args = call.arguments().toArray(String[]::new);
     printer().log(Level.INFO, "+ " + tool + " " + String.join(" ", args));
-    var found = toolbox().find(tool, this);
+    var found = toolbox.find(tool, this);
     if (found.isEmpty()) throw new ToolNotFoundException(tool);
     var code = run(found.get().provider(), args);
     if (code != 0) throw new RuntimeException(tool + " failed with error " + code);

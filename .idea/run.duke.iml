@@ -2,12 +2,10 @@
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/.bach/test.bach">
-      <sourceFolder url="file://$MODULE_DIR$/.bach/test.bach" isTestSource="true" />
+    <content url="file://$MODULE_DIR$/src/run.duke">
+      <sourceFolder url="file://$MODULE_DIR$/src/run.duke/main/java" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="run.bach" />
     <orderEntry type="inheritedJdk" />
-    <orderEntry type="module" module-name="run.duke" scope="TEST" />
   </component>
 </module>

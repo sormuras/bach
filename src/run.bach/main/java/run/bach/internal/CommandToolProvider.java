@@ -1,15 +1,15 @@
 package run.bach.internal;
 
+import run.bach.Command;
+import run.duke.ToolCall;
+import run.duke.ToolCalls;
+import run.duke.ToolRunner;
+
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-import run.bach.Command;
-import run.bach.ToolCall;
-import run.bach.ToolCalls;
-import run.bach.ToolRunner;
-
-record CommandToolProvider(Command command, ToolRunner runner) implements ToolProvider {
+public record CommandToolProvider(Command command, ToolRunner runner) implements ToolProvider {
   @Override
   public String name() {
     return command().name();

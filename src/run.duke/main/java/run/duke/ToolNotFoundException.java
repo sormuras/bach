@@ -1,4 +1,4 @@
-package run.bach.internal;
+package run.duke;
 
 import java.io.Serial;
 

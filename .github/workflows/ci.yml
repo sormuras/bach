@@ -14,7 +14,7 @@ jobs:
       - name: 'Check out repository'
         uses: actions/checkout@v3
       - name: 'Set up Java'
-        uses: actions/setup-java@main
+        uses: actions/setup-java@v3
         with:
           distribution: oracle
           java-version: 19

@@ -9,6 +9,11 @@ import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import run.bach.internal.CommandToolFinder;
 import run.bach.internal.SourceModuleLayerBuilder;
+import run.duke.Tool;
+import run.duke.ToolCall;
+import run.duke.ToolCalls;
+import run.duke.ToolFinder;
+import run.duke.Toolbox;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -66,11 +71,13 @@ public record Main() implements ToolProvider {
 
     printer.log(Level.DEBUG, "Stuffing toolbox...");
     var toolbox =
-        new Toolbox()
+        new Toolbox(layer)
             .with("Bach Finder", new Tool(this))
+            .with(new CommandToolFinder(commands)) // tool call shortcuts first
             .with("ToolProvider Finder", ServiceLoader.load(layer, ToolProvider.class))
             .with(ServiceLoader.load(layer, ToolFinder.class))
-            .with(new CommandToolFinder(commands));
+        //
+        ;
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
@@ -78,7 +85,8 @@ public record Main() implements ToolProvider {
             ? new ToolCalls(new ToolCall("list", List.of("tools")))
             : ToolCalls.of(options.calls());
 
-    var bach = new Bach(options, printer, toolbox);
+    var folders = Folders.CURRENT_WORKING_DIRECTORY;
+    var bach = new Bach(options, folders, printer, toolbox);
 
     if (options.dryRun()) {
       if (verbose) printer.out("Dry-run mode exits here.");

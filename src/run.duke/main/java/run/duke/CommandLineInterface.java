@@ -1,7 +1,4 @@
-package run.bach.internal;
-
-import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toCollection;
+package run.duke;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +30,9 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toCollection;
 
 public interface CommandLineInterface {
 

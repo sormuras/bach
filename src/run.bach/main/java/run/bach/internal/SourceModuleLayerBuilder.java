@@ -26,8 +26,8 @@ public record SourceModuleLayerBuilder(Path source, Path target) {
 
   public ModuleLayer build(ModuleLayer parentLayer, ClassLoader parentLoader) {
     compile();
-    var beforeFinder = ModuleFinder.of(target);
-    var afterFinder = ModuleFinder.of();
+    var beforeFinder = ModuleFinder.of(target); // .bach/out/classes-N
+    var afterFinder = ModuleFinder.of(bin()); // ${BACH_HOME}/bin
     var parentConfiguration = parentLayer.configuration();
     var newConfiguration = parentConfiguration.resolveAndBind(beforeFinder, afterFinder, roots());
     return parentLayer.defineModulesWithOneLoader(newConfiguration, parentLoader);

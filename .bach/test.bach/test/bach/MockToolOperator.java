@@ -2,7 +2,7 @@ package test.bach;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
-import run.bach.ToolRunner;
+import run.duke.ToolRunner;
 
 record MockToolOperator(String name, ToolRunner runner) implements ToolProvider {
   @Override

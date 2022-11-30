@@ -25,10 +25,10 @@ if exist "%SRC%\run.bach\main\java\module-info.java" (
   if "%BACH_VERBOSE%"=="true" (
     echo ^| BOOT
   )
-  %JAVAC% --release 17 --module run.bach --module-version 2022-ea+src --module-source-path %SRC%\*\main\java -d %BIN%
+  %JAVAC% --release 17 --module run.bach,run.duke --module-version 2022-ea+src --module-source-path %SRC%\*\main\java -d %BIN%
 )
 
-set BACH=-ea --module-path %BIN% --add-modules ALL-DEFAULT --module run.bach/run.bach.Main
+set BACH=-ea --module-path %BIN% --add-modules ALL-DEFAULT,ALL-MODULE-PATH --module run.bach/run.bach.Main
 
 if "%BACH_VERBOSE%"=="true" (
   echo ^| JAVA = %JAVA%

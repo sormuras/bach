@@ -1,12 +1,13 @@
 package run.bach;
 
+import run.duke.CommandLineInterface.Help;
+import run.duke.CommandLineInterface.Name;
+import run.duke.CommandLineInterface.Parser;
+
 import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
-import run.bach.internal.CommandLineInterface.Help;
-import run.bach.internal.CommandLineInterface.Name;
-import run.bach.internal.CommandLineInterface.Parser;
 
 /**
  * Bach's option.
@@ -35,7 +36,7 @@ public record Options(
 
   private static final Parser<Options> PARSER = new Parser<>(MethodHandles.lookup(), Options.class);
 
-  public static final Options DEFAULTS = Options.of( /* no arguments */ );
+  public static final Options DEFAULTS = Options.of(/* no arguments */ );
 
   public static Options of(String... args) {
     return PARSER.parse(args);

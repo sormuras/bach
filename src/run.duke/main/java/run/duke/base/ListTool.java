@@ -1,4 +1,4 @@
-package run.bach.score;
+package run.duke.base;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
-import run.bach.ToolRunner;
-import run.bach.internal.CommandLineInterface;
+import run.duke.ToolRunner;
+import run.duke.CommandLineInterface;
 
 public record ListTool(ToolRunner runner) implements ToolProvider {
-  record Options(String topic, String... args) implements CommandLineInterface {
+  record Options(String topic, String... args) {
     enum Topic {
       tools
     }
@@ -66,9 +66,9 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
     for (var finder : runner.toolbox().finders()) {
-      for (var full : finder.identifiers()) {
-        var name = full.substring(full.lastIndexOf('/') + 1);
-        map.computeIfAbsent(name, __ -> new ArrayList<>()).add(full);
+      for (var identifier : finder.identifiers()) {
+        var name = identifier.substring(identifier.lastIndexOf('/') + 1);
+        map.computeIfAbsent(name, __ -> new ArrayList<>()).add(identifier);
         max = Math.max(max, name.length());
       }
     }

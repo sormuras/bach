@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Enabled;
 import jdk.jfr.Registered;
-import run.bach.Tool;
+import run.duke.Tool;
 
 @Registered
 @Enabled

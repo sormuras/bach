@@ -3,10 +3,10 @@ package test.bach;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Registered;
-import run.bach.Tool;
-import run.bach.ToolCall;
-import run.bach.ToolRunner;
-import run.bach.Toolbox;
+import run.duke.Tool;
+import run.duke.ToolCall;
+import run.duke.ToolRunner;
+import run.duke.Toolbox;
 
 @Registered
 public class ToolboxTests implements ToolProvider {

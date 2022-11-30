@@ -1,12 +1,13 @@
 package run.bach.internal;
 
+import run.bach.Command;
+import run.duke.Tool;
+import run.duke.ToolFinder;
+import run.duke.ToolRunner;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import run.bach.Command;
-import run.bach.Tool;
-import run.bach.ToolFinder;
-import run.bach.ToolRunner;
 
 public record CommandToolFinder(Map<String, Command> commands) implements ToolFinder {
   @Override

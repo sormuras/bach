@@ -1,16 +1,19 @@
-package run.bach;
+package run.duke;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
-import run.bach.internal.InstanceToolFinder;
 
-public record Toolbox(List<ToolFinder> finders) implements ToolFinder {
-  public static final Toolbox EMPTY = new Toolbox();
+public record Toolbox(ModuleLayer layer, List<ToolFinder> finders) implements ToolFinder {
+  public static final Toolbox EMPTY = new Toolbox(ModuleLayer.empty(), List.of());
 
   public Toolbox() {
-    this(List.of());
+    this(ModuleLayer.boot());
+  }
+
+  public Toolbox(ModuleLayer layer) {
+    this(layer, List.of());
   }
 
   @Override
@@ -36,23 +39,23 @@ public record Toolbox(List<ToolFinder> finders) implements ToolFinder {
     var finders = new ArrayList<>(this.finders);
     finders.add(finder);
     if (more.length > 0) finders.addAll(List.of(more));
-    return new Toolbox(List.copyOf(finders));
+    return new Toolbox(layer, List.copyOf(finders));
   }
 
   public Toolbox with(Iterable<ToolFinder> more) {
     var finders = new ArrayList<>(this.finders);
     for (var finder : more) finders.add(finder);
-    return new Toolbox(List.copyOf(finders));
+    return new Toolbox(layer, List.copyOf(finders));
   }
 
   public Toolbox with(String description, Iterable<ToolProvider> providers) {
     var tools = new ArrayList<Tool>();
     for (var provider : providers) tools.add(new Tool(provider));
     if (tools.isEmpty()) return this;
-    return with(new InstanceToolFinder(description, tools));
+    return with(new DefaultToolFinder(description, tools));
   }
 
   public Toolbox with(String description, Tool... tools) {
-    return with(new InstanceToolFinder(description, tools));
+    return with(new DefaultToolFinder(description, tools));
   }
 }

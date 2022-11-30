@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/run.bach/main/java" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="run.duke" />
     <orderEntry type="inheritedJdk" />
   </component>
 </module>
