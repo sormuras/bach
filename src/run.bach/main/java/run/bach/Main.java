@@ -26,7 +26,7 @@ public record Main() implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var options = Options.PARSER.parse(args);
+    var options = Options.of(args);
     var verbose = options.verbose();
     var silent = options.silent();
     var printer =
@@ -45,7 +45,7 @@ public record Main() implements ToolProvider {
             <command>   -> <tool-call> [+ <tool-calls>...]
             <tool-call> -> <tool-name> <tool-args>...
             <options> are listed below""");
-      printer.out(Options.PARSER.help().indent(4).stripTrailing());
+      printer.out(Options.toHelp().indent(4).stripTrailing());
       printer.out(
           """
           Examples

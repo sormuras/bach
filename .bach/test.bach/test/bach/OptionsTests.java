@@ -30,7 +30,7 @@ public class OptionsTests implements ToolProvider {
             "+",
             "javac",
             "--version");
-    var cli = Options.PARSER.parse(expected.toArray(String[]::new));
+    var cli = Options.of(expected.toArray(String[]::new));
     assert cli.verbose();
     assert 99 == cli.printerMargin(-1);
     assert Level.TRACE == cli.printerThreshold(Level.INFO);

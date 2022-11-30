@@ -33,9 +33,17 @@ public record Options(
     @Name("--trust") @Help("Trusted identities") List<String> __trust,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
-  public static final Parser<Options> PARSER = new Parser<>(MethodHandles.lookup(), Options.class);
+  private static final Parser<Options> PARSER = new Parser<>(MethodHandles.lookup(), Options.class);
 
-  public static final Options DEFAULTS = PARSER.parse(/* no arguments */ );
+  public static final Options DEFAULTS = Options.of( /* no arguments */ );
+
+  public static Options of(String... args) {
+    return PARSER.parse(args);
+  }
+
+  public static String toHelp() {
+    return PARSER.help();
+  }
 
   public int printerMargin(int other) {
     return Integer.parseInt(__printer_margin.orElse(Integer.toString(other)));
