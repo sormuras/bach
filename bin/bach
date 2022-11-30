@@ -1,13 +1,40 @@
 #!/usr/bin/env bash
 
+set +e
+
+BACH_HOME="$(dirname "$(dirname "$(readlink -fm "$0")")")"
+BIN="${BACH_HOME}/bin"
+SRC="${BACH_HOME}/src"
+
+if [[ "${BACH_VERBOSE}" == "true" ]]; then
+  echo !      "$0"
+  echo ! BIN = ${BIN}
+  if [[ -d "${SRC}" ]]; then (echo ! SRC = ${SRC}) fi
+fi
+
 if [[ -z "${JAVA_HOME}" ]]; then
   echo JAVA_HOME not set, using `which java`
   JAVA="java"
+  JAVAC="javac"
 else
   JAVA="${JAVA_HOME}/bin/java"
+  JAVAC="${JAVA_HOME}/bin/javac"
 fi
 
-BACH=`dirname -- "$0"`/bach.java
+if [[ -f "${SRC}/run.bach/main/java/module-info.java" ]]; then
+  if [[ "${BACH_VERBOSE}" == "true" ]]; then
+     echo ! BOOT
+  fi
+  ${JAVAC} --release 17 --module run.bach --module-version 2022-ea+src --module-source-path "${SRC}/*/main/java" -d "${BIN}"
+fi
+
+BACH="-ea --module-path ${BIN} --add-modules ALL-DEFAULT --module run.bach/run.bach.Main"
+
+if [[ "${BACH_VERBOSE}" == "true" ]]; then
+  echo ! JAVA = ${JAVA}
+  echo ! BACH = ${BACH}
+  echo ! ARGS = "$@"
+fi
 
 ${JAVA} ${BACH} "$@"
 

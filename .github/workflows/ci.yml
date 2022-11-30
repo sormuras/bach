@@ -1,0 +1,28 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ '*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v3
+      - name: 'Set up Java'
+        uses: actions/setup-java@main
+        with:
+          distribution: oracle
+          java-version: 19
+      - name: 'Build Bach with Bach ${{ github.sha }}'
+        run: bin/bach build
+      - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.repository.name }}-build-${{ github.sha }}
+          path: .bach/out/
