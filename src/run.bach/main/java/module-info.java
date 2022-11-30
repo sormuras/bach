@@ -13,8 +13,8 @@ module run.bach {
   uses run.bach.ToolFinder;
 
   provides java.util.spi.ToolProvider with
-      run.bach.internal.CheckJavaReleaseTool,
-      run.bach.internal.CheckJavaVersionTool;
+      run.bach.score.CheckJavaReleaseTool,
+      run.bach.score.CheckJavaVersionTool;
   provides run.bach.ToolFinder with
-      run.bach.internal.InternalToolFinder;
+      run.bach.score.BachToolFinder;
 }

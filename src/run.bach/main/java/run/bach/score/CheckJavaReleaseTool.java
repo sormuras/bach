@@ -1,4 +1,4 @@
-package run.bach.internal;
+package run.bach.score;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;

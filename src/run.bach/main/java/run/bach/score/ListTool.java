@@ -1,16 +1,14 @@
-package run.bach.internal;
-
-import static java.lang.invoke.MethodHandles.lookup;
-import static run.bach.internal.CommandLineInterface.parser;
+package run.bach.score;
 
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
-
 import run.bach.ToolRunner;
+import run.bach.internal.CommandLineInterface;
 
 public record ListTool(ToolRunner runner) implements ToolProvider {
   record Options(String topic, String... args) implements CommandLineInterface {
@@ -46,7 +44,8 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
       }
     }
 
-    var options = parser(lookup(), Options.class).parse(args);
+    var parser = CommandLineInterface.parser(MethodHandles.lookup(), Options.class);
+    var options = parser.parse(args);
     try {
       var topic = Options.Topic.valueOf(options.topic);
       return run(topic, out, err, options.args);

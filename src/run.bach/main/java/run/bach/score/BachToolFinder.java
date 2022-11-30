@@ -1,4 +1,4 @@
-package run.bach.internal;
+package run.bach.score;
 
 import java.util.List;
 import java.util.Optional;
@@ -6,7 +6,7 @@ import run.bach.Tool;
 import run.bach.ToolFinder;
 import run.bach.ToolRunner;
 
-public record InternalToolFinder() implements ToolFinder {
+public record BachToolFinder() implements ToolFinder {
   @Override
   public String description() {
     return "Bach's Built-in Tools";
