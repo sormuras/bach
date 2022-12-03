@@ -1,16 +1,15 @@
 package project;
 
 import java.nio.file.Path;
-
 import run.bach.Project;
 import run.bach.ProjectFactory;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 
 public class Factory implements ProjectFactory {
   public Factory() {}
 
   @Override
-  public Project createProject(Workbench workbench) {
+  public Project createProject(ProjectToolRunner runner) {
     return new Project(
         new Project.Name("Bach"),
         new Project.Version("2022-ea"),

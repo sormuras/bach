@@ -6,15 +6,15 @@ import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.Toolbox;
 
-public abstract class ProjectTool implements ToolProvider, Workbench {
+public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
   private final String name;
-  private final Workbench workbench;
   private final Project project;
+  private final ProjectToolRunner runner;
 
-  public ProjectTool(String name, Project project, Workbench workbench) {
+  public ProjectTool(String name, Project project, ProjectToolRunner runner) {
     this.name = name;
     this.project = project;
-    this.workbench = workbench;
+    this.runner = runner;
   }
 
   @Override
@@ -27,31 +27,31 @@ public abstract class ProjectTool implements ToolProvider, Workbench {
   }
 
   public final Options options() {
-    return workbench.options();
+    return runner.options();
   }
 
   public final Folders folders() {
-    return workbench.folders();
+    return runner.folders();
   }
 
   public final Printer printer() {
-    return workbench.printer();
+    return runner.printer();
   }
 
   public final Toolbox toolbox() {
-    return workbench.toolbox();
+    return runner.toolbox();
   }
 
   public final Optional<Tool> find(String tool) {
-    return toolbox().find(tool, workbench);
+    return toolbox().find(tool, runner);
   }
 
   @Override
   public void run(ToolCall call) {
-    workbench.run(call);
+    runner.run(call);
   }
 
   public final void info(Object message) {
-    workbench.printer().log(System.Logger.Level.INFO, message);
+    runner.printer().log(System.Logger.Level.INFO, message);
   }
 }

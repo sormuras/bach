@@ -2,17 +2,16 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
-
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class TestTool extends ProjectTool {
   public static final String NAME = "test";
 
-  public TestTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public TestTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override

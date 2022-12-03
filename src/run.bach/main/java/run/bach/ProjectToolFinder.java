@@ -33,25 +33,25 @@ public final class ProjectToolFinder implements ToolFinder {
   @Override
   public Optional<Tool> find(String string, ToolRunner runner) {
     return ProjectToolInfo.find(string)
-        .map(info -> toProjectTool(info, (Workbench) runner))
+        .map(info -> toProjectTool(info, (ProjectToolRunner) runner))
         .map(Tool::new);
   }
 
-  ProjectTool toProjectTool(ProjectToolInfo info, Workbench workbench) {
+  ProjectTool toProjectTool(ProjectToolInfo info, ProjectToolRunner runner) {
     if (project == null) {
-      var layer = workbench.toolbox().layer();
+      var layer = runner.toolbox().layer();
       var factory = ServiceLoader.load(layer, ProjectFactory.class).findFirst().orElseThrow();
-      project = factory.createProject(workbench);
+      project = factory.createProject(runner);
     }
     return switch (info) {
-      case BUILD -> new BuildTool(project, workbench);
-      case CACHE -> new CacheTool(project, workbench);
-      case CLEAN -> new CleanTool(project, workbench);
-      case COMPILE -> new CompileTool(project, workbench);
-      case COMPILE_CLASSES -> new CompileClassesTool(project, workbench);
-      case COMPILE_MODULES -> new CompileModulesTool(project, workbench);
-      case LAUNCH -> new LaunchTool(project, workbench);
-      case TEST -> new TestTool(project, workbench);
+      case BUILD -> new BuildTool(project, runner);
+      case CACHE -> new CacheTool(project, runner);
+      case CLEAN -> new CleanTool(project, runner);
+      case COMPILE -> new CompileTool(project, runner);
+      case COMPILE_CLASSES -> new CompileClassesTool(project, runner);
+      case COMPILE_MODULES -> new CompileModulesTool(project, runner);
+      case LAUNCH -> new LaunchTool(project, runner);
+      case TEST -> new TestTool(project, runner);
     };
   }
 }

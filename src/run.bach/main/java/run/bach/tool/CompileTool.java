@@ -2,15 +2,14 @@ package run.bach.tool;
 
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
-
+import run.bach.ProjectToolRunner;
 import java.io.PrintWriter;
 
 public class CompileTool extends ProjectTool {
   public static final String NAME = "compile";
 
-  public CompileTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public CompileTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override

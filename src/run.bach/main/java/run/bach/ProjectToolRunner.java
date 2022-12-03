@@ -3,7 +3,7 @@ package run.bach;
 import run.duke.ToolRunner;
 
 @FunctionalInterface
-public interface Workbench extends ToolRunner {
+public interface ProjectToolRunner extends ToolRunner {
   default Options options() {
     return Options.DEFAULTS;
   }

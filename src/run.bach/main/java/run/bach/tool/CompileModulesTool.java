@@ -8,18 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import run.bach.Folders;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class CompileModulesTool extends ProjectTool {
   public static final String NAME = "compile-modules";
 
-  public CompileModulesTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public CompileModulesTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override

@@ -7,13 +7,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 
 public class BuildTool extends ProjectTool {
   public static final String NAME = "build";
 
-  public BuildTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public BuildTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override

@@ -1,5 +1,5 @@
 package run.bach;
 
 public interface ProjectFactory {
-  Project createProject(Workbench workbench);
+  Project createProject(ProjectToolRunner runner);
 }

@@ -8,7 +8,8 @@ import run.duke.ToolCall;
 import run.duke.ToolNotFoundException;
 import run.duke.Toolbox;
 
-public record Bach(Options options, Folders folders, Printer printer, Toolbox toolbox) implements Workbench {
+public record Bach(Options options, Folders folders, Printer printer, Toolbox toolbox)
+    implements ProjectToolRunner {
   public Bach {
     printer.log(Level.DEBUG, "Bach initialized");
     printer.log(Level.DEBUG, "  printer: " + printer.threshold());

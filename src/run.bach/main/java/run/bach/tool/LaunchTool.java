@@ -2,17 +2,16 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.util.stream.Stream;
-
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class LaunchTool extends ProjectTool {
   public static final String NAME = "launch";
 
-  public LaunchTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public LaunchTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override

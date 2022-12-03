@@ -3,17 +3,16 @@ package run.bach.tool;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.Workbench;
+import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class CompileClassesTool extends ProjectTool {
   public static final String NAME = "compile-classes";
 
-  public CompileClassesTool(Project project, Workbench workbench) {
-    super(NAME, project, workbench);
+  public CompileClassesTool(Project project, ProjectToolRunner runner) {
+    super(NAME, project, runner);
   }
 
   @Override
