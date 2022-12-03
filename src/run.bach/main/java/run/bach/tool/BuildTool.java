@@ -1,16 +1,15 @@
 package run.bach.tool;
 
-import run.bach.Project;
-import run.bach.ProjectOperator;
-import run.bach.Workbench;
-
 import java.io.PrintWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
+import run.bach.Project;
+import run.bach.ProjectTool;
+import run.bach.Workbench;
 
-public class BuildTool extends ProjectOperator {
+public class BuildTool extends ProjectTool {
   public static final String NAME = "build";
 
   public BuildTool(Project project, Workbench workbench) {

@@ -5,11 +5,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 import run.duke.ToolCall;
 
-public class CompileClassesTool extends ProjectOperator {
+public class CompileClassesTool extends ProjectTool {
   public static final String NAME = "compile-classes";
 
   public CompileClassesTool(Project project, Workbench workbench) {

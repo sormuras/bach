@@ -1,12 +1,12 @@
 package run.bach.tool;
 
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 
 import java.io.PrintWriter;
 
-public class CompileTool extends ProjectOperator {
+public class CompileTool extends ProjectTool {
   public static final String NAME = "compile";
 
   public CompileTool(Project project, Workbench workbench) {

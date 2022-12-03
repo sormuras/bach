@@ -4,11 +4,11 @@ import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
 
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 import run.duke.ToolCall;
 
-public class TestTool extends ProjectOperator {
+public class TestTool extends ProjectTool {
   public static final String NAME = "test";
 
   public TestTool(Project project, Workbench workbench) {

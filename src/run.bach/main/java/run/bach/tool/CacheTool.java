@@ -3,11 +3,11 @@ package run.bach.tool;
 import java.io.PrintWriter;
 
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 import run.bach.internal.ModulesSupport;
 
-public class CacheTool extends ProjectOperator {
+public class CacheTool extends ProjectTool {
 
   public static final String NAME = "cache";
 

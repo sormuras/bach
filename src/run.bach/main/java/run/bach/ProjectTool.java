@@ -2,18 +2,16 @@ package run.bach;
 
 import java.util.Optional;
 import java.util.spi.ToolProvider;
-
 import run.duke.Tool;
 import run.duke.ToolCall;
-import run.duke.ToolRunner;
 import run.duke.Toolbox;
 
-public abstract class ProjectOperator implements ToolProvider, Workbench {
+public abstract class ProjectTool implements ToolProvider, Workbench {
   private final String name;
   private final Workbench workbench;
   private final Project project;
 
-  public ProjectOperator(String name, Project project, Workbench workbench) {
+  public ProjectTool(String name, Project project, Workbench workbench) {
     this.name = name;
     this.project = project;
     this.workbench = workbench;

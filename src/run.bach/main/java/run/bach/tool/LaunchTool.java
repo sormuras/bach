@@ -4,11 +4,11 @@ import java.io.PrintWriter;
 import java.util.stream.Stream;
 
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 import run.duke.ToolCall;
 
-public class LaunchTool extends ProjectOperator {
+public class LaunchTool extends ProjectTool {
   public static final String NAME = "launch";
 
   public LaunchTool(Project project, Workbench workbench) {

@@ -11,11 +11,11 @@ import java.util.TreeMap;
 
 import run.bach.Folders;
 import run.bach.Project;
-import run.bach.ProjectOperator;
+import run.bach.ProjectTool;
 import run.bach.Workbench;
 import run.duke.ToolCall;
 
-public class CompileModulesTool extends ProjectOperator {
+public class CompileModulesTool extends ProjectTool {
   public static final String NAME = "compile-modules";
 
   public CompileModulesTool(Project project, Workbench workbench) {
