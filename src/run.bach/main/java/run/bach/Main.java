@@ -9,7 +9,6 @@ import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import run.bach.internal.CommandToolFinder;
 import run.bach.internal.SourceModuleLayerBuilder;
-import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolCalls;
 import run.duke.ToolFinder;
@@ -72,12 +71,9 @@ public record Main() implements ToolProvider {
     printer.log(Level.DEBUG, "Stuffing toolbox...");
     var toolbox =
         new Toolbox(layer)
-            .with("Bach Finder", new Tool(this))
             .with(new CommandToolFinder(commands)) // tool call shortcuts first
             .with("ToolProvider Finder", ServiceLoader.load(layer, ToolProvider.class))
-            .with(ServiceLoader.load(layer, ToolFinder.class))
-        //
-        ;
+            .with(ServiceLoader.load(layer, ToolFinder.class));
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
