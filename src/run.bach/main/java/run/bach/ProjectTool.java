@@ -1,11 +1,11 @@
 package run.bach;
 
 import java.util.Optional;
-import java.util.spi.ToolProvider;
 import run.duke.Tool;
 import run.duke.ToolCall;
+import run.duke.ToolOperator;
 
-public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
+public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
   private final String name;
   private final Project project;
   private final ProjectToolRunner runner;
