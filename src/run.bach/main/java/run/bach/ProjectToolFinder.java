@@ -1,17 +1,22 @@
 package run.bach;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.stream.Stream;
+import run.duke.EnumToolFinder;
 import run.duke.Tool;
-import run.duke.ToolFinder;
-import run.duke.ToolRunner;
 
-public final class ProjectToolFinder implements ToolFinder {
+public final class ProjectToolFinder implements EnumToolFinder<ProjectToolInfo, ProjectToolRunner> {
+  private final List<ProjectToolInfo> constants;
   private /*lazy*/ Project project;
 
-  public ProjectToolFinder() {}
+  public ProjectToolFinder() {
+    this.constants = List.of(ProjectToolInfo.values());
+  }
+
+  @Override
+  public List<ProjectToolInfo> constants() {
+    return constants;
+  }
 
   @Override
   public String description() {
@@ -19,19 +24,7 @@ public final class ProjectToolFinder implements ToolFinder {
   }
 
   @Override
-  public List<String> identifiers() {
-    return Stream.of(ProjectToolInfo.values()).map(ProjectToolInfo::identifier).toList();
-  }
-
-  @Override
-  public Optional<Tool> find(String string, ToolRunner runner) {
-    var casted = (ProjectToolRunner) runner;
-    var values = ProjectToolInfo.values();
-    for (var info : values) if (info.test(string)) return Optional.of(tool(info, casted));
-    return Optional.empty();
-  }
-
-  Tool tool(ProjectToolInfo info, ProjectToolRunner runner) {
+  public Tool tool(ProjectToolInfo info, ProjectToolRunner runner) {
     if (project == null) {
       var layer = runner.toolbox().layer();
       var factory = ServiceLoader.load(layer, ProjectFactory.class).findFirst().orElseThrow();

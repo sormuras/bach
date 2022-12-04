@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 @FunctionalInterface
-public interface EnumToolFinder<E extends Enum<E> & ToolInfo> extends ToolFinder {
+public interface EnumToolFinder<E extends Enum<E> & ToolInfo, R extends ToolRunner> extends ToolFinder {
   List<E> constants();
 
   @Override
@@ -14,7 +14,13 @@ public interface EnumToolFinder<E extends Enum<E> & ToolInfo> extends ToolFinder
 
   @Override
   default Optional<Tool> find(String string, ToolRunner runner) {
-    for (var info : constants()) if (info.test(string)) return Optional.of(info.tool(runner));
+    @SuppressWarnings("unchecked")
+    var casted = (R) runner;
+    for (var info : constants()) if (info.test(string)) return Optional.of(tool(info, casted));
     return Optional.empty();
+  }
+
+  default Tool tool(E info, R runner) {
+    return info.tool(runner);
   }
 }
