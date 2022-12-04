@@ -1,8 +1,5 @@
 package run.bach;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 import run.bach.tool.BuildTool;
 import run.bach.tool.CacheTool;
 import run.bach.tool.CleanTool;
@@ -11,37 +8,47 @@ import run.bach.tool.CompileModulesTool;
 import run.bach.tool.CompileTool;
 import run.bach.tool.LaunchTool;
 import run.bach.tool.TestTool;
+import run.duke.Tool;
+import run.duke.ToolInfo;
 
-public enum ProjectToolInfo {
-  BUILD(BuildTool.NAME, "run.bach" + '/' + BuildTool.NAME),
-  CACHE(CacheTool.NAME, "run.bach" + '/' + CacheTool.NAME),
-  CLEAN(CleanTool.NAME, "run.bach" + '/' + CleanTool.NAME),
-  COMPILE(CompileTool.NAME, "run.bach" + '/' + CompileTool.NAME),
-  COMPILE_CLASSES(CompileClassesTool.NAME, "run.bach" + '/' + CompileClassesTool.NAME),
-  COMPILE_MODULES(CompileModulesTool.NAME, "run.bach" + '/' + CompileModulesTool.NAME),
-  LAUNCH(LaunchTool.NAME, "run.bach" + '/' + LaunchTool.NAME),
-  TEST(TestTool.NAME, "run.bach" + '/' + TestTool.NAME);
+public enum ProjectToolInfo implements ToolInfo {
+  BUILD(BuildTool.NAME, BuildTool::new),
+  CACHE(CacheTool.NAME, CacheTool::new),
+  CLEAN(CleanTool.NAME, CleanTool::new),
+  COMPILE(CompileTool.NAME, CompileTool::new),
+  COMPILE_CLASSES(CompileClassesTool.NAME, CompileClassesTool::new),
+  COMPILE_MODULES(CompileModulesTool.NAME, CompileModulesTool::new),
+  LAUNCH(LaunchTool.NAME, LaunchTool::new),
+  TEST(TestTool.NAME, TestTool::new);
 
-  static Optional<ProjectToolInfo> find(String string) {
-    for (var info : ProjectToolInfo.values()) {
-      if (string.equals(info.name) || string.equals(info.identifier)) return Optional.of(info);
-    }
-    return Optional.empty();
-  }
-
-  static List<String> identifiers() {
-    return Stream.of(values()).map(ProjectToolInfo::identifier).toList();
-  }
-
-  final String name;
+  final String namespace;
+  final String nickname;
   final String identifier;
+  final ProjectToolFactory factory;
 
-  ProjectToolInfo(String name, String identifier) {
-    this.name = name;
-    this.identifier = identifier;
+  ProjectToolInfo(String nickname, ProjectToolFactory factory) {
+    this.namespace = Tool.namespace(ProjectToolInfo.class);
+    this.nickname = nickname;
+    this.identifier = Tool.identifier(namespace, nickname);
+    this.factory = factory;
   }
 
-  String identifier() {
+  @Override
+  public String namespace() {
+    return namespace;
+  }
+
+  @Override
+  public String nickname() {
+    return nickname;
+  }
+
+  @Override
+  public String identifier() {
     return identifier;
+  }
+
+  public Tool tool(Project project, ProjectToolRunner runner) {
+    return new Tool(factory.createProjectTool(project, runner));
   }
 }
