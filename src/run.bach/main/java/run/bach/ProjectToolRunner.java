@@ -1,9 +1,15 @@
 package run.bach;
 
+import run.duke.ToolFinders;
 import run.duke.ToolRunner;
 
 @FunctionalInterface
 public interface ProjectToolRunner extends ToolRunner {
+  @Override
+  default ToolFinders finders() {
+    return toolbox().finders();
+  }
+
   default Options options() {
     return Options.DEFAULTS;
   }
