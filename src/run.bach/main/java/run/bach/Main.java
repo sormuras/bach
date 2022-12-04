@@ -12,7 +12,7 @@ import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.ToolCall;
 import run.duke.ToolCalls;
 import run.duke.ToolFinder;
-import run.duke.Toolbox;
+import run.duke.ToolFinders;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -69,11 +69,12 @@ public record Main() implements ToolProvider {
     }
 
     printer.log(Level.DEBUG, "Stuffing toolbox...");
-    var toolbox =
-        new Toolbox(layer)
+    var finders =
+        new ToolFinders()
             .with(new CommandToolFinder(commands)) // tool call shortcuts first
             .with("ToolProvider Finder", ServiceLoader.load(layer, ToolProvider.class))
             .with(ServiceLoader.load(layer, ToolFinder.class));
+    var toolbox = new Toolbox(layer, finders);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =

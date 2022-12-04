@@ -6,10 +6,10 @@ import jdk.jfr.Registered;
 import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolRunner;
-import run.duke.Toolbox;
+import run.duke.ToolFinders;
 
 @Registered
-public class ToolboxTests implements ToolProvider {
+public class ToolFindersTests implements ToolProvider {
   @Override
   public String name() {
     return getClass().getName();
@@ -17,14 +17,14 @@ public class ToolboxTests implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    testEmptyToolbox(Toolbox.EMPTY);
-    testEmptyToolbox(new Toolbox());
+    testEmptyToolbox(ToolFinders.EMPTY);
+    testEmptyToolbox(new ToolFinders());
     testExampleToolbox();
 
     return 0;
   }
 
-  void testEmptyToolbox(Toolbox toolbox) {
+  void testEmptyToolbox(ToolFinders toolbox) {
     var runner = new DryRunner();
     assert toolbox.size() == 0;
     assert toolbox.find("tool", runner).isEmpty();
@@ -33,7 +33,7 @@ public class ToolboxTests implements ToolProvider {
 
   void testExampleToolbox() {
     var tool = new Tool("example", "tool", new MockToolProvider("tool", 0));
-    var toolbox = new Toolbox().with("Examples", tool);
+    var toolbox = new ToolFinders().with("Examples", tool);
     var runner = new DryRunner();
     assert toolbox.size() == 1;
     assert toolbox.find("tool", runner).isPresent();

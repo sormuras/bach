@@ -15,4 +15,8 @@ public interface ProjectToolRunner extends ToolRunner {
   default Printer printer() {
     return Printer.BROKEN;
   }
+
+  default Toolbox toolbox() {
+    return Toolbox.EMPTY;
+  }
 }

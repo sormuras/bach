@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.spi.ToolProvider;
 import run.duke.Tool;
 import run.duke.ToolCall;
-import run.duke.Toolbox;
+import run.duke.ToolFinders;
 
 public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
   private final String name;
@@ -38,12 +38,12 @@ public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
     return runner.printer();
   }
 
-  public final Toolbox toolbox() {
-    return runner.toolbox();
+  public final ToolFinders finders() {
+    return runner.finders();
   }
 
   public final Optional<Tool> find(String tool) {
-    return toolbox().find(tool, runner);
+    return toolbox().finders().find(tool, runner);
   }
 
   @Override

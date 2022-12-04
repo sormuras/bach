@@ -8,7 +8,7 @@ module test.bach {
   provides java.util.spi.ToolProvider with
       test.bach.OptionsTests,
       test.bach.Main,
-      test.bach.ToolboxTests,
+      test.bach.ToolFindersTests,
       test.bach.ToolTests;
   provides run.duke.ToolFinder with
       test.bach.MockToolFinder;

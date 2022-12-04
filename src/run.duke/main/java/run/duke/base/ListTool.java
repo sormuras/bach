@@ -65,7 +65,7 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
   int listTools(PrintWriter out) {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
-    for (var finder : runner.toolbox().finders()) {
+    for (var finder : runner.finders().list()) {
       for (var identifier : finder.identifiers()) {
         var name = identifier.substring(identifier.lastIndexOf('/') + 1);
         map.computeIfAbsent(name, __ -> new ArrayList<>()).add(identifier);
