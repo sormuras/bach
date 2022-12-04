@@ -2,7 +2,7 @@
 
 set +e
 
-BACH_HOME="$(dirname "$(dirname "$(readlink -fm "$0")")")"
+BACH_HOME="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )")"
 BIN="${BACH_HOME}/bin"
 SRC="${BACH_HOME}/src"
 
