@@ -1,4 +1,4 @@
-package run.duke.base;
+package run.duke.tool;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
@@ -7,19 +7,22 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
-import run.duke.ToolRunner;
 import run.duke.CommandLineInterface;
+import run.duke.ToolRunner;
 
 public record ListTool(ToolRunner runner) implements ToolProvider {
+  public static String NAME = "list";
+
   record Options(String topic, String... args) {
     enum Topic {
+      finders,
       tools
     }
   }
 
   @Override
   public String name() {
-    return "list";
+    return NAME;
   }
 
   @Override
@@ -58,14 +61,31 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
 
   int run(Options.Topic topic, PrintWriter out, PrintWriter err, String... args) {
     return switch (topic) {
+      case finders -> listFinders(out);
       case tools -> listTools(out);
     };
+  }
+
+  int listFinders(PrintWriter out) {
+    var lines = new ArrayList<String>();
+    var finders = runner.finders().list();
+    for (var finder : finders) {
+      var identifiers = finder.identifiers();
+      lines.add(("%s [%s]").formatted(finder.description(), identifiers.size()));
+      for (var identifier : identifiers) {
+        lines.add(("  %s").formatted(identifier));
+      }
+    }
+    var size = finders.size();
+    lines.add("    %d finder%s".formatted(size, size == 1 ? "" : "s"));
+    out.println(String.join("\n", lines));
+    return 0;
   }
 
   int listTools(PrintWriter out) {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
-    for (var finder : runner.finders().list()) {
+    for (var finder : runner.finders()) {
       for (var identifier : finder.identifiers()) {
         var name = identifier.substring(identifier.lastIndexOf('/') + 1);
         map.computeIfAbsent(name, __ -> new ArrayList<>()).add(identifier);

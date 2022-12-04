@@ -16,5 +16,5 @@ module run.duke {
       run.duke.base.CheckJavaReleaseTool,
       run.duke.base.CheckJavaVersionTool;
   provides run.duke.ToolFinder with
-      run.duke.base.BaseToolFinder;
+      run.duke.tool.DukeToolFinder;
 }

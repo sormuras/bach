@@ -1,17 +1,30 @@
 package run.duke;
 
-import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /**
  * A named descriptor of a tool backed by a runnable tool provider.
  *
- * @param namespace the namespace of this tool descriptor, potentially empty, but never {@code null}
- * @param name the short name of this tool descriptor, never empty nor {@code null}
  * @param provider the backing tool provider instance
  */
-public record Tool(String namespace, String name, ToolProvider provider)
-    implements Predicate<String> {
+public record Tool(String identifier, ToolProvider provider) implements ToolInfo {
+  public static String identifier(Class<?> type, String nickname) {
+    return identifier(namespace(type), nickname);
+  }
+
+  public static String identifier(String namespace, String nickname) {
+    if (namespace == null) throw new IllegalArgumentException("namespace must not be null");
+    if (namespace.length() > 0) {
+      if (namespace.isBlank()) throw new IllegalArgumentException("namespace must not be blank");
+      if (namespace.startsWith("/")) throw new IllegalArgumentException(namespace);
+      if (namespace.endsWith("/")) throw new IllegalArgumentException(namespace);
+    }
+    if (nickname == null) throw new IllegalArgumentException("nickname must not be null");
+    if (nickname.isBlank()) throw new IllegalArgumentException("nickname must not be blank");
+    if (nickname.startsWith("/")) throw new IllegalArgumentException(nickname);
+    if (nickname.endsWith("/")) throw new IllegalArgumentException(nickname);
+    return namespace.isEmpty() ? nickname : namespace + '/' + nickname;
+  }
 
   public static String namespace(Class<?> type) {
     var module = type.getModule();
@@ -20,15 +33,15 @@ public record Tool(String namespace, String name, ToolProvider provider)
 
   /** Validate components. */
   public Tool {
-    if (namespace == null) throw new IllegalArgumentException("Namespace must not be null");
-    if (namespace.isBlank() && !namespace.isEmpty()) throw new IllegalArgumentException(namespace);
-    if (namespace.startsWith("/")) throw new IllegalArgumentException(namespace);
-    if (namespace.endsWith("/")) throw new IllegalArgumentException(namespace);
-    if (name == null) throw new IllegalArgumentException("Tool name must not be null");
-    if (name.isBlank()) throw new IllegalArgumentException("Tool name must not be blank");
-    if (name.startsWith("/")) throw new IllegalArgumentException(name);
-    if (name.endsWith("/")) throw new IllegalArgumentException(name);
-    if (provider == null) throw new IllegalArgumentException("Tool provider must not be null");
+    if (identifier == null) throw new IllegalArgumentException("identifier must not be null");
+    if (identifier.isBlank()) throw new IllegalArgumentException("identifier must not be blank");
+    if (identifier.startsWith("/")) throw new IllegalArgumentException(identifier);
+    if (identifier.endsWith("/")) throw new IllegalArgumentException(identifier);
+    if (provider == null) throw new IllegalArgumentException("provider must not be null");
+  }
+
+  public Tool(String namespace, String nickname, ToolProvider provider) {
+    this(identifier(namespace, nickname), provider);
   }
 
   /**
@@ -37,20 +50,6 @@ public record Tool(String namespace, String name, ToolProvider provider)
    * @param provider the backing tool provider instance
    */
   public Tool(ToolProvider provider) {
-    this(namespace(provider.getClass()), provider.name(), provider);
-  }
-
-  /**
-   * {@return {@code true} for a probe that matches this tool's names, else {@code false}}
-   *
-   * @param probe the string to test against this tool's names
-   */
-  public boolean test(String probe) {
-    return probe.equals(name) || probe.equals(identifier());
-  }
-
-  /** {@return a string composed of the namespace and the name joined by a slash {@code /}} */
-  public String identifier() {
-    return namespace.isEmpty() ? name : namespace + '/' + name;
+    this(identifier(provider.getClass(), provider.name()), provider);
   }
 }
