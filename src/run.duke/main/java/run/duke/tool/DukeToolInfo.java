@@ -1,9 +1,8 @@
 package run.duke.tool;
 
-import java.util.function.Function;
-import java.util.spi.ToolProvider;
 import run.duke.Tool;
 import run.duke.ToolInfo;
+import run.duke.ToolOperatorFactory;
 import run.duke.ToolRunner;
 
 enum DukeToolInfo implements ToolInfo {
@@ -12,10 +11,10 @@ enum DukeToolInfo implements ToolInfo {
   final String namespace;
   final String nickname;
   final String identifier;
-  final Function<ToolRunner, ToolProvider> factory;
+  final ToolOperatorFactory factory;
 
-  DukeToolInfo(String nickname, Function<ToolRunner, ToolProvider> factory) {
-    this.namespace = "run.duke";
+  DukeToolInfo(String nickname, ToolOperatorFactory factory) {
+    this.namespace = Tool.namespace(getClass());
     this.nickname = nickname;
     this.identifier = Tool.identifier(namespace, nickname);
     this.factory = factory;
@@ -38,6 +37,6 @@ enum DukeToolInfo implements ToolInfo {
 
   @Override
   public Tool tool(ToolRunner runner) {
-    return new Tool(factory.apply(runner));
+    return new Tool(factory.createToolOperator(runner));
   }
 }

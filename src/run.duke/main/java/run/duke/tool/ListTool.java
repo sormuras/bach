@@ -5,12 +5,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.duke.CommandLineInterface;
+import run.duke.ToolOperator;
 import run.duke.ToolRunner;
 
-public record ListTool(ToolRunner runner) implements ToolProvider {
+public record ListTool(ToolRunner runner) implements ToolOperator {
   public static String NAME = "list";
 
   record Options(String topic, String... args) {
