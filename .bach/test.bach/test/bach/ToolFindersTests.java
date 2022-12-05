@@ -5,6 +5,7 @@ import java.util.spi.ToolProvider;
 import jdk.jfr.Registered;
 import run.duke.Tool;
 import run.duke.ToolCall;
+import run.duke.ToolFinder;
 import run.duke.ToolRunner;
 import run.duke.ToolFinders;
 
@@ -33,7 +34,7 @@ public class ToolFindersTests implements ToolProvider {
 
   void testExampleToolbox() {
     var tool = new Tool("example", "tool", new MockToolProvider("tool", 0));
-    var toolbox = new ToolFinders().with("Examples", tool);
+    var toolbox = new ToolFinders().with(ToolFinder.of("Examples", tool));
     var runner = new DryRunner();
     assert toolbox.size() == 1;
     assert toolbox.find("tool", runner).isPresent();
