@@ -54,10 +54,10 @@ public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>
     var tools = new ArrayList<Tool>();
     for (var provider : providers) tools.add(new Tool(provider));
     if (tools.isEmpty()) return this;
-    return with(new Tools(description, tools));
+    return with(new CollectionToolFinder(description, tools));
   }
 
   public ToolFinders with(String description, Tool... tools) {
-    return with(new Tools(description, List.of(tools)));
+    return with(new CollectionToolFinder(description, List.of(tools)));
   }
 }
