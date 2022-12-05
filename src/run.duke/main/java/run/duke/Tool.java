@@ -52,4 +52,15 @@ public record Tool(String identifier, ToolProvider provider) implements ToolInfo
   public Tool(ToolProvider provider) {
     this(identifier(provider.getClass(), provider.name()), provider);
   }
+
+  /**
+   * Return {@code this} tool instance.
+   *
+   * @param ignored the tool runner instance to ignore
+   * @return {@code this}
+   */
+  @Override
+  public Tool tool(ToolRunner ignored) {
+    return this;
+  }
 }
