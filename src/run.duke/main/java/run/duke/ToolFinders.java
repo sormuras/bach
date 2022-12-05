@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.spi.ToolProvider;
 
 public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>, ToolFinder {
   public static final ToolFinders EMPTY = new ToolFinders();
@@ -48,16 +47,5 @@ public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>
     var finders = new ArrayList<>(this.list);
     for (var finder : more) finders.add(finder);
     return new ToolFinders(List.copyOf(finders));
-  }
-
-  public ToolFinders with(String description, Iterable<ToolProvider> providers) {
-    var tools = new ArrayList<Tool>();
-    for (var provider : providers) tools.add(new Tool(provider));
-    if (tools.isEmpty()) return this;
-    return with(new CollectionToolFinder(description, tools));
-  }
-
-  public ToolFinders with(String description, Tool... tools) {
-    return with(new CollectionToolFinder(description, List.of(tools)));
   }
 }

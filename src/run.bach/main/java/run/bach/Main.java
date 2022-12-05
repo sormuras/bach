@@ -72,7 +72,7 @@ public record Main() implements ToolProvider {
     var finders =
         new ToolFinders()
             .with(new CommandToolFinder(commands)) // tool call shortcuts first
-            .with("ToolProvider Finder", ServiceLoader.load(layer, ToolProvider.class))
+            .with(ToolFinder.of("Tool providers", ServiceLoader.load(layer, ToolProvider.class)))
             .with(ServiceLoader.load(layer, ToolFinder.class));
     var toolbox = new Toolbox(layer, finders);
 
