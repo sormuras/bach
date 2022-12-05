@@ -1,13 +1,12 @@
 package run.bach;
 
-import run.duke.CommandLineInterface.Help;
-import run.duke.CommandLineInterface.Name;
-import run.duke.CommandLineInterface.Parser;
-
 import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
+import run.duke.CommandLineInterface;
+import run.duke.CommandLineInterface.Help;
+import run.duke.CommandLineInterface.Name;
 
 /**
  * Bach's option.
@@ -34,12 +33,13 @@ public record Options(
     @Name("--trust") @Help("Trusted identities") List<String> __trust,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
-  private static final Parser<Options> PARSER = new Parser<>(MethodHandles.lookup(), Options.class);
+  private static final CommandLineInterface<Options> PARSER =
+      new CommandLineInterface<>(MethodHandles.lookup(), Options.class);
 
   public static final Options DEFAULTS = Options.of(/* no arguments */ );
 
   public static Options of(String... args) {
-    return PARSER.parse(args);
+    return PARSER.split(args);
   }
 
   public static String toHelp() {

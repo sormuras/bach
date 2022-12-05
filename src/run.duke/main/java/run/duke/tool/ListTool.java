@@ -47,8 +47,8 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
       }
     }
 
-    var parser = CommandLineInterface.parser(MethodHandles.lookup(), Options.class);
-    var options = parser.parse(args);
+    var parser = CommandLineInterface.of(MethodHandles.lookup(), Options.class);
+    var options = parser.split(args);
     try {
       var topic = Options.Topic.valueOf(options.topic);
       return run(topic, out, err, options.args);
