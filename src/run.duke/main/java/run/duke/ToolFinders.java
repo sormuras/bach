@@ -37,15 +37,16 @@ public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>
   }
 
   public ToolFinders with(ToolFinder finder, ToolFinder... more) {
-    var finders = new ArrayList<>(this.list);
+    var finders = new ArrayList<>(list);
     finders.add(finder);
     if (more.length > 0) finders.addAll(List.of(more));
     return new ToolFinders(List.copyOf(finders));
   }
 
   public ToolFinders with(Iterable<ToolFinder> more) {
-    var finders = new ArrayList<>(this.list);
+    var finders = new ArrayList<>(list);
     for (var finder : more) finders.add(finder);
+    if (list.size() == finders.size()) return this;
     return new ToolFinders(List.copyOf(finders));
   }
 }
