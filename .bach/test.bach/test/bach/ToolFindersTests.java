@@ -34,7 +34,7 @@ public class ToolFindersTests implements ToolProvider {
 
   void testExampleToolbox() {
     var tool = new Tool("example", "tool", new MockToolProvider("tool", 0));
-    var toolbox = new ToolFinders().with(ToolFinder.of("Examples", tool));
+    var toolbox = new ToolFinders().with(ToolFinder.ofTools("Examples", tool));
     var runner = new DryRunner();
     assert toolbox.size() == 1;
     assert toolbox.find("tool", runner).isPresent();

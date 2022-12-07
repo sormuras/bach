@@ -3,11 +3,10 @@ package run.bach;
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.TreeMap;
 import java.util.spi.ToolProvider;
-import run.bach.internal.CommandToolFinder;
 import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.ToolCall;
 import run.duke.ToolCalls;
@@ -45,9 +44,9 @@ public record Main() implements ToolProvider {
     if (options.help()) {
       printer.out(
           """
-          Usage: bach <options>... <command>
-            <command>   -> <tool-call> [+ <tool-calls>...]
-            <tool-call> -> <tool-name> <tool-args>...
+          Usage: bach [<options>...] <tool-calls>
+            <tool-calls> -> <tool-call> [+ <tool-calls>...]
+            <tool-call>  -> <tool-name> [<tool-args>...]
             <options> are listed below""");
       printer.out(Options.toHelp().indent(4).stripTrailing());
       printer.out(
@@ -61,26 +60,28 @@ public record Main() implements ToolProvider {
     var layer = new SourceModuleLayerBuilder(Path.of(".bach")).build();
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
-    var commands = new TreeMap<String, Command>();
+    var commands = new ArrayList<ToolCalls>();
     for (var module : layer.modules()) {
       for (var command : module.getAnnotationsByType(Command.class)) {
-        commands.put(module.getName() + '/' + command.name(), command);
+        var identifier = module.getName() + '/' + command.name();
+        var calls = command.mode().apply(command.args());
+        commands.add(new ToolCalls(identifier, calls));
       }
     }
 
     printer.log(Level.DEBUG, "Stuffing toolbox...");
     var finders =
         new ToolFinders()
-            .with(new CommandToolFinder(commands)) // tool call shortcuts first
-            .with(ToolFinder.of("Tool providers", ServiceLoader.load(layer, ToolProvider.class)))
+            .with(ToolFinder.ofToolCalls("Commands", commands))
+            .with(ToolFinder.ofToolProviders("Tool providers", ServiceLoader.load(layer, ToolProvider.class)))
             .with(ServiceLoader.load(layer, ToolFinder.class));
     var toolbox = new Toolbox(layer, finders);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
         options.calls().length == 0
-            ? new ToolCalls(new ToolCall("list", List.of("tools")))
-            : ToolCalls.of(options.calls());
+            ? ToolCalls.of("default").with(ToolCall.of("list", "tools"))
+            : ToolCalls.of("main", options.calls());
 
     var folders = Folders.CURRENT_WORKING_DIRECTORY;
     var bach = new Bach(options, folders, printer, toolbox);

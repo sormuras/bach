@@ -2,8 +2,8 @@ package run.bach;
 
 import java.util.List;
 import java.util.ServiceLoader;
-import run.duke.EnumToolFinder;
 import run.duke.Tool;
+import run.duke.ToolFinder.EnumToolFinder;
 
 public final class ProjectToolFinder implements EnumToolFinder<ProjectToolInfo, ProjectToolRunner> {
   private final List<ProjectToolInfo> constants;

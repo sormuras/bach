@@ -17,11 +17,11 @@ public record Bach(Options options, Folders folders, Printer printer, Toolbox to
 
   @Override
   public void run(ToolCall call) {
+    printer().log(Level.INFO, "+ " + call.toCommandLine());
     var tool = call.name();
-    var args = call.arguments().toArray(String[]::new);
-    printer().log(Level.INFO, "+ " + tool + " " + String.join(" ", args));
     var found = toolbox.finders().find(tool, this);
     if (found.isEmpty()) throw new ToolNotFoundException(tool);
+    var args = call.arguments().toArray(String[]::new);
     var code = run(found.get().provider(), args);
     if (code != 0) throw new RuntimeException(tool + " failed with error " + code);
   }

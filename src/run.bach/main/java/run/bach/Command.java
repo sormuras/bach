@@ -5,12 +5,18 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import run.duke.ToolCall;
+import run.duke.ToolCalls;
 
 @Target(ElementType.MODULE)
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(Command.Container.class)
 public @interface Command {
-  /** The tool name of this tool call shortcut. */
+  /** The nickname of this tool call shortcut. */
   String name();
 
   /** A short description of the purpose of this tool call shortcut. */
@@ -21,25 +27,76 @@ public @interface Command {
    *
    * <p>Example:
    * <pre>{@code
+   *    args = "javac --version + jar --version"
+   *    args = {"javac --version", "jar --version"}
    *    args = {"javac", "--version", "+", "jar", "--version"}
    * </pre>
    */
-  String[] args() default {};
+  String[] args();
 
-  /**
-   * The line-separated tool calls with each line representing a space-separated tool call.
-   *
-   * <p>A tool call always starts with tool name and is followed by an arbitrary number of tool arguments.
-   *
-   * <p>Example:
-   * <pre>{@code
-   *    text = """
-   *           javac  --version
-   *           jar    --version
-   *           """
-   * </pre>
-   */
-  String line() default "";
+  /** Args mode. */
+  Mode mode() default Mode.AUTO;
+
+  enum Mode implements Function<String[], List<ToolCall>> {
+    /** Default mode. */
+    AUTO {
+      @Override
+      public List<ToolCall> apply(String[] args) {
+        if (args.length == 0) return List.of();
+        return Mode.detect(args).orElseThrow().apply(args);
+      }
+    },
+
+    /**
+     * One string per argument.
+     *
+     * <p>Example: {@code {"javac", "--version", "+", "jar", "--version"}}
+     */
+    MAIN {
+      @Override
+      public List<ToolCall> apply(String[] args) {
+        return ToolCalls.of("<MAIN>", args).list();
+      }
+    },
+
+    /**
+     * One tool call per argument.
+     *
+     * <p>Example: {@code {"javac --version", "jar --version"}}
+     */
+    LIST {
+      @Override
+      public List<ToolCall> apply(String[] args) {
+        return Stream.of(args).map(ToolCall::ofCommandLine).toList();
+      }
+    },
+
+    /**
+     * One string per command-line.
+     *
+     * <p>Example: {@code "javac --version + jar --version"}
+     */
+    LINE {
+      @Override
+      public List<ToolCall> apply(String[] args) {
+        var split = String.join(" + ", args).split("\\s+");
+        return ToolCalls.of("LINE", split).list();
+      }
+    };
+
+    public static Optional<Mode> detect(String... args) {
+      if (args.length == 0) return Optional.empty();
+      var first = args[0];
+      if (args.length == 1) {
+        return Optional.of(first.contains(" + ") ? LINE : first.contains(" ") ? LIST : MAIN);
+      }
+      for (var arg : args) {
+        if (arg.equals("+")) return Optional.of(MAIN);
+        if (arg.contains(" ")) return Optional.of(LIST);
+      }
+      return Optional.of(MAIN);
+    }
+  }
 
   @Target(ElementType.MODULE)
   @Retention(RetentionPolicy.RUNTIME)

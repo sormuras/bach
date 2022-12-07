@@ -3,30 +3,19 @@ package run.duke;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 public record ToolCall(String name, List<String> arguments) {
-  // line = "tool-name [tool-args...]"
-  public static ToolCall ofLine(String line) {
-    var args = line.trim().split("\\s+");
-    if (args.length == 0) throw new IllegalArgumentException("No tool name in: " + line);
-    var name = args[0];
-    if (args.length == 1) return new ToolCall(name);
-    if (args.length == 2) return new ToolCall(name, List.of(args[1]));
-    if (args.length == 3) return new ToolCall(name, List.of(args[1], args[2]));
-    return new ToolCall(name, List.of(Arrays.copyOfRange(args, 1, args.length)));
-  }
-
   public static ToolCall of(String name, Object... arguments) {
     if (arguments.length == 0) return new ToolCall(name);
-    if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString()));
+    if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString().trim()));
     return new ToolCall(name).with(Stream.of(arguments));
   }
 
-  public static ToolCall of(List<String> command) {
+  // command = ["tool-name", "tool-args", ...]
+  public static ToolCall ofCommand(List<String> command) {
     var size = command.size();
     if (size == 0) throw new IllegalArgumentException("Empty command");
     var name = command.get(0);
@@ -35,8 +24,17 @@ public record ToolCall(String name, List<String> arguments) {
     return new ToolCall(name).with(command.stream().skip(1).map(String::trim));
   }
 
+  // line = "tool-name [tool-args...]"
+  public static ToolCall ofCommandLine(String line) {
+    return ToolCall.ofCommand(List.of(line.trim().split("\\s+")));
+  }
+
   public ToolCall(String name) {
     this(name, List.of());
+  }
+
+  public String toCommandLine() {
+    return toCommandLine(" ");
   }
 
   public String toCommandLine(String delimiter) {
@@ -48,7 +46,7 @@ public record ToolCall(String name, List<String> arguments) {
   }
 
   public ToolCall with(Stream<?> objects) {
-    var strings = objects.map(Object::toString);
+    var strings = objects.map(Object::toString).map(String::trim);
     return new ToolCall(name, Stream.concat(arguments.stream(), strings).toList());
   }
 
