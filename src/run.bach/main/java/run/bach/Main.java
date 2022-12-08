@@ -2,7 +2,6 @@ package run.bach;
 
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -59,7 +58,7 @@ public record Main() implements ToolProvider {
     var folders = Folders.CURRENT_WORKING_DIRECTORY;
 
     printer.log(Level.DEBUG, "Building source module layer...");
-    var layer = new SourceModuleLayerBuilder(Path.of(".bach")).build();
+    var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
     var commands = new ArrayList<ToolCalls>();

@@ -10,8 +10,13 @@ import java.util.spi.ToolProvider;
 
 public record SourceModuleLayerBuilder(Path source, Path target) {
 
-  public SourceModuleLayerBuilder(Path source) {
-    this(source, source.resolve("out/.bach/classes-" + Runtime.version().feature()));
+  public static SourceModuleLayerBuilder of(Path source) {
+    try {
+      var target = Files.createTempDirectory("bach-source-module-layer-");
+      return new SourceModuleLayerBuilder(source, target);
+    } catch (Exception exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   public Path bin() {
