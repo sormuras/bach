@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
-import run.duke.ToolCall;
+import run.duke.DukeTool;
 
 public class CleanTool extends ProjectTool {
   public static final String NAME = "clean";
@@ -15,8 +15,7 @@ public class CleanTool extends ProjectTool {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    // run(TreeTool.delete(folders().out()));
-    run(ToolCall.of("tree").with("--mode", "delete").with(folders().out()));
+    run(DukeTool.treeDelete(folders().out()));
     return 0;
   }
 }

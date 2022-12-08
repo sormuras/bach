@@ -1,6 +1,11 @@
 /** Defines the API of Bach. */
 module run.bach {
   requires jdk.compiler;
+  requires jdk.jartool;
+  requires jdk.javadoc;
+  requires jdk.jdeps;
+  requires jdk.jlink;
+  requires jdk.jpackage;
   requires transitive run.duke;
 
   exports run.bach;

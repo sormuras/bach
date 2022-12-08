@@ -1,6 +1,7 @@
 package run.duke;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,10 @@ import run.duke.tool.TreeTool;
 public record DukeTool(ToolRunner runner) implements ToolOperator {
   public static ToolCall listTools() {
     return ToolCall.of("duke", "list", "tools");
+  }
+
+  public static ToolCall treeDelete(Path start) {
+    return ToolCall.of("duke", "tree", "--mode=DELETE", start);
   }
 
   @Override

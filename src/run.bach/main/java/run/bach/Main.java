@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import run.bach.internal.SourceModuleLayerBuilder;
-import run.duke.ToolCall;
+import run.duke.DukeTool;
 import run.duke.ToolCalls;
 import run.duke.ToolFinder;
 import run.duke.ToolFinders;
@@ -98,7 +98,7 @@ public record Main() implements ToolProvider {
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
         options.calls().length == 0
-            ? ToolCalls.of("default").with(ToolCall.of("list", "tools"))
+            ? ToolCalls.of("default").with(DukeTool.listTools())
             : ToolCalls.of("main", options.calls());
 
     var bach = new Bach(options, folders, printer, toolbox);
