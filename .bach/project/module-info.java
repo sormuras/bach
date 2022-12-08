@@ -9,16 +9,22 @@ import run.bach.Command;
       duke check-java-version 17
       """,
       """
-      javac --release=17 --module=run.bach,run.duke --module-source-path=src/*/main/java -d .bach/out/classes-17
+      javac --release=17 --module=run.bach,run.duke --module-source-path=src/*/main/java -d .bach/out/make-17
       """,
       """
       duke tree --mode=create .bach/out/main/modules
       """,
       """
-      jar --create --file=.bach/out/main/modules/run.bach.jar -C .bach/out/classes-17/run.bach .
+      jar --create --file=.bach/out/main/modules/run.bach.jar -C .bach/out/make-17/run.bach .
       """,
       """
-      jar --create --file=.bach/out/main/modules/run.duke.jar -C .bach/out/classes-17/run.duke .
+      jar --create --file=.bach/out/main/modules/run.duke.jar -C .bach/out/make-17/run.duke .
+      """,
+      """
+      javac --release=17 --module=test.bach --module-source-path=src/*/test/java --module-path .bach/out/main/modules -d .bach/out/make-17
+      """,
+      """
+      java --module-path .bach/out/make-17 --module test.bach/test.bach.Main
       """,
     })
 module project {
