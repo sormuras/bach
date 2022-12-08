@@ -14,7 +14,8 @@ module run.duke {
 
   provides java.util.spi.ToolProvider with
       run.duke.base.CheckJavaReleaseTool,
-      run.duke.base.CheckJavaVersionTool;
+      run.duke.base.CheckJavaVersionTool,
+      run.duke.base.TreeTool;
   provides run.duke.ToolFinder with
       run.duke.tool.DukeToolFinder;
 }
