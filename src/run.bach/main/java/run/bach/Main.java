@@ -75,9 +75,21 @@ public record Main() implements ToolProvider {
     var finders =
         new ToolFinders()
             .with(ToolFinder.ofToolCalls("Commands", commands))
-            .with(ToolFinder.ofJavaPrograms("Java programs", folders.externalTools(), folders.javaHome("bin", "java")))
-            .with(ToolFinder.ofToolProviders("Tool providers", ServiceLoader.load(layer, ToolProvider.class)))
-            .with(ServiceLoader.load(layer, ToolFinder.class));
+            .with(ServiceLoader.load(layer, ToolFinder.class))
+            .with(
+                ToolFinder.ofToolProviders(
+                    "Tool Provider Services", ServiceLoader.load(layer, ToolProvider.class)))
+            .with(
+                ToolFinder.ofJavaPrograms(
+                    "Java Programs in " + folders.externalTools().toUri(),
+                    folders.externalTools(),
+                    folders.javaHome("bin", "java")))
+            .with(
+                ToolFinder.ofNativeTools(
+                    "Native Tools in ${JAVA_HOME} -> " + folders.javaHome().toUri(),
+                    name -> "java.home/" + name, // ensure stable names with synthetic namespace
+                    folders.javaHome("bin"),
+                    List.of("java", "jfr", "jdeprscan")));
     var toolbox = new Toolbox(layer, finders);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");

@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import run.duke.internal.CollectionToolFinder;
 import run.duke.internal.JavaProgramsToolFinder;
+import run.duke.internal.NativeProcessToolProvider;
 import run.duke.internal.PreparedToolFinder;
 
 @FunctionalInterface
@@ -51,6 +53,22 @@ public interface ToolFinder {
 
   static ToolFinder ofJavaPrograms(String description, Path path, Path java) {
     return new JavaProgramsToolFinder(description, path, java);
+  }
+
+  static ToolFinder ofNativeTools(
+          String description,
+          UnaryOperator<String> renamer,
+          Path directory,
+          List<String> names) {
+    var tools = new ArrayList<Tool>();
+    for (var name : names) {
+      var executable = directory.resolve(name);
+      var renamed = renamer.apply(name);
+      var command = List.of(executable.toString());
+      var provider = new NativeProcessToolProvider(renamed, command);
+      tools.add(new Tool(renamed, provider));
+    }
+    return ToolFinder.ofTools(description, tools);
   }
 
   @FunctionalInterface
