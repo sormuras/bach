@@ -1,4 +1,4 @@
-package run.duke.base;
+package run.duke.tool;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;

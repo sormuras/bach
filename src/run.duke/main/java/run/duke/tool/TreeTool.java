@@ -1,4 +1,4 @@
-package run.duke.base;
+package run.duke.tool;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
@@ -6,15 +6,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.spi.ToolProvider;
 import run.duke.CommandLineInterface;
+import run.duke.ToolOperator;
 
-public class TreeTool implements ToolProvider {
-  public TreeTool() {}
+public record TreeTool() implements ToolOperator {
+  public static final String NAME = "tree";
 
   @Override
   public String name() {
-    return "tree";
+    return NAME;
   }
 
   @Override
