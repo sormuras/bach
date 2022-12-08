@@ -1,11 +1,13 @@
 package run.duke;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
 import run.duke.internal.CollectionToolFinder;
+import run.duke.internal.JavaProgramsToolFinder;
 import run.duke.internal.PreparedToolFinder;
 
 @FunctionalInterface
@@ -45,6 +47,10 @@ public interface ToolFinder {
     var tools = new ArrayList<Tool>();
     for (var provider : providers) tools.add(new Tool(provider));
     return ToolFinder.ofTools(description, tools);
+  }
+
+  static ToolFinder ofJavaPrograms(String description, Path path, Path java) {
+    return new JavaProgramsToolFinder(description, path, java);
   }
 
   @FunctionalInterface

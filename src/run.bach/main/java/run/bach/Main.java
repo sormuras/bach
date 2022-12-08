@@ -56,6 +56,8 @@ public record Main() implements ToolProvider {
       return 0;
     }
 
+    var folders = Folders.CURRENT_WORKING_DIRECTORY;
+
     printer.log(Level.DEBUG, "Building source module layer...");
     var layer = new SourceModuleLayerBuilder(Path.of(".bach")).build();
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
@@ -73,6 +75,7 @@ public record Main() implements ToolProvider {
     var finders =
         new ToolFinders()
             .with(ToolFinder.ofToolCalls("Commands", commands))
+            .with(ToolFinder.ofJavaPrograms("Java programs", folders.externalTools(), folders.javaHome("bin", "java")))
             .with(ToolFinder.ofToolProviders("Tool providers", ServiceLoader.load(layer, ToolProvider.class)))
             .with(ServiceLoader.load(layer, ToolFinder.class));
     var toolbox = new Toolbox(layer, finders);
@@ -83,7 +86,6 @@ public record Main() implements ToolProvider {
             ? ToolCalls.of("default").with(ToolCall.of("list", "tools"))
             : ToolCalls.of("main", options.calls());
 
-    var folders = Folders.CURRENT_WORKING_DIRECTORY;
     var bach = new Bach(options, folders, printer, toolbox);
 
     if (options.dryRun()) {

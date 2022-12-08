@@ -34,4 +34,8 @@ public record Folders(Path root, Path out, Path externalModules, Path externalTo
   public Path javaHome() {
     return Path.of(System.getProperty("java.home"));
   }
+
+  public Path javaHome(String first, String... more) {
+    return javaHome().resolve(Path.of(first, more));
+  }
 }
