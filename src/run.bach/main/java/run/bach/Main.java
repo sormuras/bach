@@ -80,13 +80,17 @@ public record Main() implements ToolProvider {
                 ToolFinder.ofToolProviders(
                     "Tool Provider Services", ServiceLoader.load(layer, ToolProvider.class)))
             .with(
+                ToolFinder.ofToolProviders(
+                    "Tool Providers in " + folders.externalModules().toUri(),
+                    folders.externalModules()))
+            .with(
                 ToolFinder.ofJavaPrograms(
                     "Java Programs in " + folders.externalTools().toUri(),
                     folders.externalTools(),
                     folders.javaHome("bin", "java")))
             .with(
                 ToolFinder.ofNativeTools(
-                    "Native Tools in ${JAVA_HOME} -> " + folders.javaHome().toUri(),
+                    "Native Tools in java.home -> " + folders.javaHome().toUri(),
                     name -> "java.home/" + name, // ensure stable names with synthetic namespace
                     folders.javaHome("bin"),
                     List.of("java", "jfr", "jdeprscan")));

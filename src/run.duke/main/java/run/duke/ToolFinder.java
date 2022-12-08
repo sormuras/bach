@@ -9,6 +9,7 @@ import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import run.duke.internal.CollectionToolFinder;
 import run.duke.internal.JavaProgramsToolFinder;
+import run.duke.internal.ModulePathToolFinder;
 import run.duke.internal.NativeProcessToolProvider;
 import run.duke.internal.PreparedToolFinder;
 
@@ -69,6 +70,10 @@ public interface ToolFinder {
       tools.add(new Tool(renamed, provider));
     }
     return ToolFinder.ofTools(description, tools);
+  }
+
+  static ToolFinder ofToolProviders(String description, Path... paths) {
+    return new ModulePathToolFinder(description, paths);
   }
 
   @FunctionalInterface
