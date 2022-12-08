@@ -1,4 +1,7 @@
-@run.bach.Command(
+import run.bach.Command;
+
+@Command(name = "rebuild", args = "clean + build")
+@Command(
     name = "make",
     args = {
       "check-java-version",
@@ -28,7 +31,7 @@
       /* === */ "+",
       "test"
     })
-@run.bach.Command(name = "test", args = "test.bach")
+@Command(name = "test", args = "test.bach")
 module project {
   requires run.bach;
 
