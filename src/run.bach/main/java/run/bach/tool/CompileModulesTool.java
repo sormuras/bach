@@ -15,10 +15,12 @@ import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class CompileModulesTool extends ProjectTool {
-  public static final String NAME = "compile-modules";
+  public static ToolCall compile(Project.Space space) {
+    return ToolCall.of("compile-modules", space.name());
+  }
 
   public CompileModulesTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("compile-modules", project, runner);
   }
 
   @Override

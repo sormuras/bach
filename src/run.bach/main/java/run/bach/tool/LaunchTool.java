@@ -8,10 +8,8 @@ import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class LaunchTool extends ProjectTool {
-  public static final String NAME = "launch";
-
   public LaunchTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("launch", project, runner);
   }
 
   @Override

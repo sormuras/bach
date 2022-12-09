@@ -5,12 +5,15 @@ import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
 import run.bach.internal.ModulesSupport;
+import run.duke.ToolCall;
 
 public class CacheTool extends ProjectTool {
-  public static final String NAME = "cache";
+  public static ToolCall cache() {
+    return ToolCall.of("cache");
+  }
 
   public CacheTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("cache", project, runner);
   }
 
   @Override

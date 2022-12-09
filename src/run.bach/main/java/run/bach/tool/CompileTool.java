@@ -4,12 +4,15 @@ import java.io.PrintWriter;
 import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
+import run.duke.ToolCall;
 
 public class CompileTool extends ProjectTool {
-  public static final String NAME = "compile";
+  public static ToolCall compile() {
+    return ToolCall.of("compile");
+  }
 
   public CompileTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("compile", project, runner);
   }
 
   @Override
@@ -25,9 +28,9 @@ public class CompileTool extends ProjectTool {
       var s = modules.size() == 1 ? "" : "s";
       info("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
       // translate Java source files into class files
-      run(CompileClassesTool.NAME, space.name());
+      run(CompileClassesTool.compile(space));
       // archive compiled classes in modular JAR files
-      run(CompileModulesTool.NAME, space.name());
+      run(CompileModulesTool.compile(space));
     }
     return 0;
   }

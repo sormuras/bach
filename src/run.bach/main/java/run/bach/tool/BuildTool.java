@@ -10,10 +10,8 @@ import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
 
 public class BuildTool extends ProjectTool {
-  public static final String NAME = "build";
-
   public BuildTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("build", project, runner);
   }
 
   @Override
@@ -24,9 +22,9 @@ public class BuildTool extends ProjectTool {
     info("Build %s with %d module%s".formatted(what, size, size == 1 ? "" : "s"));
     var start = Instant.now();
 
-    run(CacheTool.NAME); // go offline and verify cached assets
-    run(CompileTool.NAME); // compile all modules spaces
-    run(TestTool.NAME); // start launcher and execute tests in test space
+    run(CacheTool.cache()); // go offline and verify cached assets
+    run(CompileTool.compile()); // compile all modules spaces
+    run(TestTool.test()); // start launcher and execute tests in test space
 
     var duration = prettify(Duration.between(start, Instant.now()));
     info("Build took %s".formatted(duration));

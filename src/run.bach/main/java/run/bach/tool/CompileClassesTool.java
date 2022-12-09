@@ -9,10 +9,12 @@ import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class CompileClassesTool extends ProjectTool {
-  public static final String NAME = "compile-classes";
+  public static ToolCall compile(Project.Space space) {
+    return ToolCall.of("compile-classes", space.name());
+  }
 
   public CompileClassesTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("compile-classes", project, runner);
   }
 
   @Override

@@ -8,10 +8,12 @@ import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
 
 public class TestTool extends ProjectTool {
-  public static final String NAME = "test";
+  public static ToolCall test() {
+    return ToolCall.of("test");
+  }
 
   public TestTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("test", project, runner);
   }
 
   @Override

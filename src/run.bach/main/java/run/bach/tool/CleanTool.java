@@ -7,10 +7,8 @@ import run.bach.ProjectToolRunner;
 import run.duke.DukeTool;
 
 public class CleanTool extends ProjectTool {
-  public static final String NAME = "clean";
-
   public CleanTool(Project project, ProjectToolRunner runner) {
-    super(NAME, project, runner);
+    super("clean", project, runner);
   }
 
   @Override
