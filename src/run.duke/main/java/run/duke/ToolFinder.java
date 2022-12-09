@@ -30,7 +30,7 @@ public interface ToolFinder {
   Optional<Tool> find(String string, ToolRunner runner);
 
   /** {@return a possibly empty list of tool identifying-strings} */
-  default List<String> identifiers() {
+  default List<String> identifiers(ToolRunner runner) {
     return List.of();
   }
 
@@ -57,10 +57,7 @@ public interface ToolFinder {
   }
 
   static ToolFinder ofNativeTools(
-          String description,
-          UnaryOperator<String> renamer,
-          Path directory,
-          List<String> names) {
+      String description, UnaryOperator<String> renamer, Path directory, List<String> names) {
     var tools = new ArrayList<Tool>();
     for (var name : names) {
       var executable = directory.resolve(name);
@@ -74,27 +71,5 @@ public interface ToolFinder {
 
   static ToolFinder ofToolProviders(String description, Path... paths) {
     return new ModulePathToolFinder(description, paths);
-  }
-
-  @FunctionalInterface
-  interface EnumToolFinder<E extends Enum<E> & ToolInfo, R extends ToolRunner> extends ToolFinder {
-    List<E> constants();
-
-    @Override
-    default List<String> identifiers() {
-      return constants().stream().map(ToolInfo::identifier).toList();
-    }
-
-    @Override
-    default Optional<Tool> find(String string, ToolRunner runner) {
-      @SuppressWarnings("unchecked")
-      var casted = (R) runner;
-      for (var info : constants()) if (info.test(string)) return Optional.of(tool(info, casted));
-      return Optional.empty();
-    }
-
-    default Tool tool(E info, R runner) {
-      return info.tool(runner);
-    }
   }
 }

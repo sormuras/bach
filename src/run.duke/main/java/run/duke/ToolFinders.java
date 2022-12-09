@@ -22,16 +22,10 @@ public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>
     return "ToolFinders [%d finder%s]".formatted(list.size(), list.size() == 1 ? "" : "s");
   }
 
-  public int size() {
-    int size = 0;
-    for (var finder : list) size += finder.identifiers().size();
-    return size;
-  }
-
-  public Optional<Tool> find(String name, ToolRunner runner) {
+  public Optional<Tool> find(String tool, ToolRunner runner) {
     for (var finder : list) {
-      var tool = finder.find(name, runner);
-      if (tool.isPresent()) return tool;
+      var found = finder.find(tool, runner);
+      if (found.isPresent()) return found;
     }
     return Optional.empty();
   }

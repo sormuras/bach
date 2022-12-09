@@ -70,7 +70,7 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
     var lines = new ArrayList<String>();
     var finders = runner.finders().list();
     for (var finder : finders) {
-      var identifiers = finder.identifiers();
+      var identifiers = finder.identifiers(runner);
       lines.add(("%s [%s]").formatted(finder.description(), identifiers.size()));
       for (var identifier : identifiers) {
         lines.add(("  %s").formatted(identifier));
@@ -86,7 +86,7 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
     for (var finder : runner.finders()) {
-      for (var identifier : finder.identifiers()) {
+      for (var identifier : finder.identifiers(runner)) {
         var name = identifier.substring(identifier.lastIndexOf('/') + 1);
         map.computeIfAbsent(name, __ -> new ArrayList<>()).add(identifier);
         max = Math.max(max, name.length());

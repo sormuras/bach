@@ -60,7 +60,7 @@ public record DukeTool(ToolRunner runner) implements ToolOperator {
     }
 
     @Override
-    public List<String> identifiers() {
+    public List<String> identifiers(ToolRunner runner) {
       return List.of("run.duke/duke");
     }
   }

@@ -6,6 +6,11 @@ import run.duke.ToolCall;
 import run.duke.ToolOperator;
 
 public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
+  @FunctionalInterface
+  public interface Factory {
+    ProjectTool createProjectTool(Project project, ProjectToolRunner runner);
+  }
+
   private final String name;
   private final Project project;
   private final ProjectToolRunner runner;
@@ -26,6 +31,11 @@ public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
   }
 
   @Override
+  public ProjectToolRunner runner() {
+    return runner;
+  }
+
+  @Override
   public final Options options() {
     return runner.options();
   }
@@ -41,7 +51,7 @@ public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
   }
 
   public final Optional<Tool> find(String tool) {
-    return toolbox().finders().find(tool, runner);
+    return runner.toolbox().finders().find(tool, runner);
   }
 
   @Override

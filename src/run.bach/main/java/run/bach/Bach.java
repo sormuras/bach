@@ -12,7 +12,7 @@ public record Bach(Options options, Folders folders, Printer printer, Toolbox to
   public Bach {
     printer.log(Level.DEBUG, "Bach initialized");
     printer.log(Level.DEBUG, "  printer: " + printer.threshold());
-    printer.log(Level.DEBUG, toolbox.toString(2));
+    printer.log(Level.DEBUG, "  toolbox: " + toolbox.finders().list().size());
   }
 
   @Override

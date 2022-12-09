@@ -10,7 +10,6 @@ import run.duke.ToolRunner;
 
 public record JavaProgramsToolFinder(String description, Path path, Path java)
     implements ToolFinder {
-
   @Override
   public Optional<Tool> find(String string, ToolRunner runner) {
     return PathSupport.list(path, Files::isDirectory).stream()
@@ -20,10 +19,10 @@ public record JavaProgramsToolFinder(String description, Path path, Path java)
   }
 
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     return PathSupport.list(path, Files::isDirectory).stream()
         .map(directory -> new JavaProgramToolFinder(directory, java))
-        .map(ToolFinder::identifiers)
+        .map(finder -> finder.identifiers(runner))
         .flatMap(List::stream)
         .toList();
   }

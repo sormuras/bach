@@ -38,9 +38,7 @@ public class CommandModeTests implements ToolProvider {
     checkMain(empty.with(ToolCall.of("a")), "a");
     checkMain(empty.with(ToolCall.of("a", "b")), "a", "b");
     checkMain(
-        empty
-                .with(ToolCall.of("a", "b"))
-                .with(ToolCall.of("a", "b")), "a", "b", "+", "a", "b");
+        empty.with(ToolCall.of("a", "b")).with(ToolCall.of("a", "b")), "a", "b", "+", "a", "b");
   }
 
   void checkMain(ToolCalls expected, String... args) {

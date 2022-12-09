@@ -1,6 +1,6 @@
 import run.bach.Command;
 
-@Command(name = "rebuild", args = "clean + build")
+@Command(name = "rebuild", args = "clean + format + build")
 @Command(name = "remake", args = "clean + make")
 @Command(
     name = "make",
@@ -30,6 +30,6 @@ import run.bach.Command;
 module project {
   requires run.bach;
 
-  provides run.bach.ProjectFactory with
-      project.Factory;
+  provides run.bach.Project.Factory with
+      project.BachProjectFactory;
 }

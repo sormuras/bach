@@ -11,7 +11,7 @@ import run.duke.ToolRunner;
 
 public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder {
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     var directory = path.normalize().toAbsolutePath();
     if (!Files.isDirectory(directory)) return List.of();
     var namespace = directory.getParent().getFileName().toString();

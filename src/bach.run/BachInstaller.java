@@ -87,9 +87,9 @@ record BachInstaller(String version, Path home) {
       debug("<< %s".formatted(source));
       Files.createDirectories(target.getParent());
       try (var stream =
-                   source.startsWith("http")
-                           ? URI.create(source).toURL().openStream()
-                           : Files.newInputStream(Path.of(source))) {
+          source.startsWith("http")
+              ? URI.create(source).toURL().openStream()
+              : Files.newInputStream(Path.of(source))) {
         var size = Files.copy(stream, target, options);
         debug(">> %,7d %s".formatted(size, target.getFileName()));
       }

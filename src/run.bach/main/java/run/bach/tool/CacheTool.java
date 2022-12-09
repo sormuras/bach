@@ -1,7 +1,6 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
-
 import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;

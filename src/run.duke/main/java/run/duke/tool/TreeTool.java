@@ -6,10 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.spi.ToolProvider;
 import run.duke.CommandLineInterface;
-import run.duke.ToolOperator;
 
-public record TreeTool() implements ToolOperator {
+public record TreeTool() implements ToolProvider {
   public static final String NAME = "tree";
 
   @Override

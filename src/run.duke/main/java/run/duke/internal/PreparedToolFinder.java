@@ -16,7 +16,7 @@ public record PreparedToolFinder(String description, List<ToolCalls> calls) impl
   }
 
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     return calls.stream().map(ToolCalls::name).toList();
   }
 

@@ -4,13 +4,17 @@ import java.util.List;
 
 @FunctionalInterface
 public interface ToolRunner {
-  void run(ToolCall call);
-
   default ToolFinders finders() {
     return ToolFinders.EMPTY;
   }
 
-  default void run(String name, String... args) {
-    run(new ToolCall(name, List.of(args)));
+  void run(ToolCall call);
+
+  default void run(String tool, String... args) {
+    run(new ToolCall(tool, List.of(args)));
+  }
+
+  default void run(String tool, ToolCall.Tweak composer) {
+    run(new ToolCall(tool).withTweaks(List.of(composer)));
   }
 }

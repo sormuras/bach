@@ -7,9 +7,8 @@ import run.duke.ToolFinder;
 import run.duke.ToolRunner;
 
 public record MockToolFinder() implements ToolFinder {
-
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     return List.of("test.bach/mock0", "test.bach/mock1", "test.bach/mock2", "test.bach/moper");
   }
 

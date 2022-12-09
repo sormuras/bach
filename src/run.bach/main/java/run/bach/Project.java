@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-
 import run.bach.internal.ModuleDescriptorSupport;
 import run.bach.internal.ModuleInfoFinder;
 import run.bach.internal.ModuleInfoReference;
@@ -21,6 +20,15 @@ import run.bach.internal.ModuleSourcePathSupport;
 
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Externals externals) {
+  @FunctionalInterface
+  public interface Factory {
+    Project createProject(ProjectToolRunner runner);
+
+    default Iterable<ProjectTool.Factory> createProjectToolFactories() {
+      return List.of();
+    }
+  }
+
   public Project(Name name, Version version, Space... spaces) {
     this(name, version, new Spaces(spaces), new Externals());
   }

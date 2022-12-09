@@ -6,8 +6,8 @@ import jdk.jfr.Registered;
 import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolFinder;
-import run.duke.ToolRunner;
 import run.duke.ToolFinders;
+import run.duke.ToolRunner;
 
 @Registered
 public class ToolFindersTests implements ToolProvider {
@@ -27,7 +27,7 @@ public class ToolFindersTests implements ToolProvider {
 
   void testEmptyToolbox(ToolFinders toolbox) {
     var runner = new DryRunner();
-    assert toolbox.size() == 0;
+    assert toolbox.identifiers(runner).size() == 0;
     assert toolbox.find("tool", runner).isEmpty();
     assert toolbox.find("example/tool", runner).isEmpty();
   }
@@ -36,7 +36,7 @@ public class ToolFindersTests implements ToolProvider {
     var tool = new Tool("example", "tool", new MockToolProvider("tool", 0));
     var toolbox = new ToolFinders().with(ToolFinder.ofTools("Examples", tool));
     var runner = new DryRunner();
-    assert toolbox.size() == 1;
+    assert toolbox.identifiers(runner).size() == 1;
     assert toolbox.find("tool", runner).isPresent();
     assert toolbox.find("example/tool", runner).isPresent();
     assert toolbox.find("namespace/tool", runner).isEmpty();

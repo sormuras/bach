@@ -62,7 +62,9 @@ public record Main() implements ToolProvider {
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
     var commands = new ArrayList<ToolCalls>();
-    for (var module : layer.modules()) {
+    var modules = new ArrayList<>(layer.modules());
+    modules.add(getClass().getModule()); // run.bach
+    for (var module : modules) {
       for (var command : module.getAnnotationsByType(Command.class)) {
         var identifier = module.getName() + '/' + command.name();
         var calls = command.mode().apply(command.args());

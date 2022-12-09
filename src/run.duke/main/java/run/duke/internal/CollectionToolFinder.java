@@ -28,7 +28,7 @@ public record CollectionToolFinder(String description, Collection<Tool> tools)
   }
 
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     return tools.stream().map(Tool::identifier).sorted().toList();
   }
 }

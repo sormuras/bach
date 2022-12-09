@@ -16,7 +16,7 @@ import run.duke.ToolRunner;
 
 public record ModulePathToolFinder(String description, Path... entries) implements ToolFinder {
   @Override
-  public List<String> identifiers() {
+  public List<String> identifiers(ToolRunner runner) {
     return tools().map(Tool::identifier).toList();
   }
 

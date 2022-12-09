@@ -20,10 +20,10 @@ public class Main implements ToolProvider {
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     ServiceLoader.load(ToolProvider.class, Main.class.getClassLoader()).stream()
-            .filter(this::registered)
-            .map(ServiceLoader.Provider::get)
-            .filter(this::enabled)
-            .forEach(this::run);
+        .filter(this::registered)
+        .map(ServiceLoader.Provider::get)
+        .filter(this::enabled)
+        .forEach(this::run);
     return 0;
   }
 

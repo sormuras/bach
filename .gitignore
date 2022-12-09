@@ -1,4 +1,5 @@
 .bach/bin/
+.bach/external-tools/*/
 .bach/out/
 
 *.class
