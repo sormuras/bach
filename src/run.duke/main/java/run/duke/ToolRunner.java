@@ -15,6 +15,6 @@ public interface ToolRunner {
   }
 
   default void run(String tool, ToolCall.Tweak composer) {
-    run(new ToolCall(tool).withTweaks(List.of(composer)));
+    run(new ToolCall(tool).withTweak(composer));
   }
 }

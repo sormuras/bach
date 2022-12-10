@@ -90,7 +90,7 @@ public record ToolCall(String name, List<String> arguments) {
     return tweak.tweak(call).with(arguments.stream().skip(position));
   }
 
-  public ToolCall withTweaks(List<Tweak> tweaks) {
+  public ToolCall withTweaks(Iterable<Tweak> tweaks) {
     var tweaked = this;
     for (var tweak : tweaks) tweaked = tweak.tweak(tweaked);
     return tweaked;
