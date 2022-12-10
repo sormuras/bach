@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="test" type="CompoundRunConfigurationType">
+    <toRun name="test.duke" type="Application" />
+    <toRun name="test.bach" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>

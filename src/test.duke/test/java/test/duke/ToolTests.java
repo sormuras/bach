@@ -1,4 +1,4 @@
-package test.bach;
+package test.duke;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
@@ -27,13 +27,13 @@ public class ToolTests implements ToolProvider {
     var zero = new MockToolProvider("zero", 0);
     var tool = new Tool(zero);
     assert "zero".equals(tool.nickname());
-    assert "test.bach".equals(tool.namespace());
-    assert "test.bach/zero".equals(tool.identifier());
+    assert "test.duke".equals(tool.namespace());
+    assert "test.duke/zero".equals(tool.identifier());
     assert zero == tool.provider();
     assert tool.test("zero");
-    assert tool.test("test.bach/zero");
+    assert tool.test("test.duke/zero");
     assert !tool.test("tool");
-    assert !tool.test("test.bach/tool");
+    assert !tool.test("test.duke/tool");
   }
 
   void testEmptyNamespaceAndCustomNickname() {
