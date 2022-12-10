@@ -37,8 +37,8 @@ public record DukeTool(ToolRunner runner) implements ToolOperator {
     return switch (tool) {
       case "check-java-release" -> new CheckJavaReleaseTool().run(out, err, args);
       case "check-java-version" -> new CheckJavaVersionTool().run(out, err, args);
-      case ListTool.NAME -> new ListTool(runner).run(out, err, args);
-      case TreeTool.NAME -> new TreeTool().run(out, err, args);
+      case "list" -> new ListTool(runner).run(out, err, args);
+      case "tree" -> new TreeTool().run(out, err, args);
       default -> {
         err.println("Tool not found: " + tool);
         yield 1;

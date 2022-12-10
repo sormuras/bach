@@ -10,20 +10,31 @@ import java.util.spi.ToolProvider;
 import run.duke.CommandLineInterface;
 
 public record TreeTool() implements ToolProvider {
-  public static final String NAME = "tree";
+  record Options(Optional<String> __mode, String... paths) {
+    enum Mode {
+      CREATE,
+      CLEAN,
+      DELETE,
+      PRINT
+    }
+
+    Mode mode() {
+      return __mode.map(arg -> Mode.valueOf(arg.toUpperCase(Locale.ROOT))).orElse(Mode.PRINT);
+    }
+  }
 
   @Override
   public String name() {
-    return NAME;
+    return "tree";
   }
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var cli = CommandLineInterface.of(MethodHandles.lookup(), CLI.class).split(args);
+    var cli = CommandLineInterface.of(MethodHandles.lookup(), Options.class).split(args);
     var mode = cli.mode();
 
     try {
-      if (mode == Mode.PRINT) {
+      if (mode == Options.Mode.PRINT) {
         var path = cli.paths().length == 0 ? Path.of("") : Path.of(cli.paths()[0]);
         try (var stream = Files.walk(path)) {
           stream
@@ -43,13 +54,13 @@ public record TreeTool() implements ToolProvider {
       var start = Path.of(cli.paths[0]);
       // TODO start must not be a root directory
       // TODO start must not be the current working directory
-      if ((mode == Mode.DELETE || mode == Mode.CLEAN) && Files.exists(start)) {
+      if ((mode == Options.Mode.DELETE || mode == Options.Mode.CLEAN) && Files.exists(start)) {
         try (var stream = Files.walk(start)) {
           var files = stream.sorted((p, q) -> -p.compareTo(q));
           for (var file : files.toArray(Path[]::new)) Files.deleteIfExists(file);
         }
       }
-      if ((mode == Mode.CREATE || mode == Mode.CLEAN) && Files.notExists(start)) {
+      if ((mode == Options.Mode.CREATE || mode == Options.Mode.CLEAN) && Files.notExists(start)) {
         Files.createDirectories(start);
       }
     } catch (Exception exception) {
@@ -57,18 +68,5 @@ public record TreeTool() implements ToolProvider {
       return 2;
     }
     return 0;
-  }
-
-  public enum Mode {
-    CREATE,
-    CLEAN,
-    DELETE,
-    PRINT
-  }
-
-  record CLI(Optional<String> __mode, String... paths) {
-    Mode mode() {
-      return __mode.map(arg -> Mode.valueOf(arg.toUpperCase(Locale.ROOT))).orElse(Mode.PRINT);
-    }
   }
 }

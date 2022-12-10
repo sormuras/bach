@@ -11,8 +11,6 @@ import run.duke.ToolOperator;
 import run.duke.ToolRunner;
 
 public record ListTool(ToolRunner runner) implements ToolOperator {
-  public static final String NAME = "list";
-
   record Options(String topic, String... args) {
     enum Topic {
       finders,
@@ -22,7 +20,7 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
 
   @Override
   public String name() {
-    return NAME;
+    return "list";
   }
 
   @Override
