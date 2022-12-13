@@ -5,6 +5,7 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
@@ -12,7 +13,8 @@ import java.util.stream.Stream;
 import run.duke.Tool;
 import run.duke.ToolFinder;
 
-public record ModulePathToolFinder(String description, Path... entries) implements ToolFinder {
+public record ModulePathToolFinder(Optional<String> description, Path... entries)
+    implements ToolFinder {
   @Override
   public List<Tool> findTools() {
     return streamAllToolProviders().map(Tool::of).toList();

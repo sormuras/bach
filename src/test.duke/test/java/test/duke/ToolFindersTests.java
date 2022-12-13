@@ -42,22 +42,12 @@ public class ToolFindersTests implements ToolProvider {
   }
 
   void testMockToolFinder() {
-    var finders = new ToolFinders().with(new MockToolFinder(new DryRunner()));
+    var finders = new ToolFinders().with(new MockToolFinder(ToolRunner.nullRunner()));
     assert finders.list().size() == 1;
     assert finders.findTools().size() == 3 + 1;
     assert finders.findTool("mock0").isPresent();
     assert finders.findTool("mock1").isPresent();
     assert finders.findTool("mock2").isPresent();
     assert finders.findTool("moper").isPresent();
-  }
-
-  record DryRunner() implements ToolRunner {
-    @Override
-    public ToolFinders toolFinders() {
-      return ToolFinders.EMPTY;
-    }
-
-    @Override
-    public void run(ToolProvider provider, String... args) {}
   }
 }

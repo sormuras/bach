@@ -14,7 +14,6 @@ import run.bach.tool.CompileModulesTool;
 import run.bach.tool.CompileTool;
 import run.bach.tool.LaunchTool;
 import run.bach.tool.TestTool;
-import run.duke.DukeTool;
 import run.duke.Tool;
 import run.duke.ToolCalls;
 import run.duke.ToolFinder;
@@ -91,7 +90,6 @@ public class Composer {
 
   List<Operator> provideDefaultOperators() {
     return List.of(
-        Operator.of("duke", DukeTool::new),
         Operator.of("build", BuildTool::new),
         Operator.of("cache", CacheTool::new),
         Operator.of("clean", CleanTool::new),

@@ -1,26 +1,39 @@
-package run.duke;
+package run.duke.tool;
 
 import java.io.PrintWriter;
-import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
-import run.duke.tool.CheckJavaReleaseTool;
-import run.duke.tool.CheckJavaVersionTool;
-import run.duke.tool.ListTool;
-import run.duke.tool.TreeTool;
+import run.duke.Duke;
+import run.duke.Tool;
+import run.duke.ToolFinder;
+import run.duke.ToolOperator;
+import run.duke.ToolRunner;
 
-public record DukeTool(ToolRunner runner) implements ToolProvider {
-  public static ToolCall listTools() {
-    return ToolCall.of("duke", "list", "tools");
+public record DukeTool(ToolRunner runner) implements Duke, ToolFinder, ToolOperator, ToolProvider {
+  public DukeTool() {
+    this(ToolRunner.nullRunner());
   }
 
-  public static ToolCall treeDelete(Path start) {
-    return ToolCall.of("duke", "tree", "--mode=DELETE", start);
+  @Override
+  public Optional<String> description() {
+    return Optional.of("Duke Tool Finder");
+  }
+
+  @Override
+  public List<? extends Tool> findTools() {
+    return List.of(new Tool.OfOperator("run.duke/" + name(), this));
   }
 
   @Override
   public String name() {
     return "duke";
+  }
+
+  @Override
+  public ToolProvider provider(ToolRunner runner) {
+    return new DukeTool(runner);
   }
 
   @Override

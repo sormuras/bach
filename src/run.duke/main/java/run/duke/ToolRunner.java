@@ -2,8 +2,14 @@ package run.duke;
 
 import java.util.List;
 import java.util.spi.ToolProvider;
+import run.duke.internal.NullToolRunner;
 
+@FunctionalInterface
 public interface ToolRunner {
+  static ToolRunner nullRunner() {
+    return NullToolRunner.INSTANCE;
+  }
+
   default void run(String tool, String... args) {
     run(new ToolCall(tool, List.of(args)));
   }
@@ -21,7 +27,9 @@ public interface ToolRunner {
 
   void run(ToolProvider provider, String... args);
 
-  ToolFinders toolFinders();
+  default ToolFinders toolFinders() {
+    return ToolFinders.EMPTY;
+  }
 
   default ToolProvider toolProvider(Tool tool) {
     if (tool instanceof Tool.OfProvider of) return of.provider();

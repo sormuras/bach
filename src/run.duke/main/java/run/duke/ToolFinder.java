@@ -16,8 +16,8 @@ import run.duke.internal.ToolCallsToolOperator;
 @FunctionalInterface
 public interface ToolFinder {
   /** {@return a description of the finder, or an empty {@code String} if none is available} */
-  default String description() {
-    return getClass().getSimpleName();
+  default Optional<String> description() {
+    return Optional.of(getClass().getSimpleName());
   }
 
   Collection<? extends Tool> findTools();
@@ -37,7 +37,7 @@ public interface ToolFinder {
   }
 
   static ToolFinder ofTools(String description, Collection<? extends Tool> tools) {
-    return new CollectionToolFinder(description, List.copyOf(tools));
+    return new CollectionToolFinder(Optional.of(description), List.copyOf(tools));
   }
 
   static ToolFinder ofToolCalls(String description, Collection<ToolCalls> calls) {
@@ -52,7 +52,7 @@ public interface ToolFinder {
   }
 
   static ToolFinder ofJavaPrograms(String description, Path path, Path java) {
-    return new JavaProgramsToolFinder(description, path, java);
+    return new JavaProgramsToolFinder(Optional.of(description), path, java);
   }
 
   static ToolFinder ofNativeTools(
@@ -69,6 +69,6 @@ public interface ToolFinder {
   }
 
   static ToolFinder ofToolProviders(String description, Path... paths) {
-    return new ModulePathToolFinder(description, paths);
+    return new ModulePathToolFinder(Optional.of(description), paths);
   }
 }

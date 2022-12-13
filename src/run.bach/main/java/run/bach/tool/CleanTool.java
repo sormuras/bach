@@ -3,7 +3,7 @@ package run.bach.tool;
 import java.io.PrintWriter;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
-import run.duke.DukeTool;
+import run.duke.Duke;
 
 public class CleanTool extends ProjectTool {
   public CleanTool(ProjectToolRunner runner) {
@@ -12,7 +12,7 @@ public class CleanTool extends ProjectTool {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    run(DukeTool.treeDelete(folders().out()));
+    run(Duke.treeDelete(folders().out()));
     return 0;
   }
 }

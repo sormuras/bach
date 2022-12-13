@@ -13,8 +13,9 @@ public record ToolFinders(List<ToolFinder> list) implements ToolFinder {
   }
 
   @Override
-  public String description() {
-    return "ToolFinders [%d finder%s]".formatted(list.size(), list.size() == 1 ? "" : "s");
+  public Optional<String> description() {
+    var size = list.size();
+    return Optional.of("ToolFinders [%d finder%s]".formatted(size, size == 1 ? "" : "s"));
   }
 
   @Override
