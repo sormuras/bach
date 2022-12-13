@@ -34,12 +34,14 @@ public class TestTool extends ProjectTool {
     }
 
     void runSpaceLauncher() {
-      var launcher = space.launcher();
-      if (launcher.isEmpty()) return;
+      for (var launcher : space.launchers()) runSpaceLauncher(launcher);
+    }
+
+    void runSpaceLauncher(String launcher) {
       var java =
           ToolCall.of("java")
-              .with("--module-path", space.toModulePath(folders()).orElse("."))
-              .with("--module", launcher.get());
+              .with("--module-path", space.toRuntimeSpace().toModulePath(folders()).orElse("."))
+              .with("--module", launcher);
       run(java);
     }
 

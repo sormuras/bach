@@ -76,8 +76,8 @@ public class CompileModulesTool extends ProjectTool {
 
   protected ToolCall jarWithLauncher(ToolCall jar, OperationContext context) {
     var space = context.space();
-    if (space.launcher().isEmpty()) return jar;
-    var launcher = space.launcher().get();
+    if (space.launchers().isEmpty()) return jar;
+    var launcher = space.launchers().get(0);
     var name = context.module().name();
     if (!launcher.startsWith(name + '/')) return jar;
     var className = launcher.substring(name.length() + 1);

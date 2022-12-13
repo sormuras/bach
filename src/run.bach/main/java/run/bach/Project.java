@@ -81,7 +81,7 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       String name,
       List<String> requires, // used to compute "--[processor-]module-path"
       int release,
-      Optional<String> launcher,
+      List<String> launchers,
       DeclaredModules modules) {
 
     public Space {
@@ -92,13 +92,12 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
         var message = "Java release %d not in range of %d..%d".formatted(release, 9, feature);
         throw new IndexOutOfBoundsException(message);
       }
-      //noinspection OptionalAssignedToNull
-      if (launcher == null) throw new IllegalArgumentException("Space launcher must not be null");
+      if (launchers == null) throw new IllegalArgumentException("Space launcher must not be null");
       if (modules == null) throw new IllegalArgumentException("Space modules must not be null");
     }
 
     public Space(String name, int release, String launcher, DeclaredModule... modules) {
-      this(name, List.of(), release, Optional.of(launcher), new DeclaredModules(modules));
+      this(name, List.of(), release, List.of(launcher), new DeclaredModules(modules));
     }
 
     public Optional<Integer> targets() {
@@ -118,7 +117,8 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     }
 
     public Space toRuntimeSpace() {
-      return new Space("runtime", List.of(name), 0, Optional.empty(), new DeclaredModules());
+      var requires = Stream.concat(Stream.of(name), requires().stream()).toList();
+      return new Space("runtime", requires, 0, List.of(), new DeclaredModules());
     }
   }
 
