@@ -18,18 +18,16 @@ public class ToolTests implements ToolProvider {
   public int run(PrintWriter out, PrintWriter err, String... args) {
     testCanonical();
     testEmptyNamespaceAndCustomNickname();
-    testIllegalToolNamespaces(null, "\t", "/", "//", "/namespace", "namespace/");
-    testIllegalToolNicknames(null, "", "\t", "/", "//", "/name", "name/");
     return 0;
   }
 
   void testCanonical() {
     var zero = new MockToolProvider("zero", 0);
-    var tool = new Tool(zero);
+    var tool = Tool.of(zero);
     assert "zero".equals(tool.nickname());
     assert "test.duke".equals(tool.namespace());
     assert "test.duke/zero".equals(tool.identifier());
-    assert zero == tool.provider();
+    assert zero == ((Tool.OfProvider) tool).provider();
     assert tool.test("zero");
     assert tool.test("test.duke/zero");
     assert !tool.test("tool");
@@ -38,33 +36,11 @@ public class ToolTests implements ToolProvider {
 
   void testEmptyNamespaceAndCustomNickname() {
     var zero = new MockToolProvider("zero", 0);
-    var tool = new Tool("", "0", zero);
+    var tool = new Tool.OfProvider("0", zero);
     assert "0".equals(tool.nickname());
     assert "".equals(tool.namespace());
     assert "0".equals(tool.identifier());
     assert tool.test("0");
     assert !tool.test("zero");
-  }
-
-  void testIllegalToolNamespaces(String... namespaces) {
-    for (var namespace : namespaces) {
-      try {
-        new Tool(namespace, "tool", new MockToolProvider("mock-1", -1));
-      } catch (IllegalArgumentException expected) {
-        continue;
-      }
-      throw new AssertionError("Expected tool namespace to be illegal: " + namespace);
-    }
-  }
-
-  void testIllegalToolNicknames(String... names) {
-    for (var name : names) {
-      try {
-        new Tool("", name, new MockToolProvider("mock-1", -1));
-      } catch (IllegalArgumentException expected) {
-        continue;
-      }
-      throw new AssertionError("Expected tool nickname to be illegal: " + name);
-    }
   }
 }

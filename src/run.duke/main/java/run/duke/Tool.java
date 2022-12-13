@@ -1,66 +1,49 @@
 package run.duke;
 
+import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
-/**
- * A named descriptor of a tool backed by a runnable tool provider.
- *
- * @param provider the backing tool provider instance
- */
-public record Tool(String identifier, ToolProvider provider) implements ToolInfo {
-  public static String identifier(Class<?> type, String nickname) {
-    return identifier(namespace(type), nickname);
+public sealed interface Tool extends Comparable<Tool>, Predicate<String> {
+  String identifier();
+
+  default String namespace() {
+    var identifier = identifier();
+    var separator = identifier.lastIndexOf('/');
+    return separator == -1 ? "" : identifier.substring(0, separator);
   }
 
-  public static String identifier(String namespace, String nickname) {
-    if (namespace == null) throw new IllegalArgumentException("namespace must not be null");
-    if (namespace.length() > 0) {
-      if (namespace.isBlank()) throw new IllegalArgumentException("namespace must not be blank");
-      if (namespace.startsWith("/")) throw new IllegalArgumentException(namespace);
-      if (namespace.endsWith("/")) throw new IllegalArgumentException(namespace);
-    }
-    if (nickname == null) throw new IllegalArgumentException("nickname must not be null");
-    if (nickname.isBlank()) throw new IllegalArgumentException("nickname must not be blank");
-    if (nickname.startsWith("/")) throw new IllegalArgumentException(nickname);
-    if (nickname.endsWith("/")) throw new IllegalArgumentException(nickname);
-    return namespace.isEmpty() ? nickname : namespace + '/' + nickname;
+  default String nickname() {
+    var identifier = identifier();
+    return identifier.substring(identifier.lastIndexOf('/') + 1);
   }
 
-  public static String namespace(Class<?> type) {
+  @Override
+  default int compareTo(Tool other) {
+    return identifier().compareTo(other.identifier());
+  }
+
+  @Override
+  default boolean test(String tool) {
+    var identifier = identifier();
+    return identifier.equals(tool) || identifier.endsWith('/' + tool);
+  }
+
+  static String namespace(Class<?> type) {
     var module = type.getModule();
     return module.isNamed() ? module.getName() : type.getPackageName();
   }
 
-  /** Validate components. */
-  public Tool {
-    if (identifier == null) throw new IllegalArgumentException("identifier must not be null");
-    if (identifier.isBlank()) throw new IllegalArgumentException("identifier must not be blank");
-    if (identifier.startsWith("/")) throw new IllegalArgumentException(identifier);
-    if (identifier.endsWith("/")) throw new IllegalArgumentException(identifier);
-    if (provider == null) throw new IllegalArgumentException("provider must not be null");
+  static Tool of(ToolProvider provider) {
+    var identifier = namespace(provider.getClass()) + '/' + provider.name();
+    return new OfProvider(identifier, provider);
   }
 
-  public Tool(String namespace, String nickname, ToolProvider provider) {
-    this(identifier(namespace, nickname), provider);
+  static Tool of(ToolOperator operator) {
+    var identifier = namespace(operator.getClass()) + '/' + operator.name();
+    return new OfOperator(identifier, operator);
   }
 
-  /**
-   * Initialize a tool instance from the given tool provider.
-   *
-   * @param provider the backing tool provider instance
-   */
-  public Tool(ToolProvider provider) {
-    this(identifier(provider.getClass(), provider.name()), provider);
-  }
+  record OfProvider(String identifier, ToolProvider provider) implements Tool {}
 
-  /**
-   * Return {@code this} tool instance.
-   *
-   * @param ignored the tool runner instance to ignore
-   * @return {@code this}
-   */
-  @Override
-  public Tool tool(ToolRunner ignored) {
-    return this;
-  }
+  record OfOperator(String identifier, ToolOperator operator) implements Tool {}
 }

@@ -2,6 +2,11 @@ package run.duke;
 
 import java.util.spi.ToolProvider;
 
-public interface ToolOperator extends ToolProvider {
-  ToolRunner runner();
+@FunctionalInterface
+public interface ToolOperator {
+  default String name() {
+    return getClass().getSimpleName();
+  }
+
+  ToolProvider provider(ToolRunner runner);
 }

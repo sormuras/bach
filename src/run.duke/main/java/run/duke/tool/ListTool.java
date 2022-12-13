@@ -5,12 +5,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.duke.CommandLineInterface;
-import run.duke.ToolOperator;
 import run.duke.ToolRunner;
 
-public record ListTool(ToolRunner runner) implements ToolOperator {
+public record ListTool(ToolRunner runner) implements ToolProvider {
   record Options(String topic, String... args) {
     enum Topic {
       finders,
@@ -66,12 +66,12 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
 
   int listFinders(PrintWriter out) {
     var lines = new ArrayList<String>();
-    var finders = runner.finders().list();
+    var finders = runner.toolFinders().list();
     for (var finder : finders) {
-      var identifiers = finder.identifiers(runner);
-      lines.add(("%s [%s]").formatted(finder.description(), identifiers.size()));
-      for (var identifier : identifiers) {
-        lines.add(("  %s").formatted(identifier));
+      var tools = finder.findTools();
+      lines.add(("%s [%s]").formatted(finder.description(), tools.size()));
+      for (var tool : tools) {
+        lines.add(("  %s").formatted(tool));
       }
     }
     var size = finders.size();
@@ -83,11 +83,11 @@ public record ListTool(ToolRunner runner) implements ToolOperator {
   int listTools(PrintWriter out) {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
-    for (var finder : runner.finders()) {
-      for (var identifier : finder.identifiers(runner)) {
-        var name = identifier.substring(identifier.lastIndexOf('/') + 1);
-        map.computeIfAbsent(name, __ -> new ArrayList<>()).add(identifier);
-        max = Math.max(max, name.length());
+    for (var finder : runner.toolFinders().list()) {
+      for (var tool : finder.findTools()) {
+        var nickname = tool.nickname();
+        map.computeIfAbsent(nickname, __ -> new ArrayList<>()).add(tool.identifier());
+        max = Math.max(max, nickname.length());
       }
     }
     var lines = new ArrayList<String>();

@@ -7,21 +7,18 @@ import java.util.List;
 import java.util.Optional;
 import run.duke.Tool;
 import run.duke.ToolFinder;
-import run.duke.ToolRunner;
 
 public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder {
   @Override
-  public List<String> identifiers(ToolRunner runner) {
+  public List<Tool> findTools() {
     var directory = path.normalize().toAbsolutePath();
     if (!Files.isDirectory(directory)) return List.of();
-    var namespace = directory.getParent().getFileName().toString();
     var nickname = directory.getFileName().toString();
-    var identifier = namespace + '/' + nickname;
-    return List.of(identifier);
+    return findTool(nickname).stream().toList();
   }
 
   @Override
-  public Optional<Tool> find(String string, ToolRunner runner) {
+  public Optional<Tool> findTool(String string) {
     var directory = path.normalize().toAbsolutePath();
     if (!Files.isDirectory(directory)) return Optional.empty();
     var namespace = directory.getParent().getFileName().toString();
@@ -34,20 +31,20 @@ public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder 
     if (Files.isRegularFile(args)) {
       command.add("@" + args);
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool(namespace, string, provider));
+      return Optional.of(new Tool.OfProvider(identifier, provider));
     }
     var jars = PathSupport.list(directory, PathSupport::isJarFile);
     if (jars.size() == 1) {
       command.add("-jar");
       command.add(jars.get(0).toString());
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool(namespace, string, provider));
+      return Optional.of(new Tool.OfProvider(identifier, provider));
     }
     var javas = PathSupport.list(directory, PathSupport::isJavaFile);
     if (javas.size() == 1) {
       command.add(javas.get(0).toString());
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool(namespace, string, provider));
+      return Optional.of(new Tool.OfProvider(identifier, provider));
     }
     return Optional.empty();
   }

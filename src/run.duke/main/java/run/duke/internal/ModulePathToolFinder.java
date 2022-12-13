@@ -5,27 +5,20 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import run.duke.Tool;
 import run.duke.ToolFinder;
-import run.duke.ToolRunner;
 
 public record ModulePathToolFinder(String description, Path... entries) implements ToolFinder {
   @Override
-  public List<String> identifiers(ToolRunner runner) {
-    return tools().map(Tool::identifier).toList();
+  public List<Tool> findTools() {
+    return streamAllToolProviders().map(Tool::of).toList();
   }
 
-  @Override
-  public Optional<Tool> find(String string, ToolRunner runner) {
-    return tools().filter(tool -> tool.test(string)).findFirst();
-  }
-
-  Stream<Tool> tools() {
+  Stream<ToolProvider> streamAllToolProviders() {
     var boot = ModuleLayer.boot();
     var finder = ModuleFinder.of(entries);
     var roots = streamAllModuleNames(finder).collect(Collectors.toSet());
@@ -35,8 +28,7 @@ public record ModulePathToolFinder(String description, Path... entries) implemen
     var loader = ServiceLoader.load(layer, ToolProvider.class);
     return loader.stream()
         .filter(service -> service.type().getModule().getLayer() == layer)
-        .map(ServiceLoader.Provider::get)
-        .map(Tool::new);
+        .map(ServiceLoader.Provider::get);
   }
 
   Stream<String> streamAllModuleNames(ModuleFinder finder) {

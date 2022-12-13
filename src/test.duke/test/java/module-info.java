@@ -8,6 +8,4 @@ module test.duke {
       test.duke.Main,
       test.duke.ToolFindersTests,
       test.duke.ToolTests;
-  provides run.duke.ToolFinder with
-      test.duke.MockToolFinder;
 }

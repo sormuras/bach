@@ -1,11 +1,11 @@
 package run.duke;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>, ToolFinder {
+public record ToolFinders(List<ToolFinder> list) implements ToolFinder {
   public static final ToolFinders EMPTY = new ToolFinders();
 
   public ToolFinders() {
@@ -13,19 +13,20 @@ public record ToolFinders(List<ToolFinder> list) implements Iterable<ToolFinder>
   }
 
   @Override
-  public Iterator<ToolFinder> iterator() {
-    return list.iterator();
-  }
-
-  @Override
   public String description() {
     return "ToolFinders [%d finder%s]".formatted(list.size(), list.size() == 1 ? "" : "s");
   }
 
-  public Optional<Tool> find(String tool, ToolRunner runner) {
+  @Override
+  public Collection<? extends Tool> findTools() {
+    return list.stream().flatMap(finder -> finder.findTools().stream()).toList();
+  }
+
+  @Override
+  public Optional<? extends Tool> findTool(String string) {
     for (var finder : list) {
-      var found = finder.find(tool, runner);
-      if (found.isPresent()) return found;
+      var tool = finder.findTool(string);
+      if (tool.isPresent()) return tool;
     }
     return Optional.empty();
   }

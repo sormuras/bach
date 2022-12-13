@@ -11,7 +11,7 @@ import run.duke.internal.CollectionToolFinder;
 import run.duke.internal.JavaProgramsToolFinder;
 import run.duke.internal.ModulePathToolFinder;
 import run.duke.internal.NativeProcessToolProvider;
-import run.duke.internal.PreparedToolFinder;
+import run.duke.internal.ToolCallsToolOperator;
 
 @FunctionalInterface
 public interface ToolFinder {
@@ -20,35 +20,34 @@ public interface ToolFinder {
     return getClass().getSimpleName();
   }
 
+  Collection<? extends Tool> findTools();
+
   /**
    * Find a tool by its identifier or its nickname.
    *
    * @param string the identifier or the short variant of the tool to look for
-   * @param runner the tool runner context; sometimes required to create a tool instance
    * @return a tool instance wrapped in an optional, or an empty optional wrapper
    */
-  Optional<Tool> find(String string, ToolRunner runner);
-
-  /** {@return a possibly empty list of tool identifying-strings} */
-  default List<String> identifiers(ToolRunner runner) {
-    return List.of();
+  default Optional<? extends Tool> findTool(String string) {
+    return findTools().stream().filter(tool -> tool.test(string)).findFirst();
   }
 
   static ToolFinder ofTools(String description, Tool... tools) {
     return ToolFinder.ofTools(description, List.of(tools));
   }
 
-  static ToolFinder ofTools(String description, Collection<Tool> tools) {
+  static ToolFinder ofTools(String description, Collection<? extends Tool> tools) {
     return new CollectionToolFinder(description, List.copyOf(tools));
   }
 
   static ToolFinder ofToolCalls(String description, Collection<ToolCalls> calls) {
-    return new PreparedToolFinder(description, List.copyOf(calls));
+    var tools = calls.stream().map(c -> new ToolCallsToolOperator(c.name(), c)).map(Tool::of);
+    return ToolFinder.ofTools(description, tools.toList());
   }
 
   static ToolFinder ofToolProviders(String description, Iterable<ToolProvider> providers) {
     var tools = new ArrayList<Tool>();
-    for (var provider : providers) tools.add(new Tool(provider));
+    for (var provider : providers) tools.add(Tool.of(provider));
     return ToolFinder.ofTools(description, tools);
   }
 
@@ -64,7 +63,7 @@ public interface ToolFinder {
       var renamed = renamer.apply(name);
       var command = List.of(executable.toString());
       var provider = new NativeProcessToolProvider(renamed, command);
-      tools.add(new Tool(renamed, provider));
+      tools.add(new Tool.OfProvider(renamed, provider));
     }
     return ToolFinder.ofTools(description, tools);
   }

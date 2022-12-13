@@ -3,14 +3,13 @@ package run.duke;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.spi.ToolProvider;
 import run.duke.tool.CheckJavaReleaseTool;
 import run.duke.tool.CheckJavaVersionTool;
 import run.duke.tool.ListTool;
 import run.duke.tool.TreeTool;
 
-public record DukeTool(ToolRunner runner) implements ToolOperator {
+public record DukeTool(ToolRunner runner) implements ToolProvider {
   public static ToolCall listTools() {
     return ToolCall.of("duke", "list", "tools");
   }
@@ -44,24 +43,5 @@ public record DukeTool(ToolRunner runner) implements ToolOperator {
         yield 1;
       }
     };
-  }
-
-  public record Finder() implements ToolFinder {
-    @Override
-    public String description() {
-      return "Duke's Tools";
-    }
-
-    @Override
-    public Optional<Tool> find(String string, ToolRunner runner) {
-      var duke = new DukeTool(runner);
-      var tool = new Tool(duke);
-      return tool.test(string) ? Optional.of(tool) : Optional.empty();
-    }
-
-    @Override
-    public List<String> identifiers(ToolRunner runner) {
-      return List.of("run.duke/duke");
-    }
   }
 }
