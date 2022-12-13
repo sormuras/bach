@@ -12,8 +12,8 @@ public class CacheTool extends ProjectTool {
     return ToolCall.of("cache");
   }
 
-  public CacheTool(Project project, ProjectToolRunner runner) {
-    super("cache", project, runner);
+  public CacheTool(ProjectToolRunner runner) {
+    super("cache", runner);
   }
 
   @Override

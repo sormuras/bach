@@ -20,14 +20,7 @@ import run.bach.internal.ModuleSourcePathSupport;
 
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Externals externals) {
-  @FunctionalInterface
-  public interface Factory {
-    Project createProject(ProjectToolRunner runner);
-
-    default Iterable<ProjectTool.Factory> createProjectToolFactories() {
-      return List.of();
-    }
-  }
+  public static final Project UNNAMED = new Project(new Name("unnamed"), new Version("0-ea"));
 
   public Project(Name name, Version version, Space... spaces) {
     this(name, version, new Spaces(spaces), new Externals());

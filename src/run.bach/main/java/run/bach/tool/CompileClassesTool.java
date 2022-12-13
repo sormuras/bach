@@ -13,8 +13,8 @@ public class CompileClassesTool extends ProjectTool {
     return ToolCall.of("compile-classes", space.name());
   }
 
-  public CompileClassesTool(Project project, ProjectToolRunner runner) {
-    super("compile-classes", project, runner);
+  public CompileClassesTool(ProjectToolRunner runner) {
+    super("compile-classes", runner);
   }
 
   @Override

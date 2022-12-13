@@ -12,8 +12,8 @@ public class TestTool extends ProjectTool {
     return ToolCall.of("test");
   }
 
-  public TestTool(Project project, ProjectToolRunner runner) {
-    super("test", project, runner);
+  public TestTool(ProjectToolRunner runner) {
+    super("test", runner);
   }
 
   @Override

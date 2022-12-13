@@ -19,8 +19,8 @@ public class CompileModulesTool extends ProjectTool {
     return ToolCall.of("compile-modules", space.name());
   }
 
-  public CompileModulesTool(Project project, ProjectToolRunner runner) {
-    super("compile-modules", project, runner);
+  public CompileModulesTool(ProjectToolRunner runner) {
+    super("compile-modules", runner);
   }
 
   @Override

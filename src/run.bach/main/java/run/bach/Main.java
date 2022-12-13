@@ -2,15 +2,12 @@ package run.bach;
 
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.DukeTool;
 import run.duke.ToolCalls;
-import run.duke.ToolFinder;
-import run.duke.ToolFinders;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -61,41 +58,14 @@ public record Main() implements ToolProvider {
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
-    var commands = new ArrayList<ToolCalls>();
-    var modules = new ArrayList<>(layer.modules());
-    modules.add(getClass().getModule()); // run.bach
-    for (var module : modules) {
-      for (var command : module.getAnnotationsByType(Command.class)) {
-        var identifier = module.getName() + '/' + command.name();
-        var calls = command.mode().apply(command.args());
-        commands.add(new ToolCalls(identifier, calls));
-      }
-    }
+    printer.log(Level.DEBUG, "Loading workbench service...");
+    var workbench = ServiceLoader.load(layer, Workbench.class).findFirst().orElseThrow();
+
+    printer.log(Level.DEBUG, "Creating project model instance...");
+    var project = workbench.createProject(options);
 
     printer.log(Level.DEBUG, "Stuffing toolbox...");
-    var finders =
-        new ToolFinders()
-            .with(ToolFinder.ofToolCalls("Commands", commands))
-            .with(ServiceLoader.load(layer, ToolFinder.class))
-            .with(
-                ToolFinder.ofToolProviders(
-                    "Tool Provider Services", ServiceLoader.load(layer, ToolProvider.class)))
-            .with(
-                ToolFinder.ofToolProviders(
-                    "Tool Providers in " + folders.externalModules().toUri(),
-                    folders.externalModules()))
-            .with(
-                ToolFinder.ofJavaPrograms(
-                    "Java Programs in " + folders.externalTools().toUri(),
-                    folders.externalTools(),
-                    folders.javaHome("bin", "java")))
-            .with(
-                ToolFinder.ofNativeTools(
-                    "Native Tools in java.home -> " + folders.javaHome().toUri(),
-                    name -> "java.home/" + name, // ensure stable names with synthetic namespace
-                    folders.javaHome("bin"),
-                    List.of("java", "jfr", "jdeprscan")));
-    var toolbox = new Toolbox(layer, finders);
+    var toolbox = workbench.createToolbox(options, layer);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
@@ -103,7 +73,7 @@ public record Main() implements ToolProvider {
             ? ToolCalls.of("default").with(DukeTool.listTools())
             : ToolCalls.of("main", options.calls());
 
-    var bach = new Bach(options, folders, printer, toolbox);
+    var bach = new Bach(options, folders, printer, project, toolbox);
 
     if (options.dryRun()) {
       if (verbose) printer.out("Dry-run mode exits here.");

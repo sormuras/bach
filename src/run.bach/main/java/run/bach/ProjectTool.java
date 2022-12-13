@@ -1,23 +1,16 @@
 package run.bach;
 
 import java.util.Optional;
+import java.util.spi.ToolProvider;
 import run.duke.Tool;
 import run.duke.ToolCall;
-import run.duke.ToolOperator;
 
-public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
-  @FunctionalInterface
-  public interface Factory {
-    ProjectTool createProjectTool(Project project, ProjectToolRunner runner);
-  }
-
+public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
   private final String name;
-  private final Project project;
   private final ProjectToolRunner runner;
 
-  public ProjectTool(String name, Project project, ProjectToolRunner runner) {
+  public ProjectTool(String name, ProjectToolRunner runner) {
     this.name = name;
-    this.project = project;
     this.runner = runner;
   }
 
@@ -27,12 +20,7 @@ public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
   }
 
   public final Project project() {
-    return project;
-  }
-
-  @Override
-  public ProjectToolRunner runner() {
-    return runner;
+    return runner.project();
   }
 
   @Override
@@ -50,13 +38,18 @@ public abstract class ProjectTool implements ToolOperator, ProjectToolRunner {
     return runner.printer();
   }
 
-  public final Optional<Tool> find(String tool) {
-    return runner.toolbox().finders().find(tool, runner);
+  public Optional<? extends Tool> find(String string) {
+    return runner.toolFinders().findTool(string);
   }
 
   @Override
   public void run(ToolCall call) {
     runner.run(call);
+  }
+
+  @Override
+  public void run(ToolProvider provider, String... args) {
+    runner.run(provider, args);
   }
 
   public final void info(Object message) {

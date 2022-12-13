@@ -2,15 +2,15 @@ package project;
 
 import java.nio.file.Path;
 import java.util.List;
+import run.bach.Options;
 import run.bach.Project;
-import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
+import run.bach.Workbench;
 
-public class BachProjectFactory implements Project.Factory {
-  public BachProjectFactory() {}
+public class BachWorkbench implements Workbench {
+  public BachWorkbench() {}
 
   @Override
-  public Project createProject(ProjectToolRunner runner) {
+  public Project createProject(Options options) {
     return new Project(
         new Project.Name("Bach"),
         new Project.Version("2022-ea"),
@@ -23,7 +23,10 @@ public class BachProjectFactory implements Project.Factory {
   }
 
   @Override
-  public Iterable<ProjectTool.Factory> createProjectToolFactories() {
-    return List.of(Build::new, CompileClasses::new, Format::new);
+  public List<Operator> createProjectTools() {
+    return List.of(
+        Operator.of("build", Build::new),
+        Operator.of("compile-classes", CompileClasses::new),
+        Operator.of("format", Format::new));
   }
 }

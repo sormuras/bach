@@ -1,7 +1,6 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
-import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
@@ -11,8 +10,8 @@ public class CompileTool extends ProjectTool {
     return ToolCall.of("compile");
   }
 
-  public CompileTool(Project project, ProjectToolRunner runner) {
-    super("compile", project, runner);
+  public CompileTool(ProjectToolRunner runner) {
+    super("compile", runner);
   }
 
   @Override

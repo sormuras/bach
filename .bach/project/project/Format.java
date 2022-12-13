@@ -1,13 +1,12 @@
 package project;
 
 import java.io.PrintWriter;
-import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
 
 public final class Format extends ProjectTool {
-  public Format(Project project, ProjectToolRunner runner) {
-    super("format", project, runner);
+  public Format(ProjectToolRunner runner) {
+    super("format", runner);
   }
 
   @Override

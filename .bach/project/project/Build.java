@@ -1,13 +1,12 @@
 package project;
 
 import java.io.PrintWriter;
-import run.bach.Project;
 import run.bach.ProjectToolRunner;
 import run.bach.tool.BuildTool;
 
 public final class Build extends BuildTool {
-  public Build(Project project, ProjectToolRunner runner) {
-    super(project, runner);
+  public Build(ProjectToolRunner runner) {
+    super(runner);
   }
 
   @Override

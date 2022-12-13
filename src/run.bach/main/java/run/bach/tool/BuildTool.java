@@ -5,13 +5,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
-import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.ProjectToolRunner;
 
 public class BuildTool extends ProjectTool {
-  public BuildTool(Project project, ProjectToolRunner runner) {
-    super("build", project, runner);
+  public BuildTool(ProjectToolRunner runner) {
+    super("build", runner);
   }
 
   @Override

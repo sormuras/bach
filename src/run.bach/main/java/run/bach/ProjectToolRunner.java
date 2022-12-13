@@ -6,7 +6,7 @@ import run.duke.ToolRunner;
 @FunctionalInterface
 public interface ProjectToolRunner extends ToolRunner {
   @Override
-  default ToolFinders finders() {
+  default ToolFinders toolFinders() {
     return toolbox().finders();
   }
 
@@ -20,6 +20,10 @@ public interface ProjectToolRunner extends ToolRunner {
 
   default Printer printer() {
     return Printer.BROKEN;
+  }
+
+  default Project project() {
+    return Project.UNNAMED;
   }
 
   default Toolbox toolbox() {

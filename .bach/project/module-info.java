@@ -30,6 +30,6 @@ import run.bach.Command;
 module project {
   requires run.bach;
 
-  provides run.bach.Project.Factory with
-      project.BachProjectFactory;
+  provides run.bach.Workbench with
+      project.BachWorkbench;
 }
