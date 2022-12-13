@@ -2,15 +2,12 @@ package project;
 
 import java.nio.file.Path;
 import java.util.List;
-import run.bach.Options;
+import run.bach.Composer;
 import run.bach.Project;
-import run.bach.Workbench;
 
-public class BachWorkbench implements Workbench {
-  public BachWorkbench() {}
-
+public class BachComposer extends Composer {
   @Override
-  public Project createProject(Options options) {
+  public Project composeProject() {
     return new Project(
         new Project.Name("Bach"),
         new Project.Version("2022-ea"),
@@ -23,7 +20,7 @@ public class BachWorkbench implements Workbench {
   }
 
   @Override
-  public List<Operator> createProjectTools() {
+  public List<Operator> composeOperators() {
     return List.of(
         Operator.of("build", Build::new),
         Operator.of("compile-classes", CompileClasses::new),

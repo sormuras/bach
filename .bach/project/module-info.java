@@ -30,6 +30,6 @@ import run.bach.Command;
 module project {
   requires run.bach;
 
-  provides run.bach.Workbench with
-      project.BachWorkbench;
+  provides run.bach.Composer with
+      project.BachComposer;
 }

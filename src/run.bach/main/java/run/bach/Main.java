@@ -58,22 +58,19 @@ public record Main() implements ToolProvider {
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
-    printer.log(Level.DEBUG, "Loading workbench service...");
-    var workbench = ServiceLoader.load(layer, Workbench.class).findFirst().orElseThrow();
-
-    printer.log(Level.DEBUG, "Creating project model instance...");
-    var project = workbench.createProject(options);
-
-    printer.log(Level.DEBUG, "Stuffing toolbox...");
-    var toolbox = workbench.createToolbox(options, layer);
+    printer.log(Level.DEBUG, "Loading composer...");
+    var composer =
+        ServiceLoader.load(layer, Composer.class)
+            .findFirst()
+            .orElseGet(Composer::new)
+            .init(options, folders, printer, layer);
+    var runner = composer.compose();
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
         options.calls().length == 0
             ? ToolCalls.of("default").with(DukeTool.listTools())
             : ToolCalls.of("main", options.calls());
-
-    var bach = new Bach(options, folders, printer, project, toolbox);
 
     if (options.dryRun()) {
       if (verbose) printer.out("Dry-run mode exits here.");
@@ -84,7 +81,7 @@ public record Main() implements ToolProvider {
       printer.log(Level.DEBUG, "Running %d tool call%s".formatted(size, size == 1 ? "" : "s"));
     }
     for (var call : calls) {
-      bach.run(call);
+      runner.run(call);
     }
     printer.log(Level.TRACE, "END.");
     return 0;

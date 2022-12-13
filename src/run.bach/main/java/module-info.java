@@ -13,6 +13,6 @@ module run.bach {
   exports run.bach.tool;
 
   uses java.util.spi.ToolProvider;
-  uses run.bach.Workbench;
+  uses run.bach.Composer;
   uses run.duke.ToolFinder;
 }
