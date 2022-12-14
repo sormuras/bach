@@ -43,6 +43,12 @@ public sealed interface Tool extends Comparable<Tool>, Predicate<String> {
     return new OfOperator(identifier, operator);
   }
 
+  static ToolProvider provider(Tool tool, ToolRunner runner) {
+    if (tool instanceof Tool.OfProvider of) return of.provider();
+    if (tool instanceof Tool.OfOperator of) return of.operator().provider(runner);
+    throw new Error("Unsupported tool of " + tool.getClass());
+  }
+
   record OfProvider(String identifier, ToolProvider provider) implements Tool {}
 
   record OfOperator(String identifier, ToolOperator operator) implements Tool {}

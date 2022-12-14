@@ -19,12 +19,12 @@ public record ToolFinders(List<ToolFinder> list) implements ToolFinder {
   }
 
   @Override
-  public Collection<? extends Tool> findTools() {
+  public Collection<Tool> findTools() {
     return list.stream().flatMap(finder -> finder.findTools().stream()).toList();
   }
 
   @Override
-  public Optional<? extends Tool> findTool(String string) {
+  public Optional<Tool> findTool(String string) {
     for (var finder : list) {
       var tool = finder.findTool(string);
       if (tool.isPresent()) return tool;

@@ -38,7 +38,7 @@ public abstract class ProjectTool implements ToolProvider, ProjectToolRunner {
     return runner.printer();
   }
 
-  public Optional<? extends Tool> find(String string) {
+  public Optional<Tool> find(String string) {
     return runner.toolFinders().findTool(string);
   }
 

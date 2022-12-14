@@ -32,4 +32,6 @@ module project {
 
   provides run.bach.Composer with
       project.BachComposer;
+  provides run.duke.ToolOperator with
+      project.Format;
 }

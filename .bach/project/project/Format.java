@@ -1,12 +1,24 @@
 package project;
 
 import java.io.PrintWriter;
-import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
+import java.util.spi.ToolProvider;
+import run.duke.ToolOperator;
+import run.duke.ToolRunner;
+import run.duke.ToolTrait;
 
-public final class Format extends ProjectTool {
-  public Format(ProjectToolRunner runner) {
-    super("format", runner);
+public record Format(ToolRunner toolRunner) implements ToolOperator, ToolProvider, ToolTrait {
+  public Format() {
+    this(ToolRunner.nullRunner());
+  }
+
+  @Override
+  public String name() {
+    return "format";
+  }
+
+  @Override
+  public ToolProvider provider(ToolRunner runner) {
+    return new Format(runner);
   }
 
   @Override

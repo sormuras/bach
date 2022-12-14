@@ -22,7 +22,7 @@ public record DukeTool(ToolRunner runner) implements Duke, ToolFinder, ToolOpera
   }
 
   @Override
-  public List<? extends Tool> findTools() {
+  public List<Tool> findTools() {
     return List.of(new Tool.OfOperator("run.duke/" + name(), this));
   }
 

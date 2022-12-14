@@ -20,7 +20,7 @@ public interface ToolFinder {
     return Optional.of(getClass().getSimpleName());
   }
 
-  Collection<? extends Tool> findTools();
+  Collection<Tool> findTools();
 
   /**
    * Find a tool by its identifier or its nickname.
@@ -28,7 +28,7 @@ public interface ToolFinder {
    * @param string the identifier or the short variant of the tool to look for
    * @return a tool instance wrapped in an optional, or an empty optional wrapper
    */
-  default Optional<? extends Tool> findTool(String string) {
+  default Optional<Tool> findTool(String string) {
     return findTools().stream().filter(tool -> tool.test(string)).findFirst();
   }
 
@@ -40,12 +40,22 @@ public interface ToolFinder {
     return new CollectionToolFinder(Optional.of(description), List.copyOf(tools));
   }
 
+  static ToolFinder ofTools(String description, Path... paths) {
+    return new ModulePathToolFinder(Optional.of(description), paths);
+  }
+
   static ToolFinder ofToolCalls(String description, Collection<ToolCalls> calls) {
     var tools =
         calls.stream()
             .map(toolCalls -> new ToolCallsToolOperator(toolCalls.name(), toolCalls))
             .map(operator -> new Tool.OfOperator(operator.name(), operator))
             .toList();
+    return ToolFinder.ofTools(description, tools);
+  }
+
+  static ToolFinder ofToolOperators(String description, Iterable<ToolOperator> operators) {
+    var tools = new ArrayList<Tool>();
+    for (var operator : operators) tools.add(Tool.of(operator));
     return ToolFinder.ofTools(description, tools);
   }
 
@@ -70,9 +80,5 @@ public interface ToolFinder {
       tools.add(new Tool.OfProvider(renamed, provider));
     }
     return ToolFinder.ofTools(description, tools);
-  }
-
-  static ToolFinder ofToolProviders(String description, Path... paths) {
-    return new ModulePathToolFinder(Optional.of(description), paths);
   }
 }

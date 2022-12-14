@@ -72,10 +72,13 @@ public class Composer {
             .with(ToolFinder.ofTools("Project Tools", provideProjectTools()))
             .with(ServiceLoader.load(sourced, ToolFinder.class))
             .with(
+                ToolFinder.ofToolOperators(
+                    "Tool Operator Services", ServiceLoader.load(sourced, ToolOperator.class)))
+            .with(
                 ToolFinder.ofToolProviders(
                     "Tool Provider Services", ServiceLoader.load(sourced, ToolProvider.class)))
             .with(
-                ToolFinder.ofToolProviders(
+                ToolFinder.ofTools(
                     "Tool Providers in " + externalModules.toUri(), externalModules))
             .with(
                 ToolFinder.ofJavaPrograms(

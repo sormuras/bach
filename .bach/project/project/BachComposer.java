@@ -30,8 +30,6 @@ public class BachComposer extends Composer {
   @Override
   public List<Operator> composeOperators() {
     return List.of(
-        Operator.of("build", Build::new),
-        Operator.of("compile-classes", CompileClasses::new),
-        Operator.of("format", Format::new));
+        Operator.of("build", Build::new), Operator.of("compile-classes", CompileClasses::new));
   }
 }

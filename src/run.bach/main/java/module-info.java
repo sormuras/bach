@@ -15,4 +15,5 @@ module run.bach {
   uses java.util.spi.ToolProvider;
   uses run.bach.Composer;
   uses run.duke.ToolFinder;
+  uses run.duke.ToolOperator;
 }
