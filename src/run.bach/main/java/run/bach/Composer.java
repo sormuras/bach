@@ -3,7 +3,6 @@ package run.bach;
 import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -70,13 +69,7 @@ public class Composer {
         new ToolFinders()
             .with(ToolFinder.ofToolCalls("@Command Tools", provideCommandToolCalls()))
             .with(ToolFinder.ofTools("Project Tools", provideProjectTools()))
-            .with(ServiceLoader.load(sourced, ToolFinder.class))
-            .with(
-                ToolFinder.ofToolOperators(
-                    "Tool Operator Services", ServiceLoader.load(sourced, ToolOperator.class)))
-            .with(
-                ToolFinder.ofToolProviders(
-                    "Tool Provider Services", ServiceLoader.load(sourced, ToolProvider.class)))
+            .with(ToolFinder.ofTools("Tools in .bach source modules", sourced))
             .with(ToolFinder.ofTools("Tools in " + externalModules.toUri(), externalModules))
             .with(
                 ToolFinder.ofJavaPrograms(

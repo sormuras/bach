@@ -12,8 +12,5 @@ module run.bach {
   exports run.bach;
   exports run.bach.tool;
 
-  uses java.util.spi.ToolProvider;
   uses run.bach.Composer;
-  uses run.duke.ToolFinder;
-  uses run.duke.ToolOperator;
 }

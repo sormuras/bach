@@ -6,9 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
-import java.util.spi.ToolProvider;
 import run.duke.internal.CollectionToolFinder;
 import run.duke.internal.JavaProgramsToolFinder;
+import run.duke.internal.ModuleLayerToolFinder;
 import run.duke.internal.ModulePathToolFinder;
 import run.duke.internal.NativeProcessToolProvider;
 import run.duke.internal.ToolCallsToolOperator;
@@ -40,6 +40,10 @@ public interface ToolFinder {
     return new CollectionToolFinder(Optional.of(description), List.copyOf(tools));
   }
 
+  static ToolFinder ofTools(String description, ModuleLayer layer) {
+    return new ModuleLayerToolFinder(description, layer);
+  }
+
   static ToolFinder ofTools(String description, Path... paths) {
     return new ModulePathToolFinder(Optional.of(description), paths);
   }
@@ -50,18 +54,6 @@ public interface ToolFinder {
             .map(toolCalls -> new ToolCallsToolOperator(toolCalls.name(), toolCalls))
             .map(operator -> Tool.of(operator.name(), operator))
             .toList();
-    return ToolFinder.ofTools(description, tools);
-  }
-
-  static ToolFinder ofToolOperators(String description, Iterable<ToolOperator> operators) {
-    var tools = new ArrayList<Tool>();
-    for (var operator : operators) tools.add(Tool.of(operator));
-    return ToolFinder.ofTools(description, tools);
-  }
-
-  static ToolFinder ofToolProviders(String description, Iterable<ToolProvider> providers) {
-    var tools = new ArrayList<Tool>();
-    for (var provider : providers) tools.add(Tool.of(provider));
     return ToolFinder.ofTools(description, tools);
   }
 

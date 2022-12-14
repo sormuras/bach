@@ -69,7 +69,8 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
     var finders = runner.toolFinders().list();
     for (var finder : finders) {
       var tools = finder.findTools();
-      lines.add(("%s [%s]").formatted(finder.description(), tools.size()));
+      var description = finder.description().orElse(finder.getClass().getSimpleName());
+      lines.add(("%s [%s]").formatted(description, tools.size()));
       for (var tool : tools) {
         lines.add(("  %s").formatted(tool));
       }
