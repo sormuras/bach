@@ -77,9 +77,7 @@ public class Composer {
             .with(
                 ToolFinder.ofToolProviders(
                     "Tool Provider Services", ServiceLoader.load(sourced, ToolProvider.class)))
-            .with(
-                ToolFinder.ofTools(
-                    "Tool Providers in " + externalModules.toUri(), externalModules))
+            .with(ToolFinder.ofTools("Tools in " + externalModules.toUri(), externalModules))
             .with(
                 ToolFinder.ofJavaPrograms(
                     "Java Programs in " + externalTools.toUri(), externalTools, java))
@@ -118,16 +116,16 @@ public class Composer {
     return commands;
   }
 
-  List<? extends Tool> provideProjectTools() {
+  List<Tool> provideProjectTools() {
     return Stream.concat(composeOperators().stream(), defaultOperators().stream())
-        .map(operator -> new Tool.OfOperator(operator.name(), operator))
+        .map(operator -> Tool.of(operator.identifier(), operator))
         .toList();
   }
 
-  public record Operator(String name, Function<ToolRunner, ToolProvider> factory)
+  public record Operator(String identifier, Function<ToolRunner, ToolProvider> factory)
       implements ToolOperator {
-    public static Operator of(String name, Function<ProjectToolRunner, ToolProvider> factory) {
-      var identifier = factory.getClass().getModule().getName() + '/' + name;
+    public static Operator of(String nickname, Function<ProjectToolRunner, ToolProvider> factory) {
+      var identifier = factory.getClass().getModule().getName() + '/' + nickname;
       return new Operator(identifier, runner -> factory.apply((ProjectToolRunner) runner));
     }
 

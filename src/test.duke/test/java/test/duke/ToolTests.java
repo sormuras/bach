@@ -36,7 +36,7 @@ public class ToolTests implements ToolProvider {
 
   void testEmptyNamespaceAndCustomNickname() {
     var zero = new MockToolProvider("zero", 0);
-    var tool = new Tool.OfProvider("0", zero);
+    var tool = Tool.of("0", zero);
     assert "0".equals(tool.nickname());
     assert "".equals(tool.namespace());
     assert "0".equals(tool.identifier());

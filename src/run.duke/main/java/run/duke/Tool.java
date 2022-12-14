@@ -35,11 +35,19 @@ public sealed interface Tool extends Comparable<Tool>, Predicate<String> {
 
   static Tool of(ToolProvider provider) {
     var identifier = namespace(provider.getClass()) + '/' + provider.name();
-    return new OfProvider(identifier, provider);
+    return Tool.of(identifier, provider);
   }
 
   static Tool of(ToolOperator operator) {
     var identifier = namespace(operator.getClass()) + '/' + operator.name();
+    return Tool.of(identifier, operator);
+  }
+
+  static Tool of(String identifier, ToolProvider provider) {
+    return new OfProvider(identifier, provider);
+  }
+
+  static Tool of(String identifier, ToolOperator operator) {
     return new OfOperator(identifier, operator);
   }
 

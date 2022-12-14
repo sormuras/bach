@@ -36,7 +36,7 @@ public interface ToolFinder {
     return ToolFinder.ofTools(description, List.of(tools));
   }
 
-  static ToolFinder ofTools(String description, Collection<? extends Tool> tools) {
+  static ToolFinder ofTools(String description, Collection<Tool> tools) {
     return new CollectionToolFinder(Optional.of(description), List.copyOf(tools));
   }
 
@@ -48,7 +48,7 @@ public interface ToolFinder {
     var tools =
         calls.stream()
             .map(toolCalls -> new ToolCallsToolOperator(toolCalls.name(), toolCalls))
-            .map(operator -> new Tool.OfOperator(operator.name(), operator))
+            .map(operator -> Tool.of(operator.name(), operator))
             .toList();
     return ToolFinder.ofTools(description, tools);
   }
@@ -77,7 +77,7 @@ public interface ToolFinder {
       var renamed = renamer.apply(name);
       var command = List.of(executable.toString());
       var provider = new NativeProcessToolProvider(renamed, command);
-      tools.add(new Tool.OfProvider(renamed, provider));
+      tools.add(Tool.of(renamed, provider));
     }
     return ToolFinder.ofTools(description, tools);
   }

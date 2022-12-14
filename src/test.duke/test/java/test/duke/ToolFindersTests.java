@@ -32,7 +32,7 @@ public class ToolFindersTests implements ToolProvider {
   }
 
   void testExampleToolFinders() {
-    var tool = new Tool.OfProvider("example/tool", new MockToolProvider("tool", 0));
+    var tool = Tool.of("example/tool", new MockToolProvider("tool", 0));
     var finders = new ToolFinders().with(ToolFinder.ofTools("Examples", tool));
     assert finders.list().size() == 1;
     assert finders.findTools().size() == 1;

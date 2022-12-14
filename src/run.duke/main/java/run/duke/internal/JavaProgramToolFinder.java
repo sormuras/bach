@@ -31,20 +31,20 @@ public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder 
     if (Files.isRegularFile(args)) {
       command.add("@" + args);
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool.OfProvider(identifier, provider));
+      return Optional.of(Tool.of(identifier, provider));
     }
     var jars = PathSupport.list(directory, PathSupport::isJarFile);
     if (jars.size() == 1) {
       command.add("-jar");
       command.add(jars.get(0).toString());
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool.OfProvider(identifier, provider));
+      return Optional.of(Tool.of(identifier, provider));
     }
     var javas = PathSupport.list(directory, PathSupport::isJavaFile);
     if (javas.size() == 1) {
       command.add(javas.get(0).toString());
       var provider = new NativeProcessToolProvider(string, command);
-      return Optional.of(new Tool.OfProvider(identifier, provider));
+      return Optional.of(Tool.of(identifier, provider));
     }
     return Optional.empty();
   }
