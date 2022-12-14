@@ -6,10 +6,9 @@ import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
 import run.duke.ToolCall;
 
-public record Bach(
-    Options options, Folders folders, Printer printer, Project project, Toolbox toolbox)
+record Bach(Options options, Folders folders, Printer printer, Project project, Toolbox toolbox)
     implements ProjectToolRunner {
-  public Bach {
+  Bach {
     printer.log(Level.DEBUG, "Bach initialized");
     printer.log(Level.DEBUG, "  printer: " + printer.threshold());
     printer.log(Level.DEBUG, "  project: " + project.toNameAndVersion());

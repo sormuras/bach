@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 import run.bach.tool.BuildTool;
 import run.bach.tool.CacheTool;
 import run.bach.tool.CleanTool;
@@ -88,7 +89,7 @@ public class Composer {
     return new Toolbox(sourced, finders);
   }
 
-  List<Operator> provideDefaultOperators() {
+  List<Operator> defaultOperators() {
     return List.of(
         Operator.of("build", BuildTool::new),
         Operator.of("cache", CacheTool::new),
@@ -103,7 +104,7 @@ public class Composer {
   List<ToolCalls> provideCommandToolCalls() {
     var commands = new ArrayList<ToolCalls>();
     var modules = new ArrayList<>(sourced.modules());
-    modules.add(getClass().getModule()); // run.bach
+    modules.add(Bach.class.getModule()); // "run.bach"
     for (var module : modules) {
       for (var command : module.getAnnotationsByType(Command.class)) {
         var identifier = module.getName() + '/' + command.name();
@@ -115,16 +116,16 @@ public class Composer {
   }
 
   List<? extends Tool> provideProjectTools() {
-    var tools = new ArrayList<Tool>();
-    for (var projectTool : composeOperators()) tools.add(Tool.of(projectTool));
-    for (var projectTool : provideDefaultOperators()) tools.add(Tool.of(projectTool));
-    return List.copyOf(tools);
+    return Stream.concat(composeOperators().stream(), defaultOperators().stream())
+        .map(operator -> new Tool.OfOperator(operator.name(), operator))
+        .toList();
   }
 
   public record Operator(String name, Function<ToolRunner, ToolProvider> factory)
       implements ToolOperator {
     public static Operator of(String name, Function<ProjectToolRunner, ToolProvider> factory) {
-      return new Operator(name, runner -> factory.apply((ProjectToolRunner) runner));
+      var identifier = factory.getClass().getModule().getName() + '/' + name;
+      return new Operator(identifier, runner -> factory.apply((ProjectToolRunner) runner));
     }
 
     @Override

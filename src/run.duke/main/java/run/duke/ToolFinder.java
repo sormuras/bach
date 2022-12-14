@@ -41,8 +41,12 @@ public interface ToolFinder {
   }
 
   static ToolFinder ofToolCalls(String description, Collection<ToolCalls> calls) {
-    var tools = calls.stream().map(c -> new ToolCallsToolOperator(c.name(), c)).map(Tool::of);
-    return ToolFinder.ofTools(description, tools.toList());
+    var tools =
+        calls.stream()
+            .map(toolCalls -> new ToolCallsToolOperator(toolCalls.name(), toolCalls))
+            .map(operator -> new Tool.OfOperator(operator.name(), operator))
+            .toList();
+    return ToolFinder.ofTools(description, tools);
   }
 
   static ToolFinder ofToolProviders(String description, Iterable<ToolProvider> providers) {
