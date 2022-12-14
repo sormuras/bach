@@ -12,28 +12,40 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import run.duke.Tool;
 import run.duke.ToolFinder;
+import run.duke.ToolOperator;
 
 public record ModulePathToolFinder(Optional<String> description, Path... entries)
     implements ToolFinder {
   @Override
   public List<Tool> findTools() {
-    return streamAllToolProviders().map(Tool::of).toList();
+    var layer = defineModuleLayer();
+    return Stream.concat(streamOperators(layer), streamProviders(layer)).toList();
   }
 
-  Stream<ToolProvider> streamAllToolProviders() {
+  ModuleLayer defineModuleLayer() {
     var boot = ModuleLayer.boot();
     var finder = ModuleFinder.of(entries);
     var roots = streamAllModuleNames(finder).collect(Collectors.toSet());
     var configuration = boot.configuration().resolve(finder, ModuleFinder.of(), roots);
     var parentLoader = ClassLoader.getSystemClassLoader();
-    var layer = boot.defineModulesWithOneLoader(configuration, parentLoader);
-    var loader = ServiceLoader.load(layer, ToolProvider.class);
-    return loader.stream()
-        .filter(service -> service.type().getModule().getLayer() == layer)
-        .map(ServiceLoader.Provider::get);
+    return boot.defineModulesWithOneLoader(configuration, parentLoader);
   }
 
   Stream<String> streamAllModuleNames(ModuleFinder finder) {
     return finder.findAll().stream().map(ModuleReference::descriptor).map(ModuleDescriptor::name);
+  }
+
+  Stream<Tool> streamProviders(ModuleLayer layer) {
+    return ServiceLoader.load(layer, ToolProvider.class).stream()
+        .filter(service -> service.type().getModule().getLayer() == layer)
+        .map(ServiceLoader.Provider::get)
+        .map(Tool::of);
+  }
+
+  Stream<Tool> streamOperators(ModuleLayer layer) {
+    return ServiceLoader.load(layer, ToolOperator.class).stream()
+        .filter(service -> service.type().getModule().getLayer() == layer)
+        .map(ServiceLoader.Provider::get)
+        .map(Tool::of);
   }
 }
