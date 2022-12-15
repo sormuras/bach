@@ -5,27 +5,17 @@ import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.spi.ToolProvider;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import run.duke.Tool;
-import run.duke.ToolFinder;
-import run.duke.ToolOperator;
+import run.duke.Toolbox;
 
-public record ModulePathToolFinder(Optional<String> description, Path... entries)
-    implements ToolFinder {
+public record ModulePathToolbox(Path... entries) implements Toolbox {
   @Override
-  public List<Tool> findTools() {
+  public List<Tool> tools() {
     var layer = defineModuleLayerForPathEntries();
-    var finder =
-        new ModuleLayerToolFinder(
-            description,
-            layer,
-            Set.of(ToolFinder.class, ToolOperator.class, ToolProvider.class),
-            module -> module.getLayer() == layer);
-    return finder.findTools();
+    var finder = new ModuleLayerToolbox(layer, module -> module.getLayer() == layer);
+    return finder.tools();
   }
 
   ModuleLayer defineModuleLayerForPathEntries() {

@@ -40,11 +40,4 @@ public record ToolCalls(String name, List<ToolCall> list) implements Iterable<To
   public Iterator<ToolCall> iterator() {
     return list.iterator();
   }
-
-  public ToolCalls with(ToolCall call, ToolCall... more) {
-    var calls = new ArrayList<>(list);
-    calls.add(call);
-    if (more.length > 0) calls.addAll(List.of(more));
-    return new ToolCalls(name, calls);
-  }
 }

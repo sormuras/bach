@@ -4,10 +4,6 @@ import java.nio.file.Path;
 import run.duke.tool.DukeTool;
 
 public sealed interface Duke permits DukeTool {
-  default String name() {
-    return "duke";
-  }
-
   static ToolCall listTools() {
     return ToolCall.of("duke", "list", "tools");
   }

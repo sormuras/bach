@@ -2,28 +2,14 @@ package run.duke.tool;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 import java.util.spi.ToolProvider;
 import run.duke.Duke;
-import run.duke.Tool;
-import run.duke.ToolFinder;
 import run.duke.ToolOperator;
-import run.duke.ToolRunner;
+import run.duke.Workbench;
 
-public record DukeTool(ToolRunner runner) implements Duke, ToolFinder, ToolOperator, ToolProvider {
+public record DukeTool(Workbench workbench) implements Duke, ToolOperator, ToolProvider {
   public DukeTool() {
-    this(ToolRunner.nullRunner());
-  }
-
-  @Override
-  public Optional<String> description() {
-    return Optional.of("Duke Tool Finder");
-  }
-
-  @Override
-  public List<Tool> findTools() {
-    return List.of(new Tool.OfOperator("run.duke/" + name(), this));
+    this(Workbench.inoperative());
   }
 
   @Override
@@ -32,8 +18,8 @@ public record DukeTool(ToolRunner runner) implements Duke, ToolFinder, ToolOpera
   }
 
   @Override
-  public ToolProvider provider(ToolRunner runner) {
-    return new DukeTool(runner);
+  public ToolProvider provider(Workbench workbench) {
+    return new DukeTool(workbench);
   }
 
   @Override
@@ -49,7 +35,7 @@ public record DukeTool(ToolRunner runner) implements Duke, ToolFinder, ToolOpera
     return switch (tool) {
       case "check-java-release" -> new CheckJavaReleaseTool().run(out, err, args);
       case "check-java-version" -> new CheckJavaVersionTool().run(out, err, args);
-      case "list" -> new ListTool(runner).run(out, err, args);
+      case "list" -> new ListTool(workbench).run(out, err, args);
       case "tree" -> new TreeTool().run(out, err, args);
       default -> {
         err.println("Tool not found: " + tool);

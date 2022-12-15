@@ -6,19 +6,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import run.duke.Tool;
-import run.duke.ToolFinder;
+import run.duke.Toolbox;
 
-public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder {
+public record JavaProgramToolbox(Path path, Path java) implements Toolbox {
   @Override
-  public List<Tool> findTools() {
+  public List<Tool> tools() {
     var directory = path.normalize().toAbsolutePath();
     if (!Files.isDirectory(directory)) return List.of();
     var nickname = directory.getFileName().toString();
-    return findTool(nickname).stream().toList();
+    return find(nickname).stream().toList();
   }
 
   @Override
-  public Optional<Tool> findTool(String string) {
+  public Optional<Tool> find(String string) {
     var directory = path.normalize().toAbsolutePath();
     if (!Files.isDirectory(directory)) return Optional.empty();
     var namespace = directory.getParent().getFileName().toString();

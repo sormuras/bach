@@ -2,16 +2,15 @@ package test.duke;
 
 import java.util.List;
 import run.duke.Tool;
-import run.duke.ToolFinder;
-import run.duke.ToolRunner;
+import run.duke.Toolbox;
 
-public record MockToolFinder(ToolRunner runner) implements ToolFinder {
+public record MockToolbox() implements Toolbox {
   @Override
-  public List<Tool> findTools() {
+  public List<Tool> tools() {
     return List.of(
         Tool.of(new MockToolProvider("mock" + 0, 0)),
         Tool.of(new MockToolProvider("mock" + 1, 1)),
         Tool.of(new MockToolProvider("mock" + 2, 2)),
-        Tool.of(new MockToolOperator("moper", runner)));
+        Tool.of(new MockToolOperator()));
   }
 }

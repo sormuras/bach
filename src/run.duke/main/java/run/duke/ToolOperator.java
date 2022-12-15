@@ -8,5 +8,5 @@ public interface ToolOperator {
     return getClass().getSimpleName();
   }
 
-  ToolProvider provider(ToolRunner runner);
+  ToolProvider provider(Workbench workbench);
 }

@@ -3,9 +3,8 @@ module run.duke {
   exports run.duke;
 
   uses java.util.spi.ToolProvider;
-  uses run.duke.ToolFinder;
   uses run.duke.ToolOperator;
 
-  provides run.duke.ToolFinder with
+  provides run.duke.ToolOperator with
       run.duke.tool.DukeTool;
 }

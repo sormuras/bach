@@ -8,12 +8,11 @@ import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.duke.CommandLineInterface;
-import run.duke.ToolRunner;
+import run.duke.Workbench;
 
-public record ListTool(ToolRunner runner) implements ToolProvider {
+public record ListTool(Workbench workbench) implements ToolProvider {
   record Options(String topic, String... args) {
     enum Topic {
-      finders,
       tools
     }
   }
@@ -59,37 +58,17 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
 
   int run(Options.Topic topic, PrintWriter out, PrintWriter err, String... args) {
     return switch (topic) {
-      case finders -> listFinders(out);
       case tools -> listTools(out);
     };
-  }
-
-  int listFinders(PrintWriter out) {
-    var lines = new ArrayList<String>();
-    var finders = runner.toolFinders().list();
-    for (var finder : finders) {
-      var tools = finder.findTools();
-      var description = finder.description().orElse(finder.getClass().getSimpleName());
-      lines.add(("%s [%s]").formatted(description, tools.size()));
-      for (var tool : tools) {
-        lines.add(("  %s").formatted(tool));
-      }
-    }
-    var size = finders.size();
-    lines.add("    %d finder%s".formatted(size, size == 1 ? "" : "s"));
-    out.println(String.join("\n", lines));
-    return 0;
   }
 
   int listTools(PrintWriter out) {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
-    for (var finder : runner.toolFinders().list()) {
-      for (var tool : finder.findTools()) {
-        var nickname = tool.nickname();
-        map.computeIfAbsent(nickname, __ -> new ArrayList<>()).add(tool.identifier());
-        max = Math.max(max, nickname.length());
-      }
+    for (var tool : workbench.toolbox().tools()) {
+      var nickname = tool.nickname();
+      map.computeIfAbsent(nickname, __ -> new ArrayList<>()).add(tool.identifier());
+      max = Math.max(max, nickname.length());
     }
     var lines = new ArrayList<String>();
     for (var entry : map.entrySet()) {
