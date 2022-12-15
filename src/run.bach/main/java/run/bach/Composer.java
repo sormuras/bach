@@ -12,6 +12,7 @@ import run.bach.tool.CompileClassesTool;
 import run.bach.tool.CompileModulesTool;
 import run.bach.tool.CompileTool;
 import run.bach.tool.InfoTool;
+import run.bach.tool.InstallTool;
 import run.bach.tool.LaunchTool;
 import run.bach.tool.LoadTool;
 import run.bach.tool.TestTool;
@@ -92,6 +93,7 @@ public class Composer {
         new CompileClassesTool(),
         new CompileModulesTool(),
         new InfoTool(),
+        new InstallTool(),
         new LaunchTool(),
         new LoadTool(),
         new TestTool());
