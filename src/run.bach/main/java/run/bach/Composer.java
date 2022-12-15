@@ -11,6 +11,7 @@ import run.bach.tool.CleanTool;
 import run.bach.tool.CompileClassesTool;
 import run.bach.tool.CompileModulesTool;
 import run.bach.tool.CompileTool;
+import run.bach.tool.InfoTool;
 import run.bach.tool.LaunchTool;
 import run.bach.tool.TestTool;
 import run.duke.Tool;
@@ -50,6 +51,7 @@ public class Composer {
             .put(Options.class, options)
             .put(Folders.class, folders)
             .put(Printer.class, printer)
+            .put(Browser.class, new Browser())
             .put(Project.class, project);
 
     printer.log(Level.DEBUG, "Stuffing toolbox...");
@@ -71,15 +73,6 @@ public class Composer {
     var externalModules = folders.externalModules();
     var externalTools = folders.externalTools();
     var java = folders.javaHome("bin", "java");
-    /*
-            .with(
-                ToolFinder.ofNativeTools(
-                    "Native Tools in java.home -> " + folders.javaHome().toUri(),
-                    name -> "java.home/" + name, // ensure stable names with synthetic namespace
-                    folders.javaHome("bin"),
-                    List.of("java", "jfr", "jdeprscan")));
-    */
-
     return Toolbox.compose(
         Toolbox.of(provideCommandTools()),
         Toolbox.ofModuleLayer(sourced), // .bach source modules and system modules
@@ -97,6 +90,7 @@ public class Composer {
         new CompileTool(),
         new CompileClassesTool(),
         new CompileModulesTool(),
+        new InfoTool(),
         new LaunchTool(),
         new TestTool());
   }
