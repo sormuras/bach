@@ -2,14 +2,28 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class LaunchTool extends ProjectTool {
-  public LaunchTool(ProjectToolRunner runner) {
-    super("launch", runner);
+
+  public LaunchTool() {}
+
+  protected LaunchTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "launch";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new LaunchTool(workbench);
   }
 
   @Override

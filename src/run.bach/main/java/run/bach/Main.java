@@ -64,13 +64,13 @@ public record Main() implements ToolProvider {
             .findFirst()
             .orElseGet(Composer::new)
             .init(options, folders, printer, layer);
-    var runner = composer.compose();
+    var workbench = composer.compose();
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
         options.calls().length == 0
-            ? ToolCalls.of("default").with(Duke.listTools())
-            : ToolCalls.of("main", options.calls());
+            ? new ToolCalls(List.of(Duke.listTools()))
+            : ToolCalls.of(options.calls());
 
     if (options.dryRun()) {
       if (verbose) printer.out("Dry-run mode exits here.");
@@ -81,7 +81,7 @@ public record Main() implements ToolProvider {
       printer.log(Level.DEBUG, "Running %d tool call%s".formatted(size, size == 1 ? "" : "s"));
     }
     for (var call : calls) {
-      runner.run(call);
+      workbench.run(call);
     }
     printer.log(Level.TRACE, "END.");
     return 0;

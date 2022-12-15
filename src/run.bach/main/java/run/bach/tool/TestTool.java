@@ -2,18 +2,31 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
+import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class TestTool extends ProjectTool {
   public static ToolCall test() {
     return ToolCall.of("test");
   }
 
-  public TestTool(ProjectToolRunner runner) {
-    super("test", runner);
+  public TestTool() {}
+
+  protected TestTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "test";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new TestTool(workbench);
   }
 
   @Override

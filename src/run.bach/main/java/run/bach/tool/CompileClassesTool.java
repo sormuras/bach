@@ -3,18 +3,33 @@ package run.bach.tool;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class CompileClassesTool extends ProjectTool {
   public static ToolCall compile(Project.Space space) {
     return ToolCall.of("compile-classes", space.name());
   }
 
-  public CompileClassesTool(ProjectToolRunner runner) {
-    super("compile-classes", runner);
+  public CompileClassesTool() {
+    super();
+  }
+
+  protected CompileClassesTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "compile-classes";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new CompileClassesTool(workbench);
   }
 
   @Override

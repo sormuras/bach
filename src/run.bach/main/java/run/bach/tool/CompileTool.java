@@ -1,17 +1,30 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
+import java.util.spi.ToolProvider;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class CompileTool extends ProjectTool {
   public static ToolCall compile() {
     return ToolCall.of("compile");
   }
 
-  public CompileTool(ProjectToolRunner runner) {
-    super("compile", runner);
+  public CompileTool() {}
+
+  protected CompileTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "compile";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new CompileTool(workbench);
   }
 
   @Override

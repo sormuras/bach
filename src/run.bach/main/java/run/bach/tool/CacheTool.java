@@ -1,19 +1,32 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
+import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.bach.internal.ModulesSupport;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class CacheTool extends ProjectTool {
   public static ToolCall cache() {
     return ToolCall.of("cache");
   }
 
-  public CacheTool(ProjectToolRunner runner) {
-    super("cache", runner);
+  public CacheTool() {}
+
+  protected CacheTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "cache";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new CacheTool(workbench);
   }
 
   @Override

@@ -1,13 +1,26 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
+import java.util.spi.ToolProvider;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.Duke;
+import run.duke.Workbench;
 
 public class CleanTool extends ProjectTool {
-  public CleanTool(ProjectToolRunner runner) {
-    super("clean", runner);
+  public CleanTool() {}
+
+  protected CleanTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "clean";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new CleanTool(workbench);
   }
 
   @Override

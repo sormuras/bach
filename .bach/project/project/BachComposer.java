@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import run.bach.Composer;
 import run.bach.Project;
+import run.duke.ToolOperator;
 
 public class BachComposer extends Composer {
   @Override
@@ -28,8 +29,7 @@ public class BachComposer extends Composer {
   }
 
   @Override
-  public List<Operator> composeOperators() {
-    return List.of(
-        Operator.of("build", Build::new), Operator.of("compile-classes", CompileClasses::new));
+  public List<ToolOperator> composeOperators() {
+    return List.of(new Build(), new CompileClasses());
   }
 }

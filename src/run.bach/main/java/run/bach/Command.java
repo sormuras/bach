@@ -55,7 +55,7 @@ public @interface Command {
     MAIN {
       @Override
       public List<ToolCall> apply(String[] args) {
-        return ToolCalls.of("<MAIN>", args).list();
+        return ToolCalls.of(args).list();
       }
     },
 
@@ -80,7 +80,7 @@ public @interface Command {
       @Override
       public List<ToolCall> apply(String[] args) {
         var split = String.join(" + ", args).split("\\s+");
-        return ToolCalls.of("LINE", split).list();
+        return ToolCalls.of(split).list();
       }
     };
 

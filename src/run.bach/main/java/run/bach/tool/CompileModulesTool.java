@@ -8,19 +8,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.spi.ToolProvider;
 import run.bach.Folders;
 import run.bach.Project;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
 import run.duke.ToolCall;
+import run.duke.Workbench;
 
 public class CompileModulesTool extends ProjectTool {
   public static ToolCall compile(Project.Space space) {
     return ToolCall.of("compile-modules", space.name());
   }
 
-  public CompileModulesTool(ProjectToolRunner runner) {
-    super("compile-modules", runner);
+  public CompileModulesTool() {}
+
+  protected CompileModulesTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "compile-modules";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new CompileModulesTool(workbench);
   }
 
   @Override

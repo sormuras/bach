@@ -4,11 +4,11 @@ import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import run.duke.ToolOperator;
 import run.duke.ToolRunner;
-import run.duke.ToolTrait;
+import run.duke.Workbench;
 
-public record Format(ToolRunner toolRunner) implements ToolOperator, ToolProvider, ToolTrait {
+public record Format(Workbench workbench) implements ToolOperator, ToolProvider, ToolRunner {
   public Format() {
-    this(ToolRunner.nullRunner());
+    this(Workbench.inoperative());
   }
 
   @Override
@@ -17,8 +17,8 @@ public record Format(ToolRunner toolRunner) implements ToolOperator, ToolProvide
   }
 
   @Override
-  public ToolProvider provider(ToolRunner runner) {
-    return new Format(runner);
+  public ToolProvider provider(Workbench workbench) {
+    return new Format(workbench);
   }
 
   @Override

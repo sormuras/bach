@@ -1,6 +1,7 @@
 package test.bach;
 
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Enabled;
 import jdk.jfr.Registered;
@@ -33,12 +34,12 @@ public class CommandModeTests implements ToolProvider {
   }
 
   void checkMain() {
-    var empty = ToolCalls.of("");
-    checkMain(empty);
-    checkMain(empty.with(ToolCall.of("a")), "a");
-    checkMain(empty.with(ToolCall.of("a", "b")), "a", "b");
-    checkMain(
-        empty.with(ToolCall.of("a", "b")).with(ToolCall.of("a", "b")), "a", "b", "+", "a", "b");
+    checkMain(new ToolCalls(List.of()));
+    checkMain(new ToolCalls(List.of(ToolCall.of("a"))), "a");
+    checkMain(new ToolCalls(List.of(ToolCall.of("a", "b"))), "a", "b");
+
+    var expected = new ToolCalls(List.of(ToolCall.of("a", "b"), ToolCall.of("a", "b")));
+    checkMain(expected, "a", "b", "+", "a", "b");
   }
 
   void checkMain(ToolCalls expected, String... args) {

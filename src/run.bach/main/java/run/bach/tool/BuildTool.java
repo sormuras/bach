@@ -5,12 +5,27 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
+import java.util.spi.ToolProvider;
 import run.bach.ProjectTool;
-import run.bach.ProjectToolRunner;
+import run.duke.Workbench;
 
 public class BuildTool extends ProjectTool {
-  public BuildTool(ProjectToolRunner runner) {
-    super("build", runner);
+  public BuildTool() {
+    super();
+  }
+
+  protected BuildTool(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public final String name() {
+    return "build";
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new BuildTool(workbench);
   }
 
   @Override

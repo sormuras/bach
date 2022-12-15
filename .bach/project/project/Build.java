@@ -1,12 +1,20 @@
 package project;
 
 import java.io.PrintWriter;
-import run.bach.ProjectToolRunner;
+import java.util.spi.ToolProvider;
 import run.bach.tool.BuildTool;
+import run.duke.Workbench;
 
 public final class Build extends BuildTool {
-  public Build(ProjectToolRunner runner) {
-    super(runner);
+  public Build() {}
+
+  private Build(Workbench workbench) {
+    super(workbench);
+  }
+
+  @Override
+  public ToolProvider provider(Workbench workbench) {
+    return new Build(workbench);
   }
 
   @Override
