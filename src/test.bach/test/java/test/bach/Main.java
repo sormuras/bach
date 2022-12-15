@@ -20,6 +20,7 @@ public class Main implements ToolProvider {
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
     ServiceLoader.load(ToolProvider.class, Main.class.getClassLoader()).stream()
+        .filter(provider -> provider.type().getModule() == Main.class.getModule())
         .filter(this::registered)
         .map(ServiceLoader.Provider::get)
         .filter(this::enabled)
