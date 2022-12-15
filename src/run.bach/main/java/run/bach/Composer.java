@@ -13,6 +13,7 @@ import run.bach.tool.CompileModulesTool;
 import run.bach.tool.CompileTool;
 import run.bach.tool.InfoTool;
 import run.bach.tool.LaunchTool;
+import run.bach.tool.LoadTool;
 import run.bach.tool.TestTool;
 import run.duke.Tool;
 import run.duke.ToolCalls;
@@ -92,6 +93,7 @@ public class Composer {
         new CompileModulesTool(),
         new InfoTool(),
         new LaunchTool(),
+        new LoadTool(),
         new TestTool());
   }
 
