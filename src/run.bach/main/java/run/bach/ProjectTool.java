@@ -29,6 +29,10 @@ public abstract class ProjectTool implements ToolProvider, ToolOperator, BachRun
     return workbench.toolbox().find(tool);
   }
 
+  public final void debug(Object message) {
+    printer().log(System.Logger.Level.DEBUG, message);
+  }
+
   public final void info(Object message) {
     printer().log(System.Logger.Level.INFO, message);
   }

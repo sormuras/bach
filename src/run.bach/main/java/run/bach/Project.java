@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
+import run.bach.external.ModulesLocators;
 import run.bach.internal.ModuleDescriptorSupport;
 import run.bach.internal.ModuleInfoFinder;
 import run.bach.internal.ModuleInfoReference;
@@ -204,13 +205,14 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
     }
   }
 
-  public record Externals(Set<String> requires) {
+  public record Externals(Set<String> requires, ModulesLocators locators) {
     public Externals {
-      if (requires == null) throw new NullPointerException("External requires must not be null");
+      if (requires == null) throw new NullPointerException("requires must not be null");
+      if (locators == null) throw new NullPointerException("locators must not be null");
     }
 
     public Externals(String... requires) {
-      this(Set.of(requires));
+      this(Set.of(requires), new ModulesLocators(List.of()));
     }
   }
 }

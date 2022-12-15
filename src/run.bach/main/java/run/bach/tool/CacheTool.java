@@ -38,8 +38,7 @@ public class CacheTool extends ProjectTool {
             .toList();
     var missing = ModulesSupport.listMissingNames(finders, project().externals().requires());
     if (missing.isEmpty()) return 0;
-    // TODO run(LoadTool, load -> load.with("modules").with(missing.stream().sorted()));
-    printer().log(System.Logger.Level.ERROR, "Not implemented, yet");
-    return 1;
+    run("load", load -> load.with("modules").with(missing.stream().sorted()));
+    return 0;
   }
 }

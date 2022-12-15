@@ -11,6 +11,7 @@ module run.bach {
   requires transitive run.duke;
 
   exports run.bach;
+  exports run.bach.external;
   exports run.bach.tool;
 
   uses run.bach.Composer;
