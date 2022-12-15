@@ -1,6 +1,7 @@
 /** Defines the API of Bach. */
 @run.bach.Command(name = "--list-tools", args = "duke list tools")
 module run.bach {
+  requires transitive java.net.http;
   requires jdk.compiler;
   requires jdk.jartool;
   requires jdk.javadoc;
