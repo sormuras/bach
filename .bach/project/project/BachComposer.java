@@ -26,7 +26,8 @@ public class BachComposer extends Composer {
             List.of("test.duke/test.duke.Main", "test.bach/test.bach.Main"),
             new Project.DeclaredModules(
                 new Project.DeclaredModule(Path.of("src/test.bach/test/java")),
-                new Project.DeclaredModule(Path.of("src/test.duke/test/java")))));
+                new Project.DeclaredModule(Path.of("src/test.duke/test/java")),
+                new Project.DeclaredModule(Path.of("src/test.junit/test/java")))));
   }
 
   @Override
