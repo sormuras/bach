@@ -47,45 +47,62 @@ public class Composer {
 
   Workbench compose() {
     printer.log(Level.DEBUG, "Creating project model instance...");
-    var project = composeProject();
+    var project = createProject();
 
+    printer.log(Level.DEBUG, "Building browsing...");
+    var browser = createBrowser();
+
+    printer.log(Level.DEBUG, "Stuffing toolkit...");
+    var toolkit = createToolkit();
+
+    printer.log(Level.DEBUG, "Mapping workpieces...");
     var workpieces =
         new Workpieces()
             .put(Options.class, options)
             .put(Folders.class, folders)
             .put(Printer.class, printer)
-            .put(Browser.class, new Browser())
+            .put(Browser.class, browser)
+            .put(Toolkit.class, toolkit)
             .put(Project.class, project);
 
-    printer.log(Level.DEBUG, "Stuffing toolbox...");
-    var toolbox = composeToolbox();
-
-    return new Bach(workpieces, toolbox);
+    printer.log(Level.DEBUG, "Composing workbench...");
+    return new Bach(workpieces, toolkit.toolbox());
   }
 
-  public Project composeProject() {
+  public Project createProject() {
     return Project.UNNAMED;
   }
 
-  public List<ToolOperator> composeOperators() {
-    return List.of();
+  public ProjectTools createProjectTools() {
+    return new ProjectTools();
   }
 
-  Toolbox composeToolbox() {
+  public Browser createBrowser() {
+    return new Browser();
+  }
+
+  public Toolkit createToolkit() {
+    return new Toolkit(createToolbox(), createTweaks());
+  }
+
+  public Toolbox createToolbox() {
     var folders = Folders.CURRENT_WORKING_DIRECTORY;
     var externalModules = folders.externalModules();
     var externalTools = folders.externalTools();
-    var java = folders.javaHome("bin", "java");
     return Toolbox.compose(
         Toolbox.of(provideCommandTools()),
         Toolbox.ofModuleLayer(sourced), // .bach source modules and system modules
         Toolbox.ofModulePath(externalModules), // parent module layers are excluded
-        Toolbox.ofJavaPrograms(externalTools, java),
+        Toolbox.ofJavaPrograms(externalTools, folders.javaHome("bin", "java")),
         Toolbox.of(provideProjectTools()),
-        Toolbox.ofNativeToolsInJavaHome("java", "jfr", "jdeprscan"));
+        Toolbox.ofNativeToolsInJavaHome("java", "jcmd", "jfr"));
   }
 
-  List<ToolOperator> defaultOperators() {
+  public Tweaks createTweaks() {
+    return new Tweaks();
+  }
+
+  List<ToolOperator> provideDefaultToolOperators() {
     return List.of(
         new BuildTool(),
         new CacheTool(),
@@ -118,7 +135,7 @@ public class Composer {
   }
 
   List<Tool> provideProjectTools() {
-    return Stream.concat(composeOperators().stream(), defaultOperators().stream())
+    return Stream.concat(createProjectTools().stream(), provideDefaultToolOperators().stream())
         .map(Tool::of)
         .toList();
   }

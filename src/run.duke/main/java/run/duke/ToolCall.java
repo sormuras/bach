@@ -85,7 +85,7 @@ public record ToolCall(String name, List<String> arguments) {
     return tweak.tweak(this);
   }
 
-  public ToolCall withTweak(Tweak tweak, int position) {
+  public ToolCall withTweak(int position, Tweak tweak) {
     var call = ToolCall.of(name).with(arguments.stream().limit(position));
     return tweak.tweak(call).with(arguments.stream().skip(position));
   }

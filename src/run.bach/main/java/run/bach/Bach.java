@@ -28,7 +28,8 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
   }
 
   @Override
-  public void run(ToolCall call) {
+  public void run(ToolCall toolCall) {
+    var call = toolCall.withTweaks(toolkit().tweaks());
     printer().log(Level.INFO, "+ " + call.toCommandLine());
     var name = call.name();
     var tool = find(name).orElseThrow(() -> new ToolNotFoundException(name));

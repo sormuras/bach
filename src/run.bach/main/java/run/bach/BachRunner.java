@@ -19,4 +19,8 @@ public interface BachRunner extends ToolRunner {
   default Printer printer() {
     return workbench().workpiece(Printer.class);
   }
+
+  default Toolkit toolkit() {
+    return workbench().workpiece(Toolkit.class);
+  }
 }

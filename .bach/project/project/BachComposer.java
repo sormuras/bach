@@ -4,11 +4,12 @@ import java.nio.file.Path;
 import java.util.List;
 import run.bach.Composer;
 import run.bach.Project;
-import run.duke.ToolOperator;
+import run.bach.ProjectTools;
+import run.bach.Tweaks;
 
 public class BachComposer extends Composer {
   @Override
-  public Project composeProject() {
+  public Project createProject() {
     return new Project(
         new Project.Name(options.projectName("Bach")),
         new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
@@ -29,7 +30,18 @@ public class BachComposer extends Composer {
   }
 
   @Override
-  public List<ToolOperator> composeOperators() {
-    return List.of(new Build(), new CompileClasses());
+  public ProjectTools createProjectTools() {
+    return new ProjectTools(new Build(), new CompileClasses());
+  }
+
+  @Override
+  public Tweaks createTweaks() {
+    return new Tweaks(
+        call ->
+            switch (call.name()) {
+              case "javac" -> call.withTweak(0, tweak -> tweak.with("-g").with("-parameters"));
+              case "junit" -> call.with("--details", "NONE").with("--disable-banner");
+              default -> call;
+            });
   }
 }
