@@ -4,14 +4,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-public record ToolCall(String name, List<String> arguments) {
+public record ToolCall(String name, List<String> arguments, Optional<ToolProvider> provider) {
   public static ToolCall of(String name, Object... arguments) {
     if (arguments.length == 0) return new ToolCall(name);
-    if (arguments.length == 1) return new ToolCall(name, List.of(arguments[0].toString().trim()));
+    if (arguments.length == 1) return new ToolCall(name, arguments[0].toString().trim());
     return new ToolCall(name).with(Stream.of(arguments));
+  }
+
+  public static ToolCall of(ToolProvider provider, Object... arguments) {
+    return ToolCall.of(provider.name(), arguments).with(provider);
   }
 
   // command = ["tool-name", "tool-args", ...]
@@ -20,7 +26,7 @@ public record ToolCall(String name, List<String> arguments) {
     if (size == 0) throw new IllegalArgumentException("Empty command");
     var name = command.get(0);
     if (size == 1) return new ToolCall(name);
-    if (size == 2) return new ToolCall(name, List.of(command.get(1).trim()));
+    if (size == 2) return new ToolCall(name, command.get(1).trim());
     return new ToolCall(name).with(command.stream().skip(1).map(String::trim));
   }
 
@@ -30,7 +36,11 @@ public record ToolCall(String name, List<String> arguments) {
   }
 
   public ToolCall(String name) {
-    this(name, List.of());
+    this(name, List.of(), Optional.empty());
+  }
+
+  public ToolCall(String name, String... args) {
+    this(name, List.of(args), Optional.empty());
   }
 
   public String toCommandLine() {
@@ -47,7 +57,7 @@ public record ToolCall(String name, List<String> arguments) {
 
   public ToolCall with(Stream<?> objects) {
     var strings = objects.map(Object::toString).map(String::trim);
-    return new ToolCall(name, Stream.concat(arguments.stream(), strings).toList());
+    return new ToolCall(name, Stream.concat(arguments.stream(), strings).toList(), provider);
   }
 
   public ToolCall with(Object argument) {
@@ -57,6 +67,10 @@ public record ToolCall(String name, List<String> arguments) {
   public ToolCall with(String key, Object value, Object... values) {
     var call = with(Stream.of(key, value));
     return values.length == 0 ? call : call.with(Stream.of(values));
+  }
+
+  public ToolCall with(ToolProvider provider) {
+    return new ToolCall(name, arguments, Optional.ofNullable(provider));
   }
 
   public ToolCall withFindFiles(String glob) {

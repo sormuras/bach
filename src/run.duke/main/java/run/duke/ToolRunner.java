@@ -1,13 +1,11 @@
 package run.duke;
 
-import java.util.List;
-
 @FunctionalInterface
 public interface ToolRunner {
   Workbench workbench();
 
   default void run(String tool, String... args) {
-    workbench().run(new ToolCall(tool, List.of(args)));
+    workbench().run(new ToolCall(tool, args));
   }
 
   default void run(String tool, ToolCall.Tweak tweak) {

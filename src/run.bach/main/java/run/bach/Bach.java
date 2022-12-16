@@ -34,7 +34,7 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
     var name = call.name();
     var tool = find(name).orElseThrow(() -> new ToolNotFoundException(name));
     var args = call.arguments().toArray(String[]::new);
-    var provider = switchOverToolAndYieldToolProvider(tool);
+    var provider = call.provider().orElseGet(() -> switchOverToolAndYieldToolProvider(tool));
     var code = run(provider, args);
     if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
   }
