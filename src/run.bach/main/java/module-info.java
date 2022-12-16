@@ -6,6 +6,7 @@ module run.bach {
   requires jdk.jartool;
   requires jdk.javadoc;
   requires jdk.jdeps;
+  requires jdk.jfr;
   requires jdk.jlink;
   requires jdk.jpackage;
   requires transitive run.duke;

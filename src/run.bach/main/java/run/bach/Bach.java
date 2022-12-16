@@ -4,6 +4,8 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
+import run.bach.internal.FlightRecorderEvent;
+import run.bach.internal.StringPrintWriterMirror;
 import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.Toolbox;
@@ -42,14 +44,27 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
   }
 
   private void run(ToolProvider provider, String... args) {
+    var event = new FlightRecorderEvent.ToolRun();
+    event.name = provider.name();
+    event.args = String.join(" ", args);
     var silent = options().silent();
     try {
-      var out = silent ? new PrintWriter(Writer.nullWriter()) : printer().out();
-      var err = silent ? new PrintWriter(Writer.nullWriter()) : printer().err();
+      var out = newPrintWriter(silent, printer().out());
+      var err = newPrintWriter(silent, printer().err());
+      event.begin();
       var code = provider.run(out, err, args);
+      event.end();
+      event.out = out.toString().strip();
+      event.err = err.toString().strip();
       if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
     } catch (Throwable throwable) {
-      throwable.printStackTrace(System.err);
+      throwable.printStackTrace(printer().err());
+    } finally {
+      event.commit();
     }
+  }
+
+  private PrintWriter newPrintWriter(boolean silent, PrintWriter writer) {
+    return silent ? new PrintWriter(Writer.nullWriter()) : new StringPrintWriterMirror(writer);
   }
 }
