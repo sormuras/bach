@@ -1,9 +1,8 @@
 package run.duke;
 
-import java.util.spi.ToolProvider;
 import run.duke.internal.InoperativeWorkbench;
 
-public interface Workbench extends ToolRunner {
+public interface Workbench extends ToolFinder, ToolRunner {
   static Workbench inoperative() {
     return new InoperativeWorkbench();
   }
@@ -13,7 +12,7 @@ public interface Workbench extends ToolRunner {
     return this;
   }
 
-  void run(ToolCall call, ToolProvider provider, String... args);
+  void run(ToolCall call);
 
   Toolbox toolbox();
 

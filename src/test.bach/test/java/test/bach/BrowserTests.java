@@ -58,7 +58,7 @@ public record BrowserTests(Browser browser, HttpServer server) implements ToolPr
       var response = browser.load(uri(), target);
       System.err.println("Unexpected response: " + response);
     } catch (RuntimeException exception) {
-      assert ("(GET " + uri() + ") 404").equals(exception.toString()) : exception;
+      assert ("(GET " + uri() + ") 404").equals(exception.getMessage()) : exception;
     }
   }
 

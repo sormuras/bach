@@ -2,11 +2,10 @@ package project;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
-import run.duke.ToolOperator;
-import run.duke.ToolRunner;
+import run.duke.Tooling;
 import run.duke.Workbench;
 
-public record Format(Workbench workbench) implements ToolOperator, ToolProvider, ToolRunner {
+public record Format(Workbench workbench) implements Tooling {
   public Format() {
     this(Workbench.inoperative());
   }

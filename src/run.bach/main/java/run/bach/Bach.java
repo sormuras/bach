@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.util.spi.ToolProvider;
+import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.Toolbox;
 import run.duke.Workbench;
@@ -20,18 +21,27 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
   }
 
   @Override
-  public Workbench workbench() {
-    return this;
-  }
-
-  @Override
   public <T> T workpiece(Class<T> type) {
     return workpieces.get(type);
   }
 
   @Override
-  public void run(ToolCall call, ToolProvider provider, String... args) {
+  public void run(ToolCall call) {
     printer().log(Level.INFO, "+ " + call.toCommandLine());
+    var name = call.name();
+    var tool = find(name).orElseThrow(() -> new ToolNotFoundException(name));
+    var args = call.arguments().toArray(String[]::new);
+    var provider = switchOverToolAndYieldToolProvider(tool);
+    run(provider, args);
+  }
+
+  private ToolProvider switchOverToolAndYieldToolProvider(Tool tool) {
+    if (tool instanceof Tool.OfProvider of) return of.provider();
+    if (tool instanceof Tool.OfOperator of) return of.operator().provider(this);
+    throw new Error("Unsupported tool of " + tool.getClass());
+  }
+
+  private void run(ToolProvider provider, String... args) {
     var silent = options().silent();
     try {
       var out = silent ? new PrintWriter(Writer.nullWriter()) : printer().out();
