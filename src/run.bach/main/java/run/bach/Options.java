@@ -2,6 +2,7 @@ package run.bach;
 
 import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import run.duke.CommandLineInterface;
@@ -31,6 +32,10 @@ public record Options(
     @Help("Maximum line width used by the message printer") Optional<String> __printer_margin,
     @Help("Lowest logger level to print message for") Optional<String> __printer_threshold,
     @Name("--trust") @Help("Trusted identities") List<String> __trust,
+    @Help("Name of the project") Optional<String> __project_name,
+    @Help("Version information of the build") Optional<String> __project_version,
+    @Help("Generated version's format") Optional<String> __project_version_format,
+    @Help("Zone date time of the build") Optional<String> __project_version_timestamp,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
   private static final CommandLineInterface<Options> PARSER =
@@ -52,5 +57,29 @@ public record Options(
 
   public Level printerThreshold(Level other) {
     return Level.valueOf(__printer_threshold.orElse(other.name()).toUpperCase());
+  }
+
+  public String projectName(String defaultName) {
+    return __project_name.orElse(defaultName);
+  }
+
+  public String projectVersionOrNow() {
+    var now = ZonedDateTime.now();
+    var year = now.getYear();
+    var month = now.getMonthValue();
+    var day = now.getDayOfMonth();
+    return projectVersion(String.format(projectVersionFormat(), year, month, day));
+  }
+
+  public String projectVersion(String defaultVersion) {
+    return __project_version.orElse(defaultVersion);
+  }
+
+  public String projectVersionFormat() {
+    return __project_version_format.orElse("%4d.%02d.%02d-ea");
+  }
+
+  public ZonedDateTime projectVersionTimestampOrNow() {
+    return __project_version_timestamp().map(ZonedDateTime::parse).orElseGet(ZonedDateTime::now);
   }
 }

@@ -10,8 +10,8 @@ public class BachComposer extends Composer {
   @Override
   public Project composeProject() {
     return new Project(
-        new Project.Name("Bach"),
-        new Project.Version("2022-ea"),
+        new Project.Name(options.projectName("Bach")),
+        new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
         new Project.Space(
             "main",
             17,
