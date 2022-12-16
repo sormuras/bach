@@ -2,9 +2,11 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.lang.module.ModuleFinder;
+import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
+import run.bach.internal.ModulesSupport;
 import run.duke.ToolCall;
 import run.duke.Workbench;
 
@@ -67,18 +69,24 @@ public class TestTool extends ProjectTool {
 
     void runJUnitPlatform(Project.DeclaredModule module) {
       var name = module.name();
-      var paths = folders();
-      var moduleFinder =
+      var finder =
           ModuleFinder.of(
-              paths.out("test", "modules", name + ".jar"),
-              paths.out("main", "modules"),
-              paths.out("test", "modules"),
-              paths.externalModules());
+              folders().out("test", "modules", name + ".jar"),
+              folders().out("main", "modules"),
+              folders().out("test", "modules"),
+              folders().externalModules());
+      var layer = ModulesSupport.buildModuleLayer(finder, name);
+      layer.findLoader(name).setDefaultAssertionStatus(true);
+      var junit =
+          ServiceLoader.load(layer, ToolProvider.class).stream()
+              .map(ServiceLoader.Provider::get)
+              .filter(provider -> provider.name().equals("junit"))
+              .findFirst()
+              .orElseThrow();
       run(
-          // TODO ToolFinder.ofModuleFinder(moduleFinder, true, name),
-          ToolCall.of("junit")
+          ToolCall.of(junit)
               .with("--select-module", name)
-              .with("--reports-dir", paths.out("test-reports", "junit-" + name)));
+              .with("--reports-dir", folders().out("test-reports", "junit-" + name)));
     }
   }
 }

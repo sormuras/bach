@@ -15,5 +15,6 @@ module run.bach {
   exports run.bach.external;
   exports run.bach.tool;
 
+  uses java.util.spi.ToolProvider;
   uses run.bach.Composer;
 }
