@@ -34,16 +34,18 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
     var tool = find(name).orElseThrow(() -> new ToolNotFoundException(name));
     var args = call.arguments().toArray(String[]::new);
     var provider = switchOverToolAndYieldToolProvider(tool);
-    run(provider, args);
+    var code = run(provider, args);
+    if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
   }
 
   private ToolProvider switchOverToolAndYieldToolProvider(Tool tool) {
     if (tool instanceof Tool.OfProvider of) return of.provider();
     if (tool instanceof Tool.OfOperator of) return of.operator().provider(this);
-    throw new Error("Unsupported tool of " + tool.getClass());
+    throw new AssertionError("Unsupported tool of " + tool.getClass());
   }
 
-  private void run(ToolProvider provider, String... args) {
+  private int run(ToolProvider provider, String... args) {
+    Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
     var event = new FlightRecorderEvent.ToolRun();
     event.name = provider.name();
     event.args = String.join(" ", args);
@@ -52,16 +54,17 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
       var out = newPrintWriter(silent, printer().out());
       var err = newPrintWriter(silent, printer().err());
       event.begin();
-      var code = provider.run(out, err, args);
+      event.code = provider.run(out, err, args);
       event.end();
       event.out = out.toString().strip();
       event.err = err.toString().strip();
-      if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
     } catch (Throwable throwable) {
-      throwable.printStackTrace(printer().err());
+      if (throwable instanceof RuntimeException re) throw re;
+      throw new RuntimeException("Caught unexpected throwable", throwable);
     } finally {
       event.commit();
     }
+    return event.code;
   }
 
   private PrintWriter newPrintWriter(boolean silent, PrintWriter writer) {
