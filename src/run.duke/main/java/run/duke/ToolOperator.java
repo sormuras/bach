@@ -2,6 +2,7 @@ package run.duke;
 
 import java.util.spi.ToolProvider;
 
+/** An operator creates tool providers for a given workbench instance. */
 @FunctionalInterface
 public interface ToolOperator {
   /**
@@ -16,5 +17,6 @@ public interface ToolOperator {
     return getClass().getSimpleName();
   }
 
+  /** {@return a workbench-consuming tool provider instance} */
   ToolProvider provider(Workbench workbench);
 }
