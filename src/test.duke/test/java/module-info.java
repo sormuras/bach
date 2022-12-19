@@ -9,6 +9,8 @@ module test.duke {
       test.duke.ToolboxTests,
       test.duke.ToolCallTests,
       test.duke.ToolCallsTests,
+      test.duke.ToolingTests,
+      test.duke.ToolOperatorTests,
       test.duke.ToolTests,
       test.duke.WorkbenchTests;
 }
