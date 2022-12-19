@@ -7,6 +7,8 @@ module test.duke {
   provides java.util.spi.ToolProvider with
       test.duke.Main,
       test.duke.ToolboxTests,
+      test.duke.ToolCallTests,
+      test.duke.ToolCallsTests,
       test.duke.ToolTests,
       test.duke.WorkbenchTests;
 }
