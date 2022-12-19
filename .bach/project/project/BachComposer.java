@@ -39,7 +39,7 @@ public class BachComposer extends Composer {
   public Tweaks createTweaks() {
     return new Tweaks(
         call ->
-            switch (call.name()) {
+            switch (call.tool()) {
               case "javac" -> call.withTweak(0, tweak -> tweak.with("-g").with("-parameters"));
               case "junit" -> call.with("--details", "NONE").with("--disable-banner");
               default -> call;

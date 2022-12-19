@@ -4,30 +4,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
-public record ToolCall(String name, List<String> arguments, Optional<ToolProvider> provider) {
-  public static ToolCall of(String name, Object... arguments) {
-    if (arguments.length == 0) return new ToolCall(name);
-    if (arguments.length == 1) return new ToolCall(name, arguments[0].toString().trim());
-    return new ToolCall(name).with(Stream.of(arguments));
+public record ToolCall(String tool, List<String> arguments) {
+  public static ToolCall of(String tool) {
+    return new ToolCall(tool);
   }
 
-  public static ToolCall of(ToolProvider provider, Object... arguments) {
-    return ToolCall.of(provider.name(), arguments).with(provider);
+  public static ToolCall of(String tool, Object... arguments) {
+    if (arguments.length == 0) return new ToolCall(tool);
+    if (arguments.length == 1) return new ToolCall(tool, List.of(arguments[0].toString().trim()));
+    return new ToolCall(tool).with(Stream.of(arguments));
   }
 
   // command = ["tool-name", "tool-args", ...]
   public static ToolCall ofCommand(List<String> command) {
     var size = command.size();
     if (size == 0) throw new IllegalArgumentException("Empty command");
-    var name = command.get(0);
-    if (size == 1) return new ToolCall(name);
-    if (size == 2) return new ToolCall(name, command.get(1).trim());
-    return new ToolCall(name).with(command.stream().skip(1).map(String::trim));
+    var tool = command.get(0);
+    if (size == 1) return new ToolCall(tool);
+    if (size == 2) return new ToolCall(tool, List.of(command.get(1).trim()));
+    return new ToolCall(tool).with(command.stream().skip(1).map(String::trim));
   }
 
   // line = "tool-name [tool-args...]"
@@ -35,12 +33,8 @@ public record ToolCall(String name, List<String> arguments, Optional<ToolProvide
     return ToolCall.ofCommand(List.of(line.trim().split("\\s+")));
   }
 
-  public ToolCall(String name) {
-    this(name, List.of(), Optional.empty());
-  }
-
-  public ToolCall(String name, String... args) {
-    this(name, List.of(args), Optional.empty());
+  private ToolCall(String tool) {
+    this(tool, List.of());
   }
 
   public String toCommandLine() {
@@ -48,16 +42,16 @@ public record ToolCall(String name, List<String> arguments, Optional<ToolProvide
   }
 
   public String toCommandLine(String delimiter) {
-    if (arguments.isEmpty()) return name;
-    if (arguments.size() == 1) return name + delimiter + arguments.get(0);
-    var joiner = new StringJoiner(delimiter).add(name);
+    if (arguments.isEmpty()) return tool;
+    if (arguments.size() == 1) return tool + delimiter + arguments.get(0);
+    var joiner = new StringJoiner(delimiter).add(tool);
     arguments.forEach(joiner::add);
     return joiner.toString();
   }
 
   public ToolCall with(Stream<?> objects) {
     var strings = objects.map(Object::toString).map(String::trim);
-    return new ToolCall(name, Stream.concat(arguments.stream(), strings).toList(), provider);
+    return new ToolCall(tool, Stream.concat(arguments.stream(), strings).toList());
   }
 
   public ToolCall with(Object argument) {
@@ -67,10 +61,6 @@ public record ToolCall(String name, List<String> arguments, Optional<ToolProvide
   public ToolCall with(String key, Object value, Object... values) {
     var call = with(Stream.of(key, value));
     return values.length == 0 ? call : call.with(Stream.of(values));
-  }
-
-  public ToolCall with(ToolProvider provider) {
-    return new ToolCall(name, arguments, Optional.ofNullable(provider));
   }
 
   public ToolCall withFindFiles(String glob) {
@@ -100,7 +90,7 @@ public record ToolCall(String name, List<String> arguments, Optional<ToolProvide
   }
 
   public ToolCall withTweak(int position, Tweak tweak) {
-    var call = ToolCall.of(name).with(arguments.stream().limit(position));
+    var call = new ToolCall(tool, List.of()).with(arguments.stream().limit(position));
     return tweak.tweak(call).with(arguments.stream().skip(position));
   }
 
@@ -110,6 +100,7 @@ public record ToolCall(String name, List<String> arguments, Optional<ToolProvide
     return tweaked;
   }
 
+  /** Represents a unary operation on a tool call producing a new tool call with other arguments. */
   @FunctionalInterface
   public interface Tweak {
     ToolCall tweak(ToolCall call);

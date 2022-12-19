@@ -1,5 +1,7 @@
 package run.duke.internal;
 
+import java.util.List;
+import java.util.spi.ToolProvider;
 import run.duke.ToolCall;
 import run.duke.Toolbox;
 import run.duke.Workbench;
@@ -12,6 +14,9 @@ public record InoperativeWorkbench(Workpieces workpieces) implements Workbench {
 
   @Override
   public void run(ToolCall call) {}
+
+  @Override
+  public void run(ToolProvider provider, List<String> arguments) {}
 
   @Override
   public Toolbox toolbox() {

@@ -20,7 +20,7 @@ public record ToolCalls(List<ToolCall> list) implements Iterable<ToolCall> {
     while (true) {
       var empty = arguments.isEmpty();
       if (empty || arguments.peekFirst().equals(delimiter)) {
-        calls.add(new ToolCall(elements.get(0)).with(elements.stream().skip(1)));
+        calls.add(ToolCall.of(elements.get(0)).with(elements.stream().skip(1)));
         elements.clear();
         if (empty) break;
         arguments.pop(); // consume delimiter

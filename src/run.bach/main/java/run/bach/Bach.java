@@ -3,6 +3,7 @@ package run.bach;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
+import java.util.List;
 import java.util.spi.ToolProvider;
 import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
@@ -31,18 +32,23 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
   public void run(ToolCall toolCall) {
     var call = toolCall.withTweaks(toolkit().tweaks());
     printer().log(Level.INFO, "+ " + call.toCommandLine());
-    var name = call.name();
-    var tool = find(name).orElseThrow(() -> new ToolNotFoundException(name));
-    var args = call.arguments().toArray(String[]::new);
-    var provider = call.provider().orElseGet(() -> switchOverToolAndYieldToolProvider(tool));
-    var code = run(provider, args);
-    if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
+    var provider = switchOverToolCallAndYieldToolProvider(call);
+    run(provider, call.arguments());
   }
 
-  private ToolProvider switchOverToolAndYieldToolProvider(Tool tool) {
-    if (tool instanceof Tool.OfProvider of) return of.provider();
+  private ToolProvider switchOverToolCallAndYieldToolProvider(ToolCall call) {
+    var string = call.tool();
+    var tool = find(string).orElseThrow(() -> new ToolNotFoundException(string));
     if (tool instanceof Tool.OfOperator of) return of.operator().provider(this);
-    throw new AssertionError("Unsupported tool of " + tool.getClass());
+    if (tool instanceof Tool.OfProvider of) return of.provider();
+    throw new AssertionError("Unsupported tool type " + tool.getClass());
+  }
+
+  @Override
+  public void run(ToolProvider provider, List<String> arguments) {
+    var args = arguments.toArray(String[]::new);
+    var code = run(provider, args);
+    if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
   }
 
   private int run(ToolProvider provider, String... args) {

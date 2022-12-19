@@ -84,9 +84,11 @@ public class TestTool extends ProjectTool {
               .findFirst()
               .orElseThrow();
       run(
-          ToolCall.of(junit)
+          junit,
+          ToolCall.of("junit")
               .with("--select-module", name)
-              .with("--reports-dir", folders().out("test-reports", "junit-" + name)));
+              .with("--reports-dir", folders().out("test-reports", "junit-" + name))
+              .arguments());
     }
   }
 }
