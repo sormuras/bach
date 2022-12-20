@@ -34,4 +34,6 @@ module project {
       project.BachComposer;
   provides run.duke.ToolOperator with
       project.Format;
+  provides java.util.spi.ToolProvider with
+      project.Zip;
 }
