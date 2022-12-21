@@ -1,5 +1,7 @@
 import run.bach.Command;
+import run.bach.ProjectInfo;
 
+@ProjectInfo(name = "Bach")
 @Command(name = "rebuild", args = "clean + format + build")
 @Command(name = "remake", args = "clean + make")
 @Command(

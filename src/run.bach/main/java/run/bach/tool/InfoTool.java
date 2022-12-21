@@ -4,7 +4,6 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.spi.ToolProvider;
 import run.bach.Browser;
-import run.bach.Folders;
 import run.bach.ProjectTool;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
@@ -31,9 +30,9 @@ public class InfoTool extends ProjectTool {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var folders = workbench().workpiece(Folders.class);
+    out.println("Project " + project().toNameAndVersion());
     if (args.length == 0) {
-      var start = folders.root(".bach");
+      var start = folders().root(".bach");
       if (!Files.isDirectory(start)) {
         info("No such directory: " + start.toUri());
         return 0;

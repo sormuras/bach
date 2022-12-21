@@ -4,14 +4,16 @@ import java.nio.file.Path;
 import java.util.List;
 import run.bach.Composer;
 import run.bach.Project;
+import run.bach.ProjectInfo;
 import run.bach.ProjectTools;
 import run.bach.Tweaks;
 
 public class BachComposer extends Composer {
   @Override
   public Project createProject() {
+    var info = ProjectInfo.Support.of(getClass().getModule());
     return new Project(
-        new Project.Name(options.projectName("Bach")),
+        new Project.Name(options.projectName(info.name())),
         new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
         new Project.Space(
             "main",
