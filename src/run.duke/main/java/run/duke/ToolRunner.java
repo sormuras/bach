@@ -1,7 +1,5 @@
 package run.duke;
 
-import java.util.List;
-import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 @FunctionalInterface
@@ -18,9 +16,5 @@ public interface ToolRunner {
 
   default void run(ToolCall call) {
     workbench().run(call);
-  }
-
-  default void run(ToolProvider provider, List<String> arguments) {
-    workbench().run(provider, arguments);
   }
 }

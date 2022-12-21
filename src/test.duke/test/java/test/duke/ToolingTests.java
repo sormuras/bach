@@ -1,7 +1,6 @@
 package test.duke;
 
 import java.io.PrintWriter;
-import java.util.List;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Enabled;
 import jdk.jfr.Registered;
@@ -26,7 +25,6 @@ public class ToolingTests implements ToolProvider {
     tooling.run("tool");
     tooling.run("tool", tool -> tool.with("..."));
     tooling.run(ToolCall.of("tool"));
-    tooling.run(new MockToolProvider("mock99", 99), List.of());
     return 0;
   }
 }

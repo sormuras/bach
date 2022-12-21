@@ -37,6 +37,8 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
   }
 
   private ToolProvider switchOverToolCallAndYieldToolProvider(ToolCall call) {
+    var provider = call.provider();
+    if (provider.isPresent()) return provider.get();
     var string = call.tool();
     var tool = find(string).orElseThrow(() -> new ToolNotFoundException(string));
     if (tool instanceof Tool.OfOperator of) return of.operator().provider(this);
@@ -44,8 +46,7 @@ record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRu
     throw new AssertionError("Unsupported tool type " + tool.getClass());
   }
 
-  @Override
-  public void run(ToolProvider provider, List<String> arguments) {
+  private void run(ToolProvider provider, List<String> arguments) {
     var args = arguments.toArray(String[]::new);
     var code = run(provider, args);
     if (code != 0) throw new RuntimeException(provider.name() + " failed with error " + code);
