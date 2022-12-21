@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set +e
+
+BACH_HOME="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )")"
+BIN="${BACH_HOME}/bin"
+SRC="${BACH_HOME}/src"
+
+echo !      "$0"
+echo ! BIN = ${BIN}
+echo ! SRC = ${SRC}
+
+if [[ -z "${JAVA_HOME}" ]]; then
+  echo JAVA_HOME not set, using `which java`
+  JAVAC="javac"
+else
+  JAVAC="${JAVA_HOME}/bin/javac"
+fi
+
+${JAVAC} --release 17 --module run.bach,run.duke --module-version 2022-ea+src --module-source-path "${SRC}/*/main/java" -d "${BIN}"
+
+# end
+
+exit $?
