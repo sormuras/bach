@@ -1,7 +1,29 @@
 import run.bach.Command;
 import run.bach.ProjectInfo;
+import run.bach.ProjectInfo.Module;
+import run.bach.ProjectInfo.Space;
 
-@ProjectInfo(name = "Bach")
+@ProjectInfo(
+    name = "Bach",
+    spaces = {
+      @Space(
+          name = "main",
+          release = 17,
+          launchers = "run.bach/run.bach.Main",
+          modules = {
+            @Module(content = "src/run.bach", info = "main/java/module-info.java"),
+            @Module(content = "src/run.duke", info = "main/java/module-info.java")
+          }),
+      @Space(
+          name = "test",
+          requires = "main",
+          launchers = {"test.bach/test.bach.Main", "test.duke/test.duke.Main"},
+          modules = {
+            @Module(content = "src/test.bach", info = "test/java/module-info.java"),
+            @Module(content = "src/test.duke", info = "test/java/module-info.java"),
+            @Module(content = "src/test.junit", info = "test/java/module-info.java"),
+          })
+    })
 @Command(name = "rebuild", args = "clean + format + build")
 @Command(name = "remake", args = "clean + make")
 @Command(
