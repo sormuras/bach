@@ -1,6 +1,3 @@
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
@@ -11,18 +8,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 
 record BachInstaller(String version, Path home) {
-
-  static String DEFAULT_VERSION = System.getProperty("-Default.version".substring(2), "main");
-  static String DEFAULT_LOCATION = System.getProperty("-Default.location".substring(2), ".bach");
+  static String DEFAULT_VERSION =
+      System.getProperty("-Default.version".substring(2), "early-access");
+  static Path DEFAULT_LOCATION =
+      Path.of(System.getProperty("-Default.location".substring(2), ".bach"));
 
   @SuppressWarnings("unused")
   static void installDefaultVersionIntoDefaultLocation() throws Exception {
     var installer = new BachInstaller(DEFAULT_VERSION);
-    installer.listInstalledModules();
+    if (Internal.DEBUG) installer.listInstalledModules();
     installer.install();
     installer.listInstalledModules();
   }
@@ -31,35 +27,30 @@ record BachInstaller(String version, Path home) {
   static void listInstallableVersions() {
     System.out.println("- Default version: " + DEFAULT_VERSION);
     System.out.println("- Released version https://github.com/sormuras/bach/releases");
-    System.out.println("- Commit hash from https://github.com/sormuras/bach/commits/main");
   }
 
   BachInstaller(String version) {
-    this(version, Path.of(DEFAULT_LOCATION));
+    this(version, DEFAULT_LOCATION);
   }
 
   void install() throws Exception {
-    System.out.println("Install Bach " + version + " to " + home.toUri());
-    // download sources to temporary directory
-    var src = "https://github.com/sormuras/bach/archive/" + version + ".zip";
+    System.out.println("Install Bach " + version + " to " + home.toUri() + "...");
+    var uri = "https://github.com/sormuras/bach";
     var tmp = Files.createTempDirectory("bach-" + version + "-");
-    var zip = tmp.resolve("bach-archive-" + version + ".zip");
+    var dot = Files.createDirectories(tmp.resolve(".bach"));
+    var src = uri + "/releases/download/" + version + "/bach@" + version + ".zip";
+    var zip = tmp.resolve("bach-release-" + version + ".zip");
+    // download and unzip
     Internal.copy(src, zip, StandardCopyOption.REPLACE_EXISTING);
-    // unzip and mark bash script as executable
-    var from = tmp.resolve("bach-archive-" + version); // unzipped
-    Internal.unzip(zip, from);
-    // noinspection ResultOfMethodCallIgnored
-    from.resolve("bin/bach").toFile().setExecutable(true, true);
-    // build bach
-    Internal.Shell.bach(from, "--piano", "compile");
+    Internal.unzip(zip, dot, 0);
     // refresh binary directory
     var bin = home.resolve("bin");
     Internal.delete(bin);
     Files.createDirectories(bin);
-    Files.copy(from.resolve("bin/bach"), bin.resolve("bach"));
-    Files.copy(from.resolve("bin/bach.bat"), bin.resolve("bach.bat"));
-    Files.copy(from.resolve(".bach/out/main/modules/run.bach.jar"), bin.resolve("run.bach.jar"));
-    Files.copy(from.resolve(".bach/out/main/modules/run.duke.jar"), bin.resolve("run.duke.jar"));
+    Files.copy(dot.resolve("bin/bach"), bin.resolve("bach")).toFile().setExecutable(true, true);
+    Files.copy(dot.resolve("bin/bach.bat"), bin.resolve("bach.bat"));
+    Files.copy(dot.resolve("bin/run.bach.jar"), bin.resolve("run.bach.jar"));
+    Files.copy(dot.resolve("bin/run.duke.jar"), bin.resolve("run.duke.jar"));
     // clean up
     Internal.delete(tmp);
   }
@@ -111,15 +102,18 @@ record BachInstaller(String version, Path home) {
       }
     }
 
-    static void unzip(Path zip, Path dir) throws Exception {
+    static void unzip(Path zip, Path dir, int sub) throws Exception {
       debug("<< %s".formatted(zip.toUri()));
+      debug(">> %s".formatted(dir.toUri()));
       var files = new ArrayList<Path>();
       try (var fs = FileSystems.newFileSystem(zip)) {
         for (var root : fs.getRootDirectories()) {
           try (var stream = Files.walk(root)) {
             var list = stream.filter(Files::isRegularFile).toList();
             for (var file : list) {
-              var target = dir.resolve(file.subpath(1, file.getNameCount()).toString());
+              var relative = root.relativize(file);
+              var source = sub == 0 ? relative : relative.subpath(sub, relative.getNameCount());
+              var target = dir.resolve(source.toString());
               // debug(target.toUri().toString());
               Files.createDirectories(target.getParent());
               Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
@@ -130,34 +124,9 @@ record BachInstaller(String version, Path home) {
       }
       debug(">> %d files copied".formatted(files.size()));
     }
+  }
 
-    interface Shell {
-      static void bach(Path directory, String... arguments) throws Exception {
-        var builder = new ProcessBuilder();
-        builder.environment().put("JAVA_HOME", System.getProperty("java.home"));
-        builder.directory(directory.toFile());
-        var command = builder.command();
-        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
-          command.add("cmd.exe");
-          command.add("/c");
-          command.add("bin\\bach.bat");
-        } else {
-          command.add("bin/bach");
-        }
-        command.addAll(List.of(arguments));
-        debug("%s -> %s".formatted(builder.directory(), builder.command()));
-        record LinePrinter(InputStream stream, Consumer<String> consumer) implements Runnable {
-          @Override
-          public void run() {
-            new BufferedReader(new InputStreamReader(stream)).lines().forEach(consumer);
-          }
-        }
-        var process = builder.start();
-        new Thread(new LinePrinter(process.getInputStream(), System.out::println)).start();
-        new Thread(new LinePrinter(process.getErrorStream(), System.err::println)).start();
-        int code = process.waitFor();
-        if (code != 0) throw new RuntimeException("Non-zero exit code " + code);
-      }
-    }
+  public static void main(String... args) throws Exception {
+    installDefaultVersionIntoDefaultLocation();
   }
 }
