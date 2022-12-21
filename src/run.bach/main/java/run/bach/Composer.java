@@ -1,6 +1,7 @@
 package run.bach;
 
 import java.lang.System.Logger.Level;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -71,9 +72,27 @@ public class Composer {
 
   public Project createProject() {
     var projectInfo = ProjectInfo.Support.of(getClass().getModule());
+    var spaces = new ArrayList<Project.Space>();
+    for (var space : projectInfo.info().spaces()) {
+      var modules = new ArrayList<Project.DeclaredModule>();
+      for (var module : space.modules()) {
+        var content = Path.of(module.content());
+        var info = content.resolve(module.info());
+        modules.add(new Project.DeclaredModule(content, info));
+      }
+      spaces.add(
+          new Project.Space(
+              space.name(),
+              List.of(space.requires()),
+              space.release(),
+              List.of(space.launchers()),
+              new Project.DeclaredModules(modules)));
+    }
     return new Project(
         new Project.Name(options.projectName(projectInfo.name())),
-        new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()));
+        new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
+        new Project.Spaces(spaces),
+        new Project.Externals());
   }
 
   public ProjectTools createProjectTools() {

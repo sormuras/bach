@@ -167,11 +167,6 @@ public record Project(Name name, Version version, Spaces spaces, Externals exter
       DeclaredFolders base, // base sources and resources
       Map<Integer, DeclaredFolders> targeted)
       implements Comparable<DeclaredModule> {
-
-    public DeclaredModule(Path content) {
-      this(content, content.resolve("module-info.java"));
-    }
-
     public DeclaredModule(Path content, Path info) {
       this(
           content,

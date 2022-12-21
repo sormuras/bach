@@ -30,8 +30,30 @@ public @interface ProjectInfo {
    */
   String version() default "0-ea";
 
+  Space[] spaces() default {};
+
+  @Target({})
+  @interface Space {
+    String name();
+
+    String[] requires() default {};
+
+    int release() default 0;
+
+    String[] launchers() default {};
+
+    Module[] modules() default {};
+  }
+
+  @Target({})
+  @interface Module {
+    String content();
+
+    String info();
+  }
+
   record Support(ProjectInfo info) {
-    public static Support of(Module module) {
+    public static Support of(java.lang.Module module) {
       var element = module.isAnnotationPresent(ProjectInfo.class) ? module : Bach.class.getModule();
       var info = element.getAnnotation(ProjectInfo.class);
       if (info == null) throw new AssertionError();
