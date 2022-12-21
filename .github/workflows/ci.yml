@@ -16,7 +16,9 @@ jobs:
       - name: 'Set up Java'
         uses: oracle-actions/setup-java@v1
       - name: 'Build Bach with Bach ${{ github.sha }}'
-        run: bin/bach --project-version-format "%4d.%02d.%02d-ea+${{ github.sha }}" build
+        run: |
+          .bach/bootstrap
+          bin/bach --project-version-format "%4d.%02d.%02d-ea+${{ github.sha }}" build
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v3
