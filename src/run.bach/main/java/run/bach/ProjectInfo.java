@@ -4,7 +4,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.nio.file.Path;
 
 /**
  * Indicates that the annotated module is a project declaration.
@@ -30,6 +29,10 @@ public @interface ProjectInfo {
    */
   String version() default "0-ea";
 
+  String moduleContentRootPattern() default "${module}";
+
+  String moduleContentInfoPattern() default "${space}/java/module-info.java";
+
   Space[] spaces() default {};
 
   @Target({})
@@ -42,31 +45,6 @@ public @interface ProjectInfo {
 
     String[] launchers() default {};
 
-    Module[] modules() default {};
-  }
-
-  @Target({})
-  @interface Module {
-    String content();
-
-    String info();
-  }
-
-  record Support(ProjectInfo info) {
-    public static Support of(java.lang.Module module) {
-      var element = module.isAnnotationPresent(ProjectInfo.class) ? module : Bach.class.getModule();
-      var info = element.getAnnotation(ProjectInfo.class);
-      if (info == null) throw new AssertionError();
-      return new Support(info);
-    }
-
-    public Project build() {
-      return new Project(new Project.Name(name()), new Project.Version(info.version()));
-    }
-
-    public String name() {
-      var name = info.name();
-      return name.equals("*") ? Path.of("").toAbsolutePath().getFileName().toString() : name;
-    }
+    String[] modules() default {};
   }
 }

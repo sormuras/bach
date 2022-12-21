@@ -2,9 +2,11 @@ package run.bach;
 
 import java.lang.System.Logger.Level;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import run.bach.internal.PathSupport;
 import run.bach.internal.ToolCallsToolOperator;
 import run.bach.tool.BuildTool;
 import run.bach.tool.CacheTool;
@@ -71,14 +73,50 @@ public class Composer {
   }
 
   public Project createProject() {
-    var projectInfo = ProjectInfo.Support.of(getClass().getModule());
+    var info =
+        getClass().getModule().isAnnotationPresent(ProjectInfo.class)
+            ? getClass().getModule().getAnnotation(ProjectInfo.class)
+            : Bach.class.getModule().getAnnotation(ProjectInfo.class);
+
+    return new Project(
+        createProjectName(info),
+        createProjectVersion(info),
+        createProjectSpaces(info),
+        new Project.Externals());
+  }
+
+  Project.Name createProjectName(ProjectInfo info) {
+    var name = options.projectName(info.name());
+    return new Project.Name(name.equals("*") ? PathSupport.name(folders.root(), "?") : name);
+  }
+
+  Project.Version createProjectVersion(ProjectInfo info) {
+    var version = options.projectVersion(info.version());
+    if (version.equals("*") || version.equalsIgnoreCase("now")) {
+      var now = ZonedDateTime.now();
+      var year = now.getYear();
+      var month = now.getMonthValue();
+      var day = now.getDayOfMonth();
+      return new Project.Version(String.format("%4d.%02d.%02d-ea", year, month, day), now);
+    }
+    return new Project.Version(version, options.projectVersionTimestampOrNow());
+  }
+
+  Project.Spaces createProjectSpaces(ProjectInfo info) {
     var spaces = new ArrayList<Project.Space>();
-    for (var space : projectInfo.info().spaces()) {
+    for (var space : info.spaces()) {
       var modules = new ArrayList<Project.DeclaredModule>();
       for (var module : space.modules()) {
-        var content = Path.of(module.content());
-        var info = content.resolve(module.info());
-        modules.add(new Project.DeclaredModule(content, info));
+        var root =
+            info.moduleContentRootPattern()
+                .replace("${space}", space.name())
+                .replace("${module}", module);
+        var unit =
+            info.moduleContentInfoPattern()
+                .replace("${space}", space.name())
+                .replace("${module}", module);
+        var content = Path.of(root);
+        modules.add(new Project.DeclaredModule(content, content.resolve(unit)));
       }
       spaces.add(
           new Project.Space(
@@ -88,11 +126,7 @@ public class Composer {
               List.of(space.launchers()),
               new Project.DeclaredModules(modules)));
     }
-    return new Project(
-        new Project.Name(options.projectName(projectInfo.name())),
-        new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
-        new Project.Spaces(spaces),
-        new Project.Externals());
+    return new Project.Spaces(List.copyOf(spaces));
   }
 
   public ProjectTools createProjectTools() {
