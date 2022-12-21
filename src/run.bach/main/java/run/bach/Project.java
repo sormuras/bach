@@ -21,8 +21,6 @@ import run.bach.internal.ModuleSourcePathSupport;
 
 /** Modular project model. */
 public record Project(Name name, Version version, Spaces spaces, Externals externals) {
-  public static final Project UNNAMED = new Project(new Name("unnamed"), new Version("0-ea"));
-
   public Project(Name name, Version version, Space... spaces) {
     this(name, version, new Spaces(spaces), new Externals());
   }

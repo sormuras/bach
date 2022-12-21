@@ -70,7 +70,10 @@ public class Composer {
   }
 
   public Project createProject() {
-    return Project.UNNAMED;
+    var projectInfo = ProjectInfo.Support.of(getClass().getModule());
+    return new Project(
+        new Project.Name(options.projectName(projectInfo.name())),
+        new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()));
   }
 
   public ProjectTools createProjectTools() {

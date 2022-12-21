@@ -11,9 +11,9 @@ import run.bach.Tweaks;
 public class BachComposer extends Composer {
   @Override
   public Project createProject() {
-    var info = ProjectInfo.Support.of(getClass().getModule());
+    var projectInfo = ProjectInfo.Support.of(getClass().getModule());
     return new Project(
-        new Project.Name(options.projectName(info.name())),
+        new Project.Name(options.projectName(projectInfo.name())),
         new Project.Version(options.projectVersionOrNow(), options.projectVersionTimestampOrNow()),
         new Project.Space(
             "main",
