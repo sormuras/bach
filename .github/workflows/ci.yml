@@ -8,20 +8,45 @@ on:
   workflow_dispatch:
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.version.outputs.date }}
+      datetime: ${{ steps.version.outputs.datetime }}
+      sha: ${{ steps.version.outputs.sha }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 'Compute version string'
+        id: version
+        run: |
+          DATE=$(date -u '+%Y.%m.%d')
+          DATETIME=$(date -u '+%Y.%m.%d.%H.%M.%S')
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "datetime=${DATETIME}" >> $GITHUB_OUTPUT
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TAG=early-access
+          VERSION=${DATE}-ea+${SHA}
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
   build:
+    needs: [setup]
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out repository'
         uses: actions/checkout@v3
       - name: 'Set up Java'
         uses: oracle-actions/setup-java@v1
-      - name: 'Build Bach with Bach ${{ github.sha }}'
-        run: |
-          .bach/bootstrap
-          bin/bach --project-version-format "%4d.%02d.%02d-ea+${{ github.sha }}" build
+      - name: 'Bootstrap Bach'
+        run: .bach/bootstrap
+      - name: 'Build Bach ${{ needs.setup.outputs.version }}'
+        run: bin/bach --project-version "${{ needs.setup.outputs.version }}" build
+      - name: 'Package Bach ${{ needs.setup.outputs.tag }}'
+        run: bin/bach zip ".bach/out/bach@${{ needs.setup.outputs.tag }}.zip"
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.event.repository.name }}-build-${{ github.sha }}
-          path: .bach/out/main/modules
+          path: .bach/out
