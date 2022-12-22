@@ -27,6 +27,8 @@ public interface ModuleDescriptorSupport {
   static ModuleDescriptor parse(Path info) {
     if (!Path.of("module-info.java").equals(info.getFileName()))
       throw new IllegalArgumentException("Path must end with 'module-info.java': " + info);
+    if (Files.notExists(info))
+      throw new IllegalArgumentException("Module not found: " + info.toAbsolutePath().toUri());
 
     var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
     var writer = new PrintWriter(Writer.nullWriter());
