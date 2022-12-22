@@ -5,14 +5,15 @@ import java.nio.file.Path;
 /** All about folders and files. */
 public record Folders(Path root, Path out, Path externalModules, Path externalTools) {
 
-  public static final Folders CURRENT_WORKING_DIRECTORY = Folders.ofRoot(Path.of(""));
+  public static final Folders CURRENT_WORKING_DIRECTORY = Folders.of(Path.of(""), Path.of(".bach/out"));
 
-  public static Folders ofRoot(Path root) {
-    return new Folders(
-        root,
-        root.resolve(".bach/out"),
-        root.resolve(".bach/external-modules"),
-        root.resolve(".bach/external-tools"));
+  public static Folders of(Path root) {
+    return Folders.of(root, root.resolve(".bach/out"));
+  }
+
+  public static Folders of(Path root, Path out) {
+    var dot = root.resolve(".bach");
+    return new Folders(root, out, dot.resolve("external-modules"), dot.resolve("external-tools"));
   }
 
   public Path root(String first, String... more) {

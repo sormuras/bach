@@ -2,6 +2,7 @@ package run.bach;
 
 import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +30,13 @@ public record Options(
     @Name({"--very-quiet", "--silent", "--piano"}) @Help("Prints no message") boolean silent,
     @Name("--dry-run") @Help("Composes everything, but doesn't run any tool call") boolean dryRun,
     @Name({"--help", "-help", "-h", "/?", "?"}) boolean help,
+    @Help("Change root directory of the project") Optional<String> __chroot,
+    @Help("Change output directory for generated assets") Optional<String> __output_directory,
     @Help("Maximum line width used by the message printer") Optional<String> __printer_margin,
     @Help("Lowest logger level to print message for") Optional<String> __printer_threshold,
     @Name("--trust") @Help("Trusted identities") List<String> __trust,
     @Help("Name of the project") Optional<String> __project_name,
     @Help("Version information of the build") Optional<String> __project_version,
-    @Help("Generated version's format") Optional<String> __project_version_format,
     @Help("Zone date time of the build") Optional<String> __project_version_timestamp,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
@@ -51,6 +53,14 @@ public record Options(
     return PARSER.help();
   }
 
+  public Path rootDirectory() {
+    return __chroot.map(Path::of).orElse(Path.of(""));
+  }
+
+  public Path outputDirectory(String defaultOutputDirectory) {
+    return __output_directory.map(Path::of).orElse(rootDirectory().resolve(defaultOutputDirectory));
+  }
+
   public int printerMargin(int other) {
     return Integer.parseInt(__printer_margin.orElse(Integer.toString(other)));
   }
@@ -63,20 +73,8 @@ public record Options(
     return __project_name.orElse(defaultName);
   }
 
-  public String projectVersionOrNow() {
-    var now = ZonedDateTime.now();
-    var year = now.getYear();
-    var month = now.getMonthValue();
-    var day = now.getDayOfMonth();
-    return projectVersion(String.format(projectVersionFormat(), year, month, day));
-  }
-
   public String projectVersion(String defaultVersion) {
     return __project_version.orElse(defaultVersion);
-  }
-
-  public String projectVersionFormat() {
-    return __project_version_format.orElse("%4d.%02d.%02d-ea");
   }
 
   public ZonedDateTime projectVersionTimestampOrNow() {

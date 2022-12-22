@@ -1,7 +1,6 @@
 package run.bach;
 
 import java.lang.System.Logger.Level;
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +110,7 @@ public class Composer {
             info.moduleContentInfoPattern()
                 .replace("${space}", space.name())
                 .replace("${module}", module);
-        var content = Path.of(root);
+        var content = folders.root(root);
         modules.add(new Project.DeclaredModule(content, content.resolve(unit)));
       }
       spaces.add(
@@ -138,7 +137,6 @@ public class Composer {
   }
 
   public Toolbox createToolbox() {
-    var folders = Folders.CURRENT_WORKING_DIRECTORY;
     var externalModules = folders.externalModules();
     var externalTools = folders.externalTools();
     return Toolbox.compose(

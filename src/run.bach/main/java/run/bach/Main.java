@@ -52,7 +52,7 @@ public record Main() implements ToolProvider {
       return 0;
     }
 
-    var folders = Folders.CURRENT_WORKING_DIRECTORY;
+    var folders = Folders.of(options.rootDirectory(), options.outputDirectory(".bach/out"));
 
     printer.log(Level.DEBUG, "Building source module layer...");
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
