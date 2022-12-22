@@ -73,11 +73,7 @@ public class Composer {
   }
 
   public Project createProject() {
-    var info =
-        getClass().getModule().isAnnotationPresent(ProjectInfo.class)
-            ? getClass().getModule().getAnnotation(ProjectInfo.class)
-            : Bach.class.getModule().getAnnotation(ProjectInfo.class);
-
+    var info = provideProjectInfo();
     return new Project(
         createProjectName(info),
         createProjectVersion(info),
@@ -156,6 +152,17 @@ public class Composer {
 
   public Tweaks createTweaks() {
     return new Tweaks();
+  }
+
+  ProjectInfo provideProjectInfo() {
+    var annotations =
+        sourced.modules().stream()
+            .filter(module -> module.isAnnotationPresent(ProjectInfo.class))
+            .map(module -> module.getAnnotation(ProjectInfo.class))
+            .toList();
+    if (annotations.isEmpty()) return Bach.class.getModule().getAnnotation(ProjectInfo.class);
+    if (annotations.size() > 1) throw new AssertionError("Too many @ProjectInfo found");
+    return annotations.get(0);
   }
 
   List<ToolOperator> provideDefaultToolOperators() {
