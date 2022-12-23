@@ -12,6 +12,14 @@ jshell
 
 - https://install.bach.run forwards to the _"install default version of Bach into `.bach` directory of the current working directory"_ [Java Shell](install.jshell) script.
 
+Above's script is a shortcut for the following Java Shell commands and snippets.
+
+```shell
+/open https://src.bach.run/BachInstaller.java
+BachInstaller.installDefaultVersionIntoDefaultLocation()
+/exit
+```
+
 ## Path forwarding
 
 - https://src.bach.run forwards to https://raw.githubusercontent.com/sormuras/bach/main/src/bach.run - resulting in `404: Not Found`
