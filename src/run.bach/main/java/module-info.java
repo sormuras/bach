@@ -1,5 +1,4 @@
 /** Defines the API of Bach. */
-@run.bach.ProjectInfo
 @run.bach.Command(name = "--list-tools", args = "duke list tools")
 module run.bach {
   requires transitive java.net.http;

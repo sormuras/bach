@@ -1,11 +1,10 @@
 package run.bach;
 
 import java.lang.System.Logger.Level;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
-import run.bach.internal.PathSupport;
 import run.bach.internal.ToolCallsToolOperator;
 import run.bach.tool.BuildTool;
 import run.bach.tool.CacheTool;
@@ -72,56 +71,10 @@ public class Composer {
   }
 
   public Project createProject() {
-    var info = provideProjectInfo();
-    return new Project(
-        createProjectName(info),
-        createProjectVersion(info),
-        createProjectSpaces(info),
-        new Project.Externals());
-  }
-
-  Project.Name createProjectName(ProjectInfo info) {
-    var name = options.projectName(info.name());
-    return new Project.Name(name.equals("*") ? PathSupport.name(folders.root(), "?") : name);
-  }
-
-  Project.Version createProjectVersion(ProjectInfo info) {
-    var version = options.projectVersion(info.version());
-    if (version.equals("*") || version.equalsIgnoreCase("now")) {
-      var now = ZonedDateTime.now();
-      var year = now.getYear();
-      var month = now.getMonthValue();
-      var day = now.getDayOfMonth();
-      return new Project.Version(String.format("%4d.%02d.%02d-ea", year, month, day), now);
-    }
-    return new Project.Version(version, options.projectVersionTimestampOrNow());
-  }
-
-  Project.Spaces createProjectSpaces(ProjectInfo info) {
-    var spaces = new ArrayList<Project.Space>();
-    for (var space : info.spaces()) {
-      var modules = new ArrayList<Project.DeclaredModule>();
-      for (var module : space.modules()) {
-        var root =
-            info.moduleContentRootPattern()
-                .replace("${space}", space.name())
-                .replace("${module}", module);
-        var unit =
-            info.moduleContentInfoPattern()
-                .replace("${space}", space.name())
-                .replace("${module}", module);
-        var content = folders.root(root);
-        modules.add(new Project.DeclaredModule(content, content.resolve(unit)));
-      }
-      spaces.add(
-          new Project.Space(
-              space.name(),
-              List.of(space.requires()),
-              space.release(),
-              List.of(space.launchers()),
-              new Project.DeclaredModules(modules)));
-    }
-    return new Project.Spaces(List.copyOf(spaces));
+    return findProjectInfoAnnotation()
+        .map(info -> (ProjectFactory) new ProjectFactory.OfProjectInfo(this, info))
+        .orElseGet(() -> new ProjectFactory.OfConventions(this))
+        .createProject();
   }
 
   public ProjectTools createProjectTools() {
@@ -152,15 +105,15 @@ public class Composer {
     return new Tweaks();
   }
 
-  ProjectInfo provideProjectInfo() {
+  Optional<ProjectInfo> findProjectInfoAnnotation() {
     var annotations =
         sourced.modules().stream()
             .filter(module -> module.isAnnotationPresent(ProjectInfo.class))
             .map(module -> module.getAnnotation(ProjectInfo.class))
             .toList();
-    if (annotations.isEmpty()) return Bach.class.getModule().getAnnotation(ProjectInfo.class);
+    if (annotations.isEmpty()) return Optional.empty();
     if (annotations.size() > 1) throw new AssertionError("Too many @ProjectInfo found");
-    return annotations.get(0);
+    return Optional.of(annotations.get(0));
   }
 
   List<ToolOperator> provideDefaultToolOperators() {

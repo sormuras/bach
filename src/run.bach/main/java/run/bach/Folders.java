@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /** All about folders and files. */
 public record Folders(Path root, Path out, Path externalModules, Path externalTools) {
 
-  public static final Folders CURRENT_WORKING_DIRECTORY = Folders.of(Path.of(""), Path.of(".bach/out"));
+  public static final Folders CURRENT_WORKING_DIRECTORY = Folders.of(Path.of(""));
 
   public static Folders of(Path root) {
     return Folders.of(root, root.resolve(".bach/out"));
