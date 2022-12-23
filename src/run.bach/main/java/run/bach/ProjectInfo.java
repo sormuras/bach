@@ -29,7 +29,7 @@ public @interface ProjectInfo {
    */
   String version() default "0-ea";
 
-  String moduleContentRootPattern() default "${module}";
+  String moduleContentRootPattern() default "src/${module}";
 
   String moduleContentInfoPattern() default "${space}/java/module-info.java";
 

@@ -5,7 +5,6 @@ import run.bach.ProjectInfo.Space;
 @ProjectInfo(
     name = "Bach",
     version = "*",
-    moduleContentRootPattern = "src/${module}",
     spaces = {
       @Space(
           name = "main",
