@@ -9,18 +9,19 @@ import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
 import run.duke.Tool;
 import run.duke.ToolCall;
-import run.duke.Toolbox;
 import run.duke.Workbench;
 import run.duke.Workpieces;
 
-record Bach(Workpieces workpieces, Toolbox toolbox) implements Workbench, BachRunner {
+record Bach(Workpieces workpieces) implements Workbench, BachRunner {
   Bach {
     var printer = workpieces.get(Printer.class);
     var project = workpieces.get(Project.class);
+    var toolkit = workpieces.get(Toolkit.class);
     printer.log(Level.DEBUG, "Bach initialized");
     printer.log(Level.DEBUG, "  printer: " + printer.threshold());
     printer.log(Level.DEBUG, "  project: " + project.toNameAndVersion());
-    printer.log(Level.DEBUG, "  toolbox: " + toolbox.tools().size());
+    printer.log(Level.DEBUG, "  toolbox: " + toolkit.toolbox().tools().size());
+    printer.log(Level.DEBUG, "  tweaks : " + toolkit.tweaks().list().size());
   }
 
   @Override

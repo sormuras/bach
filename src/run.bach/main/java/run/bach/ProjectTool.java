@@ -2,6 +2,7 @@ package run.bach;
 
 import java.util.Optional;
 import run.duke.Tool;
+import run.duke.Toolbox;
 import run.duke.Tooling;
 import run.duke.Workbench;
 
@@ -17,6 +18,9 @@ public abstract class ProjectTool implements Tooling, BachRunner {
   }
 
   @Override
+  public abstract ProjectTool provider(Workbench workbench);
+
+  @Override
   public abstract String name();
 
   @Override
@@ -25,7 +29,7 @@ public abstract class ProjectTool implements Tooling, BachRunner {
   }
 
   public Optional<Tool> find(String tool) {
-    return workbench.toolbox().find(tool);
+    return workbench.workpiece(Toolbox.class).find(tool);
   }
 
   public final void debug(Object message) {

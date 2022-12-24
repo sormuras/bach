@@ -1,17 +1,10 @@
 package project;
 
 import run.bach.Composer;
-import run.bach.Project;
-import run.bach.ProjectFactory;
 import run.bach.ProjectTools;
 import run.bach.Tweaks;
 
 public class BachComposer extends Composer {
-  @Override
-  public Project createProject() {
-    return ProjectFactory.createProjectFromAnnotationAttachedToComposersModule(this);
-  }
-
   @Override
   public ProjectTools createProjectTools() {
     return new ProjectTools(new Build(), new CompileClasses());

@@ -14,7 +14,9 @@ public interface Workbench extends ToolFinder, ToolRunner {
 
   void run(ToolCall call);
 
-  Toolbox toolbox();
+  default Toolbox toolbox() {
+    return workpiece(Toolbox.class);
+  }
 
   <T> T workpiece(Class<T> type);
 }

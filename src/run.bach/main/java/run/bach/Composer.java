@@ -26,48 +26,43 @@ import run.duke.Workbench;
 import run.duke.Workpieces;
 
 public class Composer {
-  protected /*lazy*/ Options options;
-  protected /*lazy*/ Folders folders;
-  protected /*lazy*/ Printer printer;
-  protected /*lazy*/ ModuleLayer sourced;
+  private volatile Workpieces workpieces;
 
-  public Composer() {
-    this.options = Options.DEFAULTS;
-    this.folders = Folders.CURRENT_WORKING_DIRECTORY;
-    this.printer = Printer.BROKEN;
-    this.sourced = ModuleLayer.empty();
+  public Composer() {}
+
+  public final Options options() {
+    return workpieces.get(Options.class);
   }
 
-  Composer init(Options options, Folders folders, Printer printer, ModuleLayer sourced) {
-    this.options = options;
-    this.folders = folders;
-    this.printer = printer;
-    this.sourced = sourced;
-    return this;
+  public final Folders folders() {
+    return workpieces.get(Folders.class);
   }
 
-  Workbench compose() {
+  public final Printer printer() {
+    return workpieces.get(Printer.class);
+  }
+
+  public final Setting setting() {
+    return workpieces.get(Setting.class);
+  }
+
+  Workbench composeWorkbench(Workpieces workpieces) {
+    this.workpieces = workpieces;
+    var printer = printer();
+
     printer.log(Level.DEBUG, "Creating project model instance...");
-    var project = createProject();
+    workpieces.put(Project.class, createProject());
 
-    printer.log(Level.DEBUG, "Building browsing...");
-    var browser = createBrowser();
+    printer.log(Level.DEBUG, "Building browser...");
+    workpieces.put(Browser.class, createBrowser());
 
     printer.log(Level.DEBUG, "Stuffing toolkit...");
     var toolkit = createToolkit();
-
-    printer.log(Level.DEBUG, "Mapping workpieces...");
-    var workpieces =
-        new Workpieces()
-            .put(Options.class, options)
-            .put(Folders.class, folders)
-            .put(Printer.class, printer)
-            .put(Browser.class, browser)
-            .put(Toolkit.class, toolkit)
-            .put(Project.class, project);
+    workpieces.put(Toolkit.class, toolkit);
+    workpieces.put(Toolbox.class, toolkit.toolbox());
 
     printer.log(Level.DEBUG, "Composing workbench...");
-    return new Bach(workpieces, toolkit.toolbox());
+    return new Bach(workpieces);
   }
 
   public Project createProject() {
@@ -90,13 +85,13 @@ public class Composer {
   }
 
   public Toolbox createToolbox() {
-    var externalModules = folders.externalModules();
-    var externalTools = folders.externalTools();
+    var externalModules = folders().externalModules();
+    var externalTools = folders().externalTools();
     return Toolbox.compose(
         Toolbox.of(provideCommandTools()),
-        Toolbox.ofModuleLayer(sourced), // .bach source modules and system modules
+        Toolbox.ofModuleLayer(setting().layer()), // .bach source modules and system modules
         Toolbox.ofModulePath(externalModules), // parent module layers are excluded
-        Toolbox.ofJavaPrograms(externalTools, folders.javaHome("bin", "java")),
+        Toolbox.ofJavaPrograms(externalTools, folders().javaHome("bin", "java")),
         Toolbox.of(provideProjectTools()),
         Toolbox.ofNativeToolsInJavaHome("java", "jcmd", "jfr"));
   }
@@ -107,7 +102,7 @@ public class Composer {
 
   Optional<ProjectInfo> findProjectInfoAnnotation() {
     var annotations =
-        sourced.modules().stream()
+        setting().layer().modules().stream()
             .filter(module -> module.isAnnotationPresent(ProjectInfo.class))
             .map(module -> module.getAnnotation(ProjectInfo.class))
             .toList();
@@ -134,7 +129,7 @@ public class Composer {
 
   List<Tool> provideCommandTools() {
     var tools = new ArrayList<Tool>();
-    var modules = new ArrayList<>(sourced.modules());
+    var modules = new ArrayList<>(setting().layer().modules());
     modules.add(Bach.class.getModule()); // "run.bach"
     for (var module : modules) {
       for (var command : module.getAnnotationsByType(Command.class)) {

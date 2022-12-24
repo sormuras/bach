@@ -9,11 +9,6 @@ import run.bach.internal.PathSupport;
 public interface ProjectFactory {
   Composer composer();
 
-  static Project createProjectFromAnnotationAttachedToComposersModule(Composer composer) {
-    var annotation = composer.getClass().getModule().getAnnotation(ProjectInfo.class);
-    return new OfProjectInfo(composer, annotation).createProject();
-  }
-
   default Project createProject() {
     var name = createProjectName();
     var version = createProjectVersion();
@@ -23,10 +18,12 @@ public interface ProjectFactory {
   }
 
   default Project.Name createProjectName() {
-    return options()
+    return composer()
+        .options()
         .__project_name()
         .map(Project.Name::new)
-        .orElseGet(() -> new Project.Name(PathSupport.name(folders().root(), "unnamed")));
+        .orElseGet(
+            () -> new Project.Name(PathSupport.name(composer().folders().root(), "unnamed")));
   }
 
   default Project.Version createProjectVersion() {
@@ -39,14 +36,6 @@ public interface ProjectFactory {
 
   default Project.Externals createProjectExternals() {
     return new Project.Externals();
-  }
-
-  default Options options() {
-    return composer().options;
-  }
-
-  default Folders folders() {
-    return composer().folders;
   }
 
   record OfConventions(Composer composer) implements ProjectFactory {
@@ -68,14 +57,14 @@ public interface ProjectFactory {
 
     @Override
     public Project.Name createProjectName() {
-      var name = options().projectName(annotation.name());
+      var name = composer().options().projectName(annotation.name());
       if (name.equals("*")) return ProjectFactory.super.createProjectName();
       return new Project.Name(name);
     }
 
     @Override
     public Project.Version createProjectVersion() {
-      var version = options().projectVersion(annotation.version());
+      var version = composer().options().projectVersion(annotation.version());
       if (version.equals("*") || version.equalsIgnoreCase("now")) {
         var now = ZonedDateTime.now();
         var year = now.getYear();
@@ -83,7 +72,7 @@ public interface ProjectFactory {
         var day = now.getDayOfMonth();
         return new Project.Version(String.format("%4d.%02d.%02d-ea", year, month, day), now);
       }
-      return new Project.Version(version, options().projectVersionTimestampOrNow());
+      return new Project.Version(version, composer().options().projectVersionTimestampOrNow());
     }
 
     @Override
@@ -102,7 +91,7 @@ public interface ProjectFactory {
                   .moduleContentInfoPattern()
                   .replace("${space}", space.name())
                   .replace("${module}", module);
-          var content = folders().root(root);
+          var content = composer().folders().root(root);
           modules.add(new Project.DeclaredModule(content, content.resolve(info)));
         }
         spaces.add(
