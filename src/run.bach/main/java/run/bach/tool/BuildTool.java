@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
-import java.util.spi.ToolProvider;
 import run.bach.ProjectTool;
 import run.duke.Workbench;
 
@@ -24,7 +23,7 @@ public class BuildTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public ProjectTool provider(Workbench workbench) {
     return new BuildTool(workbench);
   }
 

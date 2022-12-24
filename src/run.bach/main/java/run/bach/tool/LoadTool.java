@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.Browser;
 import run.bach.Folders;
@@ -38,7 +37,7 @@ public class LoadTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public LoadTool provider(Workbench workbench) {
     return new LoadTool(workbench);
   }
 

@@ -2,7 +2,6 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.util.spi.ToolProvider;
 import run.bach.Browser;
 import run.bach.ProjectTool;
 import run.bach.external.Repository;
@@ -24,7 +23,7 @@ public class InfoTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public InfoTool provider(Workbench workbench) {
     return new InfoTool(workbench);
   }
 

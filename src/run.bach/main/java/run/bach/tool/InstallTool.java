@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.StringJoiner;
-import java.util.spi.ToolProvider;
 import run.bach.Browser;
 import run.bach.Folders;
 import run.bach.ProjectTool;
@@ -37,7 +36,7 @@ public class InstallTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public InstallTool provider(Workbench workbench) {
     return new InstallTool(workbench);
   }
 

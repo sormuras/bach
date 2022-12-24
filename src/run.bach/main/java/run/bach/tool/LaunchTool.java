@@ -2,7 +2,6 @@ package run.bach.tool;
 
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
-import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.ProjectTool;
 import run.duke.ToolCall;
@@ -22,7 +21,7 @@ public class LaunchTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public LaunchTool provider(Workbench workbench) {
     return new LaunchTool(workbench);
   }
 

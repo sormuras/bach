@@ -1,7 +1,6 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
 import run.bach.internal.ModulesSupport;
@@ -25,7 +24,7 @@ public class CacheTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public CacheTool provider(Workbench workbench) {
     return new CacheTool(workbench);
   }
 

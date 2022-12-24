@@ -4,7 +4,6 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.spi.ToolProvider;
 import run.bach.Browser;
 import run.bach.Folders;
 import run.bach.ProjectTool;
@@ -30,7 +29,7 @@ public class ImportTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public ImportTool provider(Workbench workbench) {
     return new ImportTool(workbench);
   }
 

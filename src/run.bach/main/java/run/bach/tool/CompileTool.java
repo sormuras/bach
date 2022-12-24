@@ -1,7 +1,6 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
 import run.bach.ProjectTool;
 import run.duke.ToolCall;
 import run.duke.Workbench;
@@ -23,7 +22,7 @@ public class CompileTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public CompileTool provider(Workbench workbench) {
     return new CompileTool(workbench);
   }
 

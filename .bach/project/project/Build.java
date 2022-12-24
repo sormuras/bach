@@ -1,7 +1,6 @@
 package project;
 
 import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
 import run.bach.tool.BuildTool;
 import run.duke.Workbench;
 
@@ -13,7 +12,7 @@ public final class Build extends BuildTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public Build provider(Workbench workbench) {
     return new Build(workbench);
   }
 

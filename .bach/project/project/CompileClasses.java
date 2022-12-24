@@ -1,6 +1,5 @@
 package project;
 
-import java.util.spi.ToolProvider;
 import run.bach.tool.CompileClassesTool;
 import run.duke.ToolCall;
 import run.duke.Workbench;
@@ -13,7 +12,7 @@ public final class CompileClasses extends CompileClassesTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public CompileClasses provider(Workbench workbench) {
     return new CompileClasses(workbench);
   }
 

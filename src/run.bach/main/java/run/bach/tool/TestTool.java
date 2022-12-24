@@ -27,7 +27,7 @@ public class TestTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public TestTool provider(Workbench workbench) {
     return new TestTool(workbench);
   }
 

@@ -1,7 +1,6 @@
 package project;
 
 import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
 import run.duke.Tooling;
 import run.duke.Workbench;
 
@@ -16,7 +15,7 @@ public record Format(Workbench workbench) implements Tooling {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public Format provider(Workbench workbench) {
     return new Format(workbench);
   }
 

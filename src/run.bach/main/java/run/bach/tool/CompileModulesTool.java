@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.spi.ToolProvider;
 import run.bach.Folders;
 import run.bach.Project;
 import run.bach.ProjectTool;
@@ -32,7 +31,7 @@ public class CompileModulesTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public CompileModulesTool provider(Workbench workbench) {
     return new CompileModulesTool(workbench);
   }
 

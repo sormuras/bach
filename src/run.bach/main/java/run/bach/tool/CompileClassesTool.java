@@ -3,7 +3,6 @@ package run.bach.tool;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.spi.ToolProvider;
 import run.bach.Project;
 import run.bach.ProjectTool;
 import run.duke.ToolCall;
@@ -28,7 +27,7 @@ public class CompileClassesTool extends ProjectTool {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
+  public CompileClassesTool provider(Workbench workbench) {
     return new CompileClassesTool(workbench);
   }
 
