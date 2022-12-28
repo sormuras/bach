@@ -1,16 +1,11 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
-import run.bach.ProjectTool;
+import run.bach.Bach;
 import run.duke.Duke;
-import run.duke.Workbench;
 
-public class CleanTool extends ProjectTool {
+public class CleanTool implements Bach.Operator {
   public CleanTool() {}
-
-  protected CleanTool(Workbench workbench) {
-    super(workbench);
-  }
 
   @Override
   public final String name() {
@@ -18,13 +13,8 @@ public class CleanTool extends ProjectTool {
   }
 
   @Override
-  public CleanTool provider(Workbench workbench) {
-    return new CleanTool(workbench);
-  }
-
-  @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
-    run(Duke.treeDelete(folders().out()));
+  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+    bach.run(Duke.treeDelete(bach.folders().out()));
     return 0;
   }
 }

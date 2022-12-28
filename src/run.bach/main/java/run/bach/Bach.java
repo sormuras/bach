@@ -7,13 +7,13 @@ import java.util.List;
 import java.util.spi.ToolProvider;
 import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
-import run.duke.Tool;
 import run.duke.ToolCall;
+import run.duke.ToolOperator;
 import run.duke.Workbench;
 import run.duke.Workpieces;
 
-record Bach(Workpieces workpieces) implements Workbench, BachRunner {
-  Bach {
+public record Bach(Workpieces workpieces) implements Workbench, BachRunner {
+  public Bach {
     var printer = workpieces.get(Printer.class);
     var project = workpieces.get(Project.class);
     var toolkit = workpieces.get(Toolkit.class);
@@ -40,11 +40,8 @@ record Bach(Workpieces workpieces) implements Workbench, BachRunner {
   private ToolProvider switchOverToolCallAndYieldToolProvider(ToolCall call) {
     var provider = call.provider();
     if (provider.isPresent()) return provider.get();
-    var string = call.tool();
-    var tool = find(string).orElseThrow(() -> new ToolNotFoundException(string));
-    if (tool instanceof Tool.OfOperator of) return of.operator().provider(this);
-    if (tool instanceof Tool.OfProvider of) return of.provider();
-    throw new AssertionError("Unsupported tool type " + tool.getClass());
+    var tool = call.tool();
+    return find(tool).orElseThrow(() -> new ToolNotFoundException(tool)).provider();
   }
 
   private void run(ToolProvider provider, List<String> arguments) {
@@ -63,7 +60,13 @@ record Bach(Workpieces workpieces) implements Workbench, BachRunner {
       var out = newPrintWriter(silent, printer().out());
       var err = newPrintWriter(silent, printer().err());
       event.begin();
-      event.code = provider.run(out, err, args);
+      if (provider instanceof Bach.Operator operator) {
+        event.code = operator.run(this, out, err, args);
+      } else if (provider instanceof ToolOperator operator) {
+        event.code = operator.run(this, out, err, args);
+      } else {
+        event.code = provider.run(out, err, args);
+      }
       event.end();
       event.out = out.toString().strip();
       event.err = err.toString().strip();
@@ -78,5 +81,14 @@ record Bach(Workpieces workpieces) implements Workbench, BachRunner {
 
   private PrintWriter newPrintWriter(boolean silent, PrintWriter writer) {
     return silent ? new PrintWriter(Writer.nullWriter()) : new StringPrintWriterMirror(writer);
+  }
+
+  @FunctionalInterface
+  public interface Operator extends ToolOperator {
+    default int run(Workbench workbench, PrintWriter out, PrintWriter err, String... args) {
+      throw new UnsupportedOperationException();
+    }
+
+    int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
   }
 }

@@ -34,93 +34,66 @@ import java.util.spi.ToolProvider;
  *     <td> {@code "tool"} </td>
  *   </tr>
  * </table>
+ *
+ * @param identifier the string identifying this tool instance
  */
-public sealed interface Tool extends Comparable<Tool>, Predicate<String> {
-  /** {@return the string identifying this tool instance} */
-  String identifier();
-
-  /** {@return the namespace of this tool instance, possibly an empty string} */
-  default String namespace() {
-    return namespace(identifier());
-  }
-
-  /** {@return the non-empty nickname of this tool instance} */
-  default String nickname() {
-    var identifier = identifier();
-    return identifier.substring(identifier.lastIndexOf('/') + 1);
-  }
-
-  @Override
-  default int compareTo(Tool other) {
-    return identifier().compareTo(other.identifier());
-  }
-
-  @Override
-  default boolean test(String tool) {
-    return matches(identifier(), tool);
-  }
-
-  static void checkIdentifier(String identifier) throws RuntimeException {
-    Objects.requireNonNull(identifier, "identifier must not be null");
-    if (identifier.isEmpty()) throw new IllegalArgumentException("identifier must not be empty");
-    if (identifier.isBlank()) throw new IllegalArgumentException("identifier must not be blank");
-    Objects.checkIndex(identifier.lastIndexOf('/'), identifier.length() - 1);
-  }
-
-  static boolean matches(String identifier, String tool) {
-    return identifier.equals(tool) || identifier.endsWith('/' + tool);
-  }
-
-  /** {@return a namespace string derived from the domain of the type argument} */
-  static String namespace(Class<?> type) {
-    var module = type.getModule();
-    return module.isNamed() ? module.getName() : type.getPackageName();
-  }
-
-  static String namespace(String tool) {
-    var separator = tool.lastIndexOf('/');
-    return separator == -1 ? "" : tool.substring(0, separator);
-  }
-
-  static String nickname(String tool) {
-    return tool.substring(tool.lastIndexOf('/') + 1);
-  }
-
+public record Tool(String identifier, ToolProvider provider)
+    implements Comparable<Tool>, Predicate<String> {
   /** {@return a tool for the given provider instance deriving the namespace from it} */
-  static Tool of(ToolProvider provider) {
+  public static Tool of(ToolProvider provider) {
     var identifier = namespace(provider.getClass()) + '/' + provider.name();
     return Tool.of(identifier, provider);
   }
 
-  /** {@return a tool for the given operator instance deriving the namespace from it} */
-  static Tool of(ToolOperator operator) {
-    var identifier = namespace(operator.getClass()) + '/' + operator.name();
-    return Tool.of(identifier, operator);
-  }
-
   /** {@return a tool for the given identifier and the given provider instance} */
-  static Tool of(String identifier, ToolProvider provider) {
-    return new OfProvider(identifier, provider);
+  public static Tool of(String identifier, ToolProvider provider) {
+    return new Tool(identifier, provider);
   }
 
-  /** {@return a tool for the given identifier and the given operator instance} */
-  static Tool of(String identifier, ToolOperator operator) {
-    return new OfOperator(identifier, operator);
+  public static boolean matches(String identifier, String tool) {
+    return identifier.equals(tool) || identifier.endsWith('/' + tool);
   }
 
-  /** Tool of {@link ToolProvider}. */
-  record OfProvider(String identifier, ToolProvider provider) implements Tool {
-    public OfProvider {
-      checkIdentifier(identifier);
-      Objects.requireNonNull(provider, "provider must not be null");
-    }
+  /** {@return a namespace string derived from the domain of the type argument} */
+  public static String namespace(Class<?> type) {
+    var module = type.getModule();
+    return module.isNamed() ? module.getName() : type.getPackageName();
   }
 
-  /** Tool of {@link ToolOperator}. */
-  record OfOperator(String identifier, ToolOperator operator) implements Tool {
-    public OfOperator {
-      checkIdentifier(identifier);
-      Objects.requireNonNull(operator, "operator must not be null");
-    }
+  public static String namespace(String tool) {
+    var separator = tool.lastIndexOf('/');
+    return separator == -1 ? "" : tool.substring(0, separator);
+  }
+
+  public static String nickname(String tool) {
+    return tool.substring(tool.lastIndexOf('/') + 1);
+  }
+
+  public Tool {
+    Objects.requireNonNull(identifier, "identifier must not be null");
+    if (identifier.isEmpty()) throw new IllegalArgumentException("identifier must not be empty");
+    if (identifier.isBlank()) throw new IllegalArgumentException("identifier must not be blank");
+    Objects.checkIndex(identifier.lastIndexOf('/'), identifier.length() - 1);
+    Objects.requireNonNull(provider, "provider must not be null");
+  }
+
+  /** {@return the namespace of this tool instance, possibly an empty string} */
+  public String namespace() {
+    return namespace(identifier);
+  }
+
+  /** {@return the non-empty nickname of this tool instance} */
+  public String nickname() {
+    return nickname(identifier);
+  }
+
+  @Override
+  public int compareTo(Tool other) {
+    return identifier().compareTo(other.identifier());
+  }
+
+  @Override
+  public boolean test(String tool) {
+    return matches(identifier(), tool);
   }
 }

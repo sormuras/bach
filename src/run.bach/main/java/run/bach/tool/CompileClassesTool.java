@@ -3,23 +3,17 @@ package run.bach.tool;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import run.bach.Bach;
+import run.bach.Folders;
 import run.bach.Project;
-import run.bach.ProjectTool;
 import run.duke.ToolCall;
-import run.duke.Workbench;
 
-public class CompileClassesTool extends ProjectTool {
+public class CompileClassesTool implements Bach.Operator {
   public static ToolCall compile(Project.Space space) {
     return ToolCall.of("compile-classes", space.name());
   }
 
-  public CompileClassesTool() {
-    super();
-  }
-
-  protected CompileClassesTool(Workbench workbench) {
-    super(workbench);
-  }
+  public CompileClassesTool() {}
 
   @Override
   public final String name() {
@@ -27,21 +21,16 @@ public class CompileClassesTool extends ProjectTool {
   }
 
   @Override
-  public CompileClassesTool provider(Workbench workbench) {
-    return new CompileClassesTool(workbench);
-  }
-
-  @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
-    var space = project().spaces().space(args[0]);
+  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+    var space = bach.project().spaces().space(args[0]);
     var javac = createJavacCall();
     javac = javacWithRelease(javac, space);
     javac = javacWithModules(javac, space);
     javac = javacWithModuleSourcePaths(javac, space);
-    javac = javacWithModulePaths(javac, space);
-    javac = javacWithModulePatches(javac, space);
-    javac = javacWithDestinationDirectory(javac, space);
-    run(javac);
+    javac = javacWithModulePaths(javac, space, bach.folders());
+    javac = javacWithModulePatches(javac, space, bach);
+    javac = javacWithDestinationDirectory(javac, space, bach.folders());
+    bach.run(javac);
     return 0;
   }
 
@@ -64,8 +53,8 @@ public class CompileClassesTool extends ProjectTool {
     return javac;
   }
 
-  protected ToolCall javacWithModulePaths(ToolCall javac, Project.Space space) {
-    var modulePath = space.toModulePath(folders());
+  protected ToolCall javacWithModulePaths(ToolCall javac, Project.Space space, Folders folders) {
+    var modulePath = space.toModulePath(folders);
     if (modulePath.isPresent()) {
       javac = javac.with("--module-path", modulePath.get());
       javac = javac.with("--processor-module-path", modulePath.get());
@@ -73,15 +62,15 @@ public class CompileClassesTool extends ProjectTool {
     return javac;
   }
 
-  protected ToolCall javacWithModulePatches(ToolCall javac, Project.Space space) {
+  protected ToolCall javacWithModulePatches(ToolCall javac, Project.Space space, Bach bach) {
     for (var declaration : space.modules().list()) {
       var module = declaration.name();
       var patches = new ArrayList<String>();
       for (var requires : space.requires()) {
-        if (project().spaces().space(requires).modules().find(module).isEmpty()) {
+        if (bach.project().spaces().space(requires).modules().find(module).isEmpty()) {
           continue;
         }
-        patches.add(folders().out(requires, "modules", module + ".jar").toString());
+        patches.add(bach.folders().out(requires, "modules", module + ".jar").toString());
       }
       if (patches.isEmpty()) continue;
       var patch = String.join(File.pathSeparator, patches);
@@ -90,9 +79,10 @@ public class CompileClassesTool extends ProjectTool {
     return javac;
   }
 
-  protected ToolCall javacWithDestinationDirectory(ToolCall javac, Project.Space space) {
+  protected ToolCall javacWithDestinationDirectory(
+      ToolCall javac, Project.Space space, Folders folders) {
     var feature = space.targets().orElse(Runtime.version().feature());
-    var classes = folders().out(space.name(), "classes").resolve("java-" + feature);
+    var classes = folders.out(space.name(), "classes").resolve("java-" + feature);
     return javac.with("-d", classes);
   }
 }

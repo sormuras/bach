@@ -17,4 +17,18 @@ module run.bach {
 
   uses java.util.spi.ToolProvider;
   uses run.bach.Composer;
+
+  provides java.util.spi.ToolProvider with
+      run.bach.tool.BuildTool,
+      run.bach.tool.CacheTool,
+      run.bach.tool.CleanTool,
+      run.bach.tool.CompileTool,
+      run.bach.tool.CompileClassesTool,
+      run.bach.tool.CompileModulesTool,
+      run.bach.tool.ImportTool,
+      run.bach.tool.InfoTool,
+      run.bach.tool.InstallTool,
+      run.bach.tool.LaunchTool,
+      run.bach.tool.LoadTool,
+      run.bach.tool.TestTool;
 }

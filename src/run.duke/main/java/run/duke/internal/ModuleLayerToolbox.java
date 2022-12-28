@@ -6,7 +6,6 @@ import java.util.ServiceLoader;
 import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 import run.duke.Tool;
-import run.duke.ToolOperator;
 import run.duke.Toolbox;
 
 public record ModuleLayerToolbox(ModuleLayer layer, Predicate<Module> include) implements Toolbox {
@@ -17,11 +16,6 @@ public record ModuleLayerToolbox(ModuleLayer layer, Predicate<Module> include) i
   @Override
   public List<Tool> tools() {
     var tools = new ArrayList<Tool>();
-    ServiceLoader.load(layer, ToolOperator.class).stream()
-        .filter(service -> include.test(service.type().getModule()))
-        .map(ServiceLoader.Provider::get)
-        .map(Tool::of)
-        .forEach(tools::add);
     ServiceLoader.load(layer, ToolProvider.class).stream()
         .filter(service -> include.test(service.type().getModule()))
         .map(ServiceLoader.Provider::get)
