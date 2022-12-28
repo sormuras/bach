@@ -1,7 +1,6 @@
 package test.duke;
 
 import java.io.PrintWriter;
-import java.util.spi.ToolProvider;
 import run.duke.ToolOperator;
 import run.duke.Workbench;
 
@@ -12,15 +11,8 @@ record MockToolOperator() implements ToolOperator {
   }
 
   @Override
-  public ToolProvider provider(Workbench workbench) {
-    return new Provider(name(), workbench);
-  }
-
-  record Provider(String name, Workbench workbench) implements ToolProvider {
-    @Override
-    public int run(PrintWriter out, PrintWriter err, String... args) {
-      for (var arg : args) workbench.run(arg);
-      return 0;
-    }
+  public int run(Workbench workbench, PrintWriter out, PrintWriter err, String... args) {
+    for (var arg : args) workbench.run(arg);
+    return 0;
   }
 }

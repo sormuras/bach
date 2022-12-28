@@ -4,23 +4,9 @@ import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import run.bach.internal.ToolCallsToolOperator;
-import run.bach.tool.BuildTool;
-import run.bach.tool.CacheTool;
-import run.bach.tool.CleanTool;
-import run.bach.tool.CompileClassesTool;
-import run.bach.tool.CompileModulesTool;
-import run.bach.tool.CompileTool;
-import run.bach.tool.ImportTool;
-import run.bach.tool.InfoTool;
-import run.bach.tool.InstallTool;
-import run.bach.tool.LaunchTool;
-import run.bach.tool.LoadTool;
-import run.bach.tool.TestTool;
 import run.duke.Tool;
 import run.duke.ToolCalls;
-import run.duke.ToolOperator;
 import run.duke.Toolbox;
 import run.duke.Workbench;
 import run.duke.Workpieces;
@@ -72,10 +58,6 @@ public class Composer {
         .createProject();
   }
 
-  public ProjectTools createProjectTools() {
-    return new ProjectTools();
-  }
-
   public Browser createBrowser() {
     return new Browser();
   }
@@ -92,7 +74,6 @@ public class Composer {
         Toolbox.ofModuleLayer(setting().layer()), // .bach source modules and system modules
         Toolbox.ofModulePath(externalModules), // parent module layers are excluded
         Toolbox.ofJavaPrograms(externalTools, folders().javaHome("bin", "java")),
-        Toolbox.of(provideProjectTools()),
         Toolbox.ofNativeToolsInJavaHome("java", "jcmd", "jfr"));
   }
 
@@ -111,22 +92,6 @@ public class Composer {
     return Optional.of(annotations.get(0));
   }
 
-  List<ToolOperator> provideDefaultToolOperators() {
-    return List.of(
-        new BuildTool(),
-        new CacheTool(),
-        new CleanTool(),
-        new CompileTool(),
-        new CompileClassesTool(),
-        new CompileModulesTool(),
-        new ImportTool(),
-        new InfoTool(),
-        new InstallTool(),
-        new LaunchTool(),
-        new LoadTool(),
-        new TestTool());
-  }
-
   List<Tool> provideCommandTools() {
     var tools = new ArrayList<Tool>();
     var modules = new ArrayList<>(setting().layer().modules());
@@ -141,11 +106,5 @@ public class Composer {
       }
     }
     return tools;
-  }
-
-  List<Tool> provideProjectTools() {
-    return Stream.concat(createProjectTools().stream(), provideDefaultToolOperators().stream())
-        .map(Tool::of)
-        .toList();
   }
 }

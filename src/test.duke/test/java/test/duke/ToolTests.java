@@ -27,9 +27,10 @@ public class ToolTests implements ToolProvider {
   }
 
   void testIdentifiers() {
-    Tool.checkIdentifier("/tool");
-    Tool.checkIdentifier("jdk.compiler/javac");
-    Tool.checkIdentifier("deep/space/nine");
+    var provider = new MockToolProvider();
+    Tool.of("/tool", provider);
+    Tool.of("jdk.compiler/javac", provider);
+    Tool.of("deep/space/nine", provider);
   }
 
   void testInvalidIdentifiers() {
@@ -43,7 +44,7 @@ public class ToolTests implements ToolProvider {
 
   void testInvalidIdentifier(String identifier) {
     try {
-      Tool.checkIdentifier(identifier);
+      Tool.of(identifier, new MockToolProvider());
       throw new AssertionError("Valid?! " + identifier);
     } catch (RuntimeException expected) {
       // expected
@@ -77,7 +78,7 @@ public class ToolTests implements ToolProvider {
     assert "zero".equals(tool.nickname());
     assert "test.duke".equals(tool.namespace());
     assert "test.duke/zero".equals(tool.identifier());
-    assert zero == ((Tool.OfProvider) tool).provider();
+    assert zero == tool.provider();
     assert tool.test("zero");
     assert tool.test("test.duke/zero");
     assert !tool.test("tool");

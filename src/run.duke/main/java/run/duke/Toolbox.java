@@ -62,7 +62,7 @@ public interface Toolbox {
       var renamed = renamer.apply(name);
       var command = List.of(executable.toString());
       var provider = new NativeProcessToolProvider(renamed, command);
-      tools.add(new Tool.OfProvider(renamed, provider));
+      tools.add(Tool.of(renamed, provider));
     }
     return Toolbox.of(tools);
   }

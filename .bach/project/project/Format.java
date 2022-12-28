@@ -1,28 +1,22 @@
 package project;
 
 import java.io.PrintWriter;
-import run.duke.Tooling;
+import run.duke.ToolOperator;
 import run.duke.Workbench;
 
-public record Format(Workbench workbench) implements Tooling {
-  public Format() {
-    this(Workbench.inoperative());
-  }
-
+public final class Format implements ToolOperator {
   @Override
   public String name() {
     return "format";
   }
 
   @Override
-  public Format provider(Workbench workbench) {
-    return new Format(workbench);
-  }
-
-  @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
-    if (find("google-java-format@1.15.0").isEmpty()) run("install", "google-java-format@1.15.0");
-    run("google-java-format@1.15.0", format -> format.with("--replace").withFindFiles("**.java"));
+  public int run(Workbench workbench, PrintWriter out, PrintWriter err, String... args) {
+    if (workbench.find("google-java-format@1.15.0").isEmpty()) {
+      workbench.run("install", "google-java-format@1.15.0");
+    }
+    workbench.run(
+        "google-java-format@1.15.0", format -> format.with("--replace").withFindFiles("**.java"));
     return 0;
   }
 }

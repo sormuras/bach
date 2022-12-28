@@ -1,22 +1,17 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
+import run.bach.Bach;
 import run.bach.Project;
-import run.bach.ProjectTool;
 import run.bach.internal.ModulesSupport;
 import run.duke.ToolCall;
-import run.duke.Workbench;
 
-public class CacheTool extends ProjectTool {
+public class CacheTool implements Bach.Operator {
   public static ToolCall cache() {
     return ToolCall.of("cache");
   }
 
   public CacheTool() {}
-
-  protected CacheTool(Workbench workbench) {
-    super(workbench);
-  }
 
   @Override
   public final String name() {
@@ -24,20 +19,15 @@ public class CacheTool extends ProjectTool {
   }
 
   @Override
-  public CacheTool provider(Workbench workbench) {
-    return new CacheTool(workbench);
-  }
-
-  @Override
-  public int run(PrintWriter out, PrintWriter err, String... args) {
+  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
     var finders =
-        project().spaces().list().stream()
+        bach.project().spaces().list().stream()
             .map(Project.Space::modules)
             .map(Project.DeclaredModules::toModuleFinder)
             .toList();
-    var missing = ModulesSupport.listMissingNames(finders, project().externals().requires());
+    var missing = ModulesSupport.listMissingNames(finders, bach.project().externals().requires());
     if (missing.isEmpty()) return 0;
-    run("load", load -> load.with("modules").with(missing.stream().sorted()));
+    bach.run("load", load -> load.with("modules").with(missing.stream().sorted()));
     return 0;
   }
 }
