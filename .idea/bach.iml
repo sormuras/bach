@@ -6,6 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/bach.run" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/bin" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/out" />
+      <excludeFolder url="file://$MODULE_DIR$/bin/run.bach" />
+      <excludeFolder url="file://$MODULE_DIR$/bin/run.duke" />
       <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
