@@ -52,10 +52,10 @@ public interface Toolbox extends ToolFinder {
     var tools = new ArrayList<Tool>();
     for (var name : names) {
       var executable = directory.resolve(name);
-      var renamed = renamer.apply(name);
       var command = List.of(executable.toString());
-      var provider = new NativeProcessToolProvider(renamed, command);
-      tools.add(Tool.of(renamed, provider));
+      var provider = new NativeProcessToolProvider(name, command);
+      var tool = Tool.of(renamer.apply(name), provider);
+      tools.add(tool);
     }
     return Toolbox.of(tools);
   }
