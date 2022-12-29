@@ -42,8 +42,8 @@ jobs:
         run: .bach/bootstrap
       - name: 'Build Bach ${{ needs.setup.outputs.version }}'
         run: bin/bach --project-version "${{ needs.setup.outputs.version }}" build
-      - name: 'Package Bach ${{ needs.setup.outputs.tag }}'
-        run: bin/bach zip ".bach/out/bach@${{ needs.setup.outputs.tag }}.zip"
+      - name: 'Bundle Bach ${{ needs.setup.outputs.tag }}'
+        run: bin/bach bundle ".bach/out/bach@${{ needs.setup.outputs.tag }}.zip"
       - name: 'Upload artifact ${{ github.event.repository.name }}-build-${{ github.sha }}'
         if: always()
         uses: actions/upload-artifact@v3

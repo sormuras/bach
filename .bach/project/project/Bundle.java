@@ -7,10 +7,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.spi.ToolProvider;
 
-public class Zip implements ToolProvider {
+public class Bundle implements ToolProvider {
   @Override
   public String name() {
-    return "zip";
+    return "bundle";
   }
 
   @Override

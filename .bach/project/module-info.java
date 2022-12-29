@@ -17,7 +17,7 @@ import run.bach.ProjectInfo.Space;
           launchers = {"test.bach/test.bach.Main", "test.duke/test.duke.Main"},
           requires = "main")
     })
-@Command(name = "rebuild", args = "clean + format + build")
+@Command(name = "rebuild", args = "clean + format + build + bundle")
 @Command(name = "remake", args = "clean + make")
 @Command(
     name = "make",
@@ -51,7 +51,7 @@ module project {
       project.BachComposer;
   provides java.util.spi.ToolProvider with
       project.Build,
+      project.Bundle,
       project.CompileClasses,
-      project.Format,
-      project.Zip;
+      project.Format;
 }
