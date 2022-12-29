@@ -79,10 +79,10 @@ public class ToolTests implements ToolProvider {
     assert "test.duke".equals(tool.namespace());
     assert "test.duke/zero".equals(tool.identifier());
     assert zero == tool.provider();
-    assert tool.test("zero");
-    assert tool.test("test.duke/zero");
-    assert !tool.test("tool");
-    assert !tool.test("test.duke/tool");
+    assert tool.matches("zero");
+    assert tool.matches("test.duke/zero");
+    assert !tool.matches("tool");
+    assert !tool.matches("test.duke/tool");
   }
 
   void testEmptyNamespaceAndCustomNickname() {
@@ -91,8 +91,8 @@ public class ToolTests implements ToolProvider {
     assert "0".equals(tool.nickname());
     assert "".equals(tool.namespace());
     assert "/0".equals(tool.identifier());
-    assert tool.test("0");
-    assert tool.test("/0");
-    assert !tool.test("zero");
+    assert tool.matches("0");
+    assert tool.matches("/0");
+    assert !tool.matches("zero");
   }
 }
