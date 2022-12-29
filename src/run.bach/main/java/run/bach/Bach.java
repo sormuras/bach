@@ -9,10 +9,11 @@ import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
 import run.duke.ToolCall;
 import run.duke.ToolOperator;
+import run.duke.ToolRunner;
 import run.duke.Workbench;
 import run.duke.Workpieces;
 
-public record Bach(Workpieces workpieces) implements Workbench, BachRunner {
+public record Bach(Workpieces workpieces) implements Workbench, ToolRunner {
   public Bach {
     var printer = workpieces.get(Printer.class);
     var project = workpieces.get(Project.class);
@@ -22,6 +23,26 @@ public record Bach(Workpieces workpieces) implements Workbench, BachRunner {
     printer.log(Level.DEBUG, "  project: " + project.toNameAndVersion());
     printer.log(Level.DEBUG, "  toolbox: " + toolkit.toolbox().tools().size());
     printer.log(Level.DEBUG, "  tweaks : " + toolkit.tweaks().list().size());
+  }
+
+  public Project project() {
+    return workpiece(Project.class);
+  }
+
+  public Options options() {
+    return workpiece(Options.class);
+  }
+
+  public Folders folders() {
+    return workpiece(Folders.class);
+  }
+
+  public Printer printer() {
+    return workpiece(Printer.class);
+  }
+
+  public Toolkit toolkit() {
+    return workpiece(Toolkit.class);
   }
 
   @Override
