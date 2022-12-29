@@ -1,15 +1,24 @@
 package run.duke;
 
+import java.util.Optional;
+import java.util.stream.Stream;
 import run.duke.internal.InoperativeWorkbench;
 
-public interface Workbench extends ToolFinder, ToolRunner {
+public interface Workbench {
   static Workbench inoperative() {
     return new InoperativeWorkbench();
   }
 
-  @Override
-  default Workbench workbench() {
-    return this;
+  default Optional<Tool> find(String tool) {
+    return toolbox().find(tool);
+  }
+
+  default void run(String tool, Object... args) {
+    run(ToolCall.of(tool).with(Stream.of(args)));
+  }
+
+  default void run(String tool, ToolCall.Tweak tweak) {
+    run(ToolCall.of(tool).withTweak(tweak));
   }
 
   void run(ToolCall call);

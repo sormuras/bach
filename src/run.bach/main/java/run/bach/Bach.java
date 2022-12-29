@@ -9,11 +9,10 @@ import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
 import run.duke.ToolCall;
 import run.duke.ToolOperator;
-import run.duke.ToolRunner;
 import run.duke.Workbench;
 import run.duke.Workpieces;
 
-public record Bach(Workpieces workpieces) implements Workbench, ToolRunner {
+public record Bach(Workpieces workpieces) implements Workbench {
   public Bach {
     var printer = workpieces.get(Printer.class);
     var project = workpieces.get(Project.class);
