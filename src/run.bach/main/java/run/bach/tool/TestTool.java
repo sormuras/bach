@@ -1,9 +1,11 @@
 package run.bach.tool;
 
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.lang.module.ModuleFinder;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
+import java.util.stream.Stream;
 import run.bach.Bach;
 import run.bach.Project;
 import run.bach.internal.ModulesSupport;
@@ -56,13 +58,12 @@ public class TestTool implements Bach.Operator {
     void runJUnitPlatform() {
       if (bach.find("junit").isEmpty()) return;
       for (var module : space.modules()) {
-        runJUnitPlatform(module);
+        runJUnitPlatform(module.name());
       }
     }
 
-    void runJUnitPlatform(Project.DeclaredModule module) {
+    void runJUnitPlatform(String name) {
       var folders = bach.folders();
-      var name = module.name();
       var finder =
           ModuleFinder.of(
               folders.out("test", "modules", name + ".jar"),
@@ -70,7 +71,14 @@ public class TestTool implements Bach.Operator {
               folders.out("test", "modules"),
               folders.externalModules());
       var layer = ModulesSupport.buildModuleLayer(finder, name);
-      layer.findLoader(name).setDefaultAssertionStatus(true);
+      var module = layer.findModule(name).orElseThrow(AssertionError::new);
+      var annotations =
+          Stream.of(module.getAnnotations())
+              .map(Annotation::annotationType)
+              .map(Class::getTypeName)
+              .toList();
+      if (!annotations.contains("org.junit.platform.commons.annotation.Testable")) return;
+      module.getClassLoader().setDefaultAssertionStatus(true);
       var junit =
           ServiceLoader.load(layer, ToolProvider.class).stream()
               .map(ServiceLoader.Provider::get)
