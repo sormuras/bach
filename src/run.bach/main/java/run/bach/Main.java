@@ -35,7 +35,6 @@ public record Main() implements ToolProvider {
             options.printerThreshold(verbose ? Level.ALL : silent ? Level.OFF : Level.INFO),
             options.printerMargin(1000));
 
-    printer.log(Level.TRACE, "BEGIN");
     if (verbose) printer.out(options + " -> " + List.of(options.calls()));
     if (options.help()) {
       printer.out(
@@ -83,7 +82,6 @@ public record Main() implements ToolProvider {
     for (var call : calls) {
       bach.run(call);
     }
-    printer.log(Level.TRACE, "END.");
     return 0;
   }
 }
