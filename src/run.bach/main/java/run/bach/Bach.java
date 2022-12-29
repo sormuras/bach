@@ -25,6 +25,10 @@ public record Bach(Workpieces workpieces) implements Workbench, ToolRunner {
     printer.log(Level.DEBUG, "  tweaks : " + toolkit.tweaks().list().size());
   }
 
+  public Browser browser() {
+    return workpiece(Browser.class);
+  }
+
   public Project project() {
     return workpiece(Project.class);
   }

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
 import run.bach.Bach;
-import run.bach.Browser;
 import run.bach.external.Info;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
@@ -55,8 +54,7 @@ public class InstallTool implements Bach.Operator {
   }
 
   void listInstallableTools(Bach bach, PrintWriter out, Repository repository, String from) {
-    var browser = bach.workpiece(Browser.class);
-    var walker = Walker.of(browser.client(), repository);
+    var walker = Walker.of(bach.browser().client(), repository);
     var tools = walker.map().get(Info.EXTERNAL_TOOL_DIRECTORY);
     if (tools == null || tools.isEmpty()) {
       out.println("No tool directory index files found in " + repository);

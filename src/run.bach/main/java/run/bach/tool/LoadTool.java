@@ -10,9 +10,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import run.bach.Bach;
-import run.bach.Browser;
-import run.bach.Folders;
-import run.bach.Project;
 import run.bach.external.ModulesLocators;
 import run.bach.internal.ModulesSupport;
 import run.duke.CommandLineInterface;
@@ -38,7 +35,7 @@ public class LoadTool implements Bach.Operator {
       out.println("Usage: %s <what> <that> <more...>".formatted(name()));
       return 0;
     }
-    var browser = bach.workpiece(Browser.class);
+    var browser = bach.browser();
     switch (options.what) {
       case "file" -> browser.load(URI.create(options.that), Path.of(options.more[0]));
       case "head" -> out.println(browser.head(URI.create(options.that)));
@@ -60,13 +57,10 @@ public class LoadTool implements Bach.Operator {
   }
 
   void loadModule(Bach bach, List<String> modules) {
-    var browser = bach.workpiece(Browser.class);
-    var folders = bach.workpiece(Folders.class);
-    var project = bach.workpiece(Project.class);
-    var externalModules = folders.externalModules();
+    var externalModules = bach.folders().externalModules();
     var locators =
         Stream.concat(
-                project.externals().locators().list().stream(),
+                bach.project().externals().locators().list().stream(),
                 ModulesLocators.of(externalModules).list().stream())
             .toList();
     with_next_module:
@@ -81,7 +75,7 @@ public class LoadTool implements Bach.Operator {
         // TODO debug("Module %s located via %s".formatted(module, locator.description()));
         var source = URI.create(location);
         var target = externalModules.resolve(module + ".jar");
-        browser.load(source, target); // "silent" load file ...
+        bach.browser().load(source, target); // "silent" load file ...
         continue with_next_module;
       }
       throw new RuntimeException("Module not locatable: " + module);
@@ -89,8 +83,7 @@ public class LoadTool implements Bach.Operator {
   }
 
   void loadModules(Bach bach, PrintWriter out, List<String> modules) {
-    var folders = bach.workpiece(Folders.class);
-    var externals = folders.externalModules();
+    var externals = bach.folders().externalModules();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
     while (true) {

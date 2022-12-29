@@ -5,7 +5,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 import java.util.StringJoiner;
 import run.bach.Bach;
-import run.bach.Browser;
 import run.bach.external.Info;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
@@ -47,8 +46,7 @@ public class ImportTool implements Bach.Operator {
   }
 
   void listImportableLocators(Bach bach, PrintWriter out, Repository repository, String from) {
-    var browser = bach.workpiece(Browser.class);
-    var walker = Walker.of(browser.client(), repository);
+    var walker = Walker.of(bach.browser().client(), repository);
     var tools = walker.map().get(Info.EXTERNAL_MODULES_LOCATOR);
     if (tools == null || tools.isEmpty()) {
       out.println("No external modules locator index files found in " + repository);
