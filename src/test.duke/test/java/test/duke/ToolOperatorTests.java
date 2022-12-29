@@ -16,6 +16,7 @@ public class ToolOperatorTests implements ToolOperator, ToolRunner {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int run(PrintWriter out, PrintWriter err, String... args) {
     return run(this, out, err, args);
   }

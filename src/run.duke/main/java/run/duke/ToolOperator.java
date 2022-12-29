@@ -24,8 +24,8 @@ public interface ToolOperator extends ToolProvider {
    * @see #run(ToolRunner, PrintWriter, PrintWriter, String...)
    */
   @Override
-  default int run(PrintWriter out, PrintWriter err, String... args)
-      throws UnsupportedOperationException {
+  @Deprecated
+  default int run(PrintWriter out, PrintWriter err, String... args) {
     throw new UnsupportedOperationException();
   }
 

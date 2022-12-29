@@ -91,6 +91,7 @@ public record Bach(
 
   @FunctionalInterface
   public interface Operator extends ToolOperator {
+    @Deprecated
     default int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
       throw new UnsupportedOperationException();
     }
