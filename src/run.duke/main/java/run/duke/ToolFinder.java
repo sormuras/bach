@@ -15,6 +15,6 @@ public interface ToolFinder {
    * @param identifierOrNickname the query string, typically an identifier or a nickname of a tool
    */
   default Optional<Tool> findTool(String identifierOrNickname) {
-    return tools().stream().filter(tool -> tool.test(identifierOrNickname)).findFirst();
+    return tools().stream().filter(tool -> tool.matches(identifierOrNickname)).findFirst();
   }
 }

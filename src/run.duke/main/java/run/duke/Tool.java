@@ -1,7 +1,6 @@
 package run.duke;
 
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 
 /**
@@ -37,8 +36,7 @@ import java.util.spi.ToolProvider;
  *
  * @param identifier the string identifying this tool instance
  */
-public record Tool(String identifier, ToolProvider provider)
-    implements Comparable<Tool>, Predicate<String> {
+public record Tool(String identifier, ToolProvider provider) implements Comparable<Tool> {
   /** {@return a tool for the given provider instance deriving the namespace from it} */
   public static Tool of(ToolProvider provider) {
     var identifier = namespace(provider.getClass()) + '/' + provider.name();
@@ -89,11 +87,16 @@ public record Tool(String identifier, ToolProvider provider)
 
   @Override
   public int compareTo(Tool other) {
-    return identifier().compareTo(other.identifier());
+    return identifier.compareTo(other.identifier);
   }
 
-  @Override
-  public boolean test(String tool) {
-    return matches(identifier(), tool);
+  /**
+   * Evaluates the names of this tool on the given argument.
+   *
+   * @param identifierOrNickname the identifier or nickname to test
+   * @return {@code true} if the input argument matches this tool's names, otherwise {@code false}
+   */
+  public boolean matches(String identifierOrNickname) {
+    return matches(identifier, identifierOrNickname);
   }
 }
