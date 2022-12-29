@@ -4,9 +4,11 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.util.List;
+import java.util.Optional;
 import java.util.spi.ToolProvider;
 import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
+import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolOperator;
 import run.duke.Workbench;
@@ -51,6 +53,11 @@ public record Bach(Workpieces workpieces) implements Workbench {
   @Override
   public <T> T workpiece(Class<T> type) {
     return workpieces.get(type);
+  }
+
+  @Override
+  public Optional<Tool> find(String tool) {
+    return toolkit().toolbox().find(tool);
   }
 
   @Override

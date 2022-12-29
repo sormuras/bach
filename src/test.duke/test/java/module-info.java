@@ -12,5 +12,5 @@ module test.duke {
       test.duke.ToolCallsTests,
       test.duke.ToolOperatorTests,
       test.duke.ToolTests,
-      test.duke.WorkbenchTests;
+      test.duke.WorkpiecesTests;
 }

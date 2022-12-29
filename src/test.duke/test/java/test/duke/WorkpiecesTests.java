@@ -4,12 +4,11 @@ import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import jdk.jfr.Enabled;
 import jdk.jfr.Registered;
-import run.duke.Toolbox;
 import run.duke.Workpieces;
 
 @Registered
 @Enabled
-public class WorkbenchTests implements ToolProvider {
+public class WorkpiecesTests implements ToolProvider {
   @Override
   public String name() {
     return getClass().getName();
@@ -23,9 +22,8 @@ public class WorkbenchTests implements ToolProvider {
 
   void testCanonical() {
     var workpieces = new Workpieces().put(int.class, 123).put(char.class, '#');
-    var workbench = new MockWorkbench(Toolbox.empty(), workpieces);
-    assert 123 == workbench.workpiece(int.class);
-    assert '#' == workbench.workpiece(char.class);
-    assert null == workbench.workpiece(boolean.class);
+    assert 123 == workpieces.get(int.class);
+    assert '#' == workpieces.get(char.class);
+    assert null == workpieces.get(boolean.class);
   }
 }

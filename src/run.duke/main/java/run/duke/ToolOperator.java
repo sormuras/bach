@@ -18,9 +18,16 @@ public interface ToolOperator extends ToolProvider {
     return getClass().getSimpleName();
   }
 
+  /**
+   * Unconditionally throws an unsupported operation exception.
+   *
+   * @see #run(Workbench, PrintWriter, PrintWriter, String...)
+   * @throws UnsupportedOperationException unconditionally
+   */
   @Override
-  default int run(PrintWriter out, PrintWriter err, String... args) {
-    return run(Workbench.inoperative(), out, err, args);
+  default int run(PrintWriter out, PrintWriter err, String... args)
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
   }
 
   /**
