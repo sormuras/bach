@@ -56,7 +56,7 @@ public class TestTool implements Bach.Operator {
     }
 
     void runJUnitPlatform() {
-      if (bach.find("junit").isEmpty()) return;
+      if (bach.findTool("junit").isEmpty()) return;
       for (var module : space.modules()) {
         runJUnitPlatform(module.name());
       }

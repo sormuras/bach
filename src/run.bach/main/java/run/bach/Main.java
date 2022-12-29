@@ -8,7 +8,6 @@ import java.util.spi.ToolProvider;
 import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.Duke;
 import run.duke.ToolCalls;
-import run.duke.Workpieces;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -52,20 +51,20 @@ public record Main() implements ToolProvider {
             bach --verbose jar --version + javac --version""");
       return 0;
     }
-    var workpieces = new Workpieces().put(Options.class, options).put(Printer.class, printer);
+    var components = new Components().put(Options.class, options).put(Printer.class, printer);
 
     var folders = Folders.of(options.rootDirectory(), options.outputDirectory(".bach/out"));
-    workpieces.put(Folders.class, folders);
+    components.put(Folders.class, folders);
 
     printer.log(Level.DEBUG, "Building source module layer...");
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     var setting = new Setting(layer);
-    workpieces.put(Setting.class, setting);
+    components.put(Setting.class, setting);
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
     printer.log(Level.DEBUG, "Loading composer...");
     var composer = ServiceLoader.load(layer, Composer.class).findFirst().orElseGet(Composer::new);
-    var workbench = composer.composeWorkbench(workpieces);
+    var bach = composer.composeBach(components);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
@@ -82,7 +81,7 @@ public record Main() implements ToolProvider {
       printer.log(Level.DEBUG, "Running %d tool call%s".formatted(size, size == 1 ? "" : "s"));
     }
     for (var call : calls) {
-      workbench.run(call);
+      bach.run(call);
     }
     printer.log(Level.TRACE, "END.");
     return 0;

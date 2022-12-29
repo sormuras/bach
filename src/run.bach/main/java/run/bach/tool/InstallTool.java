@@ -85,7 +85,7 @@ public class InstallTool implements Bach.Operator {
       if (!value.startsWith("http")) continue;
       var source = URI.create(value);
       var target = parent.resolve(key);
-      calls.add(ToolCall.of("load").with(file).with(source).with(target));
+      calls.add(ToolCall.of("load").with("file").with(source).with(target));
     }
     return calls;
   }

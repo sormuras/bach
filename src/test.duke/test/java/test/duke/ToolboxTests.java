@@ -27,33 +27,33 @@ public class ToolboxTests implements ToolProvider {
 
   void testEmptyToolbox(Toolbox toolbox) {
     assert toolbox.tools().size() == 0;
-    assert toolbox.find("tool").isEmpty();
-    assert toolbox.find("example/tool").isEmpty();
+    assert toolbox.findTool("tool").isEmpty();
+    assert toolbox.findTool("example/tool").isEmpty();
   }
 
   void testExampleToolbox() {
     var tool = Tool.of("example/tool", new MockToolProvider("tool", 0));
     var toolbox = Toolbox.of(tool);
     assert toolbox.tools().size() == 1;
-    assert toolbox.find("tool").isPresent();
-    assert toolbox.find("example/tool").isPresent();
-    assert toolbox.find("namespace/tool").isEmpty();
+    assert toolbox.findTool("tool").isPresent();
+    assert toolbox.findTool("example/tool").isPresent();
+    assert toolbox.findTool("namespace/tool").isEmpty();
   }
 
   void testMockToolbox() {
     var toolbox = new MockToolbox();
     assert toolbox.tools().size() == 3 + 1;
-    assert toolbox.find("mock0").isPresent();
-    assert toolbox.find("mock1").isPresent();
-    assert toolbox.find("mock2").isPresent();
-    assert toolbox.find("moper").isPresent();
+    assert toolbox.findTool("mock0").isPresent();
+    assert toolbox.findTool("mock1").isPresent();
+    assert toolbox.findTool("mock2").isPresent();
+    assert toolbox.findTool("moper").isPresent();
   }
 
   void testSystemToolbox() {
     var toolbox = Toolbox.ofModuleLayer(ModuleLayer.boot());
-    assert toolbox.find("duke").isPresent();
-    assert toolbox.find("jar").isPresent();
-    assert toolbox.find("javac").isPresent();
-    assert toolbox.find("run.duke/duke").isPresent();
+    assert toolbox.findTool("duke").isPresent();
+    assert toolbox.findTool("jar").isPresent();
+    assert toolbox.findTool("javac").isPresent();
+    assert toolbox.findTool("run.duke/duke").isPresent();
   }
 }

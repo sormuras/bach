@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import run.duke.internal.CollectionToolbox;
@@ -15,13 +14,7 @@ import run.duke.internal.ModulePathToolbox;
 import run.duke.internal.NativeProcessToolProvider;
 
 @FunctionalInterface
-public interface Toolbox {
-  Collection<Tool> tools();
-
-  default Optional<Tool> find(String tool) {
-    return tools().stream().filter(info -> info.test(tool)).findFirst();
-  }
-
+public interface Toolbox extends ToolFinder {
   static Toolbox empty() {
     return new CollectionToolbox(List.of());
   }

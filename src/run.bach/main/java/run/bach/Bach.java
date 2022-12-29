@@ -11,59 +11,34 @@ import run.bach.internal.StringPrintWriterMirror;
 import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolOperator;
-import run.duke.Workbench;
-import run.duke.Workpieces;
+import run.duke.ToolRunner;
 
-public record Bach(Workpieces workpieces) implements Workbench {
+public record Bach(
+    Browser browser,
+    Folders folders,
+    Options options,
+    Printer printer,
+    Project project,
+    Toolkit toolkit)
+    implements ToolRunner {
   public Bach {
-    var printer = workpieces.get(Printer.class);
-    var project = workpieces.get(Project.class);
-    var toolkit = workpieces.get(Toolkit.class);
     printer.log(Level.DEBUG, "Bach initialized");
-    printer.log(Level.DEBUG, "  printer: " + printer.threshold());
-    printer.log(Level.DEBUG, "  project: " + project.toNameAndVersion());
-    printer.log(Level.DEBUG, "  toolbox: " + toolkit.toolbox().tools().size());
-    printer.log(Level.DEBUG, "  tweaks : " + toolkit.tweaks().list().size());
-  }
-
-  public Browser browser() {
-    return workpiece(Browser.class);
-  }
-
-  public Project project() {
-    return workpiece(Project.class);
-  }
-
-  public Options options() {
-    return workpiece(Options.class);
-  }
-
-  public Folders folders() {
-    return workpiece(Folders.class);
-  }
-
-  public Printer printer() {
-    return workpiece(Printer.class);
-  }
-
-  public Toolkit toolkit() {
-    return workpiece(Toolkit.class);
   }
 
   @Override
-  public <T> T workpiece(Class<T> type) {
-    return workpieces.get(type);
+  public List<Tool> tools() {
+    return List.copyOf(toolkit.toolbox().tools());
   }
 
   @Override
-  public Optional<Tool> find(String tool) {
-    return toolkit().toolbox().find(tool);
+  public Optional<Tool> findTool(String tool) {
+    return toolkit.toolbox().findTool(tool);
   }
 
   @Override
   public void run(ToolCall toolCall) {
-    var call = toolCall.withTweaks(toolkit().tweaks());
-    printer().log(Level.INFO, "+ " + call.toCommandLine());
+    var call = toolCall.withTweaks(toolkit.tweaks());
+    printer.log(Level.INFO, "+ " + call.toCommandLine());
     var provider = switchOverToolCallAndYieldToolProvider(call);
     run(provider, call.arguments());
   }
@@ -72,7 +47,7 @@ public record Bach(Workpieces workpieces) implements Workbench {
     var provider = call.provider();
     if (provider.isPresent()) return provider.get();
     var tool = call.tool();
-    return find(tool).orElseThrow(() -> new ToolNotFoundException(tool)).provider();
+    return findTool(tool).orElseThrow(() -> new ToolNotFoundException(tool)).provider();
   }
 
   private void run(ToolProvider provider, List<String> arguments) {
@@ -86,10 +61,10 @@ public record Bach(Workpieces workpieces) implements Workbench {
     var event = new FlightRecorderEvent.ToolRun();
     event.name = provider.name();
     event.args = String.join(" ", args);
-    var silent = options().silent();
+    var silent = options.silent();
     try {
-      var out = newPrintWriter(silent, printer().out());
-      var err = newPrintWriter(silent, printer().err());
+      var out = newPrintWriter(silent, printer.out());
+      var err = newPrintWriter(silent, printer.err());
       event.begin();
       if (provider instanceof Bach.Operator operator) {
         event.code = operator.run(this, out, err, args);
@@ -116,7 +91,7 @@ public record Bach(Workpieces workpieces) implements Workbench {
 
   @FunctionalInterface
   public interface Operator extends ToolOperator {
-    default int run(Workbench workbench, PrintWriter out, PrintWriter err, String... args) {
+    default int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
       throw new UnsupportedOperationException();
     }
 

@@ -1,11 +1,10 @@
 package run.duke;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.stream.Stream;
 
-public interface Workbench {
-  Optional<Tool> find(String tool);
-
+@FunctionalInterface
+public interface ToolRunner extends ToolFinder {
   default void run(String tool, Object... args) {
     run(ToolCall.of(tool).with(Stream.of(args)));
   }
@@ -16,5 +15,7 @@ public interface Workbench {
 
   void run(ToolCall call);
 
-  <T> T workpiece(Class<T> type);
+  default List<Tool> tools() {
+    return List.of();
+  }
 }

@@ -1,12 +1,12 @@
-package run.duke;
+package run.bach;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class Workpieces {
+final class Components {
   private final Map<Class<?>, Object> map;
 
-  public Workpieces() {
+  public Components() {
     this.map = new ConcurrentHashMap<>();
   }
 
@@ -15,7 +15,7 @@ public final class Workpieces {
     return (T) map.get(type);
   }
 
-  public <T> Workpieces put(Class<T> type, T value) {
+  public <T> Components put(Class<T> type, T value) {
     map.put(type, value);
     return this;
   }

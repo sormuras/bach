@@ -8,47 +8,57 @@ import run.bach.internal.ToolCallsToolOperator;
 import run.duke.Tool;
 import run.duke.ToolCalls;
 import run.duke.Toolbox;
-import run.duke.Workbench;
-import run.duke.Workpieces;
 
 public class Composer {
-  private volatile Workpieces workpieces;
+  private volatile Components components;
 
   public Composer() {}
 
+  public final Browser browser() {
+    return components.get(Browser.class);
+  }
+
   public final Options options() {
-    return workpieces.get(Options.class);
+    return components.get(Options.class);
   }
 
   public final Folders folders() {
-    return workpieces.get(Folders.class);
+    return components.get(Folders.class);
   }
 
   public final Printer printer() {
-    return workpieces.get(Printer.class);
+    return components.get(Printer.class);
+  }
+
+  public final Project project() {
+    return components.get(Project.class);
   }
 
   public final Setting setting() {
-    return workpieces.get(Setting.class);
+    return components.get(Setting.class);
   }
 
-  Workbench composeWorkbench(Workpieces workpieces) {
-    this.workpieces = workpieces;
+  public final Toolkit toolkit() {
+    return components.get(Toolkit.class);
+  }
+
+  Bach composeBach(Components components) {
+    this.components = components;
     var printer = printer();
 
     printer.log(Level.DEBUG, "Creating project model instance...");
-    workpieces.put(Project.class, createProject());
+    components.put(Project.class, createProject());
 
     printer.log(Level.DEBUG, "Building browser...");
-    workpieces.put(Browser.class, createBrowser());
+    components.put(Browser.class, createBrowser());
 
     printer.log(Level.DEBUG, "Stuffing toolkit...");
     var toolkit = createToolkit();
-    workpieces.put(Toolkit.class, toolkit);
-    workpieces.put(Toolbox.class, toolkit.toolbox());
+    components.put(Toolkit.class, toolkit);
+    components.put(Toolbox.class, toolkit.toolbox());
 
     printer.log(Level.DEBUG, "Composing workbench...");
-    return new Bach(workpieces);
+    return new Bach(browser(), folders(), options(), printer(), project(), toolkit());
   }
 
   public Project createProject() {

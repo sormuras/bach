@@ -8,9 +8,9 @@ import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.duke.CommandLineInterface;
-import run.duke.Workbench;
+import run.duke.ToolRunner;
 
-public record ListTool(Workbench workbench) implements ToolProvider {
+public record ListTool(ToolRunner runner) implements ToolProvider {
   record Options(String topic, String... args) {
     enum Topic {
       tools
@@ -65,7 +65,7 @@ public record ListTool(Workbench workbench) implements ToolProvider {
   int listTools(PrintWriter out) {
     var map = new TreeMap<String, List<String>>();
     var max = 0;
-    for (var tool : workbench.toolbox().tools()) {
+    for (var tool : runner.tools()) {
       var nickname = tool.nickname();
       map.computeIfAbsent(nickname, __ -> new ArrayList<>()).add(tool.identifier());
       max = Math.max(max, nickname.length());
