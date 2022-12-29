@@ -9,6 +9,13 @@ import java.util.StringJoiner;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
+/**
+ * A tool call.
+ *
+ * @param provider an optional provider instance running this tool call
+ * @param tool an identifier or nickname of the tool to run
+ * @param arguments a list of arguments to pass to the tool
+ */
 public record ToolCall(Optional<ToolProvider> provider, String tool, List<String> arguments) {
   public static ToolCall of(ToolProvider provider) {
     return new ToolCall(provider);

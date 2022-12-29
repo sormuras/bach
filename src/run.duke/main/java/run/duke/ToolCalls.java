@@ -5,6 +5,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * An iterable list of tool call instances.
+ *
+ * @param list the list of tool call instances
+ */
 public record ToolCalls(List<ToolCall> list) implements Iterable<ToolCall> {
   // args = ["jar", "--version", "+", "javac", "--version", ...]
   public static ToolCalls of(String... args) {

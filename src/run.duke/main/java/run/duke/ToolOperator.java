@@ -3,7 +3,7 @@ package run.duke;
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 
-/** An operator is a tool provider that runs tool on a given workbench instance. */
+/** A tool operator is a tool provider running other tools. */
 @FunctionalInterface
 public interface ToolOperator extends ToolProvider {
   /**
@@ -22,7 +22,6 @@ public interface ToolOperator extends ToolProvider {
    * Unconditionally throws an unsupported operation exception.
    *
    * @see #run(ToolRunner, PrintWriter, PrintWriter, String...)
-   * @throws UnsupportedOperationException unconditionally
    */
   @Override
   default int run(PrintWriter out, PrintWriter err, String... args)
