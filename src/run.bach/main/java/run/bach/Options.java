@@ -9,6 +9,7 @@ import java.util.Optional;
 import run.duke.CommandLineInterface;
 import run.duke.CommandLineInterface.Help;
 import run.duke.CommandLineInterface.Name;
+import run.duke.Duke;
 
 /**
  * Bach's option.
@@ -40,17 +41,15 @@ public record Options(
     @Help("Zone date time of the build") Optional<String> __project_version_timestamp,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
-  private static final CommandLineInterface<Options> PARSER =
-      new CommandLineInterface<>(MethodHandles.lookup(), Options.class);
-
-  public static final Options DEFAULTS = Options.of(/* no arguments */ );
-
   public static Options of(String... args) {
-    return PARSER.split(args);
+    return Duke.split(MethodHandles.lookup(), Options.class, args);
   }
 
   public static String toHelp() {
-    return PARSER.help();
+    var lookup = MethodHandles.lookup();
+    var resolver = CommandLineInterface.ConverterResolver.defaultResolver();
+    var schema = CommandLineInterface.RecordSchemaSupport.toSchema(lookup, Options.class, resolver);
+    return CommandLineInterface.Manual.help(schema);
   }
 
   public Path rootDirectory() {
