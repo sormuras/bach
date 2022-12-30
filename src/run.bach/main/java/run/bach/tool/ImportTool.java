@@ -8,7 +8,7 @@ import run.bach.Bach;
 import run.bach.external.Info;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
-import run.duke.CommandLineInterface;
+import run.duke.Duke;
 import run.duke.ToolCall;
 
 public class ImportTool implements Bach.Operator {
@@ -23,7 +23,7 @@ public class ImportTool implements Bach.Operator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var options = CommandLineInterface.of(MethodHandles.lookup(), Options.class).split(args);
+    var options = Duke.split(MethodHandles.lookup(), Options.class, args);
     if (options.__help()) {
       out.println("Usage: %s [--from <repository>] <locators...>".formatted(name()));
       return 0;

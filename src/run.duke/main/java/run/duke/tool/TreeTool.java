@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.spi.ToolProvider;
-import run.duke.CommandLineInterface;
+import run.duke.Duke;
 
 public record TreeTool() implements ToolProvider {
   record Options(Optional<String> __mode, String... paths) {
@@ -30,7 +30,7 @@ public record TreeTool() implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var cli = CommandLineInterface.of(MethodHandles.lookup(), Options.class).split(args);
+    var cli = Duke.split(MethodHandles.lookup(), Options.class, args);
     var mode = cli.mode();
 
     try {

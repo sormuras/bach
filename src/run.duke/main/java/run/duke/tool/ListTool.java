@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
-import run.duke.CommandLineInterface;
+import run.duke.Duke;
 import run.duke.ToolRunner;
 
 public record ListTool(ToolRunner runner) implements ToolProvider {
@@ -44,8 +44,7 @@ public record ListTool(ToolRunner runner) implements ToolProvider {
       }
     }
 
-    var parser = CommandLineInterface.of(MethodHandles.lookup(), Options.class);
-    var options = parser.split(args);
+    var options = Duke.split(MethodHandles.lookup(), Options.class, args);
     try {
       var topic = Options.Topic.valueOf(options.topic);
       return run(topic, out, err, options.args);

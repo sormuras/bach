@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 import run.bach.Bach;
 import run.bach.external.ModulesLocators;
 import run.bach.internal.ModulesSupport;
-import run.duke.CommandLineInterface;
+import run.duke.Duke;
 
 public class LoadTool implements Bach.Operator {
   record Options(boolean __help, String what, String that, String... more) {
@@ -30,7 +30,7 @@ public class LoadTool implements Bach.Operator {
 
   @Override
   public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var options = CommandLineInterface.of(MethodHandles.lookup(), Options.class).split(args);
+    var options = Duke.split(MethodHandles.lookup(), Options.class, args);
     if (options.__help()) {
       out.println("Usage: %s <what> <that> <more...>".formatted(name()));
       return 0;
