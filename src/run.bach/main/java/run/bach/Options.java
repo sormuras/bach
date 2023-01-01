@@ -1,14 +1,16 @@
 package run.bach;
 
+import static java.lang.invoke.MethodHandles.lookup;
+
 import java.lang.System.Logger.Level;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
-import run.duke.CommandLineInterface;
 import run.duke.CommandLineInterface.Help;
+import run.duke.CommandLineInterface.Manual;
 import run.duke.CommandLineInterface.Name;
+import run.duke.CommandLineInterface.Splitter;
 import run.duke.Duke;
 
 /**
@@ -41,15 +43,14 @@ public record Options(
     @Help("Zone date time of the build") Optional<String> __project_version_timestamp,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
+  private static final Splitter<Options> SPLITTER = Duke.splitter(lookup(), Options.class);
+
   public static Options of(String... args) {
-    return Duke.split(MethodHandles.lookup(), Options.class, args);
+    return SPLITTER.split(args);
   }
 
   public static String toHelp() {
-    var lookup = MethodHandles.lookup();
-    var resolver = CommandLineInterface.ConverterResolver.defaultResolver();
-    var schema = CommandLineInterface.RecordSchemaSupport.toSchema(lookup, Options.class, resolver);
-    return CommandLineInterface.Manual.help(schema);
+    return Manual.help(SPLITTER.schema());
   }
 
   public Path rootDirectory() {

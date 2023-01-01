@@ -1,4 +1,4 @@
-// Generated on 2022-12-30T07:08:20.910024+01:00[Europe/Berlin]
+// Generated on 2023-01-01T17:43:31.115343900+01:00[Europe/Berlin]
 package run.duke;
 
 import static java.lang.Boolean.parseBoolean;
@@ -45,9 +45,9 @@ import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public interface CommandLineInterface {
+public class CommandLineInterface {
 
-  abstract sealed class AbstractOption<T> implements Option<T>
+  abstract static sealed class AbstractOption<T> implements Option<T>
       permits Option.Branch,
           Option.Flag,
           Option.Single,
@@ -180,7 +180,7 @@ public interface CommandLineInterface {
    *   System.out.println(flagFValue);  // true
    *   </pre>
    */
-  public final class ArgumentMap {
+  public static final class ArgumentMap {
     private final LinkedHashMap<Option<?>, Object> argumentMap;
 
     private ArgumentMap(LinkedHashMap<Option<?>, Object> argumentMap) {
@@ -649,8 +649,7 @@ public interface CommandLineInterface {
   }
 
   /** Helper class that generate the help associated to a command line arguments. */
-  public class Manual {
-
+  public static final class Manual {
     private Manual() {
       throw new AssertionError();
     }
@@ -742,7 +741,7 @@ public interface CommandLineInterface {
     String[] value();
   }
 
-  final class NameSet extends AbstractSet<String> {
+  static final class NameSet extends AbstractSet<String> {
     private final LinkedHashSet<String> set;
 
     private NameSet(LinkedHashSet<String> set) {
@@ -851,8 +850,7 @@ public interface CommandLineInterface {
    * Varargs#convert(Function, IntFunction)}.
    *
    * <p>Options are grouped into a {@link Schema#Schema(List, Function) schema} that is used to
-   * create a {@link Splitter#of(Schema) Splitter} that parses the command line. The value of
-   * argument(s) of an option are retrieved using {@link #argument(ArgumentMap)}.
+   * create a {@link Splitter#of(Schema) Splitter} that parses the command line.
    *
    * @param <T> type of the argument(s) described by this Option.
    */
@@ -1334,19 +1332,6 @@ public interface CommandLineInterface {
      * @throws IllegalStateException if the option already has a help text set.
      */
     Option<T> help(String helpText);
-
-    /**
-     * Returns the value of the argument associated with the current option.
-     *
-     * @param argumentMap an argument map produced by {@link Splitter#split(Stream)}.
-     * @return the value of the argument associated with the current option.
-     * @throws IllegalStateException if there is no argument value associated with the current
-     *     option in the {@link ArgumentMap}.
-     */
-    default T argument(ArgumentMap argumentMap) {
-      requireNonNull(argumentMap, "dataMap is null");
-      return argumentMap.argument(this);
-    }
   }
 
   /** Type of {@link Option}. */
@@ -1377,12 +1362,12 @@ public interface CommandLineInterface {
    * Uses {@link Record}s to derive a {@link Schema} from the {@link RecordComponent}s as well as
    * container for the result values.
    */
-  class RecordSchemaSupport {
+  static final class RecordSchemaSupport {
     private RecordSchemaSupport() {
       throw new AssertionError();
     }
 
-    public static <T extends Record> Schema<T> toSchema(
+    static <T extends Record> Schema<T> toSchema(
         Lookup lookup, Class<T> schema, ConverterResolver resolver) {
       return new Schema<>(
           Stream.of(schema.getRecordComponents())
@@ -1471,15 +1456,15 @@ public interface CommandLineInterface {
    * </ul>
    *
    * <p>The schema also specify a finalizer function that is called with the list of arguments
-   * decoded by the {@link Splitter} so the arguments can be bundled into a more user-friendly
-   * class.
+   * decoded by the {@link Splitter} so the arguments collected into a more user-friendly data
+   * structure.
    *
-   * <p>This class is deigned to be immutable so the finalizer should not do any side effects.
+   * <p>A schema should be to be immutable so the finalizer should not do any side effects.
    *
    * @param <T> the type of the value bundling the command line arguments.
    * @see Splitter
    */
-  public class Schema<T> {
+  public static final class Schema<T> {
     final List<Option<?>> options;
     private final Function<? super List<Object>, ? extends T> finalizer;
 
@@ -1701,8 +1686,7 @@ public interface CommandLineInterface {
   }
 
   /**
-   * Splits the command line arguments. All the implementations of this interface must be
-   * thread-safe.
+   * Splits the command line arguments. This implementation is thread safe.
    *
    * <p>A Splitter is created from a schema using {@link #of(Schema)}. Once configured the Splitter
    * can be used to split arguments using {@link #split(Stream)}.
@@ -1715,8 +1699,8 @@ public interface CommandLineInterface {
    *
    * <h2>Using a record to define a schema</h2>
    *
-   * <p>There is a convenient method {@link #of(Lookup, Class) of(lookup, class)} that uses a record
-   * both as a schema and also as a storage for the arguments.
+   * <p>There is a convenient method {@link #of(Lookup, Class) of(lookup, record)} that uses a
+   * record both as a schema and also as a storage for the arguments.
    *
    * <pre>
    *   record Command(
@@ -1770,10 +1754,16 @@ public interface CommandLineInterface {
    * pre-process the arguments and respectively modify an argument or expand it into several
    * arguments.
    *
-   * @param <T> the type of the class bundling all the arguments extracted from the command line.
+   * @param <T> the type bundling all the arguments extracted from the command line.
    */
-  @FunctionalInterface
-  public interface Splitter<T> {
+  public static final class Splitter<T> {
+    private final Schema<T> schema;
+    private final UnaryOperator<Stream<String>> preprocessor;
+
+    private Splitter(Schema<T> schema, UnaryOperator<Stream<String>> preprocessor) {
+      this.schema = schema;
+      this.preprocessor = preprocessor;
+    }
 
     /**
      * Returns a splitter configured from a record class and using the {@link
@@ -1787,7 +1777,7 @@ public interface CommandLineInterface {
      * @throws IllegalArgumentException if the record is not a valid schema.
      * @param <R> the type of the record.
      */
-    static <R extends Record> Splitter<R> of(Lookup lookup, Class<R> schema) {
+    public static <R extends Record> Splitter<R> of(Lookup lookup, Class<R> schema) {
       return of(lookup, schema, ConverterResolver.defaultResolver());
     }
 
@@ -1804,7 +1794,7 @@ public interface CommandLineInterface {
      * @throws IllegalArgumentException if the record is not a valid schema.
      * @param <R> the type of the record.
      */
-    static <R extends Record> Splitter<R> of(
+    public static <R extends Record> Splitter<R> of(
         Lookup lookup, Class<R> schema, ConverterResolver resolver) {
       requireNonNull(schema, "schema is null");
       requireNonNull(lookup, "lookup is null");
@@ -1819,7 +1809,7 @@ public interface CommandLineInterface {
      * @param options the options defining the schema.
      * @return a splitter configured from the options.
      */
-    static Splitter<ArgumentMap> of(Option<?>... options) {
+    public static Splitter<ArgumentMap> of(Option<?>... options) {
       requireNonNull(options, "options is null");
       return of(ArgumentMap.toSchema(options));
     }
@@ -1831,12 +1821,18 @@ public interface CommandLineInterface {
      * @return a splitter configured from a schema.
      * @param <T> type of the return type of the method {@link #split(Stream)}.
      */
-    static <T> Splitter<T> of(Schema<T> schema) {
+    public static <T> Splitter<T> of(Schema<T> schema) {
       Objects.requireNonNull(schema, "schema is null");
-      return args -> {
-        requireNonNull(args, "args is null");
-        return schema.split(false, args.collect(toCollection(ArrayDeque::new)));
-      };
+      return new Splitter<>(schema, args -> args);
+    }
+
+    /**
+     * Returns the schema used to create this class.
+     *
+     * @return the schema used to create this class.
+     */
+    public Schema<T> schema() {
+      return schema;
     }
 
     /**
@@ -1847,7 +1843,10 @@ public interface CommandLineInterface {
      * @return an object gathering the values of the arguments.
      * @throws SplittingException if the arguments does not match the schema.
      */
-    T split(Stream<String> args);
+    public T split(Stream<String> args) {
+      requireNonNull(args, "args is null");
+      return schema.split(false, preprocessor.apply(args).collect(toCollection(ArrayDeque::new)));
+    }
 
     /**
      * Splits the command line argument into different values following the recipe of the {@link
@@ -1861,7 +1860,7 @@ public interface CommandLineInterface {
      * @return an object gathering the values of the arguments.
      * @throws SplittingException if the arguments does not match the schema.
      */
-    default T split(String... args) {
+    public T split(String... args) {
       requireNonNull(args, "args is null");
       return split(Arrays.stream(args));
     }
@@ -1878,7 +1877,7 @@ public interface CommandLineInterface {
      * @return an object gathering the values of the arguments.
      * @throws SplittingException if the arguments does not match the schema.
      */
-    default T split(List<String> args) {
+    public T split(List<String> args) {
       requireNonNull(args, "args is null");
       return split(args.stream());
     }
@@ -1895,9 +1894,9 @@ public interface CommandLineInterface {
      * @return a splitter that will call the preprocessor on all arguments of the command line.
      * @see #split(Stream)
      */
-    default Splitter<T> withEach(UnaryOperator<String> preprocessor) {
+    public Splitter<T> withEach(UnaryOperator<String> preprocessor) {
       requireNonNull(preprocessor, "preprocessor is null");
-      return args -> split(args.map(preprocessor));
+      return new Splitter<>(schema, args -> this.preprocessor.apply(args).map(preprocessor));
     }
 
     /**
@@ -1909,10 +1908,9 @@ public interface CommandLineInterface {
      * @return a splitter that will call the preprocessor on all arguments of the command line.
      * @see #split(Stream)
      */
-    default Splitter<T> withExpand(
-        Function<? super String, ? extends Stream<String>> preprocessor) {
+    public Splitter<T> withExpand(Function<? super String, ? extends Stream<String>> preprocessor) {
       requireNonNull(preprocessor, "preprocessor is null");
-      return args -> split(args.flatMap(preprocessor));
+      return new Splitter<>(schema, args -> this.preprocessor.apply(args).flatMap(preprocessor));
     }
   }
 
@@ -1921,7 +1919,7 @@ public interface CommandLineInterface {
    *
    * @see Splitter#split(Stream)
    */
-  public class SplittingException extends RuntimeException {
+  public static final class SplittingException extends RuntimeException {
 
     @Serial private static final long serialVersionUID = 6958903301611893552L;
 
@@ -1952,5 +1950,9 @@ public interface CommandLineInterface {
     public SplittingException(Throwable cause) {
       super(cause);
     }
+  }
+
+  private CommandLineInterface() {
+    throw new AssertionError();
   }
 }
