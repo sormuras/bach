@@ -35,19 +35,21 @@ public record Bach(
     return toolkit.toolbox().findTool(tool);
   }
 
+  private ToolProvider findToolProvider(ToolCall call) {
+    var provider = call.provider();
+    if (provider.isPresent()) return provider.get();
+    var tool = call.tool();
+    var found = findTool(tool);
+    if (found.isPresent()) return found.get().provider();
+    throw new ToolNotFoundException(tool);
+  }
+
   @Override
   public void run(ToolCall toolCall) {
     var call = toolCall.withTweaks(toolkit.tweaks());
     printer.log(Level.INFO, "+ " + call.toCommandLine());
-    var provider = switchOverToolCallAndYieldToolProvider(call);
+    var provider = findToolProvider(call);
     run(provider, call.arguments());
-  }
-
-  private ToolProvider switchOverToolCallAndYieldToolProvider(ToolCall call) {
-    var provider = call.provider();
-    if (provider.isPresent()) return provider.get();
-    var tool = call.tool();
-    return findTool(tool).orElseThrow(() -> new ToolNotFoundException(tool)).provider();
   }
 
   private void run(ToolProvider provider, List<String> arguments) {
