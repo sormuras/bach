@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import run.bach.internal.ToolCallsToolOperator;
 import run.duke.Tool;
-import run.duke.ToolCalls;
 import run.duke.Toolbox;
 
 public class Composer {
@@ -110,7 +109,7 @@ public class Composer {
       for (var command : module.getAnnotationsByType(Command.class)) {
         var identifier = module.getName() + '/' + command.name();
         var calls = command.mode().apply(command.args());
-        var operator = new ToolCallsToolOperator(new ToolCalls(calls));
+        var operator = new ToolCallsToolOperator(calls);
         var tool = Tool.of(identifier, operator);
         tools.add(tool);
       }

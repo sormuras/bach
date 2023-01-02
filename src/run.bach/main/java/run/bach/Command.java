@@ -5,7 +5,6 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -37,12 +36,12 @@ public @interface Command {
   /** Args mode. */
   Mode mode() default Mode.AUTO;
 
-  enum Mode implements Function<String[], List<ToolCall>> {
+  enum Mode implements Function<String[], ToolCalls> {
     /** Default mode. */
     AUTO {
       @Override
-      public List<ToolCall> apply(String[] args) {
-        if (args.length == 0) return List.of();
+      public ToolCalls apply(String[] args) {
+        if (args.length == 0) return ToolCalls.of();
         return Mode.detect(args).orElseThrow().apply(args);
       }
     },
@@ -54,8 +53,8 @@ public @interface Command {
      */
     MAIN {
       @Override
-      public List<ToolCall> apply(String[] args) {
-        return ToolCalls.of(args).list();
+      public ToolCalls apply(String[] args) {
+        return ToolCalls.of(args);
       }
     },
 
@@ -66,8 +65,8 @@ public @interface Command {
      */
     LIST {
       @Override
-      public List<ToolCall> apply(String[] args) {
-        return Stream.of(args).map(ToolCall::ofCommandLine).toList();
+      public ToolCalls apply(String[] args) {
+        return new ToolCalls(Stream.of(args).map(ToolCall::ofCommandLine).toList());
       }
     },
 
@@ -78,9 +77,9 @@ public @interface Command {
      */
     LINE {
       @Override
-      public List<ToolCall> apply(String[] args) {
+      public ToolCalls apply(String[] args) {
         var split = String.join(" + ", args).split("\\s+");
-        return ToolCalls.of(split).list();
+        return ToolCalls.of(split);
       }
     };
 
