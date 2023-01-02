@@ -53,5 +53,6 @@ jobs:
             --prerelease \
             --project-name=Bach \
             --project-version=${{ needs.setup.outputs.version }} \
+            --project-version-pattern=java-module \
             --release-name="Bach ${{ needs.setup.outputs.version }}" \
             --file ".bach/out/bach@${{ needs.setup.outputs.tag }}.zip"
