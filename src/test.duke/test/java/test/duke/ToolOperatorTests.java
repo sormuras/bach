@@ -24,6 +24,8 @@ public class ToolOperatorTests implements ToolOperator, ToolRunner {
   @Override
   public int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
     assert runner == this;
+    assert runner.workbench().get(Record.class) == null;
+    assert runner.workpiece(Record.class) == null;
     return 0;
   }
 

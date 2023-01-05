@@ -7,6 +7,7 @@ import java.util.Optional;
 import run.bach.internal.ToolCallsToolOperator;
 import run.duke.Tool;
 import run.duke.Toolbox;
+import run.duke.Workbench;
 
 public class Composer {
   private volatile Components components;
@@ -57,7 +58,8 @@ public class Composer {
     components.put(Toolbox.class, toolkit.toolbox());
 
     printer.log(Level.DEBUG, "Composing workbench...");
-    return new Bach(browser(), folders(), options(), printer(), project(), toolkit());
+    var workbench = Workbench.of(setting().layer());
+    return new Bach(browser(), folders(), options(), printer(), project(), toolkit(), workbench);
   }
 
   public Project createProject() {

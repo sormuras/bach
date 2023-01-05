@@ -37,4 +37,12 @@ public interface ToolRunner extends ToolFinder {
   default List<Tool> tools() {
     return List.of();
   }
+
+  default Workbench workbench() {
+    return Workbench.empty();
+  }
+
+  default <R extends Record> R workpiece(Class<R> key) {
+    return workbench().get(key);
+  }
 }

@@ -12,6 +12,7 @@ import run.duke.Tool;
 import run.duke.ToolCall;
 import run.duke.ToolOperator;
 import run.duke.ToolRunner;
+import run.duke.Workbench;
 
 public record Bach(
     Browser browser,
@@ -19,7 +20,8 @@ public record Bach(
     Options options,
     Printer printer,
     Project project,
-    Toolkit toolkit)
+    Toolkit toolkit,
+    Workbench workbench)
     implements ToolRunner {
   public Bach {
     printer.log(Level.DEBUG, "Bach initialized");
@@ -89,6 +91,11 @@ public record Bach(
 
   private PrintWriter newPrintWriter(boolean silent, PrintWriter writer) {
     return silent ? new PrintWriter(Writer.nullWriter()) : new StringPrintWriterMirror(writer);
+  }
+
+  @Override
+  public Workbench workbench() {
+    return workbench;
   }
 
   @FunctionalInterface
