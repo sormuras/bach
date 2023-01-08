@@ -94,8 +94,8 @@ public record Bach(
   }
 
   @Override
-  public Workbench workbench() {
-    return workbench;
+  public <R extends Record> R workpiece(Class<R> key) {
+    return workbench.get(key);
   }
 
   @FunctionalInterface

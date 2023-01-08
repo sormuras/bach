@@ -10,55 +10,53 @@ import run.duke.Toolbox;
 import run.duke.Workbench;
 
 public class Composer {
-  private volatile Components components;
+  private volatile Workbench workbench;
 
   public Composer() {}
 
   public final Browser browser() {
-    return components.get(Browser.class);
+    return workbench.get(Browser.class);
   }
 
   public final Options options() {
-    return components.get(Options.class);
+    return workbench.get(Options.class);
   }
 
   public final Folders folders() {
-    return components.get(Folders.class);
+    return workbench.get(Folders.class);
   }
 
   public final Printer printer() {
-    return components.get(Printer.class);
+    return workbench.get(Printer.class);
   }
 
   public final Project project() {
-    return components.get(Project.class);
+    return workbench.get(Project.class);
   }
 
   public final Setting setting() {
-    return components.get(Setting.class);
+    return workbench.get(Setting.class);
   }
 
   public final Toolkit toolkit() {
-    return components.get(Toolkit.class);
+    return workbench.get(Toolkit.class);
   }
 
-  Bach composeBach(Components components) {
-    this.components = components;
+  Bach composeBach(Workbench workbench) {
+    this.workbench = workbench;
     var printer = printer();
 
     printer.log(Level.DEBUG, "Creating project model instance...");
-    components.put(Project.class, createProject());
+    workbench.put(createProject());
 
     printer.log(Level.DEBUG, "Building browser...");
-    components.put(Browser.class, createBrowser());
+    workbench.put(createBrowser());
 
     printer.log(Level.DEBUG, "Stuffing toolkit...");
-    var toolkit = createToolkit();
-    components.put(Toolkit.class, toolkit);
-    components.put(Toolbox.class, toolkit.toolbox());
+    workbench.put(createToolkit());
 
-    printer.log(Level.DEBUG, "Composing workbench...");
-    var workbench = Workbench.of(setting().layer());
+    printer.log(Level.DEBUG, "Loading workpieces...");
+    workbench.putAll(setting().layer());
     return new Bach(browser(), folders(), options(), printer(), project(), toolkit(), workbench);
   }
 

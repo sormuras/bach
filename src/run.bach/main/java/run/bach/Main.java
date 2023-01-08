@@ -8,6 +8,7 @@ import java.util.spi.ToolProvider;
 import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.Duke;
 import run.duke.ToolCalls;
+import run.duke.Workbench;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -50,20 +51,20 @@ public record Main() implements ToolProvider {
             bach --verbose jar --version + javac --version""");
       return 0;
     }
-    var components = new Components().put(Options.class, options).put(Printer.class, printer);
+    var workbench = new Workbench(options, printer);
 
     var folders = Folders.of(options.rootDirectory(), options.outputDirectory(".bach/out"));
-    components.put(Folders.class, folders);
+    workbench.put(folders);
 
     printer.log(Level.DEBUG, "Building source module layer...");
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     var setting = new Setting(layer);
-    components.put(Setting.class, setting);
+    workbench.put(setting);
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
     printer.log(Level.DEBUG, "Loading composer...");
     var composer = ServiceLoader.load(layer, Composer.class).findFirst().orElseGet(Composer::new);
-    var bach = composer.composeBach(components);
+    var bach = composer.composeBach(workbench);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var calls =
