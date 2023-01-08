@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * An iterable list of tool call instances.
@@ -34,6 +35,11 @@ public record ToolCalls(List<ToolCall> list) implements Iterable<ToolCall> {
       elements.add(trim ? element.trim() : element);
     }
     return new ToolCalls(List.copyOf(calls));
+  }
+
+  public static ToolCalls of(ToolCall first, ToolCall... more) {
+    if (more.length == 0) return new ToolCalls(List.of(first));
+    return new ToolCalls(Stream.concat(Stream.of(first), Stream.of(more)).toList());
   }
 
   public ToolCalls {

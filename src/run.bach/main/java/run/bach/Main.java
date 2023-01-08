@@ -67,10 +67,8 @@ public record Main() implements ToolProvider {
     var bach = composer.composeBach(workbench);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
-    var calls =
-        options.calls().length == 0
-            ? new ToolCalls(List.of(Duke.listTools()))
-            : ToolCalls.of(options.calls());
+    var empty = options.calls().length == 0;
+    var calls = empty ? ToolCalls.of(Duke.listTools()) : ToolCalls.of(options.calls());
 
     if (options.dryRun()) {
       if (verbose) printer.out("Dry-run mode exits here.");
