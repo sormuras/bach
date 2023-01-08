@@ -1,36 +1,31 @@
 package run.duke;
 
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class Workbench {
-  @FunctionalInterface
-  public interface ValueFactory {
-    <R extends Record> R createValue(Workbench workbench);
-  }
+  private final Map<Class<?>, Object> map;
 
-  private static final Workbench EMPTY = new Workbench();
-
-  public static Workbench empty() {
-    return EMPTY;
-  }
-
-  public static Workbench of(ModuleLayer layer) {
-    return new Workbench().initialize(layer);
-  }
-
-  private final ConcurrentHashMap<Class<?>, Object> map;
-
-  private Workbench() {
+  @SafeVarargs
+  public <R extends Record> Workbench(R... workpieces) {
     this.map = new ConcurrentHashMap<>();
+    for (var workpiece : workpieces) put(workpiece);
   }
 
-  private Workbench initialize(ModuleLayer layer) {
-    for (var factory : ServiceLoader.load(layer, ValueFactory.class)) {
-      var value = factory.createValue(this);
-      map.put(value.getClass(), value);
+  public void putAll(ModuleLayer layer) {
+    for (var factory : ServiceLoader.load(layer, WorkpieceFactory.class)) {
+      var workpiece = factory.createWorkpiece(this);
+      var previous = put(workpiece);
+      if (previous == null) continue;
+      throw new AssertionError("Workpiece already set: " + workpiece);
     }
-    return this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public <R extends Record> R put(R workpiece) {
+    var key = workpiece.getClass();
+    return (R) map.put(key, workpiece);
   }
 
   @SuppressWarnings("unchecked")

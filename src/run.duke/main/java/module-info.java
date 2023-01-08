@@ -3,7 +3,7 @@ module run.duke {
   exports run.duke;
 
   uses java.util.spi.ToolProvider;
-  uses run.duke.Workbench.ValueFactory;
+  uses run.duke.WorkpieceFactory;
 
   provides java.util.spi.ToolProvider with
       run.duke.tool.DukeTool;

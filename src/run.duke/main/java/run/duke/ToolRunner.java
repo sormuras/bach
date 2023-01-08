@@ -1,10 +1,8 @@
 package run.duke;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 /** A runner of tools. */
-@FunctionalInterface
 public interface ToolRunner extends ToolFinder {
   /**
    * Runs a tool with the given arguments.
@@ -33,16 +31,5 @@ public interface ToolRunner extends ToolFinder {
    */
   void run(ToolCall call);
 
-  /** {@return a list of runnable tools} */
-  default List<Tool> tools() {
-    return List.of();
-  }
-
-  default Workbench workbench() {
-    return Workbench.empty();
-  }
-
-  default <R extends Record> R workpiece(Class<R> key) {
-    return workbench().get(key);
-  }
+  <R extends Record> R workpiece(Class<R> key);
 }
