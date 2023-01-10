@@ -2,9 +2,9 @@ package test.duke;
 
 import java.util.List;
 import run.duke.Tool;
-import run.duke.Toolbox;
+import run.duke.ToolFinder;
 
-public record MockToolbox() implements Toolbox {
+public record MockToolFinder() implements ToolFinder {
   @Override
   public List<Tool> tools() {
     return List.of(

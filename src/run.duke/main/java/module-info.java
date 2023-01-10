@@ -2,8 +2,7 @@
 module run.duke {
   exports run.duke;
 
-  uses java.util.spi.ToolProvider;
-  uses run.duke.WorkpieceFactory;
+  uses java.util.spi.ToolProvider; // ModuleLayerToolFinder
 
   provides java.util.spi.ToolProvider with
       run.duke.tool.DukeTool;

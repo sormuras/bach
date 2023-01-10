@@ -1,3 +1,5 @@
+import test.duke.ToolFinderTests;
+
 module test.duke {
   requires run.duke;
   requires jdk.jfr;
@@ -7,7 +9,7 @@ module test.duke {
   provides java.util.spi.ToolProvider with
       test.duke.DukeTests,
       test.duke.Main,
-      test.duke.ToolboxTests,
+      ToolFinderTests,
       test.duke.ToolCallTests,
       test.duke.ToolCallsTests,
       test.duke.ToolOperatorTests,

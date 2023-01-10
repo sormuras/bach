@@ -21,7 +21,7 @@ public interface ToolOperator extends ToolProvider {
   /**
    * Unconditionally throws an unsupported operation exception.
    *
-   * @see #run(ToolRunner, PrintWriter, PrintWriter, String...)
+   * @see #run(ToolRunner, ToolLogger, String...)
    */
   @Override
   @Deprecated
@@ -35,11 +35,10 @@ public interface ToolOperator extends ToolProvider {
    * <p>Any non-zero return value indicates a tool-specific error during the execution.
    *
    * @param runner a finder and runner of tools
-   * @param out a writer to which "expected" output should be written
-   * @param err a writer to which any error messages should be written
+   * @param logger a logger to which "expected" output and any error message should be written to
    * @param args the command-line arguments for the tool
    * @return the result of executing the tool. A return value of 0 means the tool did not encounter
    *     any errors; any other value indicates that at least one error occurred during execution.
    */
-  int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args);
+  int run(ToolRunner runner, ToolLogger logger, String... args);
 }

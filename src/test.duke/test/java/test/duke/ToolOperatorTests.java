@@ -6,6 +6,7 @@ import jdk.jfr.Enabled;
 import jdk.jfr.Registered;
 import run.duke.Tool;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 import run.duke.ToolOperator;
 import run.duke.ToolRunner;
 
@@ -20,14 +21,14 @@ public class ToolOperatorTests implements ToolOperator, ToolRunner {
   @Override
   @SuppressWarnings("deprecation")
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    return run(this, out, err, args);
+    return run(this, new ToolLogger("<unnamed>", out, err), args);
   }
 
   @Override
-  public int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
+  public int run(ToolRunner runner, ToolLogger logger, String... args) {
     assert runner == this;
     assert runner.tools().isEmpty();
-    assert runner.workpiece(Record.class) == null;
+    assert runner.getConstant(Record.class) == null;
     return 0;
   }
 
@@ -40,7 +41,7 @@ public class ToolOperatorTests implements ToolOperator, ToolRunner {
   }
 
   @Override
-  public <R extends Record> R workpiece(Class<R> key) {
+  public <R extends Record> R getConstant(Class<R> key) {
     return null;
   }
 }

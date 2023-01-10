@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import run.duke.Tool;
-import run.duke.Toolbox;
+import run.duke.ToolFinder;
 
-public record ModulePathToolbox(Path... entries) implements Toolbox {
+public record ModulePathToolFinder(Path... entries) implements ToolFinder {
   @Override
   public List<Tool> tools() {
     var layer = defineModuleLayerForPathEntries();
-    var finder = new ModuleLayerToolbox(layer, module -> module.getLayer() == layer);
+    var finder = new ModuleLayerToolFinder(layer, module -> module.getLayer() == layer);
     return finder.tools();
   }
 

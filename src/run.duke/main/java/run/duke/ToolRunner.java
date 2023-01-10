@@ -2,8 +2,8 @@ package run.duke;
 
 import java.util.stream.Stream;
 
-/** A runner of tools. */
-public interface ToolRunner extends ToolFinder {
+/** A finder and runner of tools that also provides context record instances. */
+public interface ToolRunner extends ToolFinder, ToolContext {
   /**
    * Runs a tool with the given arguments.
    *
@@ -30,6 +30,4 @@ public interface ToolRunner extends ToolFinder {
    * @param call a tool call to run
    */
   void run(ToolCall call);
-
-  <R extends Record> R workpiece(Class<R> key);
 }

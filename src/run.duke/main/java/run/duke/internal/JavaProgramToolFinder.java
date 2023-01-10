@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import run.duke.Tool;
-import run.duke.Toolbox;
+import run.duke.ToolFinder;
 
-public record JavaProgramToolbox(Path path, Path java) implements Toolbox {
+public record JavaProgramToolFinder(Path path, Path java) implements ToolFinder {
   @Override
   public List<Tool> tools() {
     var directory = path.normalize().toAbsolutePath();

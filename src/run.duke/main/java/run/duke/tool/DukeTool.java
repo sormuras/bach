@@ -1,8 +1,13 @@
 package run.duke.tool;
 
-import java.io.PrintWriter;
-import java.util.Arrays;
+import java.lang.invoke.MethodHandles;
+import java.util.Set;
+import java.util.stream.Stream;
 import run.duke.Duke;
+import run.duke.Tool;
+import run.duke.ToolCall;
+import run.duke.ToolFinder;
+import run.duke.ToolLogger;
 import run.duke.ToolOperator;
 import run.duke.ToolRunner;
 
@@ -12,25 +17,26 @@ public record DukeTool() implements Duke, ToolOperator {
     return "duke";
   }
 
+  record Options(String name, String... args) {}
+
   @Override
-  public int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
-    if (args.length == 0) {
+  public int run(ToolRunner runner, ToolLogger logger, String... args) {
+    var finder =
+        ToolFinder.of(
+            Tool.of(new CheckJavaReleaseTool()),
+            Tool.of(new CheckJavaVersionTool()),
+            Tool.of(new ListTool(runner)),
+            Tool.of(new TreeTool()));
+    if (args.length == 0 || Set.of("--help", "-help", "-h", "/?", "?").contains(args[0])) {
+      var out = logger.out();
       out.println("This is duke.");
+      finder.tools().forEach(tool -> out.println(" -> " + tool.nickname()));
       return 0;
     }
-    return run(args[0], runner, out, err, Arrays.copyOfRange(args, 1, args.length));
-  }
-
-  int run(String tool, ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
-    return switch (tool) {
-      case "check-java-release" -> new CheckJavaReleaseTool().run(out, err, args);
-      case "check-java-version" -> new CheckJavaVersionTool().run(out, err, args);
-      case "list" -> new ListTool(runner).run(out, err, args);
-      case "tree" -> new TreeTool().run(out, err, args);
-      default -> {
-        err.println("Tool not found: " + tool);
-        yield 1;
-      }
-    };
+    var options = Duke.splitter(MethodHandles.lookup(), Options.class).split(args);
+    var found = finder.findTool(options.name()).orElseThrow();
+    var call = ToolCall.of(found.provider()).with(Stream.of(options.args()));
+    runner.run(call);
+    return 0;
   }
 }

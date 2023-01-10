@@ -6,13 +6,10 @@ import java.util.ServiceLoader;
 import java.util.function.Predicate;
 import java.util.spi.ToolProvider;
 import run.duke.Tool;
-import run.duke.Toolbox;
+import run.duke.ToolFinder;
 
-public record ModuleLayerToolbox(ModuleLayer layer, Predicate<Module> include) implements Toolbox {
-  public ModuleLayerToolbox(ModuleLayer layer) {
-    this(layer, module -> true);
-  }
-
+public record ModuleLayerToolFinder(ModuleLayer layer, Predicate<Module> include)
+    implements ToolFinder {
   @Override
   public List<Tool> tools() {
     var tools = new ArrayList<Tool>();
