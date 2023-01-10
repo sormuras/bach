@@ -52,6 +52,12 @@ public record Tool(String identifier, ToolProvider provider, Set<String> tags)
     return new Tool(identifier, provider, Set.of(tags));
   }
 
+  /**
+   * {@return {@code true} if the given string matches the identifier}
+   *
+   * @param identifier the identifier of a tool instance
+   * @param tool the string to check, typically also an identifier or a nickname
+   */
   public static boolean matches(String identifier, String tool) {
     return identifier.equals(tool) || identifier.endsWith('/' + tool);
   }
@@ -62,11 +68,13 @@ public record Tool(String identifier, ToolProvider provider, Set<String> tags)
     return module.isNamed() ? module.getName() : type.getPackageName();
   }
 
+  /** {@return a namespace string derived from the given tool, possibly an empty string} */
   public static String namespace(String tool) {
     var separator = tool.lastIndexOf('/');
     return separator == -1 ? "" : tool.substring(0, separator);
   }
 
+  /** {@return a nickname string derived from the given tool} */
   public static String nickname(String tool) {
     return tool.substring(tool.lastIndexOf('/') + 1);
   }

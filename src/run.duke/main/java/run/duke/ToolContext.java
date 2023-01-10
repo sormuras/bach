@@ -2,7 +2,7 @@ package run.duke;
 
 import java.util.Optional;
 
-/** A context provider. */
+/** A constant supplier. */
 @FunctionalInterface
 public interface ToolContext {
   /**

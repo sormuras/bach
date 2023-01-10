@@ -2,7 +2,7 @@ package run.duke;
 
 import java.util.stream.Stream;
 
-/** A finder and runner of tools that also provides context record instances. */
+/** A finder and runner of tools that also provides contextual constants. */
 public interface ToolRunner extends ToolFinder, ToolContext {
   /**
    * Runs a tool with the given arguments.
