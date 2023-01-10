@@ -1,20 +1,19 @@
 package project;
 
-import java.io.PrintWriter;
-import run.bach.Bach;
+import run.bach.ProjectRunner;
 import run.bach.tool.BuildTool;
+import run.duke.ToolLogger;
 
 public final class Build extends BuildTool {
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    out.println("BEGIN");
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
     try {
-      return super.run(bach, out, err, args);
+      logger.log("BEGIN");
+      super.run(runner, logger, args);
     } catch (Exception exception) {
-      exception.printStackTrace(err);
-      return 1;
+      logger.error("Build failed", exception);
     } finally {
-      out.println("END.");
+      logger.log("END.");
     }
   }
 }

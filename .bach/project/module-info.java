@@ -47,8 +47,8 @@ import run.bach.ProjectInfo.Space;
 module project {
   requires run.bach;
 
-  provides run.bach.Composer with
-      project.BachComposer;
+  provides run.bach.Configurator with
+      project.Configuration;
   provides java.util.spi.ToolProvider with
       project.Build,
       project.Bundle,
