@@ -74,7 +74,7 @@ public class ToolTests implements ToolProvider {
 
   void testCanonical() {
     var zero = new MockToolProvider("zero", 0);
-    var tool = Tool.of(zero);
+    var tool = Tool.of(zero, "tag");
     assert "zero".equals(tool.nickname());
     assert "test.duke".equals(tool.namespace());
     assert "test.duke/zero".equals(tool.identifier());
@@ -83,6 +83,7 @@ public class ToolTests implements ToolProvider {
     assert tool.matches("test.duke/zero");
     assert !tool.matches("tool");
     assert !tool.matches("test.duke/tool");
+    assert tool.tags().contains("tag");
   }
 
   void testEmptyNamespaceAndCustomNickname() {

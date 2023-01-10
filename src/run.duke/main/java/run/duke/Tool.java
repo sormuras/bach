@@ -1,6 +1,7 @@
 package run.duke;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.spi.ToolProvider;
 
 /**
@@ -35,17 +36,20 @@ import java.util.spi.ToolProvider;
  * </table>
  *
  * @param identifier the string identifying this tool instance
+ * @param provider the underlying tool provider instance
+ * @param tags a set of strings helping to categorize this tool instance
  */
-public record Tool(String identifier, ToolProvider provider) implements Comparable<Tool> {
+public record Tool(String identifier, ToolProvider provider, Set<String> tags)
+    implements Comparable<Tool> {
   /** {@return a tool for the given provider instance deriving the namespace from it} */
-  public static Tool of(ToolProvider provider) {
+  public static Tool of(ToolProvider provider, String... tags) {
     var identifier = namespace(provider.getClass()) + '/' + provider.name();
-    return Tool.of(identifier, provider);
+    return Tool.of(identifier, provider, tags);
   }
 
   /** {@return a tool for the given identifier and the given provider instance} */
-  public static Tool of(String identifier, ToolProvider provider) {
-    return new Tool(identifier, provider);
+  public static Tool of(String identifier, ToolProvider provider, String... tags) {
+    return new Tool(identifier, provider, Set.of(tags));
   }
 
   public static boolean matches(String identifier, String tool) {
