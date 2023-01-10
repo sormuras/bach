@@ -17,7 +17,7 @@ else
   JAVAC="${JAVA_HOME}/bin/javac"
 fi
 
-${JAVAC} --release 17 --module run.bach,run.duke --module-version 2022-ea+src --module-source-path "${SRC}/*/main/java" -d "${BIN}"
+${JAVAC} --release 17 --module run.bach,run.duke --module-version 2023-ea+src --module-source-path "${SRC}/*/main/java" -d "${BIN}"
 
 # end
 
