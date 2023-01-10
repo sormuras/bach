@@ -1,6 +1,5 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
@@ -8,11 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import run.bach.Bach;
 import run.bach.Project;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 
-public class CompileModulesTool implements Bach.Operator {
+public class CompileModulesTool implements ProjectOperator {
   public static ToolCall compile(Project.Space space) {
     return ToolCall.of("compile-modules", space.name());
   }
@@ -25,11 +26,11 @@ public class CompileModulesTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
     var calls = new TreeMap<String, List<ToolCall>>();
-    var space = bach.project().spaces().space(args[0]);
+    var space = runner.project().spaces().space(args[0]);
     for (var module : space.modules()) {
-      var context = new OperationContext(bach, space, module, calls);
+      var context = new OperationContext(runner, space, module, calls);
       var jar = createJarCall();
       jar = jar.with("--create");
       jar = jarWithFile(jar, context);
@@ -41,7 +42,7 @@ public class CompileModulesTool implements Bach.Operator {
       jar = jarWithTargetedClassesAndResources(jar, context);
       context.withJarCall(jar);
     }
-    var modules = bach.folders().out(space.name(), "modules");
+    var modules = runner.folders().out(space.name(), "modules");
     if (Runtime.version().feature() < 19) {
       try {
         Files.createDirectories(modules); // ToolCall.of("tree").with("create").with(modules);
@@ -50,10 +51,8 @@ public class CompileModulesTool implements Bach.Operator {
       }
     }
     for (var list : calls.values()) {
-      list.stream().parallel().forEach(bach::run);
+      list.stream().parallel().forEach(runner::run);
     }
-    // TODO bach.run(HashTool.class, modules.toString());
-    return 0;
   }
 
   protected ToolCall createJarCall() {
@@ -66,12 +65,12 @@ public class CompileModulesTool implements Bach.Operator {
   }
 
   protected ToolCall jarWithModuleVersion(ToolCall jar, OperationContext context) {
-    return jar.with("--module-version", context.bach().project().version().value());
+    return jar.with("--module-version", context.runner().project().version().value());
   }
 
   protected ToolCall jarWithDate(ToolCall jar, OperationContext context) {
     if (Runtime.version().feature() < 19) return jar;
-    var project = context.bach().project();
+    var project = context.runner().project();
     var timestamp = project.version().timestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     return jar.with("--date", timestamp);
   }
@@ -103,10 +102,10 @@ public class CompileModulesTool implements Bach.Operator {
   protected ToolCall jarWithClassesOfPatchedModule(ToolCall jar, OperationContext context) {
     var name = context.module().name();
     for (var requires : context.space().requires()) {
-      var required = context.bach().project().spaces().space(requires);
+      var required = context.runner().project().spaces().space(requires);
       if (required.modules().find(name).isPresent()) {
         var javaR = "java-" + required.targets().orElse(Runtime.version().feature());
-        jar = jar.with("-C", context.bach().folders().out(requires, "classes", javaR, name), ".");
+        jar = jar.with("-C", context.runner().folders().out(requires, "classes", javaR, name), ".");
       }
     }
     return jar;
@@ -123,7 +122,7 @@ public class CompileModulesTool implements Bach.Operator {
       for (var sources : folders.sources()) {
         var classesR = context.classes().resolve("java-" + release).resolve(name);
         var javac = ToolCall.of("javac").with("--release", release);
-        var modulePath = context.space().toModulePath(context.bach().folders());
+        var modulePath = context.space().toModulePath(context.runner().folders());
         if (modulePath.isPresent()) {
           javac = javac.with("--module-path", modulePath.get());
           javac = javac.with("--processor-module-path", modulePath.get());
@@ -147,16 +146,16 @@ public class CompileModulesTool implements Bach.Operator {
   }
 
   public record OperationContext(
-      Bach bach,
+      ProjectRunner runner,
       Project.Space space,
       Project.DeclaredModule module,
       Map<String, List<ToolCall>> calls) {
     public Path classes() {
-      return bach.folders().out(space().name(), "classes");
+      return runner.folders().out(space().name(), "classes");
     }
 
     public Path modules() {
-      return bach.folders().out(space().name(), "modules");
+      return runner.folders().out(space().name(), "modules");
     }
 
     public void withJavacCall(ToolCall javac) {

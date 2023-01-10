@@ -1,5 +1,5 @@
 package run.bach;
 
-import run.duke.Toolbox;
+import run.duke.ToolFinder;
 
-public record Toolkit(Toolbox toolbox, Tweaks tweaks) {}
+public record Toolkit(ToolFinder finder) {}

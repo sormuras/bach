@@ -3,12 +3,10 @@ package run.bach;
 import java.io.PrintWriter;
 import java.lang.System.Logger.Level;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import run.bach.internal.SourceModuleLayerBuilder;
 import run.duke.Duke;
 import run.duke.ToolCalls;
-import run.duke.Workbench;
 
 public record Main() implements ToolProvider {
   public static void main(String... args) {
@@ -37,7 +35,7 @@ public record Main() implements ToolProvider {
             options.printerMargin(1000));
 
     if (verbose) printer.out(options + " -> " + List.of(options.calls()));
-    if (options.help()) {
+    if (options.help() != null) {
       printer.out(
           """
           Usage: bach [<options>...] <tool-calls>
@@ -51,20 +49,20 @@ public record Main() implements ToolProvider {
             bach --verbose jar --version + javac --version""");
       return 0;
     }
-    var workbench = new Workbench(options, printer);
+    var bench = new Workbench(options, printer);
 
     var folders = Folders.of(options.rootDirectory(), options.outputDirectory(".bach/out"));
-    workbench.put(folders);
+    bench.put(folders);
 
     printer.log(Level.DEBUG, "Building source module layer...");
     var layer = SourceModuleLayerBuilder.of(folders.root(".bach")).build();
     var setting = new Setting(layer);
-    workbench.put(setting);
+    bench.put(setting);
     printer.log(Level.DEBUG, "Source module layer contains: " + layer.modules());
 
     printer.log(Level.DEBUG, "Loading composer...");
-    var composer = ServiceLoader.load(layer, Composer.class).findFirst().orElseGet(Composer::new);
-    var bach = composer.composeBach(workbench);
+    Configurator.configure(bench, layer);
+    var runner = new Bach(bench);
 
     printer.log(Level.DEBUG, "Creating sequence of initial tool calls...");
     var empty = options.calls().length == 0;
@@ -79,7 +77,7 @@ public record Main() implements ToolProvider {
       printer.log(Level.DEBUG, "Running %d tool call%s".formatted(size, size == 1 ? "" : "s"));
     }
     for (var call : calls) {
-      bach.run(call);
+      runner.run(call);
     }
     return 0;
   }

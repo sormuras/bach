@@ -1,13 +1,14 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
+import run.duke.ToolLogger;
 
-public class BuildTool implements Bach.Operator {
+public class BuildTool implements ProjectOperator {
   public BuildTool() {}
 
   @Override
@@ -16,21 +17,19 @@ public class BuildTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var what = bach.project().toNameAndVersion();
-    var size = bach.project().modules().size();
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    var what = runner.project().toNameAndVersion();
+    var size = runner.project().modules().size();
 
-    out.println("Build %s with %d module%s".formatted(what, size, size == 1 ? "" : "s"));
+    logger.log("Build %s with %d module%s".formatted(what, size, size == 1 ? "" : "s"));
     var start = Instant.now();
 
-    bach.run(CacheTool.cache()); // go offline and verify cached assets
-    bach.run(CompileTool.compile()); // compile all modules spaces
-    bach.run(TestTool.test()); // start launcher and execute tests in test space
+    runner.run(CacheTool.cache()); // go offline and verify cached assets
+    runner.run(CompileTool.compile()); // compile all modules spaces
+    runner.run(TestTool.test()); // start launcher and execute tests in test space
 
     var duration = prettify(Duration.between(start, Instant.now()));
-    out.println("Build took %s".formatted(duration));
-
-    return 0;
+    logger.log("Build took %s".formatted(duration));
   }
 
   static String prettify(Duration duration) {

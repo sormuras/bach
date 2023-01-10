@@ -1,12 +1,13 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
 import java.nio.file.Files;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
+import run.duke.ToolLogger;
 
-public class InfoTool implements Bach.Operator {
+public class InfoTool implements ProjectOperator {
   public InfoTool() {
     super();
   }
@@ -17,25 +18,24 @@ public class InfoTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    out.println("Project " + bach.project().toNameAndVersion());
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    logger.log("Project " + runner.project().toNameAndVersion());
     if (args.length == 0) {
-      var start = bach.folders().root(".bach");
+      var start = runner.folders().root(".bach");
       if (!Files.isDirectory(start)) {
-        out.println("No such directory: " + start.toUri());
-        return 0;
+        logger.log("No such directory: " + start.toUri());
+        return;
       }
-      out.println("External asset information files in " + start.toUri());
+      logger.log("External asset information files in " + start.toUri());
       var walker = Walker.of(start);
-      out.println(walker.toString(0));
-      return 0;
+      logger.log(walker.toString(0));
+      return;
     }
     for (var slug : args) {
       var repository = Repository.of(slug);
-      out.println("External asset information files in " + repository.home());
-      var walker = Walker.of(bach.browser().client(), repository);
-      out.println(walker.toString(0));
+      logger.log("External asset information files in " + repository.home());
+      var walker = Walker.of(runner.browser().client(), repository);
+      logger.log(walker.toString(0));
     }
-    return 0;
   }
 }

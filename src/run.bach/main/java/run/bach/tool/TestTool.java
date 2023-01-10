@@ -1,17 +1,18 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.module.ModuleFinder;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
-import run.bach.Bach;
 import run.bach.Project;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.bach.internal.ModulesSupport;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 
-public class TestTool implements Bach.Operator {
+public class TestTool implements ProjectOperator {
   public static ToolCall test() {
     return ToolCall.of("test");
   }
@@ -24,21 +25,20 @@ public class TestTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var spaces = bach.project().spaces();
-    if (!spaces.names().contains("test")) return 0;
-    var tester = new SpaceTester(bach, spaces.space("test"));
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    var spaces = runner.project().spaces();
+    if (!spaces.names().contains("test")) return;
+    var tester = new SpaceTester(runner, spaces.space("test"));
     tester.runSpaceLauncher();
     tester.runJUnitPlatform();
-    return 0;
   }
 
   public static class SpaceTester {
-    final Bach bach;
+    final ProjectRunner runner;
     final Project.Space space;
 
-    public SpaceTester(Bach bach, Project.Space space) {
-      this.bach = bach;
+    public SpaceTester(ProjectRunner runner, Project.Space space) {
+      this.runner = runner;
       this.space = space;
     }
 
@@ -47,23 +47,23 @@ public class TestTool implements Bach.Operator {
     }
 
     void runSpaceLauncher(String launcher) {
-      var folders = bach.folders();
+      var folders = runner.folders();
       var java =
           ToolCall.of("java")
               .with("--module-path", space.toRuntimeSpace().toModulePath(folders).orElse("."))
               .with("--module", launcher);
-      bach.run(java);
+      runner.run(java);
     }
 
     void runJUnitPlatform() {
-      if (bach.findTool("junit").isEmpty()) return;
+      if (runner.findTool("junit").isEmpty()) return;
       for (var module : space.modules()) {
         runJUnitPlatform(module.name());
       }
     }
 
     void runJUnitPlatform(String name) {
-      var folders = bach.folders();
+      var folders = runner.folders();
       var finder =
           ModuleFinder.of(
               folders.out("test", "modules", name + ".jar"),
@@ -85,7 +85,7 @@ public class TestTool implements Bach.Operator {
               .filter(provider -> provider.name().equals("junit"))
               .findFirst()
               .orElseThrow();
-      bach.run(
+      runner.run(
           ToolCall.of(junit)
               .with("--select-module", name)
               .with("--reports-dir", folders.out("test-reports", "junit-" + name)));

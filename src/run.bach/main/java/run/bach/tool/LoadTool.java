@@ -1,6 +1,5 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.lang.module.ModuleFinder;
 import java.net.URI;
@@ -9,12 +8,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.bach.external.ModulesLocators;
 import run.bach.internal.ModulesSupport;
 import run.duke.Duke;
+import run.duke.ToolLogger;
 
-public class LoadTool implements Bach.Operator {
+public class LoadTool implements ProjectOperator {
   record Options(boolean __help, String what, String that, String... more) {
     List<String> thatAndMore() {
       return Stream.concat(Stream.of(that), Stream.of(more)).toList();
@@ -29,61 +30,57 @@ public class LoadTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
     var options = Duke.split(MethodHandles.lookup(), Options.class, args);
     if (options.__help()) {
-      out.println("Usage: %s <what> <that> <more...>".formatted(name()));
-      return 0;
+      logger.log("Usage: %s <what> <that> <more...>".formatted(name()));
+      return;
     }
-    var browser = bach.browser();
+    var browser = runner.browser();
     switch (options.what) {
       case "file" -> browser.load(URI.create(options.that), Path.of(options.more[0]));
-      case "head" -> out.println(browser.head(URI.create(options.that)));
+      case "head" -> logger.log(browser.head(URI.create(options.that)));
       case "headers" -> {
         for (var entry : browser.head(URI.create(options.that)).headers().map().entrySet()) {
-          out.println(entry.getKey());
-          for (var line : entry.getValue()) out.println("  " + line);
+          logger.log(entry.getKey());
+          for (var line : entry.getValue()) logger.log("  " + line);
         }
       }
-      case "module" -> loadModule(bach, options.thatAndMore());
-      case "modules" -> loadModules(bach, out, options.thatAndMore());
-      case "text" -> out.println(browser.read(URI.create(options.that)));
-      default -> {
-        err.println("Unknown load type: " + options.what);
-        return 1;
-      }
+      case "module" -> loadModule(runner, logger, options.thatAndMore());
+      case "modules" -> loadModules(runner, logger, options.thatAndMore());
+      case "text" -> logger.log(browser.read(URI.create(options.that)));
+      default -> throw new IllegalArgumentException("Unknown load type: " + options.what);
     }
-    return 0;
   }
 
-  void loadModule(Bach bach, List<String> modules) {
-    var externalModules = bach.folders().externalModules();
+  void loadModule(ProjectRunner runner, ToolLogger logger, List<String> modules) {
+    var externalModules = runner.folders().externalModules();
     var locators =
         Stream.concat(
-                bach.project().externals().locators().list().stream(),
+                runner.project().externals().locators().list().stream(),
                 ModulesLocators.of(externalModules).list().stream())
             .toList();
     with_next_module:
     for (var module : modules) {
       if (ModuleFinder.of(externalModules).find(module).isPresent()) {
-        // TODO debug("Module %s is already present".formatted(module));
+        logger.debug("Module %s is already present".formatted(module));
         continue; // with next module
       }
       for (var locator : locators) {
         var location = locator.locate(module);
         if (location == null) continue; // with next locator
-        // TODO debug("Module %s located via %s".formatted(module, locator.description()));
+        logger.debug("Module %s located via %s".formatted(module, locator.description()));
         var source = URI.create(location);
         var target = externalModules.resolve(module + ".jar");
-        bach.browser().load(source, target); // "silent" load file ...
+        runner.browser().load(source, target); // "silent" load file ...
         continue with_next_module;
       }
       throw new RuntimeException("Module not locatable: " + module);
     }
   }
 
-  void loadModules(Bach bach, PrintWriter out, List<String> modules) {
-    var externals = bach.folders().externalModules();
+  void loadModules(ProjectRunner runner, ToolLogger logger, List<String> modules) {
+    var externals = runner.folders().externalModules();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
     while (true) {
@@ -91,14 +88,14 @@ public class LoadTool implements Bach.Operator {
       var missing = ModulesSupport.listMissingNames(finders, Set.copyOf(modules));
       if (missing.isEmpty()) break;
       var size = missing.size();
-      // TODO debug("Load %d missing module%s".formatted(size, size == 1 ? "" : "s"));
+      logger.debug("Load %d missing module%s".formatted(size, size == 1 ? "" : "s"));
       difference.retainAll(missing);
       if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
       difference.addAll(missing);
-      loadModule(bach, missing); // "silent" load module missing...
+      loadModule(runner, logger, missing); // "silent" load module missing...
       loaded.addAll(missing);
-      // TODO missing.forEach(this::debug);
+      missing.forEach(logger::debug);
     }
-    out.println("Loaded %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
+    logger.log("Loaded %d module%s".formatted(loaded.size(), loaded.size() == 1 ? "" : "s"));
   }
 }

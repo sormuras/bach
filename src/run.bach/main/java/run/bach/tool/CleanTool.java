@@ -1,10 +1,11 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.duke.Duke;
+import run.duke.ToolLogger;
 
-public class CleanTool implements Bach.Operator {
+public class CleanTool implements ProjectOperator {
   public CleanTool() {}
 
   @Override
@@ -13,8 +14,7 @@ public class CleanTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    bach.run(Duke.treeDelete(bach.folders().out()));
-    return 0;
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    runner.run(Duke.treeDelete(runner.folders().out()));
   }
 }

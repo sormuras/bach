@@ -8,7 +8,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import run.duke.CommandLineInterface.Help;
-import run.duke.CommandLineInterface.Manual;
 import run.duke.CommandLineInterface.Name;
 import run.duke.CommandLineInterface.Splitter;
 import run.duke.Duke;
@@ -28,11 +27,11 @@ import run.duke.Duke;
  * @param calls A sequence of tool calls separated by {@code +} characters
  */
 public record Options(
+    @Name({"--help", "-help", "-h", "/?", "?"}) Flag help,
     @Name({"--verbose", "--forte"}) @Help("Prints more and finer detailed messages")
         boolean verbose,
     @Name({"--very-quiet", "--silent", "--piano"}) @Help("Prints no message") boolean silent,
     @Name("--dry-run") @Help("Composes everything, but doesn't run any tool call") boolean dryRun,
-    @Name({"--help", "-help", "-h", "/?", "?"}) boolean help,
     @Help("Change root directory of the project") Optional<String> __chroot,
     @Help("Change output directory for generated assets") Optional<String> __output_directory,
     @Help("Maximum line width used by the message printer") Optional<String> __printer_margin,
@@ -43,6 +42,8 @@ public record Options(
     @Help("Zone date time of the build") Optional<String> __project_version_timestamp,
     @Help("A sequence of tool calls separated by + characters") String... calls) {
 
+  public record Flag() {}
+
   private static final Splitter<Options> SPLITTER = Duke.splitter(lookup(), Options.class);
 
   public static Options of(String... args) {
@@ -50,7 +51,7 @@ public record Options(
   }
 
   public static String toHelp() {
-    return Manual.help(SPLITTER.schema());
+    return "HERE BE HELP!";
   }
 
   public Path rootDirectory() {

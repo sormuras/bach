@@ -4,14 +4,16 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 import java.util.StringJoiner;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.bach.external.Info;
 import run.bach.external.Repository;
 import run.bach.external.Walker;
 import run.duke.Duke;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 
-public class ImportTool implements Bach.Operator {
+public class ImportTool implements ProjectOperator {
   record Options(boolean __help, Optional<String> __from, String... locators) {}
 
   public ImportTool() {}
@@ -22,31 +24,30 @@ public class ImportTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
     var options = Duke.split(MethodHandles.lookup(), Options.class, args);
     if (options.__help()) {
-      out.println("Usage: %s [--from <repository>] <locators...>".formatted(name()));
-      return 0;
+      logger.log("Usage: %s [--from <repository>] <locators...>".formatted(name()));
+      return;
     }
 
     var from = options.__from().map(Repository::of).orElse(Repository.DEFAULT);
-    var folders = bach.folders();
+    var folders = runner.folders();
 
     if (options.locators().length == 0 || options.locators()[0].equals("?")) {
-      listImportableLocators(bach, out, from, options.__from().orElse(""));
-      return 0;
+      var walker = Walker.of(runner.browser().client(), from);
+      listImportableLocators(walker, logger.out(), from, options.__from().orElse(""));
+      return;
     }
 
     for (var tool : options.locators()) {
       var source = from.source(Info.EXTERNAL_MODULES_LOCATOR, tool);
       var target = folders.externalModules(tool + Info.EXTERNAL_MODULES_LOCATOR.extension());
-      bach.run("load", "file", source, target.toString());
+      runner.run("load", "file", source, target.toString());
     }
-    return 0;
   }
 
-  void listImportableLocators(Bach bach, PrintWriter out, Repository repository, String from) {
-    var walker = Walker.of(bach.browser().client(), repository);
+  void listImportableLocators(Walker walker, PrintWriter out, Repository repository, String from) {
     var tools = walker.map().get(Info.EXTERNAL_MODULES_LOCATOR);
     if (tools == null || tools.isEmpty()) {
       out.println("No external modules locator index files found in " + repository);

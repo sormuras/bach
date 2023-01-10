@@ -16,7 +16,7 @@ module run.bach {
   exports run.bach.tool;
 
   uses java.util.spi.ToolProvider;
-  uses run.bach.Composer;
+  uses run.bach.Configurator;
 
   provides java.util.spi.ToolProvider with
       run.bach.tool.BuildTool,
@@ -31,4 +31,9 @@ module run.bach {
       run.bach.tool.LaunchTool,
       run.bach.tool.LoadTool,
       run.bach.tool.TestTool;
+  provides run.bach.Configurator with
+      run.bach.conf.BrowserConfigurator,
+      run.bach.conf.ProjectConfigurator,
+      run.bach.conf.ToolkitConfigurator,
+      run.bach.conf.TweaksConfigurator;
 }

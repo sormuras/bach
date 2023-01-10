@@ -1,14 +1,15 @@
 package run.bach.tool;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import run.bach.Bach;
 import run.bach.Folders;
 import run.bach.Project;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 
-public class CompileClassesTool implements Bach.Operator {
+public class CompileClassesTool implements ProjectOperator {
   public static ToolCall compile(Project.Space space) {
     return ToolCall.of("compile-classes", space.name());
   }
@@ -21,17 +22,16 @@ public class CompileClassesTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    var space = bach.project().spaces().space(args[0]);
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    var space = runner.project().spaces().space(args[0]);
     var javac = createJavacCall();
     javac = javacWithRelease(javac, space);
     javac = javacWithModules(javac, space);
     javac = javacWithModuleSourcePaths(javac, space);
-    javac = javacWithModulePaths(javac, space, bach.folders());
-    javac = javacWithModulePatches(javac, space, bach);
-    javac = javacWithDestinationDirectory(javac, space, bach.folders());
-    bach.run(javac);
-    return 0;
+    javac = javacWithModulePaths(javac, space, runner.folders());
+    javac = javacWithModulePatches(javac, space, runner);
+    javac = javacWithDestinationDirectory(javac, space, runner.folders());
+    runner.run(javac);
   }
 
   protected ToolCall createJavacCall() {
@@ -62,15 +62,16 @@ public class CompileClassesTool implements Bach.Operator {
     return javac;
   }
 
-  protected ToolCall javacWithModulePatches(ToolCall javac, Project.Space space, Bach bach) {
+  protected ToolCall javacWithModulePatches(
+      ToolCall javac, Project.Space space, ProjectRunner runner) {
     for (var declaration : space.modules().list()) {
       var module = declaration.name();
       var patches = new ArrayList<String>();
       for (var requires : space.requires()) {
-        if (bach.project().spaces().space(requires).modules().find(module).isEmpty()) {
+        if (runner.project().spaces().space(requires).modules().find(module).isEmpty()) {
           continue;
         }
-        patches.add(bach.folders().out(requires, "modules", module + ".jar").toString());
+        patches.add(runner.folders().out(requires, "modules", module + ".jar").toString());
       }
       if (patches.isEmpty()) continue;
       var patch = String.join(File.pathSeparator, patches);

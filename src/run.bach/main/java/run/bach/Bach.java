@@ -10,31 +10,46 @@ import run.bach.internal.FlightRecorderEvent;
 import run.bach.internal.StringPrintWriterMirror;
 import run.duke.Tool;
 import run.duke.ToolCall;
+import run.duke.ToolContext;
+import run.duke.ToolLogger;
 import run.duke.ToolOperator;
-import run.duke.ToolRunner;
-import run.duke.Workbench;
 
 public record Bach(
+    ToolContext context,
     Browser browser,
     Folders folders,
     Options options,
     Printer printer,
     Project project,
     Toolkit toolkit,
-    Workbench workbench)
-    implements ToolRunner {
-  public Bach {
+    Tweaks tweaks)
+    implements ProjectRunner {
+  public Bach(ToolContext context) {
+    this(
+        context,
+        context.getConstant(Browser.class),
+        context.getConstant(Folders.class),
+        context.getConstant(Options.class),
+        context.getConstant(Printer.class),
+        context.getConstant(Project.class),
+        context.getConstant(Toolkit.class),
+        context.getConstant(Tweaks.class));
     printer.log(Level.DEBUG, "Bach initialized");
   }
 
   @Override
+  public <R extends Record> R getConstant(Class<R> key) {
+    return context.getConstant(key);
+  }
+
+  @Override
   public List<Tool> tools() {
-    return List.copyOf(toolkit.toolbox().tools());
+    return List.copyOf(toolkit.finder().tools());
   }
 
   @Override
   public Optional<Tool> findTool(String tool) {
-    return toolkit.toolbox().findTool(tool);
+    return toolkit.finder().findTool(tool);
   }
 
   private ToolProvider findToolProvider(ToolCall call) {
@@ -48,7 +63,7 @@ public record Bach(
 
   @Override
   public void run(ToolCall toolCall) {
-    var call = toolCall.withTweaks(toolkit.tweaks());
+    var call = toolCall.withTweaks(tweaks);
     printer.log(Level.INFO, "+ " + call.toCommandLine());
     var provider = findToolProvider(call);
     run(provider, call.arguments());
@@ -70,10 +85,9 @@ public record Bach(
       var out = newPrintWriter(silent, printer.out());
       var err = newPrintWriter(silent, printer.err());
       event.begin();
-      if (provider instanceof Bach.Operator operator) {
-        event.code = operator.run(this, out, err, args);
-      } else if (provider instanceof ToolOperator operator) {
-        event.code = operator.run(this, out, err, args);
+      if (provider instanceof ToolOperator operator) {
+        var logger = new ToolLogger(event.name, out, err);
+        event.code = operator.run(this, logger, args);
       } else {
         event.code = provider.run(out, err, args);
       }
@@ -91,20 +105,5 @@ public record Bach(
 
   private PrintWriter newPrintWriter(boolean silent, PrintWriter writer) {
     return silent ? new PrintWriter(Writer.nullWriter()) : new StringPrintWriterMirror(writer);
-  }
-
-  @Override
-  public <R extends Record> R workpiece(Class<R> key) {
-    return workbench.get(key);
-  }
-
-  @FunctionalInterface
-  public interface Operator extends ToolOperator {
-    @Deprecated
-    default int run(ToolRunner runner, PrintWriter out, PrintWriter err, String... args) {
-      throw new UnsupportedOperationException();
-    }
-
-    int run(Bach bach, PrintWriter out, PrintWriter err, String... args);
   }
 }

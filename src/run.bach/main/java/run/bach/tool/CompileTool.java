@@ -1,10 +1,11 @@
 package run.bach.tool;
 
-import java.io.PrintWriter;
-import run.bach.Bach;
+import run.bach.ProjectOperator;
+import run.bach.ProjectRunner;
 import run.duke.ToolCall;
+import run.duke.ToolLogger;
 
-public class CompileTool implements Bach.Operator {
+public class CompileTool implements ProjectOperator {
   public static ToolCall compile() {
     return ToolCall.of("compile");
   }
@@ -17,22 +18,19 @@ public class CompileTool implements Bach.Operator {
   }
 
   @Override
-  public int run(Bach bach, PrintWriter out, PrintWriter err, String... args) {
-    for (var space : bach.project().spaces()) {
+  public void run(ProjectRunner runner, ToolLogger logger, String... args) {
+    for (var space : runner.project().spaces()) {
       var modules = space.modules().list();
       if (modules.isEmpty()) {
-        if (bach.options().verbose()) {
-          out.println("No modules declared in %s space.".formatted(space.name()));
-        }
+        logger.debug("No modules declared in %s space.".formatted(space.name()));
         continue;
       }
       var s = modules.size() == 1 ? "" : "s";
-      out.println("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
+      logger.log("Compile %d module%s in %s space...".formatted(modules.size(), s, space.name()));
       // translate Java source files into class files
-      bach.run(CompileClassesTool.compile(space));
+      runner.run(CompileClassesTool.compile(space));
       // archive compiled classes in modular JAR files
-      bach.run(CompileModulesTool.compile(space));
+      runner.run(CompileModulesTool.compile(space));
     }
-    return 0;
   }
 }
