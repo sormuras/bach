@@ -1,0 +1,40 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ '*' ]
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.version.outputs.date }}
+      datetime: ${{ steps.version.outputs.datetime }}
+      sha: ${{ steps.version.outputs.sha }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 'Compute version string'
+        id: version
+        run: |
+          DATE=$(date -u '+%Y.%m.%d')
+          DATETIME=$(date -u '+%Y.%m.%d.%H.%M.%S')
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "datetime=${DATETIME}" >> $GITHUB_OUTPUT
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TAG=early-access
+          VERSION=${DATE}-ea+${SHA}
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+  build:
+    needs: [setup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v3
+      - name: 'Set up Java'
+        uses: oracle-actions/setup-java@v1
