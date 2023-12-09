@@ -2,8 +2,13 @@
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.bach/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/.bach/out" />
+    </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />
+    <orderEntry type="module" module-name="project" scope="TEST" />
+    <orderEntry type="module" module-name="run.bach" scope="TEST" />
   </component>
 </module>
