@@ -16,7 +16,7 @@ jobs:
         with:
           submodules: recursive
       - name: 'List all -info.java files'
-        run: find | grep \\-info.java
+        run: find | grep \\-info.java | sort
       - name: 'Set up Java'
         uses: oracle-actions/setup-java@v1
         with:
