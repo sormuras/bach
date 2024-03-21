@@ -8,8 +8,8 @@ Bach is a Java Shell-like that orchestrates [JDK tools] for building modular Jav
 
 # be free - have fun
 
-[![jdk21](https://img.shields.io/badge/JDK-21-blue.svg)](https://jdk.java.net)
+[![jdk22](https://img.shields.io/badge/JDK-22-blue.svg)](https://jdk.java.net)
 ![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[JDK tools]: https://docs.oracle.com/en/java/javase/21/docs/specs/man/index.html
+[JDK tools]: https://docs.oracle.com/en/java/javase/22/docs/specs/man/index.html
