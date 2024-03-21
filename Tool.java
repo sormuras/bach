@@ -2,6 +2,7 @@
  * Copyright (c) 2024 Christian Stein
  * Licensed under the Universal Permissive License v 1.0 -> https://opensource.org/license/upl
  */
+
 package run.bach;
 
 import java.nio.file.Path;
@@ -19,8 +20,8 @@ public record Tool(Identifier identifier, ToolProvider provider) {
   /**
    * {@return an instance of a tool specified its name}
    *
-   * @param name the name of the tool to lookup
-   * @throws NoSuchToolException when no tool could be found for the given name
+   * @param name the name of the tool to look up
+   * @throws ToolNotFoundException when no tool could be found for the given name
    */
   public static Tool of(String name) {
     // Try with loading tool provider implementations using the system class loader first.
@@ -32,12 +33,11 @@ public record Tool(Identifier identifier, ToolProvider provider) {
     var executable = ToolProgram.findJavaDevelopmentKitTool(name);
     if (executable.isPresent()) {
       var version = String.valueOf(Runtime.version().feature());
-      // var identifier = Identifier.of("jdk.home/bin", name, version);
-      var identifier = Identifier.parse("jdk.home/bin/" + name + '@' + version);
+      var identifier = Identifier.of("jdk.home/bin/" + name + '@' + version);
       return new Tool(identifier, executable.get());
     }
     // Still here? Not so good...
-    throw new NoSuchToolException(name);
+    throw new ToolNotFoundException("Tool not found for name: " + name);
   }
 
   /**
@@ -85,7 +85,7 @@ public record Tool(Identifier identifier, ToolProvider provider) {
       return Identifier.of(namespace, name, version);
     }
 
-    public static Identifier parse(String id) { // ["namespace" "/"] "name" ["@" "version"]
+    public static Identifier of(String id) { // ["namespace" "/"] "name" ["@" "version"]
       if (id == null) throw new NullPointerException("id must not be null");
       if (id.isBlank()) throw new IllegalArgumentException("id must not be blank");
       var path = Path.of(id).normalize();
