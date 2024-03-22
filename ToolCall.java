@@ -58,6 +58,10 @@ public record ToolCall(Carrier tool, List<String> arguments) {
     };
   }
 
+  public ToolCall addAll(String... arguments) {
+    return addAll((Object[]) arguments);
+  }
+
   public ToolCall addAll(Object... arguments) {
     return switch (arguments.length) {
       case 0 -> this;
