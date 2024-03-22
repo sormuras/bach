@@ -22,3 +22,5 @@ jobs:
         with:
           website: jdk.java.net
           release: 22
+      - name: 'Build Bach with Bach'
+        run: java .bach/src/run.bach/run/Build.java
