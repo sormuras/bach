@@ -23,6 +23,7 @@ import java.util.stream.Stream;
  */
 @FunctionalInterface
 public interface ToolFinder {
+  /** {@return a list of tool instances of this finder, possibly empty} */
   List<Tool> tools();
 
   /**
@@ -43,7 +44,7 @@ public interface ToolFinder {
   default Tool findToolOrElseThrow(String name) {
     var tool = findTool(name);
     if (tool.isPresent()) return tool.get();
-    throw  new ToolNotFoundException("Tool named `%s` not found ".formatted(name));
+    throw new ToolNotFoundException("Tool not found for name: " + name);
   }
 
   /**
@@ -56,6 +57,11 @@ public interface ToolFinder {
     return of(Stream.of(tools).map(Tool::of).toArray(Tool[]::new));
   }
 
+  /**
+   * {@return a tool finder composed of a sequence of zero or more tools}
+   *
+   * @param tools the array of tools
+   */
   static ToolFinder of(Tool... tools) {
     return new DefaultFinder(List.of(tools));
   }
@@ -64,6 +70,11 @@ public interface ToolFinder {
     return new SystemFinder();
   }
 
+  /**
+   * {@return a tool finder that is composed of a sequence of zero or more tool finders}
+   *
+   * @param finders the array of tool finders
+   */
   static ToolFinder compose(ToolFinder... finders) {
     return new CompositeFinder(List.of(finders));
   }
@@ -80,6 +91,8 @@ public interface ToolFinder {
   record SystemFinder() implements ToolFinder {
     @Override
     public List<Tool> tools() {
+      // TODO Load tool providers using the context class loader.
+      // TODO List tool programs of the current JDK's bin folder.
       return List.of();
     }
 

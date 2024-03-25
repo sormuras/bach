@@ -18,11 +18,16 @@ import java.util.function.UnaryOperator;
  */
 @FunctionalInterface
 public interface ToolRunner {
+  /**
+   * {@return an instance of the default tool runner using the given tool finder}
+   *
+   * @param finder the finder instance to be used for finding tools by name
+   */
   static ToolRunner of(ToolFinder finder) {
     return new Workbench(finder);
   }
 
-  /** {@return an instance of the default tool runner implementation using the system tool finder} */
+  /** {@return an instance of the default tool runner using the system tool finder} */
   static ToolRunner ofSystem() {
     class SystemRunner {
       static final ToolRunner SINGLETON = ToolRunner.of(ToolFinder.ofSystem());
