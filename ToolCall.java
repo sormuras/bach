@@ -5,7 +5,6 @@
 
 package run.bach;
 
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -28,13 +27,13 @@ public record ToolCall(Carrier tool, List<String> arguments) {
   }
 
   public static ToolCall of(String name, String... arguments) {
-    return new ToolCall(new Carrier.Nominal(name), List.of(arguments));
+    return new ToolCall(new Carrier.ByName(name), List.of(arguments));
   }
 
   public sealed interface Carrier {
     String name();
 
-    record Nominal(String name) implements Carrier {}
+    record ByName(String name) implements Carrier {}
 
     record Direct(Tool tool) implements Carrier {
       @Override
@@ -117,20 +116,18 @@ public record ToolCall(Carrier tool, List<String> arguments) {
     return optional.isPresent() ? then.apply(this, optional.get()) : this;
   }
 
+  /**
+   * Execute this tool call instance using the system-default tool finder and runner.
+   *
+   * @see ToolFinder#ofSystem()
+   * @see ToolRunner#ofSystem()
+   */
   public void run() {
-    var name = tool.name();
-    var args = arguments.toArray(String[]::new);
-    System.out.println("| " + name + (args.length == 0 ? "" : " " + String.join(" ", args)));
+    ToolRunner.ofSystem().run(this);
+  }
 
-    var provider =
-        switch (tool) {
-          case Carrier.Nominal _ -> Tool.of(name).provider();
-          case Carrier.Direct carrier -> carrier.tool().provider();
-        };
-    var out = new PrintWriter(System.out, true);
-    var err = new PrintWriter(System.err, true);
-    var code = provider.run(out, err, args);
-    if (code != 0) throw new RuntimeException(this + " failed with exit code " + code);
+  public String toCommandLine() {
+    return arguments.isEmpty() ? tool.name() : tool.name() + " " + String.join(" ", arguments);
   }
 
   @FunctionalInterface
