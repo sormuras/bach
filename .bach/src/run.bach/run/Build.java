@@ -1,19 +1,21 @@
 package run;
 
-import java.nio.file.Path;
+import run.bach.Bach;
 import run.bach.ToolCall;
 
 class Build {
+  private static final Bach.Folders folders = Bach.Folders.ofCurrentWorkingDirectory();
+
   public static void main(String... args) {
-    var sources = Path.of(".bach/src");
-    var classes = Path.of(".bach/out/classes");
-    var modules = Path.of(".bach/out/modules");
+    var classes = folders.out("classes");
+    var modules = folders.out("modules");
+    var moduleSourcePath = folders.computeModuleSourcePath("run.bach", ".bach/src/run.bach");
 
     ToolCall.of("javac")
         .add("--module", "run.bach")
-        .add("--module-source-path", sources)
-        .add("-Xlint:all")
-        .add("-Werror")
+        .add("--module-source-path", moduleSourcePath)
+        .add("-X" + "lint:all")
+        .add("-W" + "error")
         .add("-d", classes)
         .run();
 
