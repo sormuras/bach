@@ -21,9 +21,16 @@ import java.util.spi.ToolProvider;
  *
  * @param name the name of this tool program
  * @param command the list containing the executable program and its fixed arguments
+ * @param processBuilderTweaker the tweaker of the process builder instance created before starting
+ * @param processWaiter the waiter waits for the started process to finish and returns an exit value
  * @see ToolProvider#name()
  */
-public record ToolProgram(String name, List<String> command) implements ToolProvider {
+public record ToolProgram(
+    String name,
+    List<String> command,
+    ProcessBuilderTweaker processBuilderTweaker,
+    ProcessWaiter processWaiter)
+    implements ToolProvider {
   /**
    * {@return an instance of a JDK tool program for the given name, if found}
    *
@@ -67,16 +74,36 @@ public record ToolProgram(String name, List<String> command) implements ToolProv
     return Optional.of(new ToolProgram(name, List.copyOf(command)));
   }
 
+  public ToolProgram(String name, List<String> command) {
+    this(name, command, x -> x, Process::waitFor);
+  }
+
+  public ToolProgram withProcessBuilderTweaker(ProcessBuilderTweaker processBuilderTweaker) {
+    return new ToolProgram(name, command, processBuilderTweaker, processWaiter);
+  }
+
+  public ToolProgram withProcessWaiter(ProcessWaiter processWaiter) {
+    return new ToolProgram(name, command, processBuilderTweaker, processWaiter);
+  }
+
+  public Tool tool() {
+    var path = Path.of(command.getFirst()).normalize();
+    var namespace = path.getNameCount() == 0 ? "" : path.getParent().toString().replace('\\', '/');
+    var file = path.getFileName() == null ? "<null>" : path.getFileName().toString();
+    var name = file.endsWith(".exe") ? file.substring(0, file.length() - 4) : file;
+    return new Tool(Tool.Identifier.of(namespace, name, null), this);
+  }
+
   @Override
   public int run(PrintWriter out, PrintWriter err, String... arguments) {
-    var builder = new ProcessBuilder(new ArrayList<>(command));
-    builder.command().addAll(List.of(arguments));
+    var processBuilder = new ProcessBuilder(new ArrayList<>(command));
+    processBuilder.command().addAll(List.of(arguments));
     try {
-      var process = builder.start();
-      var threads = Thread.ofVirtual();
-      threads.name(name + "-out").start(new LinePrinter(process.getInputStream(), out));
-      threads.name(name + "-err").start(new LinePrinter(process.getErrorStream(), err));
-      return process.waitFor();
+      var process = processBuilderTweaker.tweak(processBuilder).start();
+      var threadBuilder = Thread.ofVirtual();
+      threadBuilder.name(name + "-out").start(new LinePrinter(process.getInputStream(), out));
+      threadBuilder.name(name + "-err").start(new LinePrinter(process.getErrorStream(), err));
+      return process.isAlive() ? processWaiter().waitFor(process) : process.exitValue();
     } catch (InterruptedException exception) {
       Thread.currentThread().interrupt();
       return -1;
@@ -84,6 +111,16 @@ public record ToolProgram(String name, List<String> command) implements ToolProv
       exception.printStackTrace(err);
       return 1;
     }
+  }
+
+  @FunctionalInterface
+  public interface ProcessBuilderTweaker {
+    ProcessBuilder tweak(ProcessBuilder builder);
+  }
+
+  @FunctionalInterface
+  public interface ProcessWaiter {
+    int waitFor(Process process) throws InterruptedException;
   }
 
   private record LinePrinter(InputStream stream, PrintWriter writer) implements Runnable {
