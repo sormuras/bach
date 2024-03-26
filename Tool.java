@@ -59,6 +59,15 @@ public record Tool(Identifier identifier, ToolProvider provider) {
   }
 
   /**
+   * {@return a new tool call instance for this tool with zero or more initial arguments}
+   *
+   * @param args the arguments array
+   */
+  public ToolCall call(String... args) {
+    return ToolCall.of(this, args);
+  }
+
+  /**
    * Describes a tool by its name in a possibly empty namespace and an optional version string.
    *
    * <p>Example: {@code "jdk.compiler/javac@99"}
