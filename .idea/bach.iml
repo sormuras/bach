@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.bach/bin" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/out" />
+      <excludeFolder url="file://$MODULE_DIR$/.bach/var" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="inheritedJdk" />
