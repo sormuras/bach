@@ -9,6 +9,7 @@ import static run.bach.ToolCall.Carrier.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.System.Logger.Level;
 import run.bach.internal.FlightRecorderEvent;
 
@@ -102,7 +103,7 @@ public class Workbench implements ToolRunner {
     private final PrintWriter other;
 
     StringPrintWriterMirror(PrintWriter other) {
-      this.other = other;
+      this.other = other != null ? other : new PrintWriter(Writer.nullWriter());
     }
 
     @Override
