@@ -31,6 +31,28 @@ public record ToolProgram(
     ProcessBuilderTweaker processBuilderTweaker,
     ProcessWaiter processWaiter)
     implements ToolProvider {
+
+  /**
+   * {@return an instance of a tool program launching a Java application via the {@code java} tool}
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * var base = ToolProgram.java("--limit-modules", "java.base");
+   * Tool.of(base).call("--list-modules").run();
+   * }</pre>
+   *
+   * @param args zero or more fixed arguments
+   * @see <a href="https://docs.oracle.com/en/java/javase/22/docs/specs/man/java.html">The java
+   *     Command</a>
+   */
+  public static ToolProgram java(String... args) {
+    var name = "java";
+    var tool = findJavaDevelopmentKitTool(name, args);
+    if (tool.isPresent()) return tool.get();
+    throw new ToolNotFoundException("Tool not found for name: " + name);
+  }
+
   /**
    * {@return an instance of a JDK tool program for the given name, if found}
    *
