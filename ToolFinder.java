@@ -66,6 +66,14 @@ public interface ToolFinder {
     return new DefaultFinder(List.of(tools));
   }
 
+  static ToolInstaller.Finder ofInstaller() {
+    return ToolInstaller.finder(ToolInstaller.Mode.INSTALL_ON_DEMAND);
+  }
+
+  static ToolInstaller.Finder ofInstaller(ToolInstaller.Mode mode) {
+    return ToolInstaller.finder(mode);
+  }
+
   static ToolFinder ofSystem() {
     return new SystemFinder();
   }
@@ -83,6 +91,15 @@ public interface ToolFinder {
     @Override
     public List<Tool> tools() {
       return finders.stream().flatMap(finder -> finder.tools().stream()).toList();
+    }
+
+    @Override
+    public Optional<Tool> findTool(String name) {
+      for (var finder : finders) {
+        var tool = finder.findTool(name);
+        if (tool.isPresent()) return tool;
+      }
+      return Optional.empty();
     }
   }
 
