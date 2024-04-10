@@ -5,8 +5,12 @@
 
 package run.bach;
 
+import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
@@ -22,49 +26,93 @@ public record Tool(Identifier identifier, ToolProvider provider) {
    *
    * @param name the name of the tool to look up
    * @throws ToolNotFoundException when no tool could be found for the given name
+   * @see ToolProvider#findFirst(String)
+   * @see ToolProgram#findJavaDevelopmentKitTool(String, String...)
    */
-  public static Tool of(String name) {
+  public static Tool of(String name) throws ToolNotFoundException {
     // Try with loading tool provider implementations using the system class loader first.
     var provider = ToolProvider.findFirst(name);
     if (provider.isPresent()) {
       return Tool.of(provider.get());
     }
     // Find executable tool program in JDK's binary directory.
-    var executable = ToolProgram.findJavaDevelopmentKitTool(name);
-    if (executable.isPresent()) {
+    var program = ToolProgram.findJavaDevelopmentKitTool(name);
+    if (program.isPresent()) {
       var version = String.valueOf(Runtime.version().feature());
       var identifier = Identifier.of("jdk.home/bin/" + name + '@' + version);
-      return new Tool(identifier, executable.get());
+      return Tool.of(identifier, program.get());
     }
     // Still here? Not so good...
     throw new ToolNotFoundException("Tool not found for name: " + name);
   }
 
   /**
-   * {@return an instance of tool for the given tool provider instance}
+   * {@return an instance of tool linking the given tool provider instance}
    *
-   * @param provider the instance to use
+   * @param provider the tool provider instance to link and extract tool-identifiable names from
+   * @see Identifier#of(ToolProvider)
    */
   public static Tool of(ToolProvider provider) {
     return new Tool(Identifier.of(provider), provider);
   }
 
   /**
-   * {@return an instance of the tool specified by the name}
+   * {@return an instance of tool for the given identifier and provider}
    *
-   * @param provider the name of the tool to lookup
+   * @param identifier the nominal representation of the tool
+   * @param provider the tool provider instance to link
    */
-  public static Tool of(String namespace, String name, String version, ToolProvider provider) {
-    return new Tool(Identifier.of(namespace, name, version), provider);
+  public static Tool of(Identifier identifier, ToolProvider provider) {
+    return new Tool(identifier, provider);
   }
 
   /**
-   * {@return a new tool call instance for this tool with zero or more initial arguments}
+   * {@return an instance of tool for the given identifier and provider}
    *
-   * @param args the arguments array
+   * @param id the nominal representation of the tool
+   * @param provider the tool provider instance to link
    */
-  public ToolCall call(String... args) {
-    return ToolCall.of(this, args);
+  public static Tool of(String id, ToolProvider provider) {
+    return new Tool(Identifier.of(id), provider);
+  }
+
+  /**
+   * {@return an instance of tool for the given identifier and tool provider supplier}
+   *
+   * @param id the nominal representation of the tool
+   * @param supplier the supplier of the tool provider instance to wrap
+   */
+  public static Tool of(String id, Supplier<ToolProvider> supplier) {
+    return Tool.of(Identifier.of(id), supplier);
+  }
+
+  /**
+   * {@return an instance of tool for the given identifier and tool provider supplier}
+   *
+   * @param identifier the nominal representation of the tool
+   * @param supplier the supplier of the tool provider instance to wrap
+   */
+  public static Tool of(Identifier identifier, Supplier<ToolProvider> supplier) {
+    record Intermediary(String name, Supplier<ToolProvider> supplier) implements ToolProvider {
+      @Override
+      public int run(PrintWriter out, PrintWriter err, String... args) {
+        return supplier.get().run(out, err, args);
+      }
+    }
+    return new Tool(identifier, new Intermediary(identifier.name(), supplier));
+  }
+
+  public Tool {
+    Objects.requireNonNull(identifier);
+    Objects.requireNonNull(provider);
+  }
+
+  public void run(String... args) {
+    ToolCall.of(this, args).run();
+  }
+
+  public void run(UnaryOperator<ToolCall> operator) {
+    operator.apply(ToolCall.of(this)).run();
   }
 
   /**
