@@ -14,10 +14,10 @@ import java.lang.System.Logger.Level;
 import run.bach.internal.FlightRecorderEvent;
 
 /** Extendable tool runner implementation. */
-public class Workbench implements ToolRunner {
+public class ToolSpace implements ToolRunner {
   protected final ToolFinder finder;
 
-  public Workbench(ToolFinder finder) {
+  public ToolSpace(ToolFinder finder) {
     this.finder = finder;
   }
 

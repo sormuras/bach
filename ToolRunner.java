@@ -24,7 +24,7 @@ public interface ToolRunner {
    * @param finder the finder instance to be used for finding tools by name
    */
   static ToolRunner of(ToolFinder finder) {
-    return new Workbench(finder);
+    return new ToolSpace(finder);
   }
 
   /** {@return an instance of the default tool runner using the system tool finder} */
