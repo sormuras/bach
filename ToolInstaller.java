@@ -6,6 +6,7 @@
 package run.bach;
 
 import java.net.URI;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -57,7 +58,7 @@ public interface ToolInstaller {
     var identifier = Tool.Identifier.of(namespace(), name(), version);
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
     var into = resolveInstallationDirectory(folders.tools(), identifier);
-    var provider = install(version, into);
+    var provider = install(this, version, into);
     return Tool.of(identifier, provider);
   }
 
@@ -76,6 +77,28 @@ public interface ToolInstaller {
 
   default Path resolveInstallationDirectory(Path base, Tool.Identifier identifier) {
     return base.resolve(identifier.namespace()).resolve(identifier.toNameAndVersion()).normalize();
+  }
+
+  static ToolProvider install(ToolInstaller installer, String version, Path into) {
+    try {
+      Files.createDirectories(into);
+      var lockfile = into.resolve(".lockfile");
+      try {
+        try {
+          Files.createFile(lockfile);
+        } catch (FileAlreadyExistsException exception) {
+          while (Files.exists(lockfile)) {
+            // noinspection BusyWait
+            Thread.sleep(1234);
+          }
+        }
+        return installer.install(version, into);
+      } finally {
+        Files.deleteIfExists(lockfile);
+      }
+    } catch (Exception exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   record Installation(Tool.Identifier identifier, ToolInstaller installer) {}
@@ -123,12 +146,12 @@ public interface ToolInstaller {
     public Finder with(Installation installation) {
       var identifier = installation.identifier();
       var installer = installation.installer();
-      var version = identifier.version().orElse(installer.version());
+      var version = identifier.version().orElseGet(installer::version);
       var into = installer.resolveInstallationDirectory(installationHomeDirectory, identifier);
       var tool =
           switch (mode) {
-            case INSTALL_IMMEDIATE -> Tool.of(identifier, installer.install(version, into));
-            case INSTALL_ON_DEMAND -> Tool.of(identifier, () -> installer.install(version, into));
+            case INSTALL_IMMEDIATE -> Tool.of(identifier, install(installer, version, into));
+            case INSTALL_ON_DEMAND -> Tool.of(identifier, () -> install(installer, version, into));
           };
       var tools = Stream.concat(tools().stream(), Stream.of(tool)).toList();
       return new Finder(tools, mode, installationHomeDirectory);
@@ -140,7 +163,6 @@ public interface ToolInstaller {
     public ToolProvider install(String version, Path into) {
       var filename = Path.of(source.getPath()).getFileName().toString();
       var target = into.resolve(filename);
-      System.out.println("target = " + target.toUri());
       if (!Files.exists(target)) {
         try {
           download(target, source);
