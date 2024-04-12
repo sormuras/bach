@@ -11,30 +11,34 @@ import run.bach.ToolProgram;
 public record Greeter() implements ToolInstaller {
   public static void main(String... args) {
     var greeter = new Greeter();
-    greeter.tool("0").run(); // "external/greeter@0"
+    greeter.install().run(); // "external/greeter"
 
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
-    Tool.of("greeter/eager@1", greeter.install("1", folders.tools("greeter/eager@1"))).run();
-    Tool.of("greeter/inert@2", () -> greeter.install("2", folders.tools("greeter/inert@2"))).run();
+    Tool.of("my/c@99", ToolProvider.findFirst("javac").orElseThrow()).run();
+    Tool.of("greeter/eager", greeter.installInto(folders.tools("greeter/eager"))).run();
+    Tool.of("greeter/inert", () -> greeter.installInto(folders.tools("greeter/inert"))).run();
   }
 
   @Override
-  public ToolProvider install(String version, Path into) {
-    var file = into.resolve("Prog.java");
+  public String version() {
+    return null;
+  }
+
+  @Override
+  public ToolProvider installInto(Path folder) {
+    var file = folder.resolve("Prog.java");
     if (!Files.exists(file)) {
       try {
-        Files.createDirectories(into);
+        Files.createDirectories(folder);
         var text = // language=java
             """
             class Prog {
               public static void main(String... args) {
-                System.out.println("Greetings! [%s]");
+                System.out.println("Greetings!");
               }
             }
-            """
-                .formatted(version);
+            """;
         Files.writeString(file, text);
-        System.out.println("Wrote " + file.toUri());
       } catch (Exception exception) {
         throw new RuntimeException();
       }

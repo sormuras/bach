@@ -13,7 +13,7 @@ class ToolFinderDemo {
         ToolFinder.compose(
             // ToolProvider SPI, i.e. ToolProvider.findFirst(NAME)
             ToolFinder.of(Tool.of("jar"), Tool.of("javac")),
-            // Native executable in ${JAVA_HOME}/bin/NAME[.exe]
+            // Native executable program in ${JAVA_HOME}/bin/NAME[.exe]
             ToolFinder.of(Tool.of("java"), Tool.of("jfr")),
             // ToolProvider instance
             ToolFinder.of(
@@ -24,23 +24,19 @@ class ToolFinderDemo {
                 Tool.of(new ConsumerTool("consume", ConsumerTool::example))),
             // Tool installation support
             ToolFinder.ofInstaller(ToolInstaller.Mode.INSTALL_IMMEDIATE)
-                // canonical
-                .with(new GoogleJavaFormat().installation("1.20.0"))
-                .with("demo/google-java-format@1.21.0", new GoogleJavaFormat())
-                .with("demo/google-java-format@1.22.0", GoogleJavaFormat::new)
-                // convenient
+                // dedicated installer
+                .with(new Ant("1.10.14"))
+                .with(new GoogleJavaFormat("1.22.0"))
+                .with(new Maven("3.9.6"))
+                // convenient installer
+                .withJavaApplication(
+                    "rife2/bld@1.9.0",
+                    "https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar")
                 .withJavaApplication(
                     "kordamp/jarviz@0.3.0",
                     "https://github.com/kordamp/jarviz/releases/download/v0.3.0/jarviz-tool-provider-0.3.0.jar"));
 
-    // JReleaser.tool(cache, "1.11.0")
-    // Ant.tool("1.10.14", cache)
-    // Maven.tool(cache, "3.9.6")
-
     System.out.println(toString(finder));
-    finder.findToolOrElseThrow("google-java-format").run("--version");
-    finder.findToolOrElseThrow("flush").run();
-    finder.findToolOrElseThrow("jarviz").run("--version");
   }
 
   record Noop(String name, int code) implements ToolProvider {

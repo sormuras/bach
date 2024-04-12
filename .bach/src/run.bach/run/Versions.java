@@ -11,26 +11,27 @@ class Versions {
     Tool.of("java").run("--version");
 
     // 1-shot, tool installer
-    new GoogleJavaFormat().tool("1.22.0").run("--version");
+    Tool.of(new Ant()).run("-version");
+    Tool.of(new GoogleJavaFormat()).run("--version");
+    Tool.of(new Maven()).run("--version");
+    Tool.of("https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar").run("version");
 
-    // JReleaser.tool(cache, "1.11.0").run("--version");
-    // Ant.tool("1.10.14", tools.cache()).run("-version");
-    // Maven.tool(cache, "3.9.6").run("--version");
-
-    // canonical
+    // multi-shot, tool finder
     var finder =
         ToolFinder.ofInstaller()
-            .with(new GoogleJavaFormat().installation("1.21.0"))
-            .with(new GoogleJavaFormat().installation("1.22.0"))
-        // JReleaser.tool(cache, "1.11.0"),
-        // Ant.tool("1.10.14", tools.cache())
-        // Maven.tool(cache, "3.9.6")
-        ;
+            .with(new Ant())
+            .withJavaApplication(
+                "rife2/bld@1.9.0",
+                "https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar")
+            .with("run/google-java-format@1.22", new GoogleJavaFormat("1.22.0"))
+            .with("run/google-java-format@1.19", new GoogleJavaFormat("1.19.2"))
+            .with(new Maven());
+
     var runner = ToolRunner.of(finder);
-    runner.run("google-java-format@1.21.0", "--version");
-    runner.run("google-java-format@1.22.0", "--version");
-    //    runner.run("jreleaser", "--version");
-    //    runner.run("ant", "-version");
-    //    runner.run("maven", "-version");
+    runner.run("ant", "-version");
+    runner.run("bld", "version");
+    runner.run("google-java-format", "--version");
+    runner.run("google-java-format@1.19", "--version");
+    runner.run("maven", "--version");
   }
 }
