@@ -15,12 +15,13 @@ import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 
 /**
- * Links tool-identifying names to an instance of the tool provider interface.
+ * Links tool-identifying names to an instance of a tool provider interface implementation.
  *
- * @param identifier the nominal representation of the tool
- * @param provider the linked tool provider instance
+ * @param identifier the nominal representation of this tool
+ * @param provider the tool provider instance to link
  */
 public record Tool(Identifier identifier, ToolProvider provider) {
+
   /**
    * {@return an instance of a tool specified its name}
    *
@@ -41,6 +42,11 @@ public record Tool(Identifier identifier, ToolProvider provider) {
       var version = String.valueOf(Runtime.version().feature());
       var identifier = Identifier.of("jdk.home/bin/" + name + '@' + version);
       return Tool.of(identifier, program.get());
+    }
+    // Try with treating the name argument as a URI.
+    var installer = ToolInstaller.find(name);
+    if (installer.isPresent()) {
+      return Tool.of(installer.get(), ToolInstaller.Mode.INSTALL_IMMEDIATE);
     }
     // Still here? Not so good...
     throw new ToolNotFoundException("Tool not found for name: " + name);
@@ -102,6 +108,14 @@ public record Tool(Identifier identifier, ToolProvider provider) {
     return new Tool(identifier, new Intermediary(identifier.name(), supplier));
   }
 
+  public static Tool of(ToolInstaller installer) {
+    return Tool.of(installer, ToolInstaller.Mode.DEFAULT);
+  }
+
+  public static Tool of(ToolInstaller installer, ToolInstaller.Mode mode) {
+    return installer.install(mode);
+  }
+
   public Tool {
     Objects.requireNonNull(identifier);
     Objects.requireNonNull(provider);
@@ -128,6 +142,15 @@ public record Tool(Identifier identifier, ToolProvider provider) {
   public record Identifier(String namespace, String name, Optional<String> version) {
     public static Identifier of(String namespace, String name, String version) {
       return new Identifier(namespace, name, Optional.ofNullable(version));
+    }
+
+    public static Identifier of(ToolInstaller installer) {
+      var type = installer.getClass();
+      var module = type.getModule();
+      var namespace = module.isNamed() ? module.getName() : type.getPackageName();
+      var name = installer.name();
+      var version = installer.version();
+      return Identifier.of(namespace, name, version);
     }
 
     public static Identifier of(ToolProvider provider) {

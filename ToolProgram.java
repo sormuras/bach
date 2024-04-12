@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +36,13 @@ public record ToolProgram(
   /**
    * {@return an instance of a tool program launching a Java application via the {@code java} tool}
    *
-   * <p>Example:
+   * <p>Example for using {@code java} with an array of fixed arguments:
    *
    * <pre>{@code
+   * // java[.exe] --limit-modules java.base --list-modules
    * var base = ToolProgram.java("--limit-modules", "java.base");
-   * Tool.of(base).call("--list-modules").run();
+   * var tool = Tool.of(base);
+   * tool.run("--list-modules");
    * }</pre>
    *
    * @param args zero or more fixed arguments
@@ -77,7 +80,12 @@ public record ToolProgram(
     if (!Files.isDirectory(folder)) return Optional.empty();
     var win = System.getProperty("os.name", "").toLowerCase().startsWith("win");
     var file = name + (win && !name.endsWith(".exe") ? ".exe" : "");
-    return findExecutable(name, folder.resolve(file), args);
+    try {
+      var path = folder.resolve(file);
+      return findExecutable(name, path, args);
+    } catch (InvalidPathException exception) {
+      return Optional.empty();
+    }
   }
 
   /**
@@ -113,7 +121,8 @@ public record ToolProgram(
     var namespace = path.getNameCount() == 0 ? "" : path.getParent().toString().replace('\\', '/');
     var file = path.getFileName() == null ? "<null>" : path.getFileName().toString();
     var name = file.endsWith(".exe") ? file.substring(0, file.length() - 4) : file;
-    return new Tool(Tool.Identifier.of(namespace, name, null), this);
+    var identifier = Tool.Identifier.of(namespace, name, null);
+    return Tool.of(identifier, this);
   }
 
   @Override
