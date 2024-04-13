@@ -1,1 +1,2 @@
+# Run an arbitrary application via the command-line: NAME [ARGS...]
 .bach/src/run.bach/run/bach/internal/RunTool.java
