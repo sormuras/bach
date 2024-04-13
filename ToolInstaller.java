@@ -108,6 +108,25 @@ public interface ToolInstaller {
   static Optional<ToolInstaller> find(String string) {
     try {
       var source = new URI(string);
+      /* Test for Maven 2 coordinates */ {
+        var pattern =
+            Pattern.compile(
+                "https://[^/]+"
+                    + "/maven2"
+                    + "/(?<namespace>.+)"
+                    + "/(?<name>[^/]+)"
+                    + "/(?<version>[^/]+)"
+                    + "/.+");
+        var matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+          var identifier =
+              Tool.Identifier.of(
+                  matcher.group("namespace").replace('/', '.'),
+                  matcher.group("name"),
+                  matcher.group("version"));
+          return Optional.of(new JavaApplicationInstaller(identifier, source));
+        }
+      }
       /* Test for GitHub releases */ {
         var pattern =
             Pattern.compile(
