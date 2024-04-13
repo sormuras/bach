@@ -23,6 +23,9 @@ class Versions {
             .withJavaApplication(
                 "rife2/bld@1.9.0",
                 "https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar")
+            .withJavaApplication(
+                "org.junit.platform/junit@1.10.2",
+                "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.2/junit-platform-console-standalone-1.10.2.jar")
             .with("run/google-java-format@1.22", new GoogleJavaFormat("1.22.0"))
             .with("run/google-java-format@1.19", new GoogleJavaFormat("1.19.2"))
             .with(new Maven());
@@ -30,6 +33,7 @@ class Versions {
     var runner = ToolRunner.of(finder);
     runner.run("ant", "-version");
     runner.run("bld", "version");
+    runner.run("junit", "engines");
     runner.run("google-java-format", "--version");
     runner.run("google-java-format@1.19", "--version");
     runner.run("maven", "--version");
