@@ -80,7 +80,11 @@ public interface ToolInstaller {
   }
 
   private Path resolveInstallationFolder(Path base, Tool.Identifier identifier) {
-    return base.resolve(identifier.namespace()).resolve(identifier.toNameAndVersion()).normalize();
+    var path = Path.of(identifier.namespace());
+    if (path.getRoot() != null) {
+      path = path.getRoot().relativize(path); // strip root component from namespace
+    }
+    return base.resolve(path).resolve(identifier.toNameAndVersion()).normalize();
   }
 
   private static ToolProvider installInto(Path folder, ToolInstaller installer) {

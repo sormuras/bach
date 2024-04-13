@@ -180,8 +180,6 @@ public record Tool(Identifier identifier, ToolProvider provider) {
     }
 
     public Identifier {
-      if (Stream.of("/", "\\").anyMatch(namespace::startsWith))
-        throw new IllegalArgumentException("Namespace must not start with / \\");
       if (Stream.of("/", "\\").anyMatch(namespace::endsWith))
         throw new IllegalArgumentException("Namespace must not end with / \\");
       if (Stream.of("/", "\\", "@").anyMatch(name::contains))
