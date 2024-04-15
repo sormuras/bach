@@ -1,0 +1,37 @@
+/*
+ * Copyright (c) 2024 Christian Stein
+ * Licensed under the Universal Permissive License v 1.0 -> https://opensource.org/license/upl
+ */
+
+System.out.printf(
+    """
+       ___      ___      ___      ___
+      /\\  \\    /\\  \\    /\\  \\    /\\__\\
+     /::\\  \\  /::\\  \\  /::\\  \\  /:/__/_
+    /::\\:\\__\\/::\\:\\__\\/:/\\:\\__\\/::\\/\\__\\
+    \\:\\::/  /\\/\\::/  /\\:\\ \\/__/\\/\\::/  / Java %s
+     \\::/  /   /:/  /  \\:\\__\\    /:/  / %s
+      \\/__/    \\/__/    \\/__/    \\/__/ %s
+    """,
+    Runtime.version(),
+    System.getProperty("os.name"),
+    Path.of("").toUri()
+)
+
+System.out.println("| Source Bach's installer from " + Path.of("src/bach.run/BachInstaller.java").toUri())
+
+/open src/bach.run/BachInstaller.java
+
+int code = 0
+try {
+  // BachInstaller.installDefaultVersionIntoDefaultDirectory();
+  new BachInstaller("main", Path.of(".bach/var/tmp/installed")).install();
+}
+catch(Throwable throwable) {
+  System.err.println(throwable);
+  code = 1;
+}
+
+System.out.println("| Installation of Bach finished with exit code " + code)
+
+/exit code
