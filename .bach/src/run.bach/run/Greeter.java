@@ -8,20 +8,14 @@ import run.bach.Tool;
 import run.bach.ToolInstaller;
 import run.bach.ToolProgram;
 
-public record Greeter() implements ToolInstaller {
+public record Greeter(String version) implements ToolInstaller {
   public static void main(String... args) {
-    var greeter = new Greeter();
-    greeter.install().run(); // "external/greeter"
+    var greeter = new Greeter("99");
+    greeter.install().run(); // "run.bach/greeter"
 
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
-    Tool.of("my/c@99", ToolProvider.findFirst("javac").orElseThrow()).run();
     Tool.of("greeter/eager", greeter.installInto(folders.tools("greeter/eager"))).run();
     Tool.of("greeter/inert", () -> greeter.installInto(folders.tools("greeter/inert"))).run();
-  }
-
-  @Override
-  public String version() {
-    return null;
   }
 
   @Override
