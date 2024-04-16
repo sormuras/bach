@@ -173,8 +173,17 @@ public interface ToolInstaller {
       /* Still here? Compute an identifier based on uri's properties. */ {
         var namespace = source.getHost() != null ? source.getHost() : "application";
         var hash = Math.abs(string.hashCode());
-        var name = Integer.toHexString(hash);
-        var version = String.valueOf(hash);
+        var name = String.valueOf(hash);
+        try {
+          var path = source.getPath();
+          if (path != null && !path.isBlank()) {
+            var file = Path.of(path).normalize().getFileName();
+            if (file != null) {
+              name = file.toString();
+            }
+          }
+        } catch (Exception ignore) {}
+        var version = Integer.toHexString(hash);
         var identifier = Tool.Identifier.of(namespace, name, version);
         return Optional.of(new JavaApplicationInstaller(identifier, source));
       }
