@@ -28,20 +28,29 @@ record BachInstaller(String version, Path home) {
     this(version, DEFAULT_HOME);
   }
 
-  void install() throws Exception {
+  void install() {
+    try {
+      installSources();
+      installArgumentFiles();
+    } catch (Exception exception) {
+      System.err.println("Install failed: " + exception.getMessage());
+    }
+  }
+
+  private void installSources() throws Exception {
     var uris =
         List.of(
             "https://github.com/sormuras/run.bach/archive/refs/tags/" + version + ".zip",
             "https://github.com/sormuras/run.bach/archive/refs/heads/" + version + ".zip");
     for (var uri : uris) {
       if (Internal.head(uri)) {
-        install(uri);
+        installSourcesFromUri(uri);
         return;
       }
     }
   }
 
-  void install(String uri) throws Exception {
+  private void installSourcesFromUri(String uri) throws Exception {
     System.out.println("Install Bach " + version + " to " + home.toUri() + "...");
     var tmp = Files.createTempDirectory("run.bach-" + version + "-");
     var dir = Files.createDirectories(home.resolve("src/run.bach/run/bach"));
@@ -49,9 +58,20 @@ record BachInstaller(String version, Path home) {
     // download and unzip
     Internal.copy(uri, zip, StandardCopyOption.REPLACE_EXISTING);
     Internal.unzip(zip, dir, 1);
-
     // clean up
     Internal.delete(tmp);
+  }
+
+  void installArgumentFiles() throws Exception {
+    var run = home.resolve("run");
+    if (!Files.exists(run)) {
+      var program = home.resolve(".bach/src/run.bach/run/bach/internal/RunTool.java");
+      var lines =
+          List.of(
+              "# Call tool by name or uri: NAME [ARGS...]",
+              home.relativize(program).toString().replace('\\', '/'));
+      Files.write(run, lines);
+    }
   }
 
   private interface Internal {
