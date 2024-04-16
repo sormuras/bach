@@ -1,0 +1,2 @@
+# java [VM-OPTIONS...] @bach [OPTIONS...] TOOL [ARGS...]
+.bach/src/run.bach/run/bach/Main.java

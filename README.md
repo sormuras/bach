@@ -12,25 +12,24 @@ Install Bach's basic tool framework using its sources via `git` and Java 22 or h
 
 First time:
 ```shell
-mkdir myproject
-cd myproject
+mkdir example && cd example
 git init
-git submodule add https://github.com/sormuras/run.bach .bach/src/run.bach/run/bach
-echo .bach/src/run.bach/run/bach/internal/RunTool.java > .bach/run
+git submodule add https://github.com/sormuras/run.bach .bach/src/run/bach
+echo .bach/src/run/bach/Main.java > bach
 ```
 
 Subsequent times:
 ```shell
-cd myproject
+cd example
 git submodule update --remote --recursive
 ```
 
 Run time:
 ```shell
-java @.bach/run jar --version
-java @.bach/run java --version
-java @.bach/run https://raw.githubusercontent.com/sormuras/hello/main/Hello.java World
-java @.bach/run https://github.com/sormuras/hello/releases/download/1-M3/hello-1-M3.jar World
+java @bach jar --version
+java @bach java --version
+java @bach https://raw.githubusercontent.com/sormuras/hello/main/Hello.java World
+java @bach https://github.com/sormuras/hello/releases/download/1-M3/hello-1-M3.jar World
 ```
 Consult the following manual pages for details of `git` and `java` tools:
 - [git init](https://git-scm.com/docs/git-init) - Create an empty Git repository or reinitialize an existing one

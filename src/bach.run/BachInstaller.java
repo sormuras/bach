@@ -7,25 +7,29 @@ import java.net.*;
 import java.nio.file.*;
 import java.util.*;
 
-record BachInstaller(String version, Path home) {
-  static String DEFAULT_VERSION = System.getProperty("-Default.version".substring(2), "main");
-  static Path DEFAULT_HOME = Path.of(System.getProperty("-Default.home".substring(2), ".bach"));
+record BachInstaller(String version, Path home, Path path) {
+  // defaults to git head reference of the `main` branch
+  static String VERSION = System.getProperty("-Dversion".substring(2), "main");
+  // defaults to the current working directory
+  static Path HOME = Path.of(System.getProperty("-Dhome".substring(2), ""));
+  // git submodule add <repository> [<path>] <- .bach/src[/run.bach]/run/bach
+  static Path PATH = Path.of(System.getProperty("-Dpath".substring(2), ".bach/src/run/bach"));
 
   @SuppressWarnings("unused")
-  static void installDefaultVersionIntoDefaultDirectory() throws Exception {
-    var installer = new BachInstaller(DEFAULT_VERSION);
+  static void installDefaultVersionIntoDefaultDirectory() {
+    var installer = new BachInstaller(VERSION);
     installer.install();
   }
 
   @SuppressWarnings("unused")
   static void listInstallableVersions() {
-    System.out.println("- Default version: " + DEFAULT_VERSION);
+    System.out.println("- Default version: " + VERSION);
     System.out.println("- Released versions: https://github.com/sormuras/run.bach/releases");
     System.out.println("- Head revisions: https://github.com/sormuras/run.bach/branches");
   }
 
   BachInstaller(String version) {
-    this(version, DEFAULT_HOME);
+    this(version, HOME, PATH);
   }
 
   void install() {
@@ -53,7 +57,7 @@ record BachInstaller(String version, Path home) {
   private void installSourcesFromUri(String uri) throws Exception {
     System.out.println("Install Bach " + version + " to " + home.toUri() + "...");
     var tmp = Files.createTempDirectory("run.bach-" + version + "-");
-    var dir = Files.createDirectories(home.resolve("src/run.bach/run/bach"));
+    var dir = Files.createDirectories(home.resolve(path));
     var zip = tmp.resolve("run.bach-" + version + ".zip");
     // download and unzip
     Internal.copy(uri, zip, StandardCopyOption.REPLACE_EXISTING);
@@ -63,14 +67,12 @@ record BachInstaller(String version, Path home) {
   }
 
   void installArgumentFiles() throws Exception {
-    var run = home.resolve("run");
-    if (!Files.exists(run)) {
-      var program = home.resolve(".bach/src/run.bach/run/bach/internal/RunTool.java");
-      var lines =
-          List.of(
-              "# Call tool by name or uri: NAME [ARGS...]",
-              home.relativize(program).toString().replace('\\', '/'));
-      Files.write(run, lines);
+    var bach = home.resolve("bach");
+    if (!Files.exists(bach)) {
+      var program = home.resolve(path).resolve("Main.java");
+      var command = home.relativize(program).toString().replace('\\', '/');
+      var lines = List.of("# Argument file for launching Bach's main application", command);
+      Files.write(bach, lines);
     }
   }
 

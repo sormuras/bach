@@ -24,8 +24,7 @@ System.out.println("| Source Bach's installer from " + Path.of("src/bach.run/Bac
 
 int code = 0
 try {
-  // BachInstaller.installDefaultVersionIntoDefaultDirectory();
-  new BachInstaller("main", Path.of(".bach/var/tmp/installed")).install();
+  BachInstaller.installDefaultVersionIntoDefaultDirectory();
 }
 catch(Throwable throwable) {
   System.err.println(throwable);

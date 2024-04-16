@@ -1,5 +1,6 @@
 /bin/
 /out/
+/src/run/
 /var/
 
 *.jfr

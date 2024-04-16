@@ -24,9 +24,9 @@ jobs:
           release: 22
       - name: 'Print various versions'
         run: |
-          java @.bach/run jar --version
-          java @.bach/run jfr --version
-          java @.bach/run https://raw.githubusercontent.com/openjdk/jdk/jdk-22-ga/test/jdk/java/lang/System/Versions.java
+          java @bach jar --version
+          java @bach jfr --version
+          java @bach https://raw.githubusercontent.com/openjdk/jdk/jdk-22-ga/test/jdk/java/lang/System/Versions.java
           java .bach/src/run.bach/run/Versions.java
       - name: 'Build Bach with Bach'
         run: java .bach/src/run.bach/run/Build.java
