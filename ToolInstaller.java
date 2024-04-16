@@ -115,6 +115,9 @@ public interface ToolInstaller {
   static Optional<ToolInstaller> find(String string) {
     try {
       var source = new URI(string);
+      if (!source.isAbsolute()) {
+        return Optional.empty();
+      }
       /* Test for Maven 2 coordinates */ {
         var pattern =
             Pattern.compile(
