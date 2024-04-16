@@ -68,7 +68,10 @@ public interface ToolInstaller {
 
   default void download(Path target, URI source) {
     if (!Files.exists(target)) {
-      try (var stream = source.toURL().openStream()) {
+      try (var stream =
+          source.getScheme().startsWith("http")
+              ? source.toURL().openStream()
+              : Files.newInputStream(Path.of(source))) {
         var parent = target.getParent();
         if (parent != null) Files.createDirectories(parent);
         Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
