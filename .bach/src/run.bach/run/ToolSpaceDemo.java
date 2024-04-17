@@ -1,9 +1,7 @@
 package run;
 
-import run.bach.ToolCall;
-import run.bach.ToolFinder;
-import run.bach.ToolRun;
-import run.bach.ToolSpace;
+import run.bach.*;
+import run.bach.external.*;
 
 class ToolSpaceDemo extends ToolSpace {
   public static void main(String... args) {

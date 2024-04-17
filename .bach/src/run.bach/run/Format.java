@@ -1,5 +1,7 @@
 package run;
 
+import run.bach.external.GoogleJavaFormat;
+
 class Format {
   public static void main(String... args) {
     var tool = new GoogleJavaFormat("1.22.0").install();

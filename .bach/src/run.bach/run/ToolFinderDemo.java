@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.spi.*;
 import run.bach.*;
+import run.bach.external.*;
 
 class ToolFinderDemo {
   public static void main(String... args) {
