@@ -6,7 +6,6 @@
 package run.bach;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.internal.JavaApplicationInstaller;
@@ -112,84 +110,8 @@ public interface ToolInstaller {
     }
   }
 
-  static Optional<ToolInstaller> find(String string) {
-    try {
-      var source = new URI(string);
-      if (!source.isAbsolute()) {
-        return Optional.empty();
-      }
-      /* Test for Maven 2 coordinates */ {
-        var pattern =
-            Pattern.compile(
-                "https://[^/]+"
-                    + "/maven2"
-                    + "/(?<namespace>.+)"
-                    + "/(?<name>[^/]+)"
-                    + "/(?<version>[^/]+)"
-                    + "/.+");
-        var matcher = pattern.matcher(string);
-        if (matcher.matches()) {
-          var identifier =
-              Tool.Identifier.of(
-                  matcher.group("namespace").replace('/', '.'),
-                  matcher.group("name"),
-                  matcher.group("version"));
-          return Optional.of(new JavaApplicationInstaller(identifier, source));
-        }
-      }
-      /* Test for GitHub releases */ {
-        var pattern =
-            Pattern.compile(
-                "https://github\\.com"
-                    + "/(?<namespace>[^/]+)"
-                    + "/(?<name>[^/]+)"
-                    + "/releases/download"
-                    + "/(?<version>[^/]+)"
-                    + "/.+");
-        var matcher = pattern.matcher(string);
-        if (matcher.matches()) {
-          var identifier =
-              Tool.Identifier.of(
-                  matcher.group("namespace"), matcher.group("name"), matcher.group("version"));
-          return Optional.of(new JavaApplicationInstaller(identifier, source));
-        }
-      }
-      /* Test for GitHub raw resources */ {
-        var pattern =
-            Pattern.compile(
-                "https://raw\\.githubusercontent\\.com"
-                    + "/(?<namespace>[^/]+)"
-                    + "/(?<name>[^/]+)"
-                    + "/(?<version>[^/]+)"
-                    + "/.+");
-        var matcher = pattern.matcher(string);
-        if (matcher.matches()) {
-          var identifier =
-              Tool.Identifier.of(
-                  matcher.group("namespace"), matcher.group("name"), matcher.group("version"));
-          return Optional.of(new JavaApplicationInstaller(identifier, source));
-        }
-      }
-      /* Still here? Compute an identifier based on uri's properties. */ {
-        var namespace = source.getHost() != null ? source.getHost() : "application";
-        var hash = Math.abs(string.hashCode());
-        var name = String.valueOf(hash);
-        try {
-          var path = source.getPath();
-          if (path != null && !path.isBlank()) {
-            var file = Path.of(path).normalize().getFileName();
-            if (file != null) {
-              name = file.toString();
-            }
-          }
-        } catch (Exception ignore) {}
-        var version = Integer.toHexString(hash);
-        var identifier = Tool.Identifier.of(namespace, name, version);
-        return Optional.of(new JavaApplicationInstaller(identifier, source));
-      }
-    } catch (URISyntaxException exception) {
-      return Optional.empty();
-    }
+  static Optional<? extends ToolInstaller> find(String string) {
+    return JavaApplicationInstaller.find(string);
   }
 
   static ToolInstaller ofJavaApplication(String id, String uri) {
