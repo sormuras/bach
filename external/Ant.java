@@ -34,20 +34,20 @@ public record Ant(String version) implements ToolInstaller {
   }
 
   @Override
-  public ToolProvider installInto(Path folder) {
+  public ToolProvider install(Path into) throws Exception {
     var title = "apache-ant-" + version;
     var archive = title + "-bin.zip";
-    var target = folder.resolve(archive);
+    var target = into.resolve(archive);
     if (!Files.exists(target)) {
       var source = "https://dlcdn.apache.org/ant/binaries/" + archive;
       download(target, URI.create(source));
     }
-    var antHome = folder.resolve(title);
+    var antHome = into.resolve(title);
     if (!Files.isDirectory(antHome)) {
       var jar =
           ToolProgram.findJavaDevelopmentKitTool("jar")
               .orElseThrow()
-              .withProcessBuilderTweaker(builder -> builder.directory(folder.toFile()))
+              .withProcessBuilderTweaker(builder -> builder.directory(into.toFile()))
               .withProcessWaiter(process -> process.waitFor(1, TimeUnit.MINUTES) ? 0 : 1)
               .tool();
       var silent =

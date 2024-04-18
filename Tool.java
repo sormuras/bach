@@ -9,7 +9,6 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -88,7 +87,7 @@ public record Tool(Identifier identifier, ToolProvider provider) {
    * @param id the nominal representation of the tool
    * @param supplier the supplier of the tool provider instance to wrap
    */
-  public static Tool of(String id, Supplier<ToolProvider> supplier) {
+  public static Tool of(String id, ToolProviderSupplier supplier) {
     return Tool.of(Identifier.of(id), supplier);
   }
 
@@ -98,14 +97,8 @@ public record Tool(Identifier identifier, ToolProvider provider) {
    * @param identifier the nominal representation of the tool
    * @param supplier the supplier of the tool provider instance to wrap
    */
-  public static Tool of(Identifier identifier, Supplier<ToolProvider> supplier) {
-    record Intermediary(String name, Supplier<ToolProvider> supplier) implements ToolProvider {
-      @Override
-      public int run(PrintWriter out, PrintWriter err, String... args) {
-        return supplier.get().run(out, err, args);
-      }
-    }
-    return new Tool(identifier, new Intermediary(identifier.name(), supplier));
+  public static Tool of(Identifier identifier, ToolProviderSupplier supplier) {
+    return new Tool(identifier, new ProviderFacade(identifier.name(), supplier));
   }
 
   public static Tool of(ToolInstaller installer) {
@@ -206,6 +199,26 @@ public record Tool(Identifier identifier, ToolProvider provider) {
 
     public String toNamespaceAndNameAndVersion() {
       return namespace + '/' + toNameAndVersion();
+    }
+  }
+
+  /** A supplier for tool provider instances. */
+  @FunctionalInterface
+  public interface ToolProviderSupplier {
+    ToolProvider supplyToolProvider() throws Exception;
+  }
+
+  /** A tool provider implementation delegating to another provider at run-time. */
+  record ProviderFacade(String name, ToolProviderSupplier delegate) implements ToolProvider {
+    @Override
+    public int run(PrintWriter out, PrintWriter err, String... args) {
+      try {
+        var provider = delegate.supplyToolProvider();
+        return provider.run(out, err, args);
+      } catch (Exception exception) {
+        exception.printStackTrace(err);
+        return -1;
+      }
     }
   }
 }

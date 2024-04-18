@@ -5,6 +5,7 @@
 
 package run.bach;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -13,7 +14,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.internal.JavaApplicationInstaller;
@@ -47,24 +47,32 @@ public interface ToolInstaller {
    */
   String version();
 
-  ToolProvider installInto(Path folder);
+  ToolProvider install(Path into) throws Exception;
 
   default Tool install() {
     return install(Mode.DEFAULT);
   }
 
   default Tool install(Mode mode) {
-    var version = version();
-    var identifier = Tool.Identifier.of(namespace(), name(), version);
+    var identifier = Tool.Identifier.of(namespace(), name(), version());
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
-    var folder = resolveInstallationFolder(folders.tools(), identifier);
+    return install(folders.tools(), identifier, mode);
+  }
+
+  private Tool install(Path base, Tool.Identifier identifier, Mode mode) {
+    // resolve installation folder
+    var path = Path.of(identifier.namespace());
+    if (path.getRoot() != null) {
+      path = path.getRoot().relativize(path); // strip root component from namespace
+    }
+    var folder = base.resolve(path).resolve(identifier.toNameAndVersion()).normalize();
     return switch (mode) {
-      case INSTALL_IMMEDIATE -> Tool.of(identifier, installInto(folder, this));
-      case INSTALL_ON_DEMAND -> Tool.of(identifier, () -> installInto(folder, this));
+      case INSTALL_IMMEDIATE -> Tool.of(identifier, install(this, folder));
+      case INSTALL_ON_DEMAND -> Tool.of(identifier, () -> install(this, folder));
     };
   }
 
-  default void download(Path target, URI source) {
+  default void download(Path target, URI source) throws IOException {
     if (!Files.exists(target)) {
       try (var stream =
           source.getScheme().startsWith("http")
@@ -73,25 +81,15 @@ public interface ToolInstaller {
         var parent = target.getParent();
         if (parent != null) Files.createDirectories(parent);
         Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
-      } catch (Exception exception) {
-        throw new RuntimeException("Download failed: " + source, exception);
       }
     }
     // TODO Verify target bits.
   }
 
-  private Path resolveInstallationFolder(Path base, Tool.Identifier identifier) {
-    var path = Path.of(identifier.namespace());
-    if (path.getRoot() != null) {
-      path = path.getRoot().relativize(path); // strip root component from namespace
-    }
-    return base.resolve(path).resolve(identifier.toNameAndVersion()).normalize();
-  }
-
-  private static ToolProvider installInto(Path folder, ToolInstaller installer) {
+  private static ToolProvider install(ToolInstaller installer, Path directory) {
     try {
-      Files.createDirectories(folder);
-      var lockfile = folder.resolve(".lockfile");
+      Files.createDirectories(directory);
+      var lockfile = directory.resolve(".lockfile");
       try {
         try {
           Files.createFile(lockfile);
@@ -101,7 +99,7 @@ public interface ToolInstaller {
             Thread.sleep(1234);
           }
         }
-        return installer.installInto(folder);
+        return installer.install(directory);
       } finally {
         Files.deleteIfExists(lockfile);
       }
@@ -136,7 +134,7 @@ public interface ToolInstaller {
     /**
      * Install tools lazily only when running them by using the supplier-taking tool factory.
      *
-     * @see Tool#of(String, Supplier)
+     * @see Tool#of(String, Tool.ToolProviderSupplier)
      */
     INSTALL_ON_DEMAND;
 
@@ -163,12 +161,7 @@ public interface ToolInstaller {
     }
 
     private Finder with(Tool.Identifier identifier, ToolInstaller installer) {
-      var folder = installer.resolveInstallationFolder(installationHomeDirectory, identifier);
-      var tool =
-          switch (mode) {
-            case INSTALL_IMMEDIATE -> Tool.of(identifier, installInto(folder, installer));
-            case INSTALL_ON_DEMAND -> Tool.of(identifier, () -> installInto(folder, installer));
-          };
+      var tool = installer.install(installationHomeDirectory, identifier, mode);
       var tools = Stream.concat(tools().stream(), Stream.of(tool)).toList();
       return new Finder(tools, mode, installationHomeDirectory);
     }

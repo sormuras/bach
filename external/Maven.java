@@ -30,7 +30,7 @@ public record Maven(String version) implements ToolInstaller {
   }
 
   @Override
-  public ToolProvider installInto(Path into) {
+  public ToolProvider install(Path into) throws Exception {
     var base = "https://repo.maven.apache.org/maven2/org/apache/maven";
     var mavenWrapperProperties = into.resolve("maven-wrapper.properties");
     if (!Files.exists(mavenWrapperProperties))

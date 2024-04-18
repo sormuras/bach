@@ -40,7 +40,7 @@ public record GoogleJavaFormat(String version) implements ToolInstaller {
   }
 
   @Override
-  public ToolProvider installInto(Path into) {
+  public ToolProvider install(Path into) throws Exception {
     var filename = "google-java-format-" + version + "-all-deps.jar";
     var target = into.resolve(filename);
     if (!Files.exists(target)) {

@@ -40,16 +40,10 @@ public record JavaApplicationInstaller(Identifier identifier, URI source) implem
   }
 
   @Override
-  public ToolProvider installInto(Path folder) {
+  public ToolProvider install(Path into) throws Exception {
     var filename = Path.of(source.getPath()).getFileName().toString();
-    var target = folder.resolve(filename);
-    if (!Files.exists(target)) {
-      try {
-        download(target, source);
-      } catch (Exception exception) {
-        throw new RuntimeException(exception);
-      }
-    }
+    var target = into.resolve(filename);
+    if (!Files.exists(target)) download(target, source);
     if (filename.endsWith(".jar")) return ToolProgram.java("-jar", target.toString());
     if (filename.endsWith(".java")) return ToolProgram.java(target.toString());
     throw new IllegalArgumentException("Unsupported program type: " + source);
