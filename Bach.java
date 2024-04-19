@@ -5,13 +5,9 @@
 
 package run.bach;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
-import java.util.List;
-import java.util.Map;
-import run.bach.internal.ModuleSourcePathSupport;
 
 /** Defines Bach's constants and helpers. */
 public record Bach(Folders folders) {
@@ -76,18 +72,6 @@ public record Bach(Folders folders) {
 
     public Path tools(String first, String... more) {
       return tools().resolve(first, more);
-    }
-
-    public String computeModuleSourcePath(String module, String info) {
-      return computeModuleSourcePath(module, root(info));
-    }
-
-    public String computeModuleSourcePath(String module, Path... paths) {
-      return computeModuleSourcePath(Map.of(module, List.of(paths)));
-    }
-
-    public String computeModuleSourcePath(Map<String, List<Path>> modules) {
-      return String.join(File.pathSeparator, ModuleSourcePathSupport.compute(modules, false));
     }
   }
 }
