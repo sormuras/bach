@@ -6,8 +6,9 @@
 package run.bach.workflow;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import run.bach.*;
+import run.bach.ToolCall;
 import run.bach.workflow.Structure.Space;
 
 /** Translate Java source files into class files. */
@@ -20,11 +21,16 @@ public interface ClassesCompiler extends Action {
     javac = compileClassesWithModulePaths(javac, space);
     javac = compileClassesWithModulePatches(javac, space);
     javac = compileClassesWithDestinationDirectory(javac, space);
+    javac = compileClassesWithFinalTouch(javac, space);
     workflow().runner().run(javac);
   }
 
   default ToolCall compileClassesCreateJavacCall() {
     return ToolCall.of("javac");
+  }
+
+  default ToolCall compileClassesWithFinalTouch(ToolCall javac, Space space) {
+    return javac;
   }
 
   default ToolCall compileClassesWithRelease(ToolCall javac, Space space) {
@@ -70,10 +76,14 @@ public interface ClassesCompiler extends Action {
     return javac;
   }
 
-  default ToolCall compileClassesWithDestinationDirectory(ToolCall javac, Space space) {
+  default Path classesCompilerUsesDestinationDirectory(Space space) {
     var folders = workflow().folders();
     var feature = space.targets().orElse(Runtime.version().feature());
-    var classes = folders.out(space.name(), "classes").resolve("java-" + feature);
+    return folders.out(space.name(), "classes").resolve("java-" + feature);
+  }
+
+  default ToolCall compileClassesWithDestinationDirectory(ToolCall javac, Space space) {
+    var classes = classesCompilerUsesDestinationDirectory(space);
     return javac.add("-d", classes);
   }
 }
