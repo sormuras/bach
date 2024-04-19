@@ -30,3 +30,5 @@ jobs:
           java .bach/src/run.bach/run/Versions.java
       - name: 'Build Bach with Bach'
         run: java .bach/src/run.bach/run/Build.java
+      - name: 'Start Bach''s Tests'
+        run: java .bach/src/run.bach/run/Test.java
