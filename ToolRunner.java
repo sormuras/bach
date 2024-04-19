@@ -5,6 +5,7 @@
 
 package run.bach;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -36,6 +37,10 @@ public interface ToolRunner {
   }
 
   ToolRun run(ToolCall call);
+
+  default Optional<Tool> findTool(String id) {
+    return Optional.empty();
+  }
 
   default ToolRun run(Tool tool, String... args) {
     return run(ToolCall.of(tool).addAll(args));

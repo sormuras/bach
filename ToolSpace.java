@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
+import java.util.Optional;
 import run.bach.internal.FlightRecorderEvent;
 
 /** Extendable tool runner implementation. */
@@ -58,6 +59,11 @@ public class ToolSpace implements ToolRunner {
     } finally {
       event.commit();
     }
+  }
+
+  @Override
+  public Optional<Tool> findTool(String id) {
+    return finder.findTool(id);
   }
 
   protected void announce(ToolCall call) {
