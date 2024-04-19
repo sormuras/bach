@@ -8,6 +8,7 @@ package run.bach.workflow;
 import java.lang.annotation.Annotation;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
@@ -18,20 +19,22 @@ import run.bach.workflow.Structure.Space;
 
 public interface Tester extends Action {
   default void test() {
-    var name = testerUsesSpaceName();
-    var spaces = workflow().structure().spaces();
-    if (!spaces.names().contains(name)) return;
-    var space = spaces.space(name);
-    test(space);
+    for (var name : testerUsesSpaceNames()) {
+      var spaces = workflow().structure().spaces();
+      if (!spaces.names().contains(name)) continue;
+      var space = spaces.space(name);
+      test(space);
+    }
   }
 
   default void test(Space space) {
     testWithSpaceLauncher(space);
+    testWithToolProviders(space);
     testWithJUnitPlatform(space);
   }
 
-  default String testerUsesSpaceName() {
-    return "test";
+  default List<String> testerUsesSpaceNames() {
+    return List.of("test");
   }
 
   default boolean testerShouldTestModuleWithJUnitPlatform(Module module) {
@@ -41,6 +44,26 @@ public interface Tester extends Action {
             .map(Class::getTypeName)
             .toList();
     return annotations.contains("org.junit.platform.commons.annotation.Testable");
+  }
+
+  default boolean testerShouldTestModuleWithToolProviders(Module module) {
+    var name = ToolProvider.class.getName();
+    return module.getDescriptor().provides().stream()
+        .anyMatch(provides -> provides.service().equals(name));
+  }
+
+  private ModuleLayer testerDefinesModuleLayerForModuleName(Space space, String name) {
+    var folders = workflow().folders();
+    var finder =
+        ModuleFinder.compose(
+            ModuleFinder.of(folders.out(space.name(), "modules", name + ".jar")),
+            ModuleFinder.of(
+                space.requires().stream()
+                    .map(required -> folders.out(required, "modules"))
+                    .toArray(Path[]::new)),
+            ModuleFinder.of(folders.out(space.name(), "modules")),
+            ModuleFinder.of(folders.root("lib")));
+    return ModulesSupport.buildModuleLayer(finder, name);
   }
 
   private void testWithSpaceLauncher(Space space) {
@@ -57,25 +80,34 @@ public interface Tester extends Action {
     workflow().runner().run(java);
   }
 
+  private void testWithToolProviders(Space space) {
+    for (var module : space.modules()) testWithToolProviders(space, module.name());
+  }
+
+  private void testWithToolProviders(Space space, String name) {
+    var layer = testerDefinesModuleLayerForModuleName(space, name);
+    var module = layer.findModule(name).orElseThrow(AssertionError::new);
+    if (!testerShouldTestModuleWithToolProviders(module)) return;
+    module.getClassLoader().setDefaultAssertionStatus(true);
+    var tests =
+        ServiceLoader.load(layer, ToolProvider.class).stream()
+            .map(ServiceLoader.Provider::get)
+            .filter(provider -> provider.name().startsWith("test"))
+            .map(Tool::of)
+            .toList();
+    for (var test : tests) {
+      workflow().runner().run(test);
+    }
+  }
+
   private void testWithJUnitPlatform(Space space) {
     if (workflow().runner().findTool("junit").isEmpty()) return;
-    for (var module : space.modules()) {
-      testWithJUnitPlatform(space, module.name());
-    }
+    for (var module : space.modules()) testWithJUnitPlatform(space, module.name());
   }
 
   private void testWithJUnitPlatform(Space space, String name) {
     var folders = workflow().folders();
-    var finder =
-        ModuleFinder.compose(
-            ModuleFinder.of(folders.out(space.name(), "modules", name + ".jar")),
-            ModuleFinder.of(
-                space.requires().stream()
-                    .map(required -> folders.out(required, "modules"))
-                    .toArray(Path[]::new)),
-            ModuleFinder.of(folders.out(space.name(), "modules")),
-            ModuleFinder.of(folders.root("lib")));
-    var layer = ModulesSupport.buildModuleLayer(finder, name);
+    var layer = testerDefinesModuleLayerForModuleName(space, name);
     var module = layer.findModule(name).orElseThrow(AssertionError::new);
     if (!testerShouldTestModuleWithJUnitPlatform(module)) return;
     module.getClassLoader().setDefaultAssertionStatus(true);
