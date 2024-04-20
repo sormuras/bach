@@ -5,23 +5,33 @@
 
 package run.bach.workflow;
 
-import static java.lang.System.Logger.Level.*;
+import run.bach.workflow.Structure.Space;
 
+/** Translates source files into modular JAR files. */
 public interface Compiler extends Action, ClassesCompiler, ClassesPackager {
+  /** Translates source files into modular JAR files for all module spaces. */
   default void compile() {
-    var logger = System.getLogger(Compiler.class.getName());
-    for (var space : workflow().structure().spaces()) {
-      var name = space.name();
-      var modules = space.modules().list();
-      if (modules.isEmpty()) {
-        logger.log(TRACE, "No modules declared in %s space.".formatted(name));
-        continue;
-      }
-      var size = modules.size();
-      var s = size == 1 ? "" : "s";
-      logger.log(DEBUG, "Compile %d module%s in %s space...".formatted(size, s, name));
-      compileClasses(space);
-      packageClasses(space);
+    var spaces = workflow().structure().spaces();
+    var names = spaces.names();
+    if (names.isEmpty()) {
+      log("No module space declared.");
+      return;
     }
+    var size = names.size();
+    log("Compile %d module space%s: %s".formatted(size, size == 1 ? "" : "s", names));
+    spaces.forEach(this::compile);
+  }
+
+  /** Translates source files into modular JAR files for the specified module space. */
+  default void compile(Space space) {
+    var name = space.name();
+    var size = space.modules().list().size();
+    if (size == 0) {
+      log("No modules declared in %s space.".formatted(name));
+      return;
+    }
+    log("Compile %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
+    compileClasses(space);
+    packageClasses(space);
   }
 }
