@@ -5,12 +5,13 @@
 
 package run.bach.workflow;
 
-public interface Builder extends Action, Cleaner, Compiler {
+public interface Builder extends Action, Cleaner, Compiler, Tester {
   default void build() {
     if (builderShouldInvokeCleanBeforeCompile()) {
       clean();
     }
     compile();
+    test();
   }
 
   default boolean builderShouldInvokeCleanBeforeCompile() {
