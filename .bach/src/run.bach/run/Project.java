@@ -8,40 +8,43 @@ import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
 import run.bach.workflow.Structure;
+import run.bach.workflow.Structure.Basics;
+import run.bach.workflow.Structure.DeclaredModule;
+import run.bach.workflow.Structure.DeclaredModules;
 import run.bach.workflow.Structure.Space;
-import run.bach.workflow.Tester;
+import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
 
-public record Project(boolean verbose, Workflow workflow) implements Builder, Tester {
+public record Project(boolean verbose, Workflow workflow) implements Builder {
   static Project ofCurrentWorkingDirectory() {
-    return new Project(
-        Boolean.getBoolean("-Debug".substring(2)),
-        new Workflow(
-            Bach.Folders.ofCurrentWorkingDirectory(),
-            new Structure(
-                new Structure.Basics("Bach", "2024-ea"),
-                new Structure.Spaces(
-                    new Space(
-                        "main",
-                        22,
-                        "run.bach/run.bach.Main",
-                        new Structure.DeclaredModule(
-                            Path.of(".bach/src/run.bach"),
-                            Path.of(".bach/src/run.bach/module-info.java"))), // Space "main
-                    new Space(
-                        "test",
-                        List.of("main"),
-                        0,
-                        List.of(),
-                        new Structure.DeclaredModules(
-                            new Structure.DeclaredModule(
-                                Path.of("src/test.bach"),
-                                Path.of(
-                                    "src/test.bach/test/java/module-info.java")))) // Space "test"
-                    ) // Spaces
-                ),
-            ToolRunner.ofSystem()) // Workflow
-        ); // Project
+    var verbose = Boolean.getBoolean("-Debug".substring(2));
+    var folders = Bach.Folders.ofCurrentWorkingDirectory();
+    var basics = new Basics("Bach", "2024-ea");
+    var main =
+        new Space(
+            "main",
+            22,
+            "run.bach/run.bach.Main",
+            new DeclaredModule(
+                Path.of(".bach/src/run.bach"), Path.of(".bach/src/run.bach/module-info.java")));
+    var test =
+        new Space(
+            "test",
+            List.of("main"),
+            0,
+            List.of(),
+            new DeclaredModules(
+                new DeclaredModule(
+                    Path.of("src/test.bach"),
+                    Path.of("src/test.bach/test/java/module-info.java"))));
+    var structure = new Structure(basics, new Spaces(main, test));
+    var runner = ToolRunner.ofSystem();
+    return new Project(verbose, new Workflow(folders, structure, runner));
+  }
+
+  @Override
+  public boolean builderShouldInvokeCleanBeforeCompile() {
+    return true;
   }
 
   @Override
