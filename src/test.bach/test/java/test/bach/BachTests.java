@@ -15,7 +15,7 @@ public record BachTests(String name) implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var silent = ToolSpace.ofSystem(ToolSpace.Flag.SILENT);
+    var silent = new ToolSpace(ToolSpace.Flag.SILENT);
     var run = silent.run("jar", "--version");
     var expected = "jar " + System.getProperty("java.version");
     if (!run.out().equals(expected)) {
