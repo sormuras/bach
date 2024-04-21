@@ -70,11 +70,11 @@ public class ToolSpace implements ToolRunner {
         event.code = provider.run(out, err, args);
       } catch (RuntimeException unchecked) {
         event.code = Integer.MIN_VALUE;
-        event.out = out.toString();
-        event.err = err.toString();
         throw unchecked;
       } finally {
         event.end();
+        event.out = out.toString();
+        event.err = err.toString();
       }
 
       var run = new ToolRun(call, tool, event.code, event.out, event.err);
