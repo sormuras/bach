@@ -10,7 +10,8 @@ import run.bach.workflow.Structure.Space;
 
 public interface Launcher extends Action {
   default void launch(String... args) {
-    say("Launching %s ...".formatted(workflow().structure().toNameAndVersion()));
+    var project = workflow().structure().toNameAndVersion();
+    say("Launching %s ...".formatted(project));
     var name = launcherUsesSpaceName();
     var space = workflow().structure().spaces().space(name);
     launch(space, args);

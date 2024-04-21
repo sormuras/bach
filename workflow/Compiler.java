@@ -30,7 +30,7 @@ public interface Compiler extends Action, ClassesCompiler, ClassesPackager {
       log("No modules declared in %s space.".formatted(name));
       return;
     }
-    log("Compile %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
+    log("Compiling %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
     compileClasses(space);
     packageClasses(space);
   }
