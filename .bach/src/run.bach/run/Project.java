@@ -71,12 +71,12 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
   }
 
   @Override
-  public ToolCall compileClassesWithFinalTouch(ToolCall javac, Space space) {
-    return javac.add("-X" + "lint:all").add("-W" + "error");
+  public void classesCompilerRunJavacToolCall(ToolCall javac) {
+    run(javac.add("-X" + "lint:all").add("-W" + "error"));
   }
 
   @Override
-  public ToolCall packageClassesCreateJarCall() {
-    return Builder.super.packageClassesCreateJarCall().when(verbose, "--verbose");
+  public ToolCall modulesCompilerNewJarToolCall() {
+    return Builder.super.modulesCompilerNewJarToolCall().when(verbose, "--verbose");
   }
 }
