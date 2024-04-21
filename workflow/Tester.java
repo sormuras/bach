@@ -19,6 +19,7 @@ import run.bach.workflow.Structure.Space;
 
 public interface Tester extends Action {
   default void test() {
+    say("Testing...");
     for (var name : testerUsesSpaceNames()) {
       var spaces = workflow().structure().spaces();
       if (!spaces.names().contains(name)) continue;

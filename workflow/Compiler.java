@@ -14,11 +14,11 @@ public interface Compiler extends Action, ClassesCompiler, ClassesPackager {
     var spaces = workflow().structure().spaces();
     var names = spaces.names();
     if (names.isEmpty()) {
-      log("No module space declared.");
+      say("No module space declared; nothing to compile.");
       return;
     }
     var size = names.size();
-    log("Compile %d module space%s: %s".formatted(size, size == 1 ? "" : "s", names));
+    say("Compiling %d module space%s %s ...".formatted(size, size == 1 ? "" : "s", names));
     spaces.forEach(this::compile);
   }
 

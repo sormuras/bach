@@ -18,19 +18,25 @@ import run.bach.internal.FlightRecorderEvent;
 
 /** Extendable tool runner implementation. */
 public class ToolSpace implements ToolRunner {
-  public static ToolSpace ofSystem(Flag... flags) {
-    return new ToolSpace(ToolFinder.ofSystem(), flags);
-  }
-
   public enum Flag {
     SILENT
   }
 
   protected final ToolFinder finder;
+  protected final Level threshold;
   protected final Set<Flag> flags;
 
+  public ToolSpace(Flag... flags) {
+    this(ToolFinder.ofSystem(), Level.INFO, flags);
+  }
+
   public ToolSpace(ToolFinder finder, Flag... flags) {
+    this(finder, Level.INFO, flags);
+  }
+
+  public ToolSpace(ToolFinder finder, Level threshold, Flag... flags) {
     this.finder = finder;
+    this.threshold = threshold;
     this.flags =
         switch (flags.length) {
           case 0 -> EnumSet.noneOf(Flag.class);
@@ -45,7 +51,7 @@ public class ToolSpace implements ToolRunner {
 
   @Override
   public ToolRun run(ToolCall call) {
-    if (!silent()) announce(call);
+    announce(call);
     var event = new FlightRecorderEvent.ToolRunEvent();
     try {
       var tool = computeToolInstance(call);
@@ -87,16 +93,30 @@ public class ToolSpace implements ToolRunner {
     return finder.findTool(id);
   }
 
+  @Override
+  public void log(Level level, String message) {
+    // TODO Fire flight recorder event.
+    if (silent()) return;
+    var severity = level.getSeverity();
+    if (severity < threshold.getSeverity()) return;
+    if (severity < Level.ERROR.getSeverity()) {
+      System.out.println(message);
+    }
+    else {
+      System.err.println(message);
+    }
+  }
+
   protected void announce(ToolCall call) {
-    System.out.println("| " + call.toCommandLine());
+    log(Level.INFO, "| " + call.toCommandLine());
   }
 
   protected PrintWriter computePrintWriter(Level level) {
-    if (silent()) {
+    if (silent() || level == Level.OFF) {
       return new PrintWriter(Writer.nullWriter());
     }
     var severity = level.getSeverity();
-    var stream = severity >= Level.ERROR.getSeverity() ? System.err : System.out;
+    var stream = severity < Level.ERROR.getSeverity() ? System.out : System.err;
     return new PrintWriter(stream, true);
   }
 

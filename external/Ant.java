@@ -48,7 +48,7 @@ public record Ant(String version) implements ToolInstaller {
               .withProcessBuilderTweaker(builder -> builder.directory(into.toFile()))
               .withProcessWaiter(process -> process.waitFor(1, TimeUnit.MINUTES) ? 0 : 1)
               .tool();
-      var silent = ToolSpace.ofSystem(ToolSpace.Flag.SILENT);
+      var silent = new ToolSpace(ToolSpace.Flag.SILENT);
       silent.run(jar, "--extract", "--file", archive);
     }
     return ToolProgram.java(
