@@ -8,7 +8,6 @@ import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
 import run.bach.workflow.Launcher;
-import run.bach.workflow.Printer;
 import run.bach.workflow.Structure;
 import run.bach.workflow.Structure.Basics;
 import run.bach.workflow.Structure.DeclaredModule;
@@ -17,7 +16,7 @@ import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
 
-public record Project(boolean verbose, Workflow workflow) implements Builder, Launcher, Printer {
+public record Project(boolean verbose, Workflow workflow) implements Builder, Launcher {
   static Project ofCurrentWorkingDirectory() {
     var verbose = Boolean.getBoolean("-Debug".substring(2));
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
@@ -42,6 +41,14 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
     var structure = new Structure(basics, new Spaces(main, test));
     var runner = ToolRunner.ofSystem();
     return new Project(verbose, new Workflow(folders, structure, runner));
+  }
+
+  void printStatus() {
+    System.out.println(workflow.structure().toNameAndVersion());
+    System.out.println(workflow.structure().basics());
+    System.out.println(workflow.structure().spaces());
+    System.out.println(workflow.folders());
+    System.out.println(workflow.runner());
   }
 
   @Override
