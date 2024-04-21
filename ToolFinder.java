@@ -5,9 +5,13 @@
 
 package run.bach;
 
+import java.lang.module.ModuleFinder;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
+import run.bach.internal.ModulesSupport;
 
 /**
  * A finder of tools.
@@ -64,6 +68,21 @@ public interface ToolFinder {
    */
   static ToolFinder of(Tool... tools) {
     return new DefaultFinder(List.of(tools));
+  }
+
+  static ToolFinder of(ModuleFinder finder) {
+    var layer = ModulesSupport.buildModuleLayer(finder);
+    return of(layer);
+  }
+
+  static ToolFinder of(ModuleLayer layer) {
+    var tools =
+        ServiceLoader.load(layer, ToolProvider.class).stream()
+            .filter(service -> service.type().getModule().getLayer() == layer)
+            .map(ServiceLoader.Provider::get)
+            .map(Tool::of)
+            .toList();
+    return new DefaultFinder(tools);
   }
 
   static ToolInstaller.Finder ofInstaller() {
