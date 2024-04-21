@@ -11,20 +11,41 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import run.bach.internal.FlightRecorderEvent;
 
 /** Extendable tool runner implementation. */
 public class ToolSpace implements ToolRunner {
-  protected final ToolFinder finder;
+  public static ToolSpace ofSystem(Flag... flags) {
+    return new ToolSpace(ToolFinder.ofSystem(), flags);
+  }
 
-  public ToolSpace(ToolFinder finder) {
+  public enum Flag {
+    SILENT
+  }
+
+  protected final ToolFinder finder;
+  protected final Set<Flag> flags;
+
+  public ToolSpace(ToolFinder finder, Flag... flags) {
     this.finder = finder;
+    this.flags =
+        switch (flags.length) {
+          case 0 -> EnumSet.noneOf(Flag.class);
+          case 1 -> EnumSet.of(flags[0]);
+          default -> EnumSet.of(flags[0], flags);
+        };
+  }
+
+  public final boolean silent() {
+    return flags.contains(Flag.SILENT);
   }
 
   @Override
   public ToolRun run(ToolCall call) {
-    announce(call);
+    if (!silent()) announce(call);
     var event = new FlightRecorderEvent.ToolRunEvent();
     try {
       var tool = computeToolInstance(call);
@@ -71,6 +92,9 @@ public class ToolSpace implements ToolRunner {
   }
 
   protected PrintWriter computePrintWriter(Level level) {
+    if (silent()) {
+      return new PrintWriter(Writer.nullWriter());
+    }
     var severity = level.getSeverity();
     var stream = severity >= Level.ERROR.getSeverity() ? System.err : System.out;
     return new PrintWriter(stream, true);
@@ -109,7 +133,7 @@ public class ToolSpace implements ToolRunner {
     private final PrintWriter other;
 
     StringPrintWriterMirror(PrintWriter other) {
-      this.other = other != null ? other : new PrintWriter(Writer.nullWriter());
+      this.other = other;
     }
 
     @Override

@@ -10,8 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.spi.ToolProvider;
-import run.bach.ToolCall;
-import run.bach.ToolFinder;
 import run.bach.ToolInstaller;
 import run.bach.ToolProgram;
 import run.bach.ToolSpace;
@@ -50,11 +48,7 @@ public record Ant(String version) implements ToolInstaller {
               .withProcessBuilderTweaker(builder -> builder.directory(into.toFile()))
               .withProcessWaiter(process -> process.waitFor(1, TimeUnit.MINUTES) ? 0 : 1)
               .tool();
-      var silent =
-          new ToolSpace(ToolFinder.compose()) {
-            @Override
-            protected void announce(ToolCall call) {}
-          };
+      var silent = ToolSpace.ofSystem(ToolSpace.Flag.SILENT);
       silent.run(jar, "--extract", "--file", archive);
     }
     return ToolProgram.java(
