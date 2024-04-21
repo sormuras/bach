@@ -58,29 +58,27 @@ public class ToolSpace implements ToolRunner {
       var args = computeArgumentsArray(call);
       var out = new StringPrintWriterMirror(computePrintWriter(Level.INFO));
       var err = new StringPrintWriterMirror(computePrintWriter(Level.ERROR));
+      var provider = tool.provider();
+
       event.name = call.tool().name();
-      event.tool = tool.provider().getClass();
+      event.tool = provider.getClass();
       event.args = String.join(" ", args);
 
-      int code;
-      RuntimeException uncheckedRuntimeException = null;
+      Thread.currentThread().setContextClassLoader(provider.getClass().getClassLoader());
       try {
-        Thread.currentThread().setContextClassLoader(tool.getClass().getClassLoader());
         event.begin();
-        code = tool.provider().run(out, err, args);
+        event.code = provider.run(out, err, args);
+      } catch (RuntimeException unchecked) {
+        event.code = Integer.MIN_VALUE;
+        event.out = out.toString();
+        event.err = err.toString();
+        throw unchecked;
+      } finally {
         event.end();
-      } catch (RuntimeException exception) {
-        uncheckedRuntimeException = exception; // rethrown later
-        code = Integer.MIN_VALUE;
       }
 
-      var run = new ToolRun(call, tool, code, out.toString(), err.toString());
-      event.code = run.code();
-      event.out = run.out();
-      event.err = run.err();
+      var run = new ToolRun(call, tool, event.code, event.out, event.err);
       verify(run);
-
-      if (uncheckedRuntimeException != null) throw uncheckedRuntimeException;
 
       return run;
     } finally {
