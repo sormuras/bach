@@ -29,4 +29,4 @@ jobs:
           java @bach https://raw.githubusercontent.com/openjdk/jdk/jdk-22-ga/test/jdk/java/lang/System/Versions.java
           java .bach/src/run.bach/run/Versions.java
       - name: 'Build Bach with Bach'
-        run: java .bach/src/run.bach/run/Build.java
+        run: java @build
