@@ -5,15 +5,15 @@
 
 package run.bach.workflow;
 
-import java.lang.annotation.Annotation;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
-import java.util.stream.Stream;
 import run.bach.Tool;
 import run.bach.ToolCall;
+import run.bach.ToolNotFoundException;
 import run.bach.internal.ModulesSupport;
 import run.bach.workflow.Structure.Space;
 
@@ -39,12 +39,9 @@ public interface Tester extends Action {
   }
 
   default boolean testerShouldTestModuleWithJUnitPlatform(Module module) {
-    var annotations =
-        Stream.of(module.getAnnotations())
-            .map(Annotation::annotationType)
-            .map(Class::getTypeName)
-            .toList();
-    return annotations.contains("org.junit.platform.commons.annotation.Testable");
+    return module.getDescriptor().requires().stream()
+        .map(ModuleDescriptor.Requires::name)
+        .anyMatch(name -> name.equals("org.junit.platform.console"));
   }
 
   default boolean testerShouldTestModuleWithToolProviders(Module module) {
@@ -103,7 +100,7 @@ public interface Tester extends Action {
   }
 
   default void testerRunToolProviders(List<ToolProvider> providers) {
-    providers.forEach(this::testerRunToolProvider);
+    for(var provider : providers) testerRunToolProvider(provider);
   }
 
   default void testerRunToolProvider(ToolProvider provider) {
@@ -111,28 +108,33 @@ public interface Tester extends Action {
   }
 
   private void testWithJUnitPlatform(Space space) {
-    if (workflow().runner().findTool("junit").isEmpty()) return;
-    for (var module : space.modules()) testWithJUnitPlatform(space, module.name());
+    for (var name : space.modules().names()) {
+      var layer = testerUsesModuleLayerForModuleName(space, name);
+      var module = layer.findModule(name).orElseThrow(AssertionError::new);
+      if (testerShouldTestModuleWithJUnitPlatform(module)) {
+        testWithJUnitPlatform(module);
+      }
+    }
   }
 
-  private void testWithJUnitPlatform(Space space, String name) {
+  private void testWithJUnitPlatform(Module module) {
     var folders = workflow().folders();
-    var layer = testerUsesModuleLayerForModuleName(space, name);
-    var module = layer.findModule(name).orElseThrow(AssertionError::new);
-    if (!testerShouldTestModuleWithJUnitPlatform(module)) return;
+    var layer = module.getLayer();
     module.getClassLoader().setDefaultAssertionStatus(true);
+    var tool =
+        ServiceLoader.load(layer, ToolProvider.class).stream()
+            .filter(service -> service.type().getModule().getLayer() == layer)
+            .map(ServiceLoader.Provider::get)
+            .filter(provider -> provider.name().equals("junit"))
+            .findFirst()
+            .map(Tool::of)
+            .orElseThrow(() -> new ToolNotFoundException("junit"));
     var junit =
-        Tool.of(
-            ServiceLoader.load(layer, ToolProvider.class).stream()
-                .map(ServiceLoader.Provider::get)
-                .filter(provider -> provider.name().equals("junit"))
-                .findFirst()
-                .orElseThrow());
-    var call =
-        ToolCall.of(junit)
-            .add("--select-module", name)
-            .add("--reports-dir", folders.out("test-reports", "junit-" + name));
-    testerRunJUnitPlatform(call);
+        ToolCall.of(tool)
+            .add("execute")
+            .add("--select-module", module.getName())
+            .add("--reports-dir", folders.out("test-reports", "junit", module.getName()));
+    testerRunJUnitPlatform(junit);
   }
 
   default void testerRunJUnitPlatform(ToolCall junit) {
