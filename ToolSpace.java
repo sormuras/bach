@@ -101,8 +101,7 @@ public class ToolSpace implements ToolRunner {
     if (severity < threshold.getSeverity()) return;
     if (severity < Level.ERROR.getSeverity()) {
       System.out.println(message);
-    }
-    else {
+    } else {
       System.err.println(message);
     }
   }

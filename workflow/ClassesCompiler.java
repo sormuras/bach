@@ -14,41 +14,40 @@ import run.bach.workflow.Structure.Space;
 /** Translate Java source files into class files. */
 public interface ClassesCompiler extends Action {
   default void compileClasses(Space space) {
-    var javac = compileClassesCreateJavacCall();
-    javac = compileClassesWithRelease(javac, space);
-    javac = compileClassesWithModules(javac, space);
-    javac = compileClassesWithModuleSourcePaths(javac, space);
-    javac = compileClassesWithModulePaths(javac, space);
-    javac = compileClassesWithModulePatches(javac, space);
-    javac = compileClassesWithDestinationDirectory(javac, space);
-    javac = compileClassesWithFinalTouch(javac, space);
-    workflow().runner().run(javac);
+    var javac = classesCompilerNewJavacToolCall();
+    javac = classesCompilerWithRelease(javac, space);
+    javac = classesCompilerWithModules(javac, space);
+    javac = classesCompilerWithModuleSourcePaths(javac, space);
+    javac = classesCompilerWithModulePaths(javac, space);
+    javac = classesCompilerWithModulePatches(javac, space);
+    javac = classesCompilerWithDestinationDirectory(javac, space);
+    classesCompilerRunJavacToolCall(javac);
   }
 
-  default ToolCall compileClassesCreateJavacCall() {
+  default ToolCall classesCompilerNewJavacToolCall() {
     return ToolCall.of("javac");
   }
 
-  default ToolCall compileClassesWithFinalTouch(ToolCall javac, Space space) {
-    return javac;
+  default void classesCompilerRunJavacToolCall(ToolCall javac) {
+    run(javac);
   }
 
-  default ToolCall compileClassesWithRelease(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithRelease(ToolCall javac, Space space) {
     return space.targets().map(feature -> javac.add("--release", feature)).orElse(javac);
   }
 
-  default ToolCall compileClassesWithModules(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithModules(ToolCall javac, Space space) {
     return javac.add("--module", space.modules().names(","));
   }
 
-  default ToolCall compileClassesWithModuleSourcePaths(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithModuleSourcePaths(ToolCall javac, Space space) {
     for (var moduleSourcePath : space.modules().toModuleSourcePaths()) {
       javac = javac.add("--module-source-path", moduleSourcePath);
     }
     return javac;
   }
 
-  default ToolCall compileClassesWithModulePaths(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithModulePaths(ToolCall javac, Space space) {
     var modulePath = space.toModulePath(workflow().folders());
     if (modulePath.isPresent()) {
       javac = javac.add("--module-path", modulePath.get());
@@ -57,7 +56,7 @@ public interface ClassesCompiler extends Action {
     return javac;
   }
 
-  default ToolCall compileClassesWithModulePatches(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithModulePatches(ToolCall javac, Space space) {
     var spaces = workflow().structure().spaces();
     var folders = workflow().folders();
     for (var declaration : space.modules().list()) {
@@ -82,7 +81,7 @@ public interface ClassesCompiler extends Action {
     return folders.out(space.name(), "classes").resolve("java-" + feature);
   }
 
-  default ToolCall compileClassesWithDestinationDirectory(ToolCall javac, Space space) {
+  default ToolCall classesCompilerWithDestinationDirectory(ToolCall javac, Space space) {
     var classes = classesCompilerUsesDestinationDirectory(space);
     return javac.add("-d", classes);
   }

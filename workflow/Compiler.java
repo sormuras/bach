@@ -6,12 +6,13 @@
 package run.bach.workflow;
 
 import run.bach.workflow.Structure.Space;
+import run.bach.workflow.Structure.Spaces;
 
 /** Translates source files into modular JAR files. */
-public interface Compiler extends Action, ClassesCompiler, ClassesPackager {
+public interface Compiler extends Action, ClassesCompiler, ModulesCompiler {
   /** Translates source files into modular JAR files for all module spaces. */
   default void compile() {
-    var spaces = workflow().structure().spaces();
+    var spaces = compilerUsesSpaces();
     var names = spaces.names();
     if (names.isEmpty()) {
       say("No module space declared; nothing to compile.");
@@ -32,6 +33,10 @@ public interface Compiler extends Action, ClassesCompiler, ClassesPackager {
     }
     log("Compiling %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
     compileClasses(space);
-    packageClasses(space);
+    compileModules(space);
+  }
+
+  default Spaces compilerUsesSpaces() {
+    return workflow().structure().spaces();
   }
 }

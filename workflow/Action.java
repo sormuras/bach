@@ -6,6 +6,7 @@
 package run.bach.workflow;
 
 import java.lang.System.Logger.Level;
+import run.bach.ToolCall;
 
 public interface Action {
   Workflow workflow();
@@ -16,5 +17,9 @@ public interface Action {
 
   default void log(String message) {
     workflow().runner().log(Level.DEBUG, message);
+  }
+
+  default void run(ToolCall call) {
+    workflow().runner().run(call);
   }
 }

@@ -53,7 +53,7 @@ public interface Tester extends Action {
         .anyMatch(provides -> provides.service().equals(name));
   }
 
-  private ModuleLayer testerDefinesModuleLayerForModuleName(Space space, String name) {
+  default ModuleLayer testerUsesModuleLayerForModuleName(Space space, String name) {
     var folders = workflow().folders();
     var finder =
         ModuleFinder.compose(
@@ -78,7 +78,11 @@ public interface Tester extends Action {
             .add("-ea") // enable assertions
             .add("--module-path", space.toRuntimeSpace().toModulePath(folders).orElse("."))
             .add("--module", launcher);
-    workflow().runner().run(java);
+    testerRunSpaceLauncher(java);
+  }
+
+  default void testerRunSpaceLauncher(ToolCall java) {
+    run(java);
   }
 
   private void testWithToolProviders(Space space) {
@@ -86,19 +90,24 @@ public interface Tester extends Action {
   }
 
   private void testWithToolProviders(Space space, String name) {
-    var layer = testerDefinesModuleLayerForModuleName(space, name);
+    var layer = testerUsesModuleLayerForModuleName(space, name);
     var module = layer.findModule(name).orElseThrow(AssertionError::new);
     if (!testerShouldTestModuleWithToolProviders(module)) return;
     module.getClassLoader().setDefaultAssertionStatus(true);
-    var tests =
+    var providers =
         ServiceLoader.load(layer, ToolProvider.class).stream()
             .map(ServiceLoader.Provider::get)
             .filter(provider -> provider.name().startsWith("test"))
-            .map(Tool::of)
             .toList();
-    for (var test : tests) {
-      workflow().runner().run(test);
-    }
+    testerRunToolProviders(providers);
+  }
+
+  default void testerRunToolProviders(List<ToolProvider> providers) {
+    providers.forEach(this::testerRunToolProvider);
+  }
+
+  default void testerRunToolProvider(ToolProvider provider) {
+    run(ToolCall.of(Tool.of(provider)));
   }
 
   private void testWithJUnitPlatform(Space space) {
@@ -108,7 +117,7 @@ public interface Tester extends Action {
 
   private void testWithJUnitPlatform(Space space, String name) {
     var folders = workflow().folders();
-    var layer = testerDefinesModuleLayerForModuleName(space, name);
+    var layer = testerUsesModuleLayerForModuleName(space, name);
     var module = layer.findModule(name).orElseThrow(AssertionError::new);
     if (!testerShouldTestModuleWithJUnitPlatform(module)) return;
     module.getClassLoader().setDefaultAssertionStatus(true);
@@ -123,6 +132,10 @@ public interface Tester extends Action {
         ToolCall.of(junit)
             .add("--select-module", name)
             .add("--reports-dir", folders.out("test-reports", "junit-" + name));
-    workflow().runner().run(call);
+    testerRunJUnitPlatform(call);
+  }
+
+  default void testerRunJUnitPlatform(ToolCall junit) {
+    run(junit);
   }
 }
