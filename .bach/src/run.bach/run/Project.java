@@ -7,6 +7,8 @@ import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
+import run.bach.workflow.Launcher;
+import run.bach.workflow.Printer;
 import run.bach.workflow.Structure;
 import run.bach.workflow.Structure.Basics;
 import run.bach.workflow.Structure.DeclaredModule;
@@ -15,7 +17,7 @@ import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
 
-public record Project(boolean verbose, Workflow workflow) implements Builder {
+public record Project(boolean verbose, Workflow workflow) implements Builder, Launcher, Printer {
   static Project ofCurrentWorkingDirectory() {
     var verbose = Boolean.getBoolean("-Debug".substring(2));
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
