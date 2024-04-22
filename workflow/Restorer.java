@@ -15,33 +15,49 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import run.bach.external.ModuleLookupTable;
 import run.bach.internal.ModulesSupport;
 import run.bach.workflow.Structure.DeclaredModules;
 import run.bach.workflow.Structure.Space;
 
 public interface Restorer extends Action {
   default void restore() {
-    say("Restoring external assets ...");
-    restoreModules(restorerUsesModuleNames());
-    restoreMissingModules();
+    var table = restorerUsesModuleLookupTable();
+    say("Restoring required modules ...");
+    restoreModules(table, restorerUsesModuleNames());
+    say("Restoring missing modules recursively ...");
+    restoreMissingModules(table);
   }
 
-  default void restoreModules(Collection<String> names) {
+  default ModuleLookupTable restorerUsesModuleLookupTable() {
+    return ModuleLookupTable.of(restorerUsesLibraryDirectory());
+  }
+
+  default void restoreModules(ModuleLookupTable externals, Collection<String> names) {
     var lib = restorerUsesLibraryDirectory();
     try {
+      with_next_module:
       for (var name : names) {
-        var target = lib.resolve(name + ".jar");
-        if (Files.exists(target)) continue;
-        var source = URI.create(restorerUsesUriForModuleName(name));
-        download(target, source);
-        say("Restored %s from %s".formatted(name, source));
+        if (ModuleFinder.of(lib).find(name).isPresent()) {
+          log("Module %s is already present".formatted(name));
+          continue; // with next module
+        }
+        for (var locator : externals.lookups()) {
+          var target = lib.resolve(name + ".jar");
+          var source = locator.lookup(name);
+          if (source == null) continue;
+          download(target, URI.create(source));
+          say("Restored %s from %s".formatted(name, source));
+          continue with_next_module;
+        }
+        throw new IllegalStateException("Module not locatable: " + name);
       }
     } catch (Exception exception) {
-      throw new RuntimeException(exception);
+      throw exception instanceof RuntimeException re ? re : new RuntimeException(exception);
     }
   }
 
-  default void restoreMissingModules() {
+  default void restoreMissingModules(ModuleLookupTable locators) {
     var lib = restorerUsesLibraryDirectory();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
@@ -54,7 +70,7 @@ public interface Restorer extends Action {
       difference.retainAll(missing);
       if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
       difference.addAll(missing);
-      restoreModules(missing); // "silent" load module missing...
+      restoreModules(locators, missing);
       loaded.addAll(missing);
       missing.forEach(this::log);
     }
@@ -63,10 +79,6 @@ public interface Restorer extends Action {
 
   default Path restorerUsesLibraryDirectory() {
     return workflow().folders().root("lib");
-  }
-
-  default String restorerUsesUriForModuleName(String name) {
-    throw new UnsupportedOperationException(name);
   }
 
   default Set<String> restorerUsesModuleNames() {
