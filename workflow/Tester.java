@@ -100,7 +100,7 @@ public interface Tester extends Action {
   }
 
   default void testerRunToolProviders(List<ToolProvider> providers) {
-    for(var provider : providers) testerRunToolProvider(provider);
+    for (var provider : providers) testerRunToolProvider(provider);
   }
 
   default void testerRunToolProvider(ToolProvider provider) {

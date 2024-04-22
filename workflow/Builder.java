@@ -5,13 +5,14 @@
 
 package run.bach.workflow;
 
-public interface Builder extends Action, Cleaner, Compiler, Tester {
+public interface Builder extends Action, Cleaner, Compiler, Restorer, Tester {
   default void build() {
     var project = workflow().structure().toNameAndVersion();
     say("Building %s ...".formatted(project));
     if (builderShouldInvokeCleanBeforeCompile()) {
       clean();
     }
+    restore();
     compile();
     test();
     say("Build of %s completed.".formatted(project));
