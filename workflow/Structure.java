@@ -35,6 +35,10 @@ public record Structure(Basics basics, Spaces spaces) {
     return basics.name() + ' ' + basics.version();
   }
 
+  public Structure with(Space space) {
+    return new Structure(basics, spaces.with(space));
+  }
+
   /** Fundamental project-related information. */
   public record Basics(String name, String version, ZonedDateTime timestamp) {
     public Basics(String name, String version) {
@@ -45,6 +49,10 @@ public record Structure(Basics basics, Spaces spaces) {
   public record Spaces(List<Space> list) implements Iterable<Space> {
     public Spaces(Space... spaces) {
       this(List.of(spaces));
+    }
+
+    public Spaces with(Space space) {
+      return new Spaces(append(list, space));
     }
 
     @Override
@@ -81,8 +89,16 @@ public record Structure(Basics basics, Spaces spaces) {
       if (modules == null) throw new IllegalArgumentException("Space modules must not be null");
     }
 
+    public Space(String name, DeclaredModule... modules) {
+      this(name, List.of(), 0, List.of(), new DeclaredModules(modules));
+    }
+
     public Space(String name, int release, String launcher, DeclaredModule... modules) {
       this(name, List.of(), release, List.of(launcher), new DeclaredModules(modules));
+    }
+
+    public Space with(DeclaredModule module) {
+      return new Space(name, requires, release, launchers, modules.with(module));
     }
 
     public Optional<Integer> targets() {
@@ -112,6 +128,10 @@ public record Structure(Basics basics, Spaces spaces) {
 
     public DeclaredModules(DeclaredModule... modules) {
       this(List.of(modules));
+    }
+
+    public DeclaredModules with(DeclaredModule module) {
+      return new DeclaredModules(append(list, module));
     }
 
     public Optional<DeclaredModule> find(String name) {
@@ -162,6 +182,10 @@ public record Structure(Basics basics, Spaces spaces) {
           Map.of());
     }
 
+    public DeclaredModule withResourcePath(Path path) {
+      return new DeclaredModule(content, info, descriptor, base.withResourcePath(path), targeted);
+    }
+
     public String name() {
       return descriptor.name();
     }
@@ -178,8 +202,18 @@ public record Structure(Basics basics, Spaces spaces) {
       this(Stream.of(sources).map(Path::normalize).toList(), List.of());
     }
 
+    public DeclaredFolders withResourcePath(Path path) {
+      if (resources.contains(path)) return this;
+      return new DeclaredFolders(sources, append(resources, path));
+    }
+
     public boolean isEmpty() {
       return sources.isEmpty() && resources.isEmpty();
     }
+  }
+
+  @SafeVarargs
+  private static <T> List<T> append(List<T> list, T... element) {
+    return Stream.concat(list.stream(), Stream.of(element)).toList();
   }
 }
