@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/bach.iml" filepath="$PROJECT_DIR$/.idea/bach.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/run.bach.iml" filepath="$PROJECT_DIR$/.idea/run.bach.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/test.bach.iml" filepath="$PROJECT_DIR$/.idea/test.bach.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/test.junit.iml" filepath="$PROJECT_DIR$/.idea/test.junit.iml" />
     </modules>
   </component>
 </project>

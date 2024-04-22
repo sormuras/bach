@@ -9,7 +9,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.bach/var" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="inheritedJdk" />
     <orderEntry type="module" module-name="run.bach" scope="TEST" />
+    <orderEntry type="inheritedJdk" />
   </component>
 </module>
