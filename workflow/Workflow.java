@@ -11,7 +11,7 @@ import run.bach.internal.PathSupport;
 
 public record Workflow(Bach.Folders folders, Structure structure, ToolRunner runner) {
   public static Workflow of(Bach.Folders folders) {
-    var name = PathSupport.name(folders.root(), "project");
+    var name = System.getProperty("--project-name", PathSupport.name(folders.root(), "Unnamed"));
     var version = System.getProperty("--project-version", "0-ea");
     var basics = new Structure.Basics(name, version);
     var spaces = new Structure.Spaces();
