@@ -1,5 +1,6 @@
 package run;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,6 +37,7 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
             "test",
             List.of("main"),
             0,
+            StandardCharsets.UTF_8,
             List.of(),
             new DeclaredModules(
                 new DeclaredModule(
@@ -58,7 +60,7 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
   }
 
   @Override
-  public boolean builderShouldInvokeCleanBeforeCompile() {
+  public boolean builderDoesCleanAtTheBeginning() {
     return true;
   }
 
@@ -82,8 +84,8 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
   }
 
   @Override
-  public ToolCall modulesCompilerNewJarToolCall() {
-    return Builder.super.modulesCompilerNewJarToolCall().when(verbose, "--verbose");
+  public ToolCall modulesCompilerUsesJarToolCall() {
+    return Builder.super.modulesCompilerUsesJarToolCall().when(verbose, "--verbose");
   }
 
   @Override
