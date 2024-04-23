@@ -12,7 +12,7 @@ import run.bach.workflow.Structure.Spaces;
 public interface Compiler extends Action, ClassesCompiler, ModulesCompiler, ImageCompiler {
   /** Translates source files into modular JAR files for all module spaces. */
   default void compile() {
-    var spaces = compilerUsesSpaces();
+    var spaces = compilerUsesSpacesForCompilation();
     var names = spaces.names();
     if (names.isEmpty()) {
       say("No module space declared; nothing to compile.");
@@ -36,16 +36,16 @@ public interface Compiler extends Action, ClassesCompiler, ModulesCompiler, Imag
     log("Compiling %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
     compileClasses(space);
     compileModules(space);
-    if (compilerShouldCreateCustomRuntimeImageForSpace(space)) {
+    if (compilerDoesCreateCustomRuntimeImageForSpace(space)) {
       compileImage(space);
     }
   }
 
-  default Spaces compilerUsesSpaces() {
+  default Spaces compilerUsesSpacesForCompilation() {
     return workflow().structure().spaces();
   }
 
-  default boolean compilerShouldCreateCustomRuntimeImageForSpace(Space space) {
+  default boolean compilerDoesCreateCustomRuntimeImageForSpace(Space space) {
     return space.is(Space.Flag.IMAGE);
   }
 }

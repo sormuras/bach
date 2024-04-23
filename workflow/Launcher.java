@@ -10,26 +10,29 @@ import run.bach.workflow.Structure.Space;
 
 public interface Launcher extends Action {
   default void launch(String... args) {
-    var project = workflow().structure().toNameAndVersion();
-    say("Launching %s ...".formatted(project));
-    var name = launcherUsesSpaceName();
-    var space = workflow().structure().spaces().space(name);
+    var description = launcherUsesProjectDescription();
+    say("Launching %s ...".formatted(description));
+    var space = launcherUsesSpaceForLaunchingTheApplication();
     launch(space, args);
   }
 
   default void launch(Space space, String... args) {
-    var java = launcherNewJavaToolCall();
+    var java = launcherUsesJavaToolCall();
     java = launcherWithModulePath(java, space);
     java = launcherWithModule(java, space);
     java = launcherWithArguments(java, args);
     launcherRunJavaToolCall(java);
   }
 
-  default String launcherUsesSpaceName() {
-    return "main";
+  default String launcherUsesProjectDescription() {
+    return workflow().structure().toNameAndVersion();
   }
 
-  default ToolCall launcherNewJavaToolCall() {
+  default Space launcherUsesSpaceForLaunchingTheApplication() {
+    return workflow().structure().spaces().space("main");
+  }
+
+  default ToolCall launcherUsesJavaToolCall() {
     return ToolCall.of("java");
   }
 

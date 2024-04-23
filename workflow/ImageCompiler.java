@@ -12,7 +12,7 @@ import run.bach.workflow.Structure.Space;
 /** Assemble and optimize a set of modules and their dependencies into a custom runtime image. */
 public interface ImageCompiler extends Action {
   default void compileImage(Space space) {
-    var jlink = imageCompilerNewJLinkToolCall();
+    var jlink = imageCompilerUsesJLinkToolCall(space);
     jlink = imageCompilerWithOutputDirectory(jlink, space);
     jlink = imageCompilerWithLauncher(jlink, space);
     jlink = imageCompilerWithModules(jlink, space);
@@ -30,7 +30,7 @@ public interface ImageCompiler extends Action {
     return jlink.add("--add-modules", space.modules().names(","));
   }
 
-  default ToolCall imageCompilerNewJLinkToolCall() {
+  default ToolCall imageCompilerUsesJLinkToolCall(Space space) {
     return ToolCall.of("jlink");
   }
 

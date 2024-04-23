@@ -10,12 +10,24 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 
 public interface Cleaner extends Action {
   default void clean() {
+    say("Cleaning ...");
+    var paths = cleanerUsesPathsForDeletion().stream().filter(Files::exists).toList();
+    if (paths.isEmpty()) return;
+    for (var path : paths) {
+      var kind =
+          Files.isRegularFile(path) ? "file" : Files.isDirectory(path) ? "directory" : "path";
+      log("Deleting %s %s ...".formatted(kind, path.toUri()));
+      delete(path);
+    }
+  }
+
+  default List<Path> cleanerUsesPathsForDeletion() {
     var folders = workflow().folders();
-    say("Cleaning output directories in %s ...".formatted(folders.out().toUri()));
-    delete(folders.out());
+    return List.of(folders.out());
   }
 
   private void delete(Path file) {

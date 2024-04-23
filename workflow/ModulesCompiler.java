@@ -20,7 +20,7 @@ public interface ModulesCompiler extends Action {
     var archiverCalls = new ArrayList<ToolCall>(); // jar --create --file ...
     var modules = workflow().folders().out(space.name(), "modules");
     for (var module : space.modules()) {
-      var jar = modulesCompilerNewJarToolCall();
+      var jar = modulesCompilerUsesJarToolCall();
       jar = jar.add("--create");
       jar = modulesCompilerWithFile(jar, modules, module);
       jar = modulesCompilerWithModuleVersion(jar);
@@ -36,7 +36,7 @@ public interface ModulesCompiler extends Action {
     archiverCalls.stream().parallel().forEach(this::modulesCompilerRunJarToolCall);
   }
 
-  default ToolCall modulesCompilerNewJarToolCall() {
+  default ToolCall modulesCompilerUsesJarToolCall() {
     return ToolCall.of("jar");
   }
 

@@ -14,17 +14,18 @@ import run.bach.workflow.Structure.Space;
 /** Translate Java source files into class files. */
 public interface ClassesCompiler extends Action {
   default void compileClasses(Space space) {
-    var javac = classesCompilerNewJavacToolCall();
+    var javac = classesCompilerUsesJavacToolCall(space);
     javac = classesCompilerWithRelease(javac, space);
     javac = classesCompilerWithModules(javac, space);
     javac = classesCompilerWithModuleSourcePaths(javac, space);
     javac = classesCompilerWithModulePaths(javac, space);
     javac = classesCompilerWithModulePatches(javac, space);
     javac = classesCompilerWithDestinationDirectory(javac, space);
+    javac = classesCompilerWithEncoding(javac, space);
     classesCompilerRunJavacToolCall(javac);
   }
 
-  default ToolCall classesCompilerNewJavacToolCall() {
+  default ToolCall classesCompilerUsesJavacToolCall(Space space) {
     return ToolCall.of("javac");
   }
 
@@ -73,6 +74,10 @@ public interface ClassesCompiler extends Action {
       javac = javac.add("--patch-module", module + "=" + patch);
     }
     return javac;
+  }
+
+  default ToolCall classesCompilerWithEncoding(ToolCall javac, Space space) {
+    return javac.add("-encoding", space.encoding().name());
   }
 
   default Path classesCompilerUsesDestinationDirectory(Space space) {
