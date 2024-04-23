@@ -120,6 +120,10 @@ public record Structure(Basics basics, Spaces spaces) {
       return new Space(name, requires, release, launchers, modules.with(module), flags);
     }
 
+    public Space with(Launcher launcher) {
+      return new Space(name, requires, release, append(launchers(), launcher), modules, flags);
+    }
+
     public boolean is(Flag flag) {
       return flags.contains(flag);
     }
