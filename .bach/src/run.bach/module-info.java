@@ -5,6 +5,7 @@ module run.bach {
 
   exports run.bach;
   exports run.bach.external;
+  exports run.bach.workflow;
 
   uses java.util.spi.ToolProvider;
 }

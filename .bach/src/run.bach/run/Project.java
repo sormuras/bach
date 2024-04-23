@@ -3,6 +3,8 @@ package run;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
@@ -23,11 +25,12 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
     var basics = new Basics("Bach", "2024-ea");
     var main =
         new Space(
-            "main",
-            22,
-            "run.bach/run.bach.Main",
-            new DeclaredModule(
-                Path.of(".bach/src/run.bach"), Path.of(".bach/src/run.bach/module-info.java")));
+                "main",
+                22,
+                "bach=run.bach/run.bach.Main",
+                new DeclaredModule(
+                    Path.of(".bach/src/run.bach"), Path.of(".bach/src/run.bach/module-info.java")))
+            .with(Space.Flag.IMAGE);
     var test =
         new Space(
             "test",
@@ -39,7 +42,8 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
                     Path.of("src/test.bach"), Path.of("src/test.bach/test/java/module-info.java")),
                 new DeclaredModule(
                     Path.of("src/test.junit"),
-                    Path.of("src/test.junit/test/java/module-info.java"))));
+                    Path.of("src/test.junit/test/java/module-info.java"))),
+            Set.of());
     var structure = new Structure(basics, new Spaces(main, test));
     var runner = ToolRunner.ofSystem();
     return new Project(verbose, new Workflow(folders, structure, runner));
@@ -80,5 +84,11 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
   @Override
   public ToolCall modulesCompilerNewJarToolCall() {
     return Builder.super.modulesCompilerNewJarToolCall().when(verbose, "--verbose");
+  }
+
+  @Override
+  public Optional<String> imageCompilerUsesLauncher(Space space) {
+    if (space.name().equals("main")) return Optional.of("bach=run.bach");
+    return Optional.empty();
   }
 }
