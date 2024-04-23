@@ -8,6 +8,8 @@ package run.bach.workflow;
 import java.io.File;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
@@ -76,6 +78,7 @@ public record Structure(Basics basics, Spaces spaces) {
       String name,
       List<String> requires, // used to compute "--[processor-]module-path"
       int release,
+      Charset encoding,
       List<Launcher> launchers, // of format: <name> + '=' + <module>[/<main-class>]
       DeclaredModules modules,
       Set<Flag> flags) {
@@ -97,7 +100,14 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Space(String name, DeclaredModule... modules) {
-      this(name, List.of(), 0, List.of(), new DeclaredModules(modules), Set.of());
+      this(
+          name,
+          List.of(),
+          0,
+          StandardCharsets.UTF_8,
+          List.of(),
+          new DeclaredModules(modules),
+          Set.of());
     }
 
     public Space(String name, int release, String launcher, DeclaredModule... modules) {
@@ -105,23 +115,26 @@ public record Structure(Basics basics, Spaces spaces) {
           name,
           List.of(),
           release,
+          StandardCharsets.UTF_8,
           List.of(Launcher.of(launcher)),
           new DeclaredModules(modules),
           Set.of());
     }
 
     public Space with(Flag flag) {
-      var flags = this.flags.isEmpty() ? EnumSet.noneOf(Flag.class) : EnumSet.copyOf(this.flags);
+      var flags = flags().isEmpty() ? EnumSet.noneOf(Flag.class) : EnumSet.copyOf(flags());
       flags.add(flag);
-      return new Space(name, requires, release, launchers, modules, flags);
+      return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
     public Space with(DeclaredModule module) {
-      return new Space(name, requires, release, launchers, modules.with(module), flags);
+      var modules = modules().with(module);
+      return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
     public Space with(Launcher launcher) {
-      return new Space(name, requires, release, append(launchers(), launcher), modules, flags);
+      var launchers = append(launchers(), launcher);
+      return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
     public boolean is(Flag flag) {
@@ -146,7 +159,7 @@ public record Structure(Basics basics, Spaces spaces) {
 
     public Space toRuntimeSpace() {
       var requires = Stream.concat(Stream.of(name), requires().stream()).toList();
-      return new Space("runtime", requires, 0, List.of(), new DeclaredModules(), Set.of());
+      return new Space("runtime", requires, 0, encoding, launchers, modules, flags);
     }
   }
 
