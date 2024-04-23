@@ -66,11 +66,9 @@ public interface ModulesCompiler extends Action {
 
   default ToolCall modulesCompilerWithLauncher(ToolCall jar, Space space, DeclaredModule module) {
     if (space.launchers().isEmpty()) return jar;
-    var launcher = space.launchers().getFirst();
-    var name = module.name();
-    if (!launcher.startsWith(name + '/')) return jar;
-    var className = launcher.substring(name.length() + 1);
-    return jar.add("--main-class", className);
+    var launcher = space.launchers().getFirst(); // <name> + '=' + <module>[/<main-class>]
+    if (!launcher.module().equals(module.name())) return jar;
+    return launcher.mainClass().map(main -> jar.add("--main-class", main)).orElse(jar);
   }
 
   default ToolCall modulesCompilerWithBaseClassesAndResources(

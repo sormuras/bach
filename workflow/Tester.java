@@ -68,13 +68,14 @@ public interface Tester extends Action {
     for (var launcher : space.launchers()) testWithSpaceLauncher(space, launcher);
   }
 
-  private void testWithSpaceLauncher(Space space, String launcher) {
+  private void testWithSpaceLauncher(Space space, Structure.Launcher launcher) {
     var folders = workflow().folders();
+    var module = launcher.toModuleAndMainClass();
     var java =
         ToolCall.of("java")
             .add("-ea") // enable assertions
             .add("--module-path", space.toRuntimeSpace().toModulePath(folders).orElse("."))
-            .add("--module", launcher);
+            .add("--module", module);
     testerRunSpaceLauncher(java);
   }
 

@@ -12,10 +12,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import run.bach.Bach;
@@ -74,8 +76,13 @@ public record Structure(Basics basics, Spaces spaces) {
       String name,
       List<String> requires, // used to compute "--[processor-]module-path"
       int release,
-      List<String> launchers,
-      DeclaredModules modules) {
+      List<Launcher> launchers, // of format: <name> + '=' + <module>[/<main-class>]
+      DeclaredModules modules,
+      Set<Flag> flags) {
+
+    public enum Flag {
+      IMAGE
+    }
 
     public Space {
       if (name.isBlank()) throw new IllegalArgumentException("Space name must not be blank");
@@ -90,15 +97,31 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Space(String name, DeclaredModule... modules) {
-      this(name, List.of(), 0, List.of(), new DeclaredModules(modules));
+      this(name, List.of(), 0, List.of(), new DeclaredModules(modules), Set.of());
     }
 
     public Space(String name, int release, String launcher, DeclaredModule... modules) {
-      this(name, List.of(), release, List.of(launcher), new DeclaredModules(modules));
+      this(
+          name,
+          List.of(),
+          release,
+          List.of(Launcher.of(launcher)),
+          new DeclaredModules(modules),
+          Set.of());
+    }
+
+    public Space with(Flag flag) {
+      var flags = this.flags.isEmpty() ? EnumSet.noneOf(Flag.class) : EnumSet.copyOf(this.flags);
+      flags.add(flag);
+      return new Space(name, requires, release, launchers, modules, flags);
     }
 
     public Space with(DeclaredModule module) {
-      return new Space(name, requires, release, launchers, modules.with(module));
+      return new Space(name, requires, release, launchers, modules.with(module), flags);
+    }
+
+    public boolean is(Flag flag) {
+      return flags.contains(flag);
     }
 
     public Optional<Integer> targets() {
@@ -119,7 +142,37 @@ public record Structure(Basics basics, Spaces spaces) {
 
     public Space toRuntimeSpace() {
       var requires = Stream.concat(Stream.of(name), requires().stream()).toList();
-      return new Space("runtime", requires, 0, List.of(), new DeclaredModules());
+      return new Space("runtime", requires, 0, List.of(), new DeclaredModules(), Set.of());
+    }
+  }
+
+  /** {@code <name> + '=' + <module>[/<main-class>]} */
+  public record Launcher(String name, String module, Optional<String> mainClass) {
+    public static Launcher of(String string) {
+      var equals = string.indexOf('=');
+      if (equals == -1 || equals == 0 || equals == string.length() - 1) {
+        throw new IllegalArgumentException(string);
+      }
+      var name = string.substring(0, equals);
+      var moduleAndMainClass = string.substring(equals + 1);
+      var slash = moduleAndMainClass.indexOf('/');
+      if (slash == -1) {
+        return new Launcher(name, moduleAndMainClass, Optional.empty());
+      }
+      if (slash == 0 || slash == moduleAndMainClass.length() - 1) {
+        throw new IllegalArgumentException(moduleAndMainClass);
+      }
+      var module = moduleAndMainClass.substring(0, slash);
+      var mainClass = moduleAndMainClass.substring(slash + 1);
+      return new Launcher(name, module, Optional.of(mainClass));
+    }
+
+    public String toModuleAndMainClass() {
+      return module + mainClass.map(c -> '/' + c).orElse("");
+    }
+
+    public String toNameAndModuleAndMainClass() {
+      return name + '=' + toModuleAndMainClass();
     }
   }
 
@@ -212,8 +265,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
   }
 
-  @SafeVarargs
-  private static <T> List<T> append(List<T> list, T... element) {
+  private static <T> List<T> append(List<T> list, T element) {
     return Stream.concat(list.stream(), Stream.of(element)).toList();
   }
 }

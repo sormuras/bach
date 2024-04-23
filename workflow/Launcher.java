@@ -47,7 +47,7 @@ public interface Launcher extends Action {
     if (launchers.size() > 1) {
       log("Multiple launcher declared in %s space - using first of: %s".formatted(name, launchers));
     }
-    return java.add("--module", launchers.getFirst());
+    return java.add("--module", launchers.getFirst().toModuleAndMainClass());
   }
 
   default ToolCall launcherWithArguments(ToolCall java, String... args) {

@@ -9,7 +9,7 @@ import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 
 /** Translates source files into modular JAR files. */
-public interface Compiler extends Action, ClassesCompiler, ModulesCompiler {
+public interface Compiler extends Action, ClassesCompiler, ModulesCompiler, ImageCompiler {
   /** Translates source files into modular JAR files for all module spaces. */
   default void compile() {
     var spaces = compilerUsesSpaces();
@@ -20,7 +20,9 @@ public interface Compiler extends Action, ClassesCompiler, ModulesCompiler {
     }
     var size = names.size();
     say("Compiling %d module space%s %s ...".formatted(size, size == 1 ? "" : "s", names));
-    spaces.forEach(this::compile);
+    for (Space space : spaces) {
+      compile(space);
+    }
   }
 
   /** Translates source files into modular JAR files for the specified module space. */
@@ -34,9 +36,16 @@ public interface Compiler extends Action, ClassesCompiler, ModulesCompiler {
     log("Compiling %d module%s in %s space...".formatted(size, size == 1 ? "" : "s", name));
     compileClasses(space);
     compileModules(space);
+    if (compilerShouldCreateCustomRuntimeImageForSpace(space)) {
+      compileImage(space);
+    }
   }
 
   default Spaces compilerUsesSpaces() {
     return workflow().structure().spaces();
+  }
+
+  default boolean compilerShouldCreateCustomRuntimeImageForSpace(Space space) {
+    return space.is(Space.Flag.IMAGE);
   }
 }
