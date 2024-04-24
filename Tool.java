@@ -6,6 +6,7 @@
 package run.bach;
 
 import java.io.PrintWriter;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,6 +42,11 @@ public record Tool(Identifier identifier, ToolProvider provider) {
       var version = String.valueOf(Runtime.version().feature());
       var identifier = Identifier.of("jdk.home/bin/" + name + '@' + version);
       return Tool.of(identifier, program.get());
+    }
+    // Try with loading a tool provider from modules in lib/ directory.
+    var loaded = ToolFinder.of(ModuleFinder.of(Path.of("lib"))).findTool(name);
+    if (loaded.isPresent()) {
+      return loaded.get();
     }
     // Try with treating the name argument as a URI.
     var installer = ToolInstaller.find(name);
