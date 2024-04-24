@@ -38,7 +38,7 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
             List.of("main"),
             0,
             StandardCharsets.UTF_8,
-            List.of(),
+            List.of(Structure.Launcher.of("tests=test.bach/test.bach.Tests")),
             new DeclaredModules(
                 new DeclaredModule(
                     Path.of("src/test.bach"), Path.of("src/test.bach/test/java/module-info.java")),
@@ -92,5 +92,10 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
   public Optional<String> imageCompilerUsesLauncher(Space space) {
     if (space.name().equals("main")) return Optional.of("bach=run.bach");
     return Optional.empty();
+  }
+
+  @Override
+  public void junitTesterRun(ToolCall junit) {
+    run(junit.add("--details", "none").add("--disable-banner").add("--disable-ansi-colors"));
   }
 }

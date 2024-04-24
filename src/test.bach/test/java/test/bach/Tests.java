@@ -4,13 +4,13 @@ import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
 import run.bach.ToolSpace;
 
-public record BachTests(String name) implements ToolProvider {
+public record Tests(String name) implements ToolProvider {
   public static void main(String... args) {
-    System.exit(new BachTests().run(System.out, System.err, args));
+    System.exit(new Tests().run(System.out, System.err, args));
   }
 
-  public BachTests() {
-    this(BachTests.class.getName());
+  public Tests() {
+    this(Tests.class.getName());
   }
 
   @Override
