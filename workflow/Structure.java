@@ -27,6 +27,7 @@ import run.bach.internal.ModuleDescriptorSupport;
 import run.bach.internal.ModuleDescriptorSupport.ModuleInfoFinder;
 import run.bach.internal.ModuleDescriptorSupport.ModuleInfoReference;
 import run.bach.internal.ModuleSourcePathSupport;
+import run.bach.internal.ModulesSupport;
 
 /** Define Bach's project structure. */
 public record Structure(Basics basics, Spaces spaces) {
@@ -155,6 +156,19 @@ public record Structure(Basics basics, Spaces spaces) {
               .toList();
       if (elements.isEmpty()) return Optional.empty();
       return Optional.of(String.join(File.pathSeparator, elements));
+    }
+
+    public ModuleLayer toModuleLayer(Bach.Folders folders, String module) {
+      var finder =
+          ModuleFinder.compose(
+              ModuleFinder.of(folders.out(name(), "modules", module + ".jar")),
+              ModuleFinder.of(
+                  requires().stream()
+                      .map(required -> folders.out(required, "modules"))
+                      .toArray(Path[]::new)),
+              ModuleFinder.of(folders.out(name(), "modules")),
+              ModuleFinder.of(folders.root("lib")));
+      return ModulesSupport.buildModuleLayer(finder, module);
     }
 
     public Space toRuntimeSpace() {
