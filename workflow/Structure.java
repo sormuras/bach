@@ -40,6 +40,18 @@ public record Structure(Basics basics, Spaces spaces) {
     return basics.name() + ' ' + basics.version();
   }
 
+  public Structure withName(String name) {
+    return new Structure(basics.withName(name), spaces);
+  }
+
+  public Structure withVersion(String version) {
+    return new Structure(basics.withVersion(version), spaces);
+  }
+
+  public Structure withTimestamp(String zonedDateTime) {
+    return new Structure(basics.withTimestamp(zonedDateTime), spaces);
+  }
+
   public Structure with(Space space) {
     return new Structure(basics, spaces.with(space));
   }
@@ -48,6 +60,22 @@ public record Structure(Basics basics, Spaces spaces) {
   public record Basics(String name, String version, ZonedDateTime timestamp) {
     public Basics(String name, String version) {
       this(name, version, ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+    }
+
+    public Basics withName(String name) {
+      return new Basics(name, version, timestamp);
+    }
+
+    public Basics withVersion(String version) {
+      return new Basics(name, version, timestamp);
+    }
+
+    public Basics withTimestamp(String zonedDateTime) {
+      return withTimestamp(ZonedDateTime.parse(zonedDateTime));
+    }
+
+    public Basics withTimestamp(ZonedDateTime timestamp) {
+      return new Basics(name, version, timestamp);
     }
   }
 
@@ -121,6 +149,10 @@ public record Structure(Basics basics, Spaces spaces) {
 
     public Space withEncoding(Charset encoding) {
       return new Space(name, requires, release, encoding, launchers, modules, flags);
+    }
+
+    public Space withCompileRuntimeImage() {
+      return with(Flag.COMPILE_RUNTIME_IMAGE);
     }
 
     public Space with(Flag flag) {
