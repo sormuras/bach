@@ -50,7 +50,7 @@ public interface ToolTester extends Action {
     for (var provider : providers) {
       var tool = Tool.of(provider);
       var call = ToolCall.of(tool);
-      toolTesterRun(call);
+      toolTesterRunToolCall(call);
     }
   }
 
@@ -72,7 +72,7 @@ public interface ToolTester extends Action {
     return include;
   }
 
-  default void toolTesterRun(ToolCall call) {
+  default void toolTesterRunToolCall(ToolCall call) {
     run(call);
   }
 }

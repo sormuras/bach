@@ -10,11 +10,11 @@ public interface Builder extends Action, Cleaner, Compiler, Restorer, Tester {
     var description = builderUsesProjectDescription();
     say("Building %s ...".formatted(description));
     if (builderDoesCleanAtTheBeginning()) {
-      clean();
+      clean(); // output folders
     }
-    restore();
-    compile();
-    test();
+    restore(); // required and missing assets, aka "go offline"
+    compile(); // translate module space source files into classes, modular JAR files, and an image
+    test(); // execute programs using artifacts compiled artifacts
     say("Build of %s completed.".formatted(description));
   }
 

@@ -26,8 +26,7 @@ public interface Cleaner extends Action {
   }
 
   default List<Path> cleanerUsesPathsForDeletion() {
-    var folders = workflow().folders();
-    return List.of(folders.out());
+    return List.of(workflow().folders().out());
   }
 
   private void delete(Path file) {

@@ -38,7 +38,7 @@ public interface JavaTester extends Action {
     java = javaTesterWithModulePath(java);
     java = javaTesterWithEnableAssertions(java);
     java = javaTesterWithModule(java, launcher);
-    javaTesterRun(java);
+    javaTesterRunJavaToolCall(java);
   }
 
   default List<Launcher> javaTesterUsesLaunchersForTesting() {
@@ -63,7 +63,7 @@ public interface JavaTester extends Action {
     return java.add("--module", launcher.toModuleAndMainClass());
   }
 
-  default void javaTesterRun(ToolCall java) {
+  default void javaTesterRunJavaToolCall(ToolCall java) {
     run(java);
   }
 }

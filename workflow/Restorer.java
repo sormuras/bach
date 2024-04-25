@@ -21,19 +21,31 @@ import run.bach.workflow.Structure.DeclaredModules;
 import run.bach.workflow.Structure.Space;
 
 public interface Restorer extends Action {
+  // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
+  InheritableThreadLocal<ModuleLookupTable> TABLE = new InheritableThreadLocal<>();
+
+  private ModuleLookupTable table() {
+    return TABLE.get();
+  }
+
   default void restore() {
-    var table = restorerUsesModuleLookupTable();
-    say("Restoring required modules ...");
-    restoreModules(table, restorerUsesModuleNames());
-    say("Restoring missing modules recursively ...");
-    restoreMissingModules(table);
+    if (TABLE.get() != null) throw new IllegalStateException();
+    try {
+      TABLE.set(restorerUsesModuleLookupTable());
+      say("Restoring required modules ...");
+      restoreModules(restorerUsesModuleNames());
+      say("Restoring missing modules recursively ...");
+      restoreMissingModules();
+    } finally {
+      TABLE.remove();
+    }
   }
 
   default ModuleLookupTable restorerUsesModuleLookupTable() {
     return ModuleLookupTable.of(restorerUsesLibraryDirectory());
   }
 
-  default void restoreModules(ModuleLookupTable externals, Collection<String> names) {
+  default void restoreModules(Collection<String> names) {
     var lib = restorerUsesLibraryDirectory();
     try {
       with_next_module:
@@ -42,7 +54,7 @@ public interface Restorer extends Action {
           log("Module %s is already present".formatted(name));
           continue; // with next module
         }
-        for (var locator : externals.lookups()) {
+        for (var locator : table().lookups()) {
           var target = lib.resolve(name + ".jar");
           var source = locator.lookup(name);
           if (source == null) continue;
@@ -57,7 +69,7 @@ public interface Restorer extends Action {
     }
   }
 
-  default void restoreMissingModules(ModuleLookupTable locators) {
+  default void restoreMissingModules() {
     var lib = restorerUsesLibraryDirectory();
     var loaded = new TreeSet<String>();
     var difference = new TreeSet<String>();
@@ -70,7 +82,7 @@ public interface Restorer extends Action {
       difference.retainAll(missing);
       if (!difference.isEmpty()) throw new Error("Still missing?! " + difference);
       difference.addAll(missing);
-      restoreModules(locators, missing);
+      restoreModules(missing);
       loaded.addAll(missing);
       missing.forEach(this::log);
     }

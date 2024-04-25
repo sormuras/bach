@@ -6,50 +6,70 @@
 package run.bach.workflow;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 import run.bach.ToolCall;
 import run.bach.workflow.Structure.DeclaredModule;
 import run.bach.workflow.Structure.Space;
 
 /** Package compiled classes and resources into modular Java archive files. */
 public interface ModulesCompiler extends Action {
-  default void compileModules(Space space) {
-    var compilerCalls = new ArrayList<ToolCall>(); // javac --release N ...
-    var archiverCalls = new ArrayList<ToolCall>(); // jar --create --file ...
-    var modules = workflow().folders().out(space.name(), "modules");
-    for (var module : space.modules()) {
-      var jar = modulesCompilerUsesJarToolCall();
-      jar = jar.add("--create");
-      jar = modulesCompilerWithFile(jar, modules, module);
-      jar = modulesCompilerWithModuleVersion(jar);
-      jar = modulesCompilerWithDate(jar);
-      jar = modulesCompilerWithLauncher(jar, space, module);
-      jar = modulesCompilerWithBaseClassesAndResources(jar, space, module);
-      jar = modulesCompilerWithClassesOfPatchedModule(jar, space, module);
-      jar = modulesCompilerWithTargetedClassesAndResources(jar, space, module, compilerCalls);
-      archiverCalls.add(jar);
-    }
+  // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
+  InheritableThreadLocal<Space> SPACE = new InheritableThreadLocal<>();
+  InheritableThreadLocal<DeclaredModule> MODULE = new InheritableThreadLocal<>();
 
-    compilerCalls.stream().parallel().forEach(this::modulesCompilerRunJavacToolCall);
-    archiverCalls.stream().parallel().forEach(this::modulesCompilerRunJarToolCall);
+  private Space space() {
+    return SPACE.get();
+  }
+
+  private DeclaredModule module() {
+    return MODULE.get();
+  }
+
+  default void compileModules(Space space) {
+    if (SPACE.get() != null) throw new IllegalStateException();
+    if (MODULE.get() != null) throw new IllegalStateException();
+    try {
+      SPACE.set(space);
+      var compilerCalls = new ArrayList<ToolCall>(); // javac --release N ...
+      var archiverCalls = new ArrayList<ToolCall>(); // jar --create --file ...
+      for (var module : space.modules()) {
+        MODULE.set(module);
+        var jar = modulesCompilerUsesJarToolCall();
+        jar = modulesCompilerWithCreateMode(jar);
+        jar = modulesCompilerWithFile(jar);
+        jar = modulesCompilerWithModuleVersion(jar);
+        jar = modulesCompilerWithDate(jar);
+        jar = modulesCompilerWithLauncher(jar);
+        jar = modulesCompilerWithBaseClassesAndResources(jar);
+        jar = modulesCompilerWithClassesOfPatchedModule(jar);
+        jar = modulesCompilerWithTargetedClassesAndResources(jar, compilerCalls::add);
+        archiverCalls.add(jar);
+      }
+      compilerCalls.stream().parallel().forEach(this::modulesCompilerRunJavacToolCall);
+      archiverCalls.stream().parallel().forEach(this::modulesCompilerRunJarToolCall);
+    } finally {
+      SPACE.remove();
+      MODULE.remove();
+    }
   }
 
   default ToolCall modulesCompilerUsesJarToolCall() {
     return ToolCall.of("jar");
   }
 
-  default void modulesCompilerRunJarToolCall(ToolCall call) {
-    run(call);
+  default ToolCall modulesCompilerUsesJavacToolCall() {
+    return ToolCall.of("javac");
   }
 
-  default void modulesCompilerRunJavacToolCall(ToolCall call) {
-    run(call);
+  default ToolCall modulesCompilerWithCreateMode(ToolCall jar) {
+    return jar.add("--create");
   }
 
-  default ToolCall modulesCompilerWithFile(ToolCall jar, Path modules, DeclaredModule module) {
-    var file = modules.resolve(module.name() + ".jar");
+  default ToolCall modulesCompilerWithFile(ToolCall jar) {
+    var modules = workflow().folders().out(space().name(), "modules");
+    var file = modules.resolve(module().name() + ".jar");
     return jar.add("--file", file);
   }
 
@@ -64,15 +84,17 @@ public interface ModulesCompiler extends Action {
     return jar.add("--date", timestamp);
   }
 
-  default ToolCall modulesCompilerWithLauncher(ToolCall jar, Space space, DeclaredModule module) {
+  default ToolCall modulesCompilerWithLauncher(ToolCall jar) {
+    var space = space();
     if (space.launchers().isEmpty()) return jar;
     var launcher = space.launchers().getFirst(); // <name> + '=' + <module>[/<main-class>]
-    if (!launcher.module().equals(module.name())) return jar;
+    if (!launcher.module().equals(module().name())) return jar;
     return launcher.mainClass().map(main -> jar.add("--main-class", main)).orElse(jar);
   }
 
-  default ToolCall modulesCompilerWithBaseClassesAndResources(
-      ToolCall jar, Space space, DeclaredModule module) {
+  default ToolCall modulesCompilerWithBaseClassesAndResources(ToolCall jar) {
+    var space = space();
+    var module = module();
     var folders = workflow().folders();
     var classes = folders.out(space.name(), "classes");
     var release0 = space.targets();
@@ -88,12 +110,11 @@ public interface ModulesCompiler extends Action {
     return jar;
   }
 
-  default ToolCall modulesCompilerWithClassesOfPatchedModule(
-      ToolCall jar, Space space, DeclaredModule module) {
+  default ToolCall modulesCompilerWithClassesOfPatchedModule(ToolCall jar) {
     var folders = workflow().folders();
     var spaces = workflow().structure().spaces();
-    var name = module.name();
-    for (var requires : space.requires()) {
+    var name = module().name();
+    for (var requires : space().requires()) {
       var required = spaces.space(requires);
       if (required.modules().find(name).isPresent()) {
         var javaR = "java-" + required.targets().orElse(Runtime.version().feature());
@@ -104,7 +125,9 @@ public interface ModulesCompiler extends Action {
   }
 
   default ToolCall modulesCompilerWithTargetedClassesAndResources(
-      ToolCall jar, Space space, DeclaredModule module, ArrayList<ToolCall> releases) {
+      ToolCall jar, Consumer<ToolCall> consumer) {
+    var space = space();
+    var module = module();
     var name = module.name();
     var classes = workflow().folders().out(space.name(), "classes");
     var release0 = space.targets();
@@ -114,7 +137,8 @@ public interface ModulesCompiler extends Action {
       var folders = module.targeted().get(release);
       for (var sources : folders.sources()) {
         var classesR = classes.resolve("java-" + release).resolve(name);
-        var javac = ToolCall.of("javac").add("--release", release);
+        var javac = modulesCompilerUsesJavacToolCall();
+        javac = javac.add("--release", release);
         var modulePath = space.toModulePath(workflow().folders());
         if (modulePath.isPresent()) {
           javac = javac.add("--module-path", modulePath.get());
@@ -126,7 +150,7 @@ public interface ModulesCompiler extends Action {
                 .add("-implicit:none")
                 .add("-d", classesR)
                 .addFiles(sources, "**.java");
-        releases.add(javac);
+        consumer.accept(javac);
         jar = jar.add("--release", release).add("-C", classesR, ".");
       }
       var needsReleaseArgument = folders.sources().isEmpty() && !folders.resources().isEmpty();
@@ -136,5 +160,13 @@ public interface ModulesCompiler extends Action {
       }
     }
     return jar;
+  }
+
+  default void modulesCompilerRunJarToolCall(ToolCall jar) {
+    run(jar);
+  }
+
+  default void modulesCompilerRunJavacToolCall(ToolCall javac) {
+    run(javac);
   }
 }

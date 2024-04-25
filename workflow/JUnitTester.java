@@ -53,7 +53,7 @@ public interface JUnitTester extends Action {
     var junit = junitTestUsesJUnitToolCall(tool);
     junit = junitTesterUsesSelector(junit, module);
     junit = junitTesterUsesReportsDirectory(junit, module);
-    junitTesterRun(junit);
+    junitTesterRunJUnitToolCall(junit);
   }
 
   default List<String> junitTesterUsesModuleNamesForTesting() {
@@ -89,7 +89,7 @@ public interface JUnitTester extends Action {
     return junit.add("--reports-dir", reports);
   }
 
-  default void junitTesterRun(ToolCall junit) {
+  default void junitTesterRunJUnitToolCall(ToolCall junit) {
     run(junit);
   }
 }
