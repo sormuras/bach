@@ -8,6 +8,7 @@ package run.bach.workflow;
 import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.function.Consumer;
 import run.bach.ToolCall;
 import run.bach.workflow.Structure.DeclaredModule;
@@ -19,12 +20,12 @@ public interface ModulesCompiler extends Action {
   InheritableThreadLocal<Space> SPACE = new InheritableThreadLocal<>();
   InheritableThreadLocal<DeclaredModule> MODULE = new InheritableThreadLocal<>();
 
-  private Space space() {
-    return SPACE.get();
+  static Space space() {
+    return Optional.ofNullable(SPACE.get()).orElseThrow(IllegalStateException::new);
   }
 
-  private DeclaredModule module() {
-    return MODULE.get();
+  static DeclaredModule module() {
+    return Optional.ofNullable(MODULE.get()).orElseThrow(IllegalStateException::new);
   }
 
   default void compileModules(Space space) {

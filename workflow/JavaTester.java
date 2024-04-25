@@ -6,6 +6,7 @@
 package run.bach.workflow;
 
 import java.util.List;
+import java.util.Optional;
 import run.bach.ToolCall;
 import run.bach.workflow.Structure.Launcher;
 import run.bach.workflow.Structure.Space;
@@ -14,8 +15,8 @@ public interface JavaTester extends Action {
   // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
   InheritableThreadLocal<Space> SPACE = new InheritableThreadLocal<>();
 
-  private Space space() {
-    return SPACE.get();
+  static Space space() {
+    return Optional.ofNullable(SPACE.get()).orElseThrow(IllegalStateException::new);
   }
 
   default void testViaJava(Space space) {

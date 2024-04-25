@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import run.bach.external.ModuleLookupTable;
@@ -24,8 +25,8 @@ public interface Restorer extends Action {
   // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
   InheritableThreadLocal<ModuleLookupTable> TABLE = new InheritableThreadLocal<>();
 
-  private ModuleLookupTable table() {
-    return TABLE.get();
+  static ModuleLookupTable table() {
+    return Optional.ofNullable(TABLE.get()).orElseThrow(IllegalStateException::new);
   }
 
   default void restore() {

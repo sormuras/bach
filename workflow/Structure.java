@@ -85,7 +85,7 @@ public record Structure(Basics basics, Spaces spaces) {
       Set<Flag> flags) {
 
     public enum Flag {
-      IMAGE
+      COMPILE_RUNTIME_IMAGE
     }
 
     public Space {
