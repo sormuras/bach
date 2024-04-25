@@ -10,6 +10,8 @@ import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
+import run.bach.workflow.ClassesCompiler;
+import run.bach.workflow.ImageCompiler;
 import run.bach.workflow.Starter;
 import run.bach.workflow.Structure;
 import run.bach.workflow.Structure.Basics;
@@ -32,7 +34,7 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
                 "bach=run.bach/run.bach.Main",
                 new DeclaredModule(
                     Path.of(".bach/src/run.bach"), Path.of(".bach/src/run.bach/module-info.java")))
-            .with(Space.Flag.IMAGE);
+            .with(Space.Flag.COMPILE_RUNTIME_IMAGE);
     var test =
         new Space(
             "test",
@@ -66,11 +68,11 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
   }
 
   @Override
-  public void compileClasses(Space space) {
-    Builder.super.compileClasses(space);
+  public void classesCompilerRunJavacToolCall(ToolCall javac) {
+    run(javac.add("-X" + "lint:all").add("-W" + "error"));
     // Delete all local programs in out/main/classes/*/run.bach/run/* directory
-    if (space.name().equals("main")) {
-      var dir = classesCompilerUsesDestinationDirectory(space).resolve("run.bach", "run");
+    if (ClassesCompiler.space().name().equals("main")) {
+      var dir = classesCompilerUsesDestinationDirectory().resolve("run.bach", "run");
       try (var stream = Files.newDirectoryStream(dir, Files::isRegularFile)) {
         for (var file : stream) Files.deleteIfExists(file);
       } catch (Exception exception) {
@@ -80,23 +82,18 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
   }
 
   @Override
-  public void classesCompilerRunJavacToolCall(ToolCall javac) {
-    run(javac.add("-X" + "lint:all").add("-W" + "error"));
-  }
-
-  @Override
   public ToolCall modulesCompilerUsesJarToolCall() {
     return Builder.super.modulesCompilerUsesJarToolCall().when(verbose, "--verbose");
   }
 
   @Override
-  public Optional<String> imageCompilerUsesLauncher(Space space) {
-    if (space.name().equals("main")) return Optional.of("bach=run.bach");
+  public Optional<String> imageCompilerUsesLauncher() {
+    if (ImageCompiler.space().name().equals("main")) return Optional.of("bach=run.bach");
     return Optional.empty();
   }
 
   @Override
-  public void junitTesterRun(ToolCall junit) {
+  public void junitTesterRunJUnitToolCall(ToolCall junit) {
     run(junit.add("--details", "none").add("--disable-banner").add("--disable-ansi-colors"));
   }
 }
