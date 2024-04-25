@@ -10,16 +10,17 @@ import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
-import run.bach.workflow.Launcher;
+import run.bach.workflow.Starter;
 import run.bach.workflow.Structure;
 import run.bach.workflow.Structure.Basics;
 import run.bach.workflow.Structure.DeclaredModule;
 import run.bach.workflow.Structure.DeclaredModules;
+import run.bach.workflow.Structure.Launcher;
 import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
 
-public record Project(boolean verbose, Workflow workflow) implements Builder, Launcher {
+public record Project(boolean verbose, Workflow workflow) implements Builder, Starter {
   static Project ofCurrentWorkingDirectory() {
     var verbose = Boolean.getBoolean("-Debug".substring(2));
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
@@ -38,7 +39,7 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, La
             List.of("main"),
             0,
             StandardCharsets.UTF_8,
-            List.of(Structure.Launcher.of("tests=test.bach/test.bach.Tests")),
+            List.of(Launcher.of("tests=test.bach/test.bach.Tests")),
             new DeclaredModules(
                 new DeclaredModule(
                     Path.of("src/test.bach"), Path.of("src/test.bach/test/java/module-info.java")),
