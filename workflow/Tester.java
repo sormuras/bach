@@ -22,8 +22,9 @@ public interface Tester extends Action, JavaTester, JUnitTester, ToolTester {
   }
 
   default List<Space> testerUsesSpacesForTesting() {
-    var test = workflow().structure().spaces().space("test");
-    return List.of(test);
+    return workflow().structure().spaces().list().stream()
+        .filter(space -> space.name().equals("test"))
+        .toList();
   }
 
   default void test(Space space) {
