@@ -77,7 +77,7 @@ public record Structure(Basics basics, Spaces spaces) {
 
   public record Space(
       String name,
-      List<String> requires, // used to compute "--[processor-]module-path"
+      Spaces requires, // used to compute "--[processor-]module-path"
       int release,
       Charset encoding,
       List<Launcher> launchers, // of format: <name> + '=' + <module>[/<main-class>]
@@ -100,26 +100,27 @@ public record Structure(Basics basics, Spaces spaces) {
       if (modules == null) throw new IllegalArgumentException("Space modules must not be null");
     }
 
-    public Space(String name, DeclaredModule... modules) {
+    public Space(String name, Space... requires) {
       this(
           name,
-          List.of(),
+          new Spaces(requires),
           0,
           StandardCharsets.UTF_8,
           List.of(),
-          new DeclaredModules(modules),
+          new DeclaredModules(),
           Set.of());
     }
 
-    public Space(String name, int release, String launcher, DeclaredModule... modules) {
-      this(
-          name,
-          List.of(),
-          release,
-          StandardCharsets.UTF_8,
-          List.of(Launcher.of(launcher)),
-          new DeclaredModules(modules),
-          Set.of());
+    public Space withTargetingJavaRelease(int release) {
+      return new Space(name, requires, release, encoding, launchers, modules, flags);
+    }
+
+    public Space withEncoding(String charset) {
+      return withEncoding(Charset.forName(charset));
+    }
+
+    public Space withEncoding(Charset encoding) {
+      return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
     public Space with(Flag flag) {
@@ -128,9 +129,17 @@ public record Structure(Basics basics, Spaces spaces) {
       return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
+    public Space withModule(String content, String info) {
+      return with(new DeclaredModule(Path.of(content), Path.of(info)));
+    }
+
     public Space with(DeclaredModule module) {
       var modules = modules().with(module);
       return new Space(name, requires, release, encoding, launchers, modules, flags);
+    }
+
+    public Space withLauncher(String launcher) {
+      return with(Launcher.of(launcher));
     }
 
     public Space with(Launcher launcher) {
@@ -148,7 +157,7 @@ public record Structure(Basics basics, Spaces spaces) {
 
     public Optional<String> toModulePath(Bach.Folders folders) {
       var externalModules = Stream.of(folders.root("lib"));
-      var requiredModules = requires.stream().map(required -> folders.out(required, "modules"));
+      var requiredModules = requires.names().stream().map(name -> folders.out(name, "modules"));
       var elements =
           Stream.concat(requiredModules, externalModules)
               .filter(Files::isDirectory)
@@ -163,7 +172,7 @@ public record Structure(Basics basics, Spaces spaces) {
           ModuleFinder.compose(
               ModuleFinder.of(folders.out(name(), "modules", module + ".jar")),
               ModuleFinder.of(
-                  requires().stream()
+                  requires().names().stream()
                       .map(required -> folders.out(required, "modules"))
                       .toArray(Path[]::new)),
               ModuleFinder.of(folders.out(name(), "modules")),
@@ -172,7 +181,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Space toRuntimeSpace() {
-      var requires = Stream.concat(Stream.of(name), requires().stream()).toList();
+      var requires = new Spaces(prepend(this, requires().list()));
       return new Space("runtime", requires, 0, encoding, launchers, modules, flags);
     }
   }
@@ -296,7 +305,11 @@ public record Structure(Basics basics, Spaces spaces) {
     }
   }
 
-  private static <T> List<T> append(List<T> list, T element) {
-    return Stream.concat(list.stream(), Stream.of(element)).toList();
+  private static <T> List<T> append(List<T> list, T tail) {
+    return Stream.concat(list.stream(), Stream.of(tail)).toList();
+  }
+
+  private static <T> List<T> prepend(T head, List<T> list) {
+    return Stream.concat(Stream.of(head), list.stream()).toList();
   }
 }

@@ -115,7 +115,7 @@ public interface ModulesCompiler extends Action {
     var folders = workflow().folders();
     var spaces = workflow().structure().spaces();
     var name = module().name();
-    for (var requires : space().requires()) {
+    for (var requires : space().requires().names()) {
       var required = spaces.space(requires);
       if (required.modules().find(name).isPresent()) {
         var javaR = "java-" + required.targets().orElse(Runtime.version().feature());

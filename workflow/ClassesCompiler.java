@@ -73,7 +73,7 @@ public interface ClassesCompiler extends Action {
     for (var declaration : space().modules().list()) {
       var module = declaration.name();
       var patches = new ArrayList<String>();
-      for (var requires : space().requires()) {
+      for (var requires : space().requires().names()) {
         if (spaces.space(requires).modules().find(module).isEmpty()) {
           continue;
         }

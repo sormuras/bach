@@ -6,6 +6,7 @@
 package run.bach.workflow;
 
 import run.bach.Bach;
+import run.bach.ToolFinder;
 import run.bach.ToolRunner;
 import run.bach.internal.PathSupport;
 
@@ -22,5 +23,13 @@ public record Workflow(Bach.Folders folders, Structure structure, ToolRunner run
 
   public Workflow with(Structure.Space space) {
     return new Workflow(folders, structure.with(space), runner);
+  }
+
+  public Workflow with(ToolFinder finder) {
+    return with(ToolRunner.of(finder));
+  }
+
+  public Workflow with(ToolRunner runner) {
+    return new Workflow(folders, structure, runner);
   }
 }
