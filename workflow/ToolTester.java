@@ -5,6 +5,8 @@
 
 package run.bach.workflow;
 
+import java.lang.module.FindException;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.spi.ToolProvider;
 import run.bach.Tool;
@@ -15,15 +17,20 @@ public interface ToolTester extends Action {
   // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
   InheritableThreadLocal<Space> SPACE = new InheritableThreadLocal<>();
 
+  private Space space() {
+    return SPACE.get();
+  }
+
   default void testViaTool(Space space) {
+    if (SPACE.get() != null) throw new IllegalStateException();
     try {
       SPACE.set(space);
-      var names = space.modules().names();
+      var names = toolTesterUsesModuleNamesForTesting();
       for (var name : names) {
-        var layer = space.toModuleLayer(workflow().folders(), name);
-        var module = layer.findModule(name).orElseThrow(AssertionError::new);
-        if (toolTesterDoesCheckModule(module)) {
-          say("Testing via running tools %s provides ...".formatted(name));
+        var layer = toolTesterUsesModuleLayerToFindModule(name);
+        var module = layer.findModule(name).orElseThrow(() -> new FindException(name));
+        if (toolTesterDoesHandleModule(module)) {
+          say("Testing via running tools provided by module %s ...".formatted(name));
           testViaTool(module);
         }
       }
@@ -34,7 +41,6 @@ public interface ToolTester extends Action {
 
   default void testViaTool(Module module) {
     var layer = module.getLayer();
-    toolTesterDoesEnableAssertions(module);
     var providers =
         ServiceLoader.load(layer, ToolProvider.class).stream()
             .filter(service -> service.type().getModule().getLayer() == layer)
@@ -48,13 +54,22 @@ public interface ToolTester extends Action {
     }
   }
 
-  default boolean toolTesterDoesCheckModule(Module module) {
-    return module.getDescriptor().provides().stream()
-        .anyMatch(provides -> provides.service().equals(ToolProvider.class.getName()));
+  default List<String> toolTesterUsesModuleNamesForTesting() {
+    return space().modules().names();
   }
 
-  default void toolTesterDoesEnableAssertions(Module module) {
-    module.getClassLoader().setDefaultAssertionStatus(true);
+  default ModuleLayer toolTesterUsesModuleLayerToFindModule(String module) {
+    return space().toModuleLayer(workflow().folders(), module);
+  }
+
+  default boolean toolTesterDoesHandleModule(Module module) {
+    var include =
+        module.getDescriptor().provides().stream()
+            .anyMatch(provides -> provides.service().equals(ToolProvider.class.getName()));
+    if (include) {
+      module.getClassLoader().setDefaultAssertionStatus(true);
+    }
+    return include;
   }
 
   default void toolTesterRun(ToolCall call) {
