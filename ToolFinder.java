@@ -35,7 +35,7 @@ public interface ToolFinder {
    *
    * @param name the name of the tool to lookup
    */
-  default Optional<Tool> findTool(String name) {
+  default Optional<Tool> find(String name) {
     return tools().stream().filter(tool -> tool.identifier().matches(name)).findFirst();
   }
 
@@ -45,8 +45,8 @@ public interface ToolFinder {
    * @param name the name of the tool to lookup
    * @throws ToolNotFoundException when a tool could not be found the given name
    */
-  default Tool findToolOrElseThrow(String name) {
-    var tool = findTool(name);
+  default Tool get(String name) {
+    var tool = find(name);
     if (tool.isPresent()) return tool.get();
     throw new ToolNotFoundException("Tool not found for name: " + name);
   }
@@ -113,9 +113,9 @@ public interface ToolFinder {
     }
 
     @Override
-    public Optional<Tool> findTool(String name) {
+    public Optional<Tool> find(String name) {
       for (var finder : finders) {
-        var tool = finder.findTool(name);
+        var tool = finder.find(name);
         if (tool.isPresent()) return tool;
       }
       return Optional.empty();
@@ -133,7 +133,7 @@ public interface ToolFinder {
     }
 
     @Override
-    public Optional<Tool> findTool(String name) {
+    public Optional<Tool> find(String name) {
       try {
         return Optional.of(Tool.of(name));
       } catch (ToolNotFoundException exception) {

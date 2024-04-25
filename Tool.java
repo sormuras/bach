@@ -44,7 +44,7 @@ public record Tool(Identifier identifier, ToolProvider provider) {
       return Tool.of(identifier, program.get());
     }
     // Try with loading a tool provider from modules in lib/ directory.
-    var loaded = ToolFinder.of(ModuleFinder.of(Path.of("lib"))).findTool(name);
+    var loaded = ToolFinder.of(ModuleFinder.of(Path.of("lib"))).find(name);
     if (loaded.isPresent()) {
       return loaded.get();
     }

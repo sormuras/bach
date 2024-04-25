@@ -6,7 +6,6 @@
 package run.bach;
 
 import java.lang.System.Logger.Level;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -38,10 +37,6 @@ public interface ToolRunner {
   }
 
   ToolRun run(ToolCall call);
-
-  default Optional<Tool> findTool(String id) {
-    return Optional.empty();
-  }
 
   default void log(Level level, String message) {
     System.out.printf("[%s] %s".formatted(level.name().charAt(0), message));

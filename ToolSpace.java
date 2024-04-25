@@ -12,7 +12,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.System.Logger.Level;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 import run.bach.internal.FlightRecorderEvent;
 
@@ -87,11 +86,6 @@ public class ToolSpace implements ToolRunner {
   }
 
   @Override
-  public Optional<Tool> findTool(String id) {
-    return finder.findTool(id);
-  }
-
-  @Override
   public void log(Level level, String message) {
     // TODO Fire flight recorder event.
     if (silent()) return;
@@ -119,7 +113,7 @@ public class ToolSpace implements ToolRunner {
 
   protected Tool computeToolInstance(ToolCall call) {
     return switch (call.tool()) {
-      case ByName(String name) -> finder.findToolOrElseThrow(name);
+      case ByName(String name) -> finder.get(name);
       case Direct(Tool tool) -> tool;
     };
   }
