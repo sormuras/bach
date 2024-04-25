@@ -1,11 +1,7 @@
 package run;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
@@ -15,9 +11,6 @@ import run.bach.workflow.ImageCompiler;
 import run.bach.workflow.Starter;
 import run.bach.workflow.Structure;
 import run.bach.workflow.Structure.Basics;
-import run.bach.workflow.Structure.DeclaredModule;
-import run.bach.workflow.Structure.DeclaredModules;
-import run.bach.workflow.Structure.Launcher;
 import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
@@ -28,27 +21,16 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
     var basics = new Basics("Bach", "2024-ea");
     var main =
-        new Space(
-                "main",
-                22,
-                "bach=run.bach/run.bach.Main",
-                new DeclaredModule(
-                    Path.of(".bach/src/run.bach"), Path.of(".bach/src/run.bach/module-info.java")))
+        new Space("main")
+            .withTargetingJavaRelease(22)
+            .withLauncher("bach=run.bach/run.bach.Main")
+            .withModule(".bach/src/run.bach", ".bach/src/run.bach/module-info.java")
             .with(Space.Flag.COMPILE_RUNTIME_IMAGE);
     var test =
-        new Space(
-            "test",
-            List.of("main"),
-            0,
-            StandardCharsets.UTF_8,
-            List.of(Launcher.of("tests=test.bach/test.bach.Tests")),
-            new DeclaredModules(
-                new DeclaredModule(
-                    Path.of("src/test.bach"), Path.of("src/test.bach/test/java/module-info.java")),
-                new DeclaredModule(
-                    Path.of("src/test.junit"),
-                    Path.of("src/test.junit/test/java/module-info.java"))),
-            Set.of());
+        new Space("test", main)
+            .withLauncher("tests=test.bach/test.bach.Tests")
+            .withModule("src/test.bach", "src/test.bach/test/java/module-info.java")
+            .withModule("src/test.junit", "src/test.junit/test/java/module-info.java");
     var structure = new Structure(basics, new Spaces(main, test));
     var runner = ToolRunner.ofSystem();
     return new Project(verbose, new Workflow(folders, structure, runner));
