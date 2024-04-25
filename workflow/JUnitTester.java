@@ -31,7 +31,7 @@ public interface JUnitTester extends Action {
         var layer = junitTesterUsesModuleLayerToFindModule(name);
         var module = layer.findModule(name).orElseThrow(() -> new FindException(name));
         if (junitTesterDoesHandleModule(module)) {
-          say("Testing via JUnit by scanning module %s for tests ...".formatted(name));
+          say("Testing via JUnit by selecting tests in module %s ...".formatted(name));
           testViaJUnit(module);
         }
       }

@@ -14,7 +14,12 @@ public interface JavaTester extends Action {
   // TODO Replace with java.lang.ScopedValue of https://openjdk.org/jeps/464
   InheritableThreadLocal<Space> SPACE = new InheritableThreadLocal<>();
 
+  private Space space() {
+    return SPACE.get();
+  }
+
   default void testViaJava(Space space) {
+    if (SPACE.get() != null) throw new IllegalStateException();
     try {
       SPACE.set(space);
       var launchers = javaTesterUsesLaunchersForTesting();
@@ -37,7 +42,7 @@ public interface JavaTester extends Action {
   }
 
   default List<Launcher> javaTesterUsesLaunchersForTesting() {
-    return SPACE.get().launchers();
+    return space().launchers();
   }
 
   default ToolCall javaTesterUsesJavaToolCall() {
@@ -49,9 +54,8 @@ public interface JavaTester extends Action {
   }
 
   default ToolCall javaTesterWithModulePath(ToolCall java) {
-    var space = SPACE.get();
     var folders = workflow().folders();
-    var path = space.toRuntimeSpace().toModulePath(folders).orElse(".");
+    var path = space().toRuntimeSpace().toModulePath(folders).orElse(".");
     return java.add("--module-path", path);
   }
 
