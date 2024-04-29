@@ -16,9 +16,9 @@ public record Greeter(String version) implements ToolInstaller {
 
     var folders = Bach.Folders.ofTemporaryDirectory();
     System.out.println("\n[2]");
-    Tool.of("greeter/eager", greeter.install(folders.tools("greeter/eager"))).run();
+    Tool.of("greeter/eager", greeter.install(folders.tool("greeter/eager"))).run();
     System.out.println("\n[3]");
-    Tool.of("greeter/inert", () -> greeter.install(folders.tools("greeter/inert"))).run();
+    Tool.of("greeter/inert", () -> greeter.install(folders.tool("greeter/inert"))).run();
   }
 
   @Override
