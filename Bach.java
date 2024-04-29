@@ -53,7 +53,7 @@ public record Bach(Folders folders) {
       var dot = normalized.resolve(".bach");
       var out = dot.resolve("out");
       var tool = dot.resolve("tool");
-      return new Folders(normalized, out, dot, tool);
+      return new Folders(normalized, dot, out, tool);
     }
 
     public Path root(String first, String... more) {
