@@ -14,11 +14,12 @@ public record Bach(Folders folders) {
   /**
    * Well-known directories and files.
    *
-   * @param root the root or home directory that usually contains a {@code .bach} subdirectory
-   * @param out used to store generated files into, defaults to {@code ${root}.bach/out}
-   * @param var used to store cacheable file into, defaults to {@code ${root}.bach/var}
+   * @param root the project home directory that usually contains a {@code .bach/} subdirectory
+   * @param dot is the "dot-bach" directory, defaults to {@code ${root}/.bach/}
+   * @param out used to store generated files into, defaults to {@code ${root}/.bach/out/}
+   * @param tool used to store external tools into, defaults to {@code ${root}/.bach/tool/}
    */
-  public record Folders(Path root, Path out, Path var) {
+  public record Folders(Path root, Path dot, Path out, Path tool) {
     /** {@code .bach} */
     public static Folders ofCurrentWorkingDirectory() {
       return Folders.of(Path.of(""));
@@ -49,9 +50,10 @@ public record Bach(Folders folders) {
 
     public static Folders of(Path root) {
       var normalized = root.normalize();
-      var out = normalized.resolve(".bach", "out");
-      var var = normalized.resolve(".bach", "var");
-      return new Folders(normalized, out, var);
+      var dot = normalized.resolve(".bach");
+      var out = dot.resolve("out");
+      var tool = dot.resolve("tool");
+      return new Folders(normalized, out, dot, tool);
     }
 
     public Path root(String first, String... more) {
@@ -62,16 +64,8 @@ public record Bach(Folders folders) {
       return out.resolve(first, more);
     }
 
-    public Path var(String first, String... more) {
-      return var.resolve(first, more);
-    }
-
-    public Path tools() {
-      return var("cache", "tools");
-    }
-
-    public Path tools(String first, String... more) {
-      return tools().resolve(first, more);
+    public Path tool(String first, String... more) {
+      return tool.resolve(first, more);
     }
   }
 }

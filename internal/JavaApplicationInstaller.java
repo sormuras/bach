@@ -49,7 +49,7 @@ public record JavaApplicationInstaller(Identifier identifier, URI source) implem
     throw new IllegalArgumentException("Unsupported program type: " + source);
   }
 
-  public static Optional<JavaApplicationInstaller> find(String string) {
+  public static Optional<ToolInstaller> find(String string) {
     try {
       var source = new URI(string);
       if (!source.isAbsolute()) {

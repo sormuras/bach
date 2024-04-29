@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.internal.JavaApplicationInstaller;
+import run.bach.internal.JavaToolInstaller;
 
 /** An interface for installers to fetch required files and compose them into a tool provider. */
 public interface ToolInstaller {
@@ -56,7 +57,7 @@ public interface ToolInstaller {
   default Tool install(Mode mode) {
     var identifier = Tool.Identifier.of(namespace(), name(), version());
     var folders = Bach.Folders.ofCurrentWorkingDirectory();
-    return install(folders.tools(), identifier, mode);
+    return install(folders.tool(), identifier, mode);
   }
 
   private Tool install(Path base, Tool.Identifier identifier, Mode mode) {
@@ -108,8 +109,8 @@ public interface ToolInstaller {
     }
   }
 
-  static Optional<? extends ToolInstaller> find(String string) {
-    return JavaApplicationInstaller.find(string);
+  static Optional<ToolInstaller> find(String string) {
+    return JavaToolInstaller.find(string).or(() -> JavaApplicationInstaller.find(string));
   }
 
   static ToolInstaller ofJavaApplication(String id, String uri) {
@@ -119,7 +120,7 @@ public interface ToolInstaller {
   }
 
   static Finder finder(Mode mode) {
-    return new Finder(List.of(), mode, Bach.Folders.ofCurrentWorkingDirectory().tools());
+    return new Finder(List.of(), mode, Bach.Folders.ofCurrentWorkingDirectory().tool());
   }
 
   /** Tool installation mode. */
