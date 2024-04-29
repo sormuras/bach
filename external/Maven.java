@@ -45,7 +45,7 @@ public record Maven(String version) implements ToolInstaller {
       } catch (Exception exception) {
         throw new RuntimeException(exception);
       }
-    var uri = URI.create(base + "/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar#SIZE=62547");
+    var uri = URI.create(base + "/wrapper/maven-wrapper/3.3.1/maven-wrapper-3.3.1.jar#SIZE=63030");
     var mavenWrapperJar = into.resolve("maven-wrapper.jar");
     download(mavenWrapperJar, uri);
     return ToolProgram.findJavaDevelopmentKitTool(
