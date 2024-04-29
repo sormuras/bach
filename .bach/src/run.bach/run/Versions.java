@@ -14,6 +14,7 @@ class Versions {
     // 1-shot, tool installer
     Tool.of("https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar").run("version");
     Tool.of(new Ant(), ToolInstaller.Mode.INSTALL_IMMEDIATE).run("-version");
+    Tool.of("jreleaser").run("--version");
 
     // multi-shot, tool finder
     var finder =

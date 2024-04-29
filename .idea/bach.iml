@@ -6,7 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/bach.run" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/bin" />
       <excludeFolder url="file://$MODULE_DIR$/.bach/out" />
-      <excludeFolder url="file://$MODULE_DIR$/.bach/var" />
+      <excludeFolder url="file://$MODULE_DIR$/.bach/tool/*" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="run.bach" scope="TEST" />
