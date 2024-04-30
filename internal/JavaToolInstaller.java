@@ -5,8 +5,11 @@
 
 package run.bach.internal;
 
+import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,21 +45,32 @@ public record JavaToolInstaller(String name, String version, Properties properti
   @Override
   public ToolProvider install(Path into) throws Exception {
     String launcher = null;
+    var jarFiles = new ArrayList<Path>();
+    var javaFiles = new ArrayList<Path>();
     for (var key : properties.stringPropertyNames()) {
       if (key.startsWith("@")) {
         if (key.equals("@java")) {
-          launcher = properties.getProperty(key).strip();
+          launcher =
+              properties
+                  .getProperty(key)
+                  .strip()
+                  .replace("{{tool.home}}", into.toString())
+                  .replace('/', File.separatorChar)
+                  .replace('\\', File.separatorChar);
         }
         continue;
       }
       var value = properties.getProperty(key);
-      if (!value.startsWith("http")) continue;
-      var source = URI.create(value);
       var target = into.resolve(key);
-      download(target, source);
+      if (value.startsWith("https:")) download(target, URI.create(value));
+      if (value.startsWith("string:")) Files.writeString(target, value.substring(7));
+      if (PathSupport.isJarFile(target)) jarFiles.add(target);
+      if (PathSupport.isJavaFile(target)) javaFiles.add(target);
     }
-    if (launcher == null) throw new IllegalStateException("No @launcher specified");
-    return ToolProgram.java(launcher.split("\\s+"));
+    if (launcher != null) return ToolProgram.java(launcher.split("\\s+"));
+    if (javaFiles.size() == 1) return ToolProgram.java(javaFiles.getFirst().toString());
+    if (jarFiles.size() == 1) return ToolProgram.java("-jar", jarFiles.getFirst().toString());
+    throw new IllegalStateException("No @java launcher specified, nor a sole Java program found.");
   }
 
   public static JavaToolInstaller ofPropertiesFile(Path file) {
