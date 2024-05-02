@@ -12,7 +12,7 @@ class Versions {
     Tool.of("java").run("--version");
 
     // 1-shot, tool installer
-    Tool.of("https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar").run("version");
+    Tool.of("https://github.com/rife2/bld/releases/download/1.9.1/bld-1.9.1.jar").run("version");
     Tool.of(new Ant(), ToolInstaller.Mode.INSTALL_IMMEDIATE).run("-version");
     Tool.of("jreleaser").run("--version");
 
@@ -21,8 +21,8 @@ class Versions {
         ToolFinder.ofInstaller(ToolInstaller.Mode.INSTALL_IMMEDIATE)
             .with(new Ant())
             .withJavaApplication(
-                "rife2/bld@1.9.0",
-                "https://github.com/rife2/bld/releases/download/1.9.0/bld-1.9.0.jar")
+                "rife2/bld@1.9.1",
+                "https://github.com/rife2/bld/releases/download/1.9.1/bld-1.9.1.jar")
             .withJavaApplication(
                 "org.junit.platform/junit@1.10.2",
                 "https://repo.maven.apache.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.2/junit-platform-console-standalone-1.10.2.jar")
