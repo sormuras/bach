@@ -85,7 +85,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Spaces with(Space space) {
-      return new Spaces(append(list, space));
+      return new Spaces(concat(list, space));
     }
 
     @Override
@@ -175,7 +175,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Space with(Launcher launcher) {
-      var launchers = append(launchers(), launcher);
+      var launchers = concat(launchers(), launcher);
       return new Space(name, requires, release, encoding, launchers, modules, flags);
     }
 
@@ -213,7 +213,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public Space toRuntimeSpace() {
-      var requires = new Spaces(prepend(this, requires().list()));
+      var requires = new Spaces(concat(this, requires().list()));
       return new Space("runtime", requires, 0, encoding, launchers, modules, flags);
     }
   }
@@ -256,7 +256,7 @@ public record Structure(Basics basics, Spaces spaces) {
     }
 
     public DeclaredModules with(DeclaredModule module) {
-      return new DeclaredModules(append(list, module));
+      return new DeclaredModules(concat(list, module));
     }
 
     public Optional<DeclaredModule> find(String name) {
@@ -327,9 +327,16 @@ public record Structure(Basics basics, Spaces spaces) {
       this(Stream.of(sources).map(Path::normalize).toList(), List.of());
     }
 
-    public DeclaredFolders withResourcePath(Path path) {
+    public DeclaredFolders withSourcePath(Path candidate) {
+      var path = candidate.normalize();
+      if (sources.contains(path)) return this;
+      return new DeclaredFolders(concat(sources, path), resources);
+    }
+
+    public DeclaredFolders withResourcePath(Path candidate) {
+      var path = candidate.normalize();
       if (resources.contains(path)) return this;
-      return new DeclaredFolders(sources, append(resources, path));
+      return new DeclaredFolders(sources, concat(resources, path));
     }
 
     public boolean isEmpty() {
@@ -337,11 +344,13 @@ public record Structure(Basics basics, Spaces spaces) {
     }
   }
 
-  private static <T> List<T> append(List<T> list, T tail) {
+  /** {@return a new list with the tail element appended to the given list} */
+  private static <T> List<T> concat(List<T> list, T tail) {
     return Stream.concat(list.stream(), Stream.of(tail)).toList();
   }
 
-  private static <T> List<T> prepend(T head, List<T> list) {
+  /** {@return a new list with the head element prepended to the given list} */
+  private static <T> List<T> concat(T head, List<T> list) {
     return Stream.concat(Stream.of(head), list.stream()).toList();
   }
 }

@@ -30,8 +30,8 @@ public record Workflow(Bach.Folders folders, Structure structure, ToolRunner run
     return new Workflow(folders, structure.withName(name), runner);
   }
 
-  public Workflow withVersion(String name) {
-    return new Workflow(folders, structure.withVersion(name), runner);
+  public Workflow withVersion(String version) {
+    return new Workflow(folders, structure.withVersion(version), runner);
   }
 
   public Workflow withTimestamp(String zonedDateTime) {
