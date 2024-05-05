@@ -60,20 +60,30 @@ public interface PathSupport {
     return List.copyOf(paths);
   }
 
+  static String name(Path path, String defaultName) {
+    var normalized = path.normalize();
+    var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
+    var name = candidate.getFileName();
+    return name != null ? name.toString() : defaultName;
+  }
+
   static Properties properties(Path file) {
+    var string = read(file);
     var properties = new Properties();
     try {
-      properties.load(new StringReader(Files.readString(file)));
+      properties.load(new StringReader(string));
     } catch (Exception exception) {
       throw new RuntimeException(exception);
     }
     return properties;
   }
 
-  static String name(Path path, String defaultName) {
-    var normalized = path.normalize();
-    var candidate = normalized.toString().isEmpty() ? normalized.toAbsolutePath() : normalized;
-    var name = candidate.getFileName();
-    return name != null ? name.toString() : defaultName;
+  static String read(Path file) {
+    if (Files.notExists(file)) throw new RuntimeException("File not found: " + file);
+    try {
+      return Files.readString(file);
+    } catch (Exception exception) {
+      throw new RuntimeException("Reading file failed: " + file.toUri(), exception);
+    }
   }
 }
