@@ -21,6 +21,8 @@ import run.bach.internal.JavaToolInstaller;
 
 /** An interface for installers to fetch required files and compose them into a tool provider. */
 public interface ToolInstaller {
+  Path DEFAULT_INSTALLATION_HOME_DIRECTORY = Path.of(".bach", "tool");
+
   /**
    * {@return the default namespace used by this tool installer}
    *
@@ -56,8 +58,7 @@ public interface ToolInstaller {
 
   default Tool install(Mode mode) {
     var identifier = Tool.Identifier.of(namespace(), name(), version());
-    var folders = Bach.Folders.ofCurrentWorkingDirectory();
-    return install(folders.tool(), identifier, mode);
+    return install(DEFAULT_INSTALLATION_HOME_DIRECTORY, identifier, mode);
   }
 
   private Tool install(Path base, Tool.Identifier identifier, Mode mode) {
@@ -120,7 +121,7 @@ public interface ToolInstaller {
   }
 
   static Finder finder(Mode mode) {
-    return new Finder(List.of(), mode, Bach.Folders.ofCurrentWorkingDirectory().tool());
+    return new Finder(List.of(), mode, DEFAULT_INSTALLATION_HOME_DIRECTORY);
   }
 
   /** Tool installation mode. */

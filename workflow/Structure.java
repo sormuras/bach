@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-import run.bach.Bach;
 import run.bach.internal.ModuleDescriptorSupport;
 import run.bach.internal.ModuleDescriptorSupport.ModuleInfoFinder;
 import run.bach.internal.ModuleDescriptorSupport.ModuleInfoReference;
@@ -187,7 +186,7 @@ public record Structure(Basics basics, Spaces spaces) {
       return release == 0 ? Optional.empty() : Optional.of(release);
     }
 
-    public Optional<String> toModulePath(Bach.Folders folders) {
+    public Optional<String> toModulePath(Folders folders) {
       var externalModules = Stream.of(folders.root("lib"));
       var requiredModules = requires.names().stream().map(name -> folders.out(name, "modules"));
       var elements =
@@ -199,7 +198,7 @@ public record Structure(Basics basics, Spaces spaces) {
       return Optional.of(String.join(File.pathSeparator, elements));
     }
 
-    public ModuleLayer toModuleLayer(Bach.Folders folders, String module) {
+    public ModuleLayer toModuleLayer(Folders folders, String module) {
       var finder =
           ModuleFinder.compose(
               ModuleFinder.of(folders.out(name(), "modules", module + ".jar")),

@@ -6,17 +6,16 @@
 package run.bach.workflow;
 
 import java.util.function.UnaryOperator;
-import run.bach.Bach;
 import run.bach.ToolFinder;
 import run.bach.ToolRunner;
 import run.bach.internal.PathSupport;
 
-public record Workflow(Bach.Folders folders, Structure structure, ToolRunner runner) {
+public record Workflow(Folders folders, Structure structure, ToolRunner runner) {
   public static Workflow ofCurrentWorkingDirectory() {
-    return of(Bach.Folders.ofCurrentWorkingDirectory());
+    return of(Folders.ofCurrentWorkingDirectory());
   }
 
-  public static Workflow of(Bach.Folders folders) {
+  public static Workflow of(Folders folders) {
     var name = System.getProperty("--project-name", PathSupport.name(folders.root(), "Unnamed"));
     var version = System.getProperty("--project-version", "0-ea");
     var basics = new Structure.Basics(name, version);
