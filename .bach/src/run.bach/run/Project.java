@@ -2,11 +2,11 @@ package run;
 
 import java.nio.file.Files;
 import java.util.Optional;
-import run.bach.Bach;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
 import run.bach.workflow.ClassesCompiler;
+import run.bach.workflow.Folders;
 import run.bach.workflow.ImageCompiler;
 import run.bach.workflow.Starter;
 import run.bach.workflow.Structure;
@@ -18,7 +18,7 @@ import run.bach.workflow.Workflow;
 public record Project(boolean verbose, Workflow workflow) implements Builder, Starter {
   static Project ofCurrentWorkingDirectory() {
     var verbose = Boolean.getBoolean("-Debug".substring(2));
-    var folders = Bach.Folders.ofCurrentWorkingDirectory();
+    var folders = Folders.ofCurrentWorkingDirectory();
     var basics = new Basics("Bach", "2024-ea");
     var main =
         new Space("main")

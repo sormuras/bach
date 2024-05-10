@@ -3,10 +3,10 @@ package run;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.spi.ToolProvider;
-import run.bach.Bach;
 import run.bach.Tool;
 import run.bach.ToolInstaller;
 import run.bach.ToolProgram;
+import run.bach.workflow.Folders;
 
 public record Greeter(String version) implements ToolInstaller {
   public static void main(String... args) throws Exception {
@@ -14,7 +14,7 @@ public record Greeter(String version) implements ToolInstaller {
     System.out.println("[1]");
     greeter.install().run(); // "run.bach/greeter@99"
 
-    var folders = Bach.Folders.ofTemporaryDirectory();
+    var folders = Folders.ofTemporaryDirectory();
     System.out.println("\n[2]");
     Tool.of("greeter/eager", greeter.install(folders.tool("greeter/eager"))).run();
     System.out.println("\n[3]");
