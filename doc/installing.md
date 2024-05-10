@@ -25,12 +25,12 @@ Above's commands are a shortcut for the following Java Shell commands and snippe
 ```shell
 mkdir example && cd example
 jshell
-/open https://src.bach.run/BachInstaller.java
-BachInstaller.installDefaultVersionIntoDefaultDirectory()
+/open https://src.bach.run/Bach.java
+Bach.init()
 /exit
 ```
 
-Consult `BachInstaller`'s API and documentation for customizing the installation process.
+Consult `Bach.java`'s source and documentation for customizing the installation process.
 
 ## Install Bach using Git
 

@@ -18,13 +18,13 @@ System.out.printf(
     Path.of("").toUri()
 )
 
-System.out.println("| Source Bach's installer from " + Path.of("src/bach.run/BachInstaller.java").toUri())
+System.out.println("| Source Bach.java from " + Path.of("src/bach.run/Bach.java").toUri())
 
-/open src/bach.run/BachInstaller.java
+/open src/bach.run/Bach.java
 
 int code = 0
 try {
-  BachInstaller.installDefaultVersionIntoDefaultDirectory();
+  Bach.init();
 }
 catch(Throwable throwable) {
   System.err.println(throwable);
