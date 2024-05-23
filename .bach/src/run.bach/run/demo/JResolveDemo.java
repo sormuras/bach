@@ -1,4 +1,4 @@
-package run;
+package run.demo;
 
 import run.bach.*;
 

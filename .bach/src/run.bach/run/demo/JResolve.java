@@ -1,4 +1,4 @@
-package run.external;
+package run.demo;
 
 /**
  * JResolve - a command line tool for resolving dependencies on the JVM.

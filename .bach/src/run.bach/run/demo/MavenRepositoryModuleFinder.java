@@ -1,4 +1,4 @@
-package run.external;
+package run.demo;
 
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;

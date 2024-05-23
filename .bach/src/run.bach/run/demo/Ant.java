@@ -3,7 +3,7 @@
  * Licensed under the Universal Permissive License v 1.0 -> https://opensource.org/license/upl
  */
 
-package run.external;
+package run.demo;
 
 import java.net.URI;
 import java.nio.file.Files;

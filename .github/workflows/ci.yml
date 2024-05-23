@@ -27,6 +27,6 @@ jobs:
           java @bach jar --version
           java @bach jfr --version
           java @bach https://raw.githubusercontent.com/openjdk/jdk/jdk-22-ga/test/jdk/java/lang/System/Versions.java
-          java .bach/src/run.bach/run/Versions.java
+          java .bach/src/run.bach/run/demo/ToolVersionsDemo.java
       - name: 'Build Bach with Bach'
         run: java @build

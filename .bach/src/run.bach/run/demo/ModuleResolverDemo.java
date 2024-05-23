@@ -1,4 +1,4 @@
-package run;
+package run.demo;
 
 import bach.info.org.jreleaser.JReleaser;
 import bach.info.org.junit.JUnit;
@@ -8,7 +8,6 @@ import run.bach.ModuleFinders;
 import run.bach.ModuleResolver;
 import run.bach.ToolFinder;
 import run.bach.workflow.Folders;
-import run.external.Ant;
 
 public class ModuleResolverDemo {
   public static void main(String... args) throws Exception {

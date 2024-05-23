@@ -1,9 +1,8 @@
-package run;
+package run.demo;
 
 import run.bach.*;
-import run.external.*;
 
-class Versions {
+class ToolVersionsDemo {
   public static void main(String... args) {
     // 1-shot, tool provider
     Tool.of("jar").run("--version");
