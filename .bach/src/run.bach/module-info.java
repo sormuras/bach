@@ -4,8 +4,8 @@ module run.bach {
   requires jdk.jfr;
 
   exports run.bach;
-  exports run.bach.external;
   exports run.bach.workflow;
+  exports run.external;
 
   uses java.util.spi.ToolProvider;
 }

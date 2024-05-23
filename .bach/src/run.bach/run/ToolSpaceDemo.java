@@ -1,7 +1,7 @@
 package run;
 
 import run.bach.*;
-import run.bach.external.*;
+import run.external.Maven;
 
 class ToolSpaceDemo extends ToolSpace {
   public static void main(String... args) {

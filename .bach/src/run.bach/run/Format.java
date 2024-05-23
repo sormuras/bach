@@ -1,6 +1,6 @@
 package run;
 
-import run.bach.external.GoogleJavaFormat;
+import run.external.GoogleJavaFormat;
 
 class Format {
   public static void main(String... args) {

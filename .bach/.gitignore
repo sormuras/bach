@@ -1,7 +1,6 @@
 /bin/
 /out/
-/src/run/
-/tool/*/
-/tool/*/**
+/tmp/
+/var/
 
 *.jfr

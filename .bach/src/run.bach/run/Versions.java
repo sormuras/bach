@@ -1,7 +1,7 @@
 package run;
 
 import run.bach.*;
-import run.bach.external.*;
+import run.external.*;
 
 class Versions {
   public static void main(String... args) {
@@ -14,13 +14,12 @@ class Versions {
     // 1-shot, tool installer
     Tool.of("https://github.com/rife2/bld/releases/download/1.9.1/bld-1.9.1.jar").run("version");
     Tool.of(new Ant(), ToolInstaller.Mode.INSTALL_IMMEDIATE).run("-version");
-    Tool.of("jreleaser").run("--version");
-    Tool.of("jresolve").run("--version");
 
     // multi-shot, tool finder
     var finder =
         ToolFinder.ofInstaller(ToolInstaller.Mode.INSTALL_IMMEDIATE)
             .with(new Ant())
+            .withJavaApplication(JResolve.ID, JResolve.URI)
             .withJavaApplication(
                 "rife2/bld@1.9.1",
                 "https://github.com/rife2/bld/releases/download/1.9.1/bld-1.9.1.jar")
@@ -35,6 +34,7 @@ class Versions {
     runner.run("ant", "-version");
     runner.run("bld", "version");
     runner.run("junit", "--version");
+    runner.run("jresolve", "--version");
     runner.run("google-java-format", "--version");
     runner.run("google-java-format@1.19", "--version");
     runner.run("maven", "--version");

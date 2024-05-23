@@ -1,7 +1,10 @@
 package run;
 
+import bach.info.org.junit.JUnit;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.util.Optional;
+import run.bach.ModuleFinders;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
 import run.bach.workflow.Builder;
@@ -31,15 +34,22 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
             .withLauncher("tests=test.bach/test.bach.Tests")
             .withModule("src/test.bach", "src/test.bach/test/java/module-info.java")
             .withModule("src/test.junit", "src/test.junit/test/java/module-info.java");
-    var structure = new Structure(basics, new Spaces(main, test));
+    var libraries =
+        ModuleFinder.compose(
+            ModuleFinders.ofProperties(JUnit.MODULES),
+            ModuleFinders.ofProperties(
+                "org.junitpioneer=https://repo.maven.apache.org/maven2/org/junit-pioneer/junit-pioneer/2.2.0/junit-pioneer-2.2.0.jar#SIZE=191032"));
+    var structure = new Structure(basics, new Spaces(main, test), libraries);
     var runner = ToolRunner.ofSystem();
     return new Project(verbose, new Workflow(folders, structure, runner));
   }
 
   void printStatus() {
-    System.out.println(workflow.structure().toNameAndVersion());
-    System.out.println(workflow.structure().basics());
-    System.out.println(workflow.structure().modules());
+    var structure = workflow.structure();
+    System.out.println(structure.toNameAndVersion());
+    System.out.println(structure.basics());
+    structure.spaces().forEach(System.out::println);
+    structure.libraries().findAll().stream().sorted().forEach(System.out::println);
     System.out.println(workflow.folders());
     System.out.println(workflow.runner());
   }

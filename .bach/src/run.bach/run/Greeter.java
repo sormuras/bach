@@ -12,7 +12,7 @@ public record Greeter(String version) implements ToolInstaller {
   public static void main(String... args) throws Exception {
     var greeter = new Greeter("99");
     System.out.println("[1]");
-    greeter.install().run(); // "run.bach/greeter@99"
+    greeter.install().run(); // "run.bach/greeter@99" in ".bach/tmp/tool"
 
     var folders = Folders.ofTemporaryDirectory();
     System.out.println("\n[2]");

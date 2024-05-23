@@ -6,7 +6,9 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.spi.*;
 import run.bach.*;
-import run.bach.external.*;
+import run.external.Ant;
+import run.external.GoogleJavaFormat;
+import run.external.Maven;
 
 class ToolFinderDemo {
   public static void main(String... args) {
