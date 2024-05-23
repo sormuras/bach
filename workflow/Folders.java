@@ -10,9 +10,9 @@ import java.nio.file.attribute.FileAttribute;
  * @param root the project home directory that usually contains a {@code .bach/} subdirectory
  * @param dot is the "dot-bach" directory, defaults to {@code ${root}/.bach/}
  * @param out used to store generated files into, defaults to {@code ${root}/.bach/out/}
- * @param tool used to store external tools into, defaults to {@code ${root}/.bach/tool/}
+ * @param tmp used to store external tools into, defaults to {@code ${root}/.bach/tmp/}
  */
-public record Folders(Path root, Path dot, Path out, Path tool) {
+public record Folders(Path root, Path dot, Path out, Path tmp) {
   /** {@code .bach} */
   public static Folders ofCurrentWorkingDirectory() {
     return Folders.of(Path.of(""));
@@ -45,8 +45,8 @@ public record Folders(Path root, Path dot, Path out, Path tool) {
     var normalized = root.normalize();
     var dot = normalized.resolve(".bach");
     var out = dot.resolve("out");
-    var tool = dot.resolve("tool");
-    return new Folders(normalized, dot, out, tool);
+    var tmp = dot.resolve("tmp");
+    return new Folders(normalized, dot, out, tmp);
   }
 
   public Path root(String first, String... more) {
@@ -58,6 +58,6 @@ public record Folders(Path root, Path dot, Path out, Path tool) {
   }
 
   public Path tool(String first, String... more) {
-    return tool.resolve(first, more);
+    return tmp.resolve("tool").resolve(first, more);
   }
 }

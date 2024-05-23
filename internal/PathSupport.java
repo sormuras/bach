@@ -68,7 +68,10 @@ public interface PathSupport {
   }
 
   static Properties properties(Path file) {
-    var string = read(file);
+    return properties(read(file));
+  }
+
+  static Properties properties(String string) {
     var properties = new Properties();
     try {
       properties.load(new StringReader(string));

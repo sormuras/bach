@@ -18,6 +18,7 @@ import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -87,12 +88,12 @@ public interface ModuleDescriptorSupport {
     }
   }
 
-  record ModuleInfoFinder(List<ModuleInfoReference> references) implements ModuleFinder {
-
+  record ModuleReferenceFinder(Collection<? extends ModuleReference> references)
+      implements ModuleFinder {
     @Override
     public Optional<ModuleReference> find(String name) {
       return references.stream()
-          .filter(reference -> reference.name().equals(name))
+          .filter(reference -> reference.descriptor().name().equals(name))
           .map(ModuleReference.class::cast)
           .findFirst();
     }
@@ -104,12 +105,7 @@ public interface ModuleDescriptorSupport {
   }
 
   class ModuleInfoReference extends ModuleReference {
-
     private final Path info;
-
-    public ModuleInfoReference(Path info) {
-      this(info, ModuleDescriptorSupport.parse(info));
-    }
 
     public ModuleInfoReference(Path info, ModuleDescriptor descriptor) {
       super(descriptor, info.toUri());

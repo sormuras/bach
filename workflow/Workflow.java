@@ -5,6 +5,7 @@
 
 package run.bach.workflow;
 
+import java.lang.module.ModuleFinder;
 import java.util.function.UnaryOperator;
 import run.bach.ToolFinder;
 import run.bach.ToolRunner;
@@ -20,7 +21,8 @@ public record Workflow(Folders folders, Structure structure, ToolRunner runner) 
     var version = System.getProperty("--project-version", "0-ea");
     var basics = new Structure.Basics(name, version);
     var spaces = new Structure.Spaces();
-    var structure = new Structure(basics, spaces);
+    var libraries = ModuleFinder.compose();
+    var structure = new Structure(basics, spaces, libraries);
     var runner = ToolRunner.ofSystem();
     return new Workflow(folders, structure, runner);
   }

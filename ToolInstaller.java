@@ -17,11 +17,10 @@ import java.util.Optional;
 import java.util.spi.ToolProvider;
 import java.util.stream.Stream;
 import run.bach.internal.JavaApplicationInstaller;
-import run.bach.internal.JavaToolInstaller;
 
 /** An interface for installers to fetch required files and compose them into a tool provider. */
 public interface ToolInstaller {
-  Path DEFAULT_INSTALLATION_HOME_DIRECTORY = Path.of(".bach", "tool");
+  Path DEFAULT_INSTALLATION_HOME_DIRECTORY = Path.of(".bach", "tmp", "tool");
 
   /**
    * {@return the default namespace used by this tool installer}
@@ -111,7 +110,7 @@ public interface ToolInstaller {
   }
 
   static Optional<ToolInstaller> find(String string) {
-    return JavaToolInstaller.find(string).or(() -> JavaApplicationInstaller.find(string));
+    return JavaApplicationInstaller.find(string);
   }
 
   static ToolInstaller ofJavaApplication(String id, String uri) {
@@ -155,7 +154,7 @@ public interface ToolInstaller {
       return with(identifier, installer);
     }
 
-    public Finder withJavaApplication(String id, String uri) {
+    public Finder withJavaApplication(String id, String uri, String... more) {
       var identifier = Tool.Identifier.of(id);
       var source = URI.create(uri);
       var installer = new JavaApplicationInstaller(identifier, source);

@@ -23,13 +23,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import run.bach.internal.ModuleDescriptorSupport;
-import run.bach.internal.ModuleDescriptorSupport.ModuleInfoFinder;
 import run.bach.internal.ModuleDescriptorSupport.ModuleInfoReference;
+import run.bach.internal.ModuleDescriptorSupport.ModuleReferenceFinder;
 import run.bach.internal.ModuleSourcePathSupport;
 import run.bach.internal.ModulesSupport;
 
 /** Define Bach's project structure. */
-public record Structure(Basics basics, Spaces spaces) {
+public record Structure(Basics basics, Spaces spaces, ModuleFinder libraries) {
   /** {@return a list of all modules declared by this project} */
   public List<DeclaredModule> modules() {
     return spaces.list().stream().flatMap(space -> space.modules().list().stream()).toList();
@@ -40,19 +40,19 @@ public record Structure(Basics basics, Spaces spaces) {
   }
 
   public Structure withName(String name) {
-    return new Structure(basics.withName(name), spaces);
+    return new Structure(basics.withName(name), spaces, libraries);
   }
 
   public Structure withVersion(String version) {
-    return new Structure(basics.withVersion(version), spaces);
+    return new Structure(basics.withVersion(version), spaces, libraries);
   }
 
   public Structure withTimestamp(String zonedDateTime) {
-    return new Structure(basics.withTimestamp(zonedDateTime), spaces);
+    return new Structure(basics.withTimestamp(zonedDateTime), spaces, libraries);
   }
 
   public Structure with(Space space) {
-    return new Structure(basics, spaces.with(space));
+    return new Structure(basics, spaces.with(space), libraries);
   }
 
   /** Fundamental project-related information. */
@@ -280,7 +280,7 @@ public record Structure(Basics basics, Spaces spaces) {
           list.stream()
               .map(module -> new ModuleInfoReference(module.info(), module.descriptor()))
               .toList();
-      return new ModuleInfoFinder(moduleInfoReferences);
+      return new ModuleReferenceFinder(moduleInfoReferences);
     }
 
     public List<String> toModuleSourcePaths() {
