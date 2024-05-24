@@ -1,7 +1,6 @@
 package run;
 
 import java.lang.module.ModuleFinder;
-import java.nio.file.Files;
 import java.util.Optional;
 import run.bach.ModuleFinders;
 import run.bach.ToolCall;
@@ -44,7 +43,11 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
     return new Project(verbose, new Workflow(folders, structure, runner));
   }
 
-  void printStatus() {
+  public Space space(String name) {
+    return workflow.structure().spaces().space(name);
+  }
+
+  public void printStatus() {
     var structure = workflow.structure();
     System.out.println(structure.toNameAndVersion());
     System.out.println(structure.basics());
@@ -62,14 +65,12 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
   @Override
   public void classesCompilerRunJavacToolCall(ToolCall javac) {
     run(javac.add("-X" + "lint:all").add("-W" + "error"));
-    // Delete all local programs in out/main/classes/*/run.bach/run/* directory
+    // Retain only "bach" subdirectory in out/main/classes/*/run.bach/run/* directory
     if (ClassesCompiler.space().name().equals("main")) {
-      var dir = classesCompilerUsesDestinationDirectory().resolve("run.bach", "run");
-      try (var stream = Files.newDirectoryStream(dir, Files::isRegularFile)) {
-        for (var file : stream) Files.deleteIfExists(file);
-      } catch (Exception exception) {
-        throw new RuntimeException(exception);
-      }
+      var classes = classesCompilerUsesDestinationDirectory();
+      var run = classes.resolve("run.bach", "run");
+      var bach = run.resolve("bach");
+      cleanerPrune(run, path -> !path.equals(bach));
     }
   }
 
