@@ -2,7 +2,7 @@ package test.bach;
 
 import java.io.PrintWriter;
 import java.util.spi.ToolProvider;
-import run.bach.ToolSpace;
+import run.bach.ToolRunner;
 
 public record Tests(String name) implements ToolProvider {
   public static void main(String... args) {
@@ -15,14 +15,11 @@ public record Tests(String name) implements ToolProvider {
 
   @Override
   public int run(PrintWriter out, PrintWriter err, String... args) {
-    var silent = new ToolSpace(ToolSpace.Flag.SILENT);
-    var run = silent.run("jar", "--version");
+    var actual = ToolRunner.ofSilence().run("jar", "--version").out();
     var expected = "jar " + System.getProperty("java.version");
-    if (!run.out().equals(expected)) {
-      err.println("expected: " + expected);
-      err.println("actual  : " + run.out());
-      return 1;
-    }
-    return 0;
+    if (actual.equals(expected)) return 0;
+    err.println("expected: " + expected);
+    err.println("actual  : " + actual);
+    return 1;
   }
 }

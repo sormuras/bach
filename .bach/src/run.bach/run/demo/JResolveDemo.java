@@ -6,11 +6,11 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import run.bach.Tool;
 import run.bach.ToolFinder;
-import run.bach.ToolSpace;
+import run.bach.ToolRunner;
 
 public class JResolveDemo {
   public static void main(String... args) {
-    var runner = new ToolSpace(ToolSpace.Flag.SILENT);
+    var runner = ToolRunner.ofSilence();
     var jresolve =
         Tool.of(
             "https://github.com/bowbahdoe/jresolve-cli/releases/download/v2024.05.10/jresolve.jar#SIZE=754432");

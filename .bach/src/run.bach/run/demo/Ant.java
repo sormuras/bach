@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.spi.ToolProvider;
 import run.bach.ToolInstaller;
 import run.bach.ToolProgram;
-import run.bach.ToolSpace;
+import run.bach.ToolRunner;
 
 /**
  * Apache Ant installer.
@@ -48,8 +48,7 @@ public record Ant(String version) implements ToolInstaller {
               .withProcessBuilderTweaker(builder -> builder.directory(into.toFile()))
               .withProcessWaiter(process -> process.waitFor(1, TimeUnit.MINUTES) ? 0 : 1)
               .tool();
-      var silent = new ToolSpace(ToolSpace.Flag.SILENT);
-      silent.run(jar, "--extract", "--file", archive);
+      ToolRunner.ofSilence().run(jar, "--extract", "--file", archive);
     }
     return ToolProgram.java(
         "--class-path",
