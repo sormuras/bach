@@ -1,13 +1,11 @@
 package run.demo;
 
-import bach.info.org.jreleaser.JReleaser;
-import bach.info.org.junit.JUnit;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 import run.bach.ModuleFinders;
 import run.bach.ModuleResolver;
 import run.bach.ToolFinder;
-import run.bach.workflow.Folders;
+import run.info.org.junit.JUnit;
 
 public class ModuleResolverDemo {
   public static void main(String... args) throws Exception {
@@ -23,23 +21,26 @@ public class ModuleResolverDemo {
     resolver.resolveModule("org.junit.platform.console"); // to run tests
     resolver.resolveMissingModules();
 
-    // "jreleaser" via the tool provider SPI
-    var jreleaserHome =
-        Folders.ofCurrentWorkingDirectory().tool(JReleaser.NAME + "@" + JReleaser.VERSION);
-    var jreleaserResolver = ModuleResolver.ofSingleDirectory(jreleaserHome, JReleaser.MODULES);
-    jreleaserResolver.resolveModule("org.jreleaser.tool");
-    jreleaserResolver.resolveMissingModules();
+    //    // "jreleaser" via the tool provider SPI
+    //    var jreleaserHome =
+    //        Folders.ofCurrentWorkingDirectory().tool(JReleaser.NAME + "@" + JReleaser.VERSION);
+    //    var jreleaserResolver = ModuleResolver.ofSingleDirectory(jreleaserHome,
+    // JReleaser.MODULES);
+    //    jreleaserResolver.resolveModule("org.jreleaser.tool");
+    //    jreleaserResolver.resolveMissingModules();
 
     var tools =
         ToolFinder.compose(
             ToolFinder.of("jar"), // provides "jar" tool
             ToolFinder.of("java"), // provides "java" tool
             ToolFinder.of(ModuleFinder.of(lib)), // provides "junit" tool
-            ToolFinder.of(ModuleFinder.of(jreleaserHome)), // provides "jreleaser" tool
+            //            ToolFinder.of(ModuleFinder.of(jreleaserHome)), // provides "jreleaser"
+            // tool
             ToolFinder.ofInstaller()
-                .withJavaApplication("demo/release@uri", JReleaser.APPLICATION)
-                .withJavaApplication(
-                    "demo/release@all", JReleaser.APPLICATION, JReleaser.APPLICATION_ASSETS)
+                //                .withJavaApplication("demo/release@uri", JReleaser.APPLICATION)
+                //                .withJavaApplication(
+                //                    "demo/release@all", JReleaser.APPLICATION,
+                // JReleaser.APPLICATION_ASSETS)
                 .with(new Ant()) // provides "ant" tool
             );
 
@@ -47,9 +48,9 @@ public class ModuleResolverDemo {
     junit.run("--version");
     junit.run("engines");
 
-    tools.get("jreleaser").run("--version");
-    tools.get("releaser1").run("--version");
-    tools.get("releaser2").run("--version");
+    //    tools.get("jreleaser").run("--version");
+    //    tools.get("releaser1").run("--version");
+    //    tools.get("releaser2").run("--version");
 
     tools.get("ant").run("-version");
   }

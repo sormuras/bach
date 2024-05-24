@@ -1,6 +1,5 @@
 package run;
 
-import bach.info.org.junit.JUnit;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.util.Optional;
@@ -17,6 +16,7 @@ import run.bach.workflow.Structure.Basics;
 import run.bach.workflow.Structure.Space;
 import run.bach.workflow.Structure.Spaces;
 import run.bach.workflow.Workflow;
+import run.info.org.junit.JUnit;
 
 public record Project(boolean verbose, Workflow workflow) implements Builder, Starter {
   static Project ofCurrentWorkingDirectory() {

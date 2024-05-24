@@ -15,8 +15,7 @@
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/bach/info/org/jreleaser" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/bach/info/org/junit" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/bach" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/info/org/junit" vcs="Git" />
   </component>
 </project>

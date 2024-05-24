@@ -1,9 +1,6 @@
 [submodule "run.bach"]
 	path = .bach/src/run.bach/run/bach
 	url = https://github.com/sormuras/run.bach
-[submodule "jreleaser"]
-	path = .bach/src/run.bach/bach/info/org/jreleaser
-	url = https://github.com/jreleaser/bach.info.org.jreleaser
 [submodule "junit"]
-	path = .bach/src/run.bach/bach/info/org/junit
-	url = https://github.com/junit-team/bach.info.org.junit
+	path = .bach/src/run.bach/run/info/org/junit
+	url = https://github.com/junit-team/bach-info
