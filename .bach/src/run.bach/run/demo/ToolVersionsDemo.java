@@ -1,6 +1,7 @@
 package run.demo;
 
 import run.bach.*;
+import run.info.bach.*;
 
 class ToolVersionsDemo {
   public static void main(String... args) {

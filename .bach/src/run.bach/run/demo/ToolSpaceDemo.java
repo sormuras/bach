@@ -1,10 +1,11 @@
 package run.demo;
 
 import run.bach.*;
+import run.info.bach.*;
 
 class ToolSpaceDemo extends ToolSpace {
   public static void main(String... args) {
-    var finder = ToolFinder.ofInstaller().with(new Maven("3.9.6"));
+    var finder = ToolFinder.ofInstaller().with(new Maven());
     var space = new ToolSpaceDemo(finder);
 
     var run = space.run("maven", "--version");

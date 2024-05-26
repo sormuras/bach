@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.spi.*;
 import run.bach.*;
+import run.info.bach.*;
 
 class ToolFinderDemo {
   public static void main(String... args) {
@@ -27,7 +28,7 @@ class ToolFinderDemo {
                 // dedicated installer
                 .with(new Ant("1.10.14"))
                 .with(new GoogleJavaFormat("1.22.0"))
-                .with(new Maven("3.9.6"))
+                .with(new Maven("3.9.7"))
                 // convenient installer
                 .withJavaApplication(
                     "rife2/bld@1.9.0",
