@@ -4,6 +4,7 @@ module run.bach {
   requires transitive jdk.jfr;
 
   exports run.bach;
+  exports run.bach.info;
   exports run.bach.workflow;
 
   uses java.util.spi.ToolProvider;
