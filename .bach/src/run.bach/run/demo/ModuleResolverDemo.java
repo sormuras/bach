@@ -4,18 +4,18 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Path;
 
 import jdk.jfr.consumer.RecordingStream;
-import run.bach.ModuleFinders;
+import run.bach.ModuleLocator;
 import run.bach.ModuleResolver;
 import run.bach.ToolFinder;
+import run.info.bach.JavaFX;
 import run.info.org.junit.JUnit;
 
 public class ModuleResolverDemo {
   public static void main(String... args) throws Exception {
-    var libraries = ModuleFinder.compose(ModuleFinders.ofProperties(JUnit.MODULES));
-
-    try (var reader = libraries.find("org.junit.jupiter").orElseThrow().open()) {
-      reader.list().forEach(System.out::println);
-    }
+    var libraries = ModuleLocator.compose(
+            JUnit.modules(),
+            JavaFX.version("22.0.1")
+    );
 
     var lib = Path.of("lib");
     try (var recording = new RecordingStream()) {
