@@ -13,6 +13,8 @@ import run.info.org.junit.JUnit;
 
 public class ModuleResolverDemo {
   public static void main(String... args) throws Exception {
+    JUnit.modules().names().stream().sorted().forEach(System.out::println);
+
     var libraries = ModuleLocator.compose(JUnit.modules(), JavaFX.version("22.0.1"));
 
     var lib = Path.of("lib");
@@ -21,6 +23,7 @@ public class ModuleResolverDemo {
       recording.startAsync();
       var resolver = ModuleResolver.ofSingleDirectory(lib, libraries);
       resolver.resolveModule("org.junit.jupiter"); // to write and discover tests
+      resolver.resolveModule("org.junit.platform.suite"); // to discover tests declaratively
       resolver.resolveModule("org.junit.platform.console"); // to run tests
       resolver.resolveModule("javafx.controls");
       resolver.resolveMissingModules();
