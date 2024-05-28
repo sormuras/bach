@@ -22,9 +22,15 @@ public class ModuleResolverDemo {
       var resolver = ModuleResolver.ofSingleDirectory(lib, libraries);
       resolver.resolveModule("org.junit.jupiter"); // to write and discover tests
       resolver.resolveModule("org.junit.platform.console"); // to run tests
+      resolver.resolveModule("javafx.controls");
       resolver.resolveMissingModules();
       recording.stop();
     }
+
+    ModuleFinder.of(lib).findAll().stream()
+        .map(ref -> ref.descriptor().toNameAndVersion() + " -> " + ref.location().orElseThrow())
+        .sorted()
+        .forEach(System.out::println);
 
     // "jreleaser" via the tool provider SPI
     var jreleaserHome = Folders.ofCurrentWorkingDirectory().tool("jreleaser@" + JReleaser.VERSION);
@@ -38,13 +44,13 @@ public class ModuleResolverDemo {
             ToolFinder.of("java"), // provides "java" tool
             ToolFinder.of(ModuleFinder.of(lib)), // provides "junit" tool
             ToolFinder.of(ModuleFinder.of(jreleaserHome)), // provides "jreleaser" tool
-            ToolFinder.ofInstaller().withJavaApplication("demo/release@uri", JReleaser.URI));
+            ToolFinder.ofInstaller().withJavaApplication("jrelease@uri", JReleaser.URI));
 
     var junit = tools.get("junit");
     junit.run("--version");
     junit.run("engines");
 
     tools.get("jreleaser").run("--version");
-    tools.get("release@uri").run("--version");
+    tools.get("jrelease@uri").run("--version");
   }
 }
