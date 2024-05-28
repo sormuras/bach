@@ -7,3 +7,6 @@
 [submodule "run.info.bach"]
 	path = .bach/src/run.bach/run/info/bach
 	url = https://github.com/sormuras/bach-info
+[submodule "jreleaser"]
+	path = .bach/src/run.bach/run/info/org/jreleaser
+	url = https://github.com/jreleaser/bach-info

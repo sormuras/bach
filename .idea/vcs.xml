@@ -17,6 +17,7 @@
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/bach" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/info/bach" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/info/org/jreleaser" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/.bach/src/run.bach/run/info/org/junit" vcs="Git" />
   </component>
 </project>
