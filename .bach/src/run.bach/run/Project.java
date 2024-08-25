@@ -1,7 +1,6 @@
 package run;
 
 import java.util.Optional;
-
 import run.bach.ModuleLocator;
 import run.bach.ToolCall;
 import run.bach.ToolRunner;
@@ -36,8 +35,8 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
     var libraries =
         ModuleLocator.compose(
             JUnit.modules(),
-            ModuleLocator.of("org.junitpioneer","pkg:maven/org.junit-pioneer/junit-pioneer@2.2.0")
-            );
+            ModuleLocator.of(
+                "org.junitpioneer", "pkg:maven/org.junit-pioneer/junit-pioneer@2.2.0"));
     var structure = new Structure(basics, new Spaces(main, test), libraries);
     var runner = ToolRunner.ofSystem();
     return new Project(verbose, new Workflow(folders, structure, runner));
