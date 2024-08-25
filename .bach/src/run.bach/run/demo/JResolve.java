@@ -3,11 +3,10 @@ package run.demo;
 /**
  * JResolve - a command line tool for resolving dependencies on the JVM.
  *
- * @see <a href="https://github.com/bowbahdoe/jresolve-cli/releases/tag/v2024.05.10">Release
- *     Notes</a>
+ * @see <a href="https://github.com/bowbahdoe/jresolve-cli/releases/>Releases of JResolve</a>
  */
 public interface JResolve {
-  String ID = "bowbahdoe/jresolve@2024.05.10";
+  String ID = "bowbahdoe/jresolve@2024.08.23";
   String URI =
-      "https://github.com/bowbahdoe/jresolve-cli/releases/download/v2024.05.10/jresolve.jar#SIZE=754432";
+      "https://github.com/bowbahdoe/jresolve-cli/releases/download/v2024.08.23/jresolve.jar#SIZE=758648";
 }
