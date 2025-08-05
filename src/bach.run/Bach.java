@@ -5,10 +5,7 @@
 
 // TODO import module java.base;
 
-import java.io.*;
-import java.net.*;
-import java.nio.file.*;
-import java.util.*;
+import module java.base;
 
 @SuppressWarnings("unused")
 interface Bach {

@@ -20,10 +20,10 @@ public record Project(boolean verbose, Workflow workflow) implements Builder, St
   static Project ofCurrentWorkingDirectory() {
     var verbose = Boolean.getBoolean("-Debug".substring(2));
     var folders = Folders.ofCurrentWorkingDirectory();
-    var basics = new Basics("Bach", "2024-ea");
+    var basics = new Basics("Bach", "2025-ea");
     var main =
         new Space("main")
-            .withTargetingJavaRelease(22)
+            .withTargetingJavaRelease(25)
             .withLauncher("bach=run.bach/run.bach.Main")
             .withModule(".bach/src/run.bach", ".bach/src/run.bach/module-info.java")
             .with(Space.Flag.COMPILE_RUNTIME_IMAGE);

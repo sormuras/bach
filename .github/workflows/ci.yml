@@ -21,12 +21,12 @@ jobs:
         uses: oracle-actions/setup-java@v1
         with:
           website: jdk.java.net
-          release: 24
+          release: 25
       - name: 'Print various versions'
         run: |
           java @bach jar --version
           java @bach jfr --version
-          java @bach https://raw.githubusercontent.com/openjdk/jdk/refs/heads/jdk24/test/jdk/java/lang/System/Versions.java
+          java @bach https://raw.githubusercontent.com/openjdk/jdk/refs/heads/jdk25/test/jdk/java/lang/System/Versions.java
           java .bach/src/run.bach/run/demo/ToolVersionsDemo.java
       - name: 'Build Bach with Bach'
         run: java @build
