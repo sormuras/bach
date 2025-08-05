@@ -7,7 +7,7 @@ The default directory path is `.bach/src/run/bach`.
 
 ## Prerequisite
 
-- JDK 22 or higher
+- JDK 25 or higher
 
 ## Install Bach using JShell
 
@@ -46,7 +46,7 @@ echo .bach/src/run/bach/Main.java > bach
 Consult the following manual pages for details of `git` and `java` tools:
 - [git init](https://git-scm.com/docs/git-init) - Create an empty Git repository or reinitialize an existing one
 - [git submodule](https://git-scm.com/docs/git-submodule) - Initialize, update or inspect submodules
-- [java @file](https://docs.oracle.com/en/java/javase/22/docs/specs/man/java.html#java-command-line-argument-files) - Java Command-Line Argument Files
+- [java @file](https://docs.oracle.com/en/java/javase/25/docs/specs/man/java.html#java-command-line-argument-files) - Java Command-Line Argument Files
 
 Subsequent times:
 ```shell

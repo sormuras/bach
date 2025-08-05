@@ -3,8 +3,6 @@
  * Licensed under the Universal Permissive License v 1.0 -> https://opensource.org/license/upl
  */
 
-// TODO import module java.base;
-
 import module java.base;
 
 @SuppressWarnings("unused")

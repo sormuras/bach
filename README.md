@@ -6,7 +6,7 @@
 
 Bach is a tool that orchestrates [JDK tools] for building modular Java projects.
 
-If you are eager to try out Bach and already set [JDK 22] or higher up, these simple steps work most of the time:
+If you are eager to try out Bach and already set [JDK 25] or higher up, these simple steps work most of the time:
 
 ```shell
 mkdir example && cd example
@@ -21,9 +21,9 @@ For detailed installation instructions please see the [installing](doc/installin
 
 # be free - have fun
 
-[![jdk22](https://img.shields.io/badge/JDK-22-blue.svg)](https://jdk.java.net)
+[![jdk25](https://img.shields.io/badge/JDK-25-blue.svg)](https://jdk.java.net)
 ![experimental](https://img.shields.io/badge/API-experimental-yellow.svg)
 [![jsb](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Bachsiegel.svg/220px-Bachsiegel.svg.png)](https://wikipedia.org/wiki/Johann_Sebastian_Bach)
 
-[JDK tools]: https://docs.oracle.com/en/java/javase/22/docs/specs/man/index.html
-[JDK 22]: https://jdk.java.net/22
+[JDK tools]: https://docs.oracle.com/en/java/javase/25/docs/specs/man/index.html
+[JDK 25]: https://jdk.java.net/25
