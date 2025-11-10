@@ -6,7 +6,19 @@ import module run.bach;
 public class MaveniverseDemo {
   final List<ModuleLookup> lookups =
       List.of(
-          ModuleLookup.ofJUnit("6.1.0-SNAPSHOT"),
+          // JitPack GAV - https://docs.jitpack.io/intro/#building-with-jitpack
+          // ModuleLookup.of("junit-start", "experiments~junit-onramp-SNAPSHOT")
+          //    .withRepository("https://jitpack.io")
+          //    .withBill("com.github.junit-team.junit-framework:junit-bom:{{version}}")
+          //    .withRoot("com.github.junit-team.junit-framework:junit-start")
+          // Special Snowflake
+          ModuleLookup.of("junit-start", "6.1.0-SNAPSHOT")
+              .withRepository("https://central.sonatype.com/repository/maven-snapshots")
+              .withBill("org.junit:junit-bom:{{version}}")
+              .withRoot("org.junit:junit-start"),
+          // Snapshot
+          ModuleLookup.ofJUnit("6.1.0-SNAPSHOT").withRoot("org.junit:junit-start:{{version}}"),
+          // Releases and Pre-Releases
           ModuleLookup.ofJUnit("6.0.1"),
           ModuleLookup.ofJUnit("5.14.1"),
           ModuleLookup.ofJUnit("6.0.0"),
@@ -57,11 +69,7 @@ public class MaveniverseDemo {
           ModuleLookup.ofJUnit("5.9.0-M1"),
           ModuleLookup.ofJUnit("5.8.2"),
           ModuleLookup.ofJUnit("5.8.1"),
-          ModuleLookup.ofJUnit("5.8.0"), // not going before 5.8.0, as Suite was introduced here
-          ModuleLookup.of("junit-start", "experiments~junit-onramp-SNAPSHOT")
-              .withRepository("https://jitpack.io")
-              .withBill("com.github.junit-team.junit-framework:junit-bom:{{version}}")
-              .withRoot("com.github.junit-team.junit-framework:junit-start"));
+          ModuleLookup.ofJUnit("5.8.0")); // not going before 5.8.0, as Suite was introduced here
 
   void main() throws Exception {
     var base = "https://repo.maven.apache.org/maven2/eu/maveniverse/maven/plugins/toolbox/";
@@ -110,7 +118,9 @@ public class MaveniverseDemo {
     return moduleName + "=" + originUri;
   }
 
-  private static String computeModuleName(String name) {
+  private static String computeModuleName(String string) {
+    var space = string.indexOf(' '); // Cut off trailing suffixes, like " [automatic; ..."
+    var name = space == -1 ? string : string.substring(0, space);
     return ModuleDescriptor.newModule(name).build().name();
   }
 
