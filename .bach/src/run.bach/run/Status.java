@@ -1,7 +1,7 @@
 package run;
 
 class Status {
-  public static void main(String... args) {
+  void main() {
     Project.ofCurrentWorkingDirectory().printStatus();
   }
 }

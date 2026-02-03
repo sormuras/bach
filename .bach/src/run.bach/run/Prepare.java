@@ -1,7 +1,7 @@
 package run;
 
 class Prepare {
-  public static void main(String... args) {
+  void main() {
     Project.ofCurrentWorkingDirectory().prepare();
   }
 }

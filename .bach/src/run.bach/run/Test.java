@@ -1,7 +1,7 @@
 package run;
 
 class Test {
-  public static void main(String... args) {
+  void main() {
     Project.ofCurrentWorkingDirectory().test();
   }
 }
