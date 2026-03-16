@@ -21,9 +21,9 @@ public record GoogleJavaFormat(String version) implements ToolInstaller {
   /**
    * @see <a href="https://github.com/google/google-java-format/releases/latest">Latest release</a>
    */
-  public static final String DEFAULT_VERSION = "1.25.2";
+  public static final String DEFAULT_VERSION = "1.35.0";
 
-  public static void main(String... args) {
+  static void main(String... args) {
     var version = System.getProperty("version", DEFAULT_VERSION);
     new GoogleJavaFormat(version)
         .install()
